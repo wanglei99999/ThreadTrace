@@ -109,5 +109,6 @@ function aggregateStatus(statuses) {
 }
 
 module.exports = {
-  diagnoseTrackedSources
+  diagnoseTrackedSources,
+  diagnoseSource
 };

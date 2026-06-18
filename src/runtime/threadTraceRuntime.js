@@ -9,6 +9,7 @@ const { ingestSavedThreadDirectory } = require('../application/use-cases/ingestS
 const { diagnoseForumAdapters } = require('../application/use-cases/diagnoseForumAdapters');
 const { runIngestSavedThreadDirectoryTask } = require('../application/use-cases/runIngestSavedThreadDirectoryTask');
 const { registerTrackedSource } = require('../application/use-cases/registerTrackedSource');
+const { validateTrackedSourceRegistration } = require('../application/use-cases/validateTrackedSourceRegistration');
 const { listTrackedSources } = require('../application/use-cases/listTrackedSources');
 const { diagnoseTrackedSources } = require('../application/use-cases/diagnoseTrackedSources');
 const { runTrackedSourceIngestTask } = require('../application/use-cases/runTrackedSourceIngestTask');
@@ -394,18 +395,18 @@ function createThreadTraceRuntime(options) {
         sourceRepository: repositories.sourceRepository,
         sourceIngestHandlerRegistry,
         allowUnknownSourceType: safeRequest.allowUnknownSourceType,
-        source: {
-          id: safeRequest.id,
-          sourceKey: safeRequest.sourceKey || safeRequest.forum,
-          sourceType: safeRequest.sourceType,
-          displayName: safeRequest.displayName || safeRequest.name,
-          inputDir: safeRequest.inputDir,
-          url: safeRequest.url,
-          location: safeRequest.location,
-          enabled: safeRequest.enabled,
-          tags: safeRequest.tags,
-          schedule: safeRequest.schedule || buildSchedule(safeRequest)
-        }
+        source: buildSourceRegistrationInput(safeRequest)
+      });
+    },
+
+    validateSourceRegistration(request) {
+      const safeRequest = request || {};
+      return validateTrackedSourceRegistration({
+        sourceIngestHandlerRegistry,
+        getAdapter: forumAdapterRegistry.get,
+        allowUnknownSourceType: safeRequest.allowUnknownSourceType,
+        now: safeRequest.now,
+        source: buildSourceRegistrationInput(safeRequest)
       });
     },
 
@@ -700,6 +701,22 @@ function sourceNotFoundError(sourceId) {
       sourceId
     }
   });
+}
+
+function buildSourceRegistrationInput(request) {
+  const safeRequest = request || {};
+  return {
+    id: safeRequest.id,
+    sourceKey: safeRequest.sourceKey || safeRequest.forum,
+    sourceType: safeRequest.sourceType,
+    displayName: safeRequest.displayName || safeRequest.name,
+    inputDir: safeRequest.inputDir,
+    url: safeRequest.url,
+    location: safeRequest.location,
+    enabled: safeRequest.enabled,
+    tags: safeRequest.tags,
+    schedule: safeRequest.schedule || buildSchedule(safeRequest)
+  };
 }
 
 function resolveStoreDir(defaults, storeDir) {

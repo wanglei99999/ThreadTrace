@@ -545,6 +545,38 @@ function main(argv) {
     return;
   }
 
+  if (command === 'validate-source') {
+    const inputDir = options.input || defaultInputDir;
+    const result = runtime.validateSourceRegistration({
+      id: options.sourceId,
+      forum: options.forum,
+      sourceType: options.sourceType || 'saved-html-directory',
+      displayName: options.name,
+      inputDir,
+      url: options.url,
+      enabled: options.enabled === undefined ? undefined : options.enabled !== 'false',
+      allowUnknownSourceType: options.allowUnknownSourceType === 'true',
+      intervalMinutes: options.intervalMinutes,
+      nextRunAt: options.nextRunAt,
+      scheduleEnabled: options.scheduleEnabled === undefined ? undefined : options.scheduleEnabled !== 'false',
+      now: options.now
+    });
+    console.log('Source validation: valid=' + result.valid + ', status=' + result.status);
+    if (result.source) {
+      console.log(result.source.id + '\t' + result.source.sourceKey + '\t' + result.source.sourceType + '\t' + result.source.displayName);
+    }
+    if (result.error) {
+      console.log('Error: ' + result.error.code + '\t' + result.error.message);
+    }
+    result.checks.forEach(function (check) {
+      console.log(check.status + '\t' + check.key + '\t' + check.summary + '\t' + check.value);
+    });
+    if (!result.valid || result.status === 'fail') {
+      process.exitCode = 2;
+    }
+    return;
+  }
+
   if (command === 'list-sources') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.listSources({
@@ -1078,6 +1110,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js ingest-raw-page [--forum nga] --content-sha1 sha1 [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js dispatch-events [--channel file|webhook] [--webhook-url url] [--limit n] [--max-attempts n] [--retry-backoff-ms ms] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js ack-event --event-id id [--by user] [--note text] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js validate-source [--forum nga] [--source-type type] [--input dir] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--source-type type] [--input dir] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-diagnostics [--forum nga] [--enabled true] [--store-dir dir]');

@@ -48,6 +48,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/adapters/diagnostics']);
     assert.ok(openApi.paths['/api/connectors/catalog']);
     assert.ok(openApi.paths['/api/runtime/diagnostics']);
+    assert.ok(openApi.paths['/api/sources/validate']);
     assert.equal(openApi.components.schemas.ErrorResponse.properties.error.properties.code.example, 'source_run_already_running');
     assert.equal(openApi.components.schemas.ErrorResponse.properties.error.properties.requestId.type, 'string');
     assert.equal(openApi.components.responses.BadRequest.content['application/json'].schema.$ref, '#/components/schemas/ErrorResponse');
@@ -544,6 +545,12 @@ test('http server can register sources and run source ingest tasks', async funct
   const baseUrl = 'http://127.0.0.1:' + address.port;
 
   try {
+    const validationResult = await postJson(baseUrl + '/api/sources/validate', {
+      forum: 'nga',
+      displayName: 'NGA sample archive',
+      inputDir: path.resolve(__dirname, '..', 'example'),
+      now: '2026-06-19T10:00:00.000Z'
+    });
     const registerResponse = await fetch(baseUrl + '/api/sources', {
       method: 'POST',
       headers: {
@@ -570,6 +577,10 @@ test('http server can register sources and run source ingest tasks', async funct
     const taskResult = await postJson(baseUrl + '/api/sources/' + encodeURIComponent(registerResult.source.id) + '/tasks/ingest', {});
     const batchResult = await postJson(baseUrl + '/api/sources/tasks/ingest', {});
 
+    assert.equal(validationResult.valid, true);
+    assert.equal(validationResult.status, 'ok');
+    assert.equal(validationResult.generatedAt, '2026-06-19T10:00:00.000Z');
+    assert.equal(validationResult.source.id, registerResult.source.id);
     assert.equal(registerResponse.status, 201);
     assert.equal(sourcesResult.sources.length, 1);
     assert.equal(sourcesResult.sources[0].id, registerResult.source.id);

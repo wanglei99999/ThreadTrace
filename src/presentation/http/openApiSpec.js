@@ -576,6 +576,45 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/sources/validate': {
+        post: {
+          summary: 'Validate a tracked source before saving it',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string' },
+                    forum: { type: 'string', example: 'nga' },
+                    sourceKey: { type: 'string', example: 'nga' },
+                    sourceType: { type: 'string', example: 'saved-html-directory' },
+                    displayName: { type: 'string', example: 'NGA sample archive' },
+                    inputDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/example' },
+                    url: { type: 'string' },
+                    location: { type: 'object' },
+                    intervalMinutes: { type: 'number', example: 60 },
+                    nextRunAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+                    scheduleEnabled: { type: 'boolean' },
+                    enabled: { type: 'boolean' },
+                    allowUnknownSourceType: { type: 'boolean', example: false },
+                    now: { type: 'string', example: '2026-06-18T10:00:00.000Z' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Validation report with source draft and readiness checks'
+            },
+            400: {
+              $ref: '#/components/responses/BadRequest'
+            }
+          }
+        }
+      },
       '/api/sources/diagnostics': {
         get: {
           summary: 'Diagnose tracked source ingest configuration',
