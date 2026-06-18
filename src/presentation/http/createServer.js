@@ -98,6 +98,19 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/connectors/readiness') {
+    const enabledParam = url.searchParams.get('enabled');
+    const readiness = await context.runtime.getConnectorReadiness({
+      sourceKey: url.searchParams.get('sourceKey') || url.searchParams.get('forum') || undefined,
+      enabled: enabledParam === null ? undefined : enabledParam === 'true',
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,
+      now: url.searchParams.get('now') || undefined,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, readiness.status === 'fail' ? 503 : 200, readiness);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/openapi.json') {
     writeJson(response, 200, createOpenApiSpec());
     return;

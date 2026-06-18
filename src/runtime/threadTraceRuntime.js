@@ -30,6 +30,7 @@ const { getRuntimeDiagnostics } = require('../application/use-cases/getRuntimeDi
 const { getDeploymentChecklist } = require('../application/use-cases/getDeploymentChecklist');
 const { getOperationsRunbook } = require('../application/use-cases/getOperationsRunbook');
 const { getSourceConnectorCatalog } = require('../application/use-cases/getSourceConnectorCatalog');
+const { getConnectorReadiness } = require('../application/use-cases/getConnectorReadiness');
 const { createDefaultSourceIngestHandlerRegistry } = require('../application/source-ingest/standardSourceIngestHandlers');
 const { migrateStoreRecords } = require('../application/use-cases/migrateStoreRecords');
 const { runIngestRawThreadPageTask } = require('../application/use-cases/runIngestRawThreadPageTask');
@@ -135,6 +136,21 @@ function createThreadTraceRuntime(options) {
       return getSourceConnectorCatalog({
         sourceIngestHandlerRegistry,
         forumAdapterRegistry,
+        now: safeRequest.now
+      });
+    },
+
+    async getConnectorReadiness(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return getConnectorReadiness({
+        sourceRepository: repositories.sourceRepository,
+        sourceIngestHandlerRegistry,
+        forumAdapterRegistry,
+        getAdapter: forumAdapterRegistry.get,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 100,
         now: safeRequest.now
       });
     },

@@ -23,6 +23,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     const adapterDiagnostics = await getJson(baseUrl + '/api/adapters/diagnostics?now=2026-06-19T10:00:00.000Z');
     const handlers = await getJson(baseUrl + '/api/source-ingest-handlers');
     const connectorCatalog = await getJson(baseUrl + '/api/connectors/catalog?now=2026-06-19T10:00:00.000Z');
+    const connectorReadiness = await getJson(baseUrl + '/api/connectors/readiness?now=2026-06-19T10:00:00.000Z');
     const openApi = await getJson(baseUrl + '/openapi.json');
     const context = await postJson(baseUrl + '/api/interpret-text', {
       text: '科技后面看量确认',
@@ -43,10 +44,16 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(connectorCatalog.sourceTypes.some(function (sourceType) {
       return sourceType.sourceType === 'thread-url';
     }));
+    assert.equal(connectorReadiness.generatedAt, '2026-06-19T10:00:00.000Z');
+    assert.equal(connectorReadiness.status, 'ok');
+    assert.ok(connectorReadiness.connectors.some(function (connector) {
+      return connector.sourceType === 'saved-html-directory';
+    }));
     assert.equal(openApi.openapi, '3.0.3');
     assert.ok(openApi.paths['/api/interpret-text']);
     assert.ok(openApi.paths['/api/adapters/diagnostics']);
     assert.ok(openApi.paths['/api/connectors/catalog']);
+    assert.ok(openApi.paths['/api/connectors/readiness']);
     assert.ok(openApi.paths['/api/runtime/diagnostics']);
     assert.ok(openApi.paths['/api/sources/validate']);
     assert.ok(openApi.paths['/api/operations/trace-context']);

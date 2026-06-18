@@ -68,6 +68,26 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/connectors/readiness': {
+        get: {
+          summary: 'Summarize source connector readiness across handlers, adapters, and tracked sources',
+          parameters: [
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'enabled', in: 'query', required: false, schema: { type: 'boolean' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Connectors are ready or have warnings'
+            },
+            503: {
+              description: 'At least one connector has failing readiness checks'
+            }
+          }
+        }
+      },
       '/api/analyze-directory': {
         post: {
           summary: 'Analyze a saved HTML directory',
