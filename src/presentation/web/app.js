@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', function () {
   bindForms();
   document.getElementById('refreshAdaptersButton').addEventListener('click', loadAdapters);
   document.getElementById('refreshTasksButton').addEventListener('click', loadTasks);
+  document.getElementById('refreshSourcesButton').addEventListener('click', loadSources);
   loadAdapters();
   loadSystemStatus();
 });
@@ -79,6 +80,30 @@ function bindForms() {
     await loadTasks();
   });
 
+  document.getElementById('sourceForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await renderAsync('sourceResult', function () {
+      return requestJson('/api/sources', {
+        forum: form.get('forum'),
+        displayName: form.get('displayName'),
+        inputDir: form.get('inputDir')
+      });
+    }, renderSourceSaveResult);
+    await loadSystemStatus();
+    await loadSources();
+  });
+
+  document.getElementById('sourceResult').addEventListener('click', async function (event) {
+    const button = event.target.closest('button[data-action="run-source"]');
+    if (!button) return;
+    await renderAsync('taskResult', function () {
+      return requestJson('/api/sources/' + encodeURIComponent(button.dataset.sourceId) + '/tasks/ingest', {});
+    }, renderSourceTaskRunResult);
+    await loadSystemStatus();
+    await loadTasks();
+  });
+
   document.getElementById('indexForm').addEventListener('submit', async function (event) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -114,6 +139,7 @@ function setView(viewName) {
   document.getElementById('viewTitle').textContent = views[viewName].title;
   document.getElementById('viewSubtitle').textContent = views[viewName].subtitle;
   if (viewName === 'system') loadSystemStatus();
+  if (viewName === 'system') loadSources();
 }
 
 async function loadAdapters() {
@@ -123,6 +149,7 @@ async function loadAdapters() {
     fillAdapterSelect('historyForum');
     fillAdapterSelect('contextForum');
     fillAdapterSelect('searchForum');
+    fillAdapterSelect('sourceForum');
   } catch (error) {
     renderError('historyResult', error);
   }
@@ -146,11 +173,13 @@ async function loadSystemStatus() {
     const adapters = await fetchJson('/adapters');
     const openApi = await fetchJson('/openapi.json');
     const tasks = await fetchJson('/api/tasks?limit=5');
+    const sources = await fetchJson('/api/sources?limit=5');
     target.innerHTML = [
       statusRow('服务', health.ok ? '运行中' : '异常'),
       statusRow('适配器', String((adapters.adapters || []).length)),
       statusRow('API 契约', openApi.openapi),
       statusRow('端点', String(Object.keys(openApi.paths || {}).length)),
+      statusRow('来源', String((sources.sources || []).length)),
       statusRow('最近任务', String((tasks.tasks || []).length))
     ].join('');
   } catch (error) {
@@ -162,6 +191,12 @@ async function loadTasks() {
   await renderAsync('taskResult', function () {
     return fetchJson('/api/tasks?limit=10');
   }, renderTaskList);
+}
+
+async function loadSources() {
+  await renderAsync('sourceResult', function () {
+    return fetchJson('/api/sources?limit=10');
+  }, renderSourceList);
 }
 
 async function renderAsync(targetId, task, renderer) {
@@ -240,12 +275,38 @@ function renderTaskRunResult(result) {
   ].join(''), 'wide');
 }
 
+function renderSourceSaveResult(result) {
+  return panel(result.created ? '来源已创建' : '来源已更新', [
+    metric('来源 ID', result.source.id),
+    metric('论坛', result.source.sourceKey),
+    metric('类型', result.source.sourceType),
+    metric('名称', result.source.displayName)
+  ].join(''), 'wide');
+}
+
+function renderSourceTaskRunResult(result) {
+  return panel('来源任务完成', [
+    metric('来源 ID', result.sourceId),
+    metric('任务 ID', result.task.id),
+    metric('状态', result.task.status),
+    metric('主题', result.task.output ? result.task.output.title : '')
+  ].join(''), 'wide');
+}
+
 function renderTaskList(result) {
   const tasks = result.tasks || [];
   return panel('最近任务', evidenceList(tasks.map(function (task) {
     const output = task.output || {};
     return task.status + ' · ' + task.type + ' · ' + (output.title || task.id);
   })), 'wide');
+}
+
+function renderSourceList(result) {
+  const sources = result.sources || [];
+  if (sources.length === 0) return panel('跟踪来源', '<div class="muted">暂无</div>', 'wide');
+  return panel('跟踪来源', sources.map(function (source) {
+    return '<div class="action-row"><span>' + escapeHtml(source.displayName) + '<small>' + escapeHtml(source.id + ' · ' + source.sourceType) + '</small></span><button class="inline-button" type="button" data-action="run-source" data-source-id="' + escapeHtml(source.id) + '">运行</button></div>';
+  }).join(''), 'wide');
 }
 
 function panel(title, content, className) {

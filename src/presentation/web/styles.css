@@ -247,7 +247,8 @@ form button[type="submit"]:hover {
 
 .metric-row,
 .evidence-row,
-.status-row {
+.status-row,
+.action-row {
   display: flex;
   justify-content: space-between;
   gap: 14px;
@@ -262,8 +263,38 @@ form button[type="submit"]:hover {
 
 .metric-row:first-of-type,
 .evidence-row:first-of-type,
-.status-row:first-of-type {
+.status-row:first-of-type,
+.action-row:first-of-type {
   border-top: 0;
+}
+
+.action-row {
+  align-items: center;
+}
+
+.action-row span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.action-row small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.inline-button {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius);
+  color: #ffffff;
+  background: var(--accent);
+  white-space: nowrap;
+}
+
+.inline-button:hover {
+  background: var(--accent-strong);
 }
 
 .muted {

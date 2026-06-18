@@ -114,7 +114,24 @@
           <button type="submit">运行导入任务</button>
           <button id="refreshTasksButton" class="secondary-button" type="button">刷新任务</button>
         </form>
+        <form id="sourceForm" class="control-strip">
+          <label>
+            <span>论坛</span>
+            <select name="forum" id="sourceForum"></select>
+          </label>
+          <label class="grow">
+            <span>来源名称</span>
+            <input name="displayName" value="NGA sample archive" autocomplete="off">
+          </label>
+          <label class="grow">
+            <span>保存页目录</span>
+            <input name="inputDir" value="example" autocomplete="off">
+          </label>
+          <button type="submit">保存来源</button>
+          <button id="refreshSourcesButton" class="secondary-button" type="button">刷新来源</button>
+        </form>
         <div class="status-list" id="systemStatus"></div>
+        <div class="result-grid task-grid" id="sourceResult"></div>
         <div class="result-grid task-grid" id="taskResult"></div>
       </section>
     </main>
