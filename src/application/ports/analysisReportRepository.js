@@ -7,6 +7,7 @@
  * @typedef {Object} AnalysisReportRepository
  * @property {(report: Object) => Promise<void>} saveReport
  * @property {(query: { sourceKey: string, sourceThreadId: string, reportType?: string }) => Promise<Object[]>} findReports
+ * @property {(query?: { sourceKey?: string, sourceThreadId?: string, reportType?: string, limit?: number }) => Promise<Object[]>} listReports
  */
 
 function assertAnalysisReportRepository(repository) {
@@ -15,6 +16,9 @@ function assertAnalysisReportRepository(repository) {
   }
   if (typeof repository.findReports !== 'function') {
     throw new Error('AnalysisReportRepository must implement findReports(query).');
+  }
+  if (typeof repository.listReports !== 'function') {
+    throw new Error('AnalysisReportRepository must implement listReports(query).');
   }
   return repository;
 }

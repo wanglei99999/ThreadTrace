@@ -206,6 +206,29 @@ function main(argv) {
     return;
   }
 
+  if (command === 'migrate-store') {
+    const fromStoreDir = options.fromStoreDir || options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    runtime.migrateStore({
+      fromStoreDir,
+      toStoreDir: options.toStoreDir,
+      dryRun: options.dryRun === undefined ? true : options.dryRun !== 'false',
+      limit: options.limit ? Number(options.limit) : undefined
+    }).then(function (summary) {
+      console.log('Dry run: ' + summary.dryRun);
+      console.log('Sources: ' + summary.migrated.sources);
+      console.log('Threads: ' + summary.migrated.threadSnapshots);
+      console.log('Reports: ' + summary.migrated.analysisReports);
+      console.log('Tasks: ' + summary.migrated.tasks);
+      console.log('Events: ' + summary.migrated.notificationEvents);
+      console.log('Raw pages: ' + summary.migrated.rawThreadPages);
+      console.log('Worker runs: ' + summary.migrated.workerRuns);
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'list-events') {
     const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
     runtime.listNotificationEvents({
@@ -533,6 +556,15 @@ function parseArgs(args) {
     } else if (item === '--store-dir') {
       options.storeDir = args[index + 1];
       index += 1;
+    } else if (item === '--from-store-dir') {
+      options.fromStoreDir = args[index + 1];
+      index += 1;
+    } else if (item === '--to-store-dir') {
+      options.toStoreDir = args[index + 1];
+      index += 1;
+    } else if (item === '--dry-run') {
+      options.dryRun = args[index + 1];
+      index += 1;
     } else if (item === '--text') {
       options.text = args[index + 1];
       index += 1;
@@ -689,6 +721,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js list-tasks [--store-dir dir] [--status status] [--type type] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-overview [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-readiness [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js migrate-store --from-store-dir dir [--to-store-dir dir] [--dry-run true|false] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js list-events [--source-id id] [--type type] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js fetch-thread-page [--forum nga] [--url url | --source-id id] [--source-thread-id id] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-raw-pages [--forum nga] [--source-thread-id id] [--limit n] [--store-dir dir]');

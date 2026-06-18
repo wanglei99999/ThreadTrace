@@ -18,6 +18,7 @@ const { enrichAnalysisReportWithLlm } = require('../application/use-cases/enrich
 const { getOperationalOverview } = require('../application/use-cases/getOperationalOverview');
 const { getOperationalReadiness } = require('../application/use-cases/getOperationalReadiness');
 const { createDefaultSourceIngestHandlerRegistry } = require('../application/source-ingest/standardSourceIngestHandlers');
+const { migrateStoreRecords } = require('../application/use-cases/migrateStoreRecords');
 const { runIngestRawThreadPageTask } = require('../application/use-cases/runIngestRawThreadPageTask');
 const { indexSavedThreadDirectory } = require('../application/use-cases/indexSavedThreadDirectory');
 const { searchEvidence } = require('../application/use-cases/searchEvidence');
@@ -199,6 +200,21 @@ function createThreadTraceRuntime(options) {
         limit: safeRequest.limit || 100,
         storeDir: safeRequest.storeDir,
         workerStaleAfterMs: safeRequest.workerStaleAfterMs
+      });
+    },
+
+    async migrateStore(request) {
+      const safeRequest = request || {};
+      const fromStoreDir = resolveStoreDir(defaults, safeRequest.fromStoreDir || safeRequest.storeDir);
+      const toStoreDir = safeRequest.toStoreDir || safeRequest.targetStoreDir;
+      if (defaults.storageMode === 'file' && path.resolve(fromStoreDir) === path.resolve(resolveStoreDir(defaults, toStoreDir))) {
+        throw new Error('Refusing to migrate file store onto itself. Provide --to-store-dir or use THREADTRACE_STORAGE=postgres.');
+      }
+      return migrateStoreRecords({
+        sourceRepositories: createFileRepositories(fromStoreDir),
+        targetRepositories: createRepositoriesFor(toStoreDir),
+        dryRun: safeRequest.dryRun !== false,
+        limit: safeRequest.limit ? Number(safeRequest.limit) : undefined
       });
     },
 

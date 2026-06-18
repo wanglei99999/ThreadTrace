@@ -38,6 +38,37 @@ function createPostgresAnalysisReportRepository(options) {
       return result.rows.map(function (row) {
         return row.report;
       });
+    },
+
+    async listReports(query) {
+      const safeQuery = query || {};
+      const params = [];
+      const where = [];
+      if (safeQuery.sourceKey) {
+        params.push(safeQuery.sourceKey);
+        where.push('source_key = $' + params.length);
+      }
+      if (safeQuery.sourceThreadId) {
+        params.push(safeQuery.sourceThreadId);
+        where.push('source_thread_id = $' + params.length);
+      }
+      if (safeQuery.reportType) {
+        params.push(safeQuery.reportType);
+        where.push('report_type = $' + params.length);
+      }
+      if (safeQuery.limit) {
+        params.push(Number(safeQuery.limit));
+      }
+      const result = await client.query(
+        'select report from analysis_reports' +
+          (where.length ? ' where ' + where.join(' and ') : '') +
+          ' order by generated_at desc' +
+          (safeQuery.limit ? ' limit $' + params.length : ''),
+        params
+      );
+      return result.rows.map(function (row) {
+        return row.report;
+      });
     }
   };
 
