@@ -222,7 +222,8 @@ function buildSourceOnboardingRequest(form) {
   const request = {
     forum: form.get('forum'),
     sourceType,
-    displayName: form.get('displayName')
+    displayName: form.get('displayName'),
+    modulePath: String(form.get('modulePath') || '').trim() || undefined
   };
   if (sourceType === 'thread-url') {
     request.url = locationValue;
@@ -551,6 +552,14 @@ function renderSourceOnboardingPreflight(result) {
       metric('来源 ID', result.sourceValidation.source.id),
       metric('可保存', result.sourceValidation.valid ? 'yes' : 'no'),
       metric('诊断', result.sourceValidation.status)
+    ].join('')));
+  }
+  if (result.connectorModuleValidation) {
+    panels.push(panel('Connector 模块', [
+      metric('可加载', result.connectorModuleValidation.valid ? 'yes' : 'no'),
+      metric('状态', result.connectorModuleValidation.status),
+      metric('模块', result.connectorModuleValidation.modulePath || 'missing'),
+      metric('错误', (result.connectorModuleValidation.errors || []).length)
     ].join('')));
   }
   if (result.threadJsonValidation) {

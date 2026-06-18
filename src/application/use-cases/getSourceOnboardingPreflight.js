@@ -24,6 +24,15 @@ function getSourceOnboardingPreflight(options) {
     step('threadSnapshot.contract', contractSummary.version ? 'ok' : 'fail', 'ThreadSnapshot JSON contract is available for external sources.', contractSummary)
   ];
 
+  if (safeOptions.connectorModuleValidation) {
+    steps.push(step('connectorModule.validation', connectorModuleValidationStatus(safeOptions.connectorModuleValidation), 'External connector module can be loaded for this onboarding preflight.', {
+      valid: safeOptions.connectorModuleValidation.valid,
+      modulePath: safeOptions.connectorModuleValidation.modulePath,
+      checks: safeOptions.connectorModuleValidation.checks || [],
+      errors: safeOptions.connectorModuleValidation.errors || []
+    }));
+  }
+
   if (safeOptions.sourceValidation) {
     steps.push(step('source.registrationDraft', sourceValidationStatus(safeOptions.sourceValidation), 'Tracked source draft can be registered.', {
       valid: safeOptions.sourceValidation.valid,
@@ -55,6 +64,7 @@ function getSourceOnboardingPreflight(options) {
     },
     connectorReadiness,
     sourceValidation: safeOptions.sourceValidation,
+    connectorModuleValidation: safeOptions.connectorModuleValidation,
     threadJsonValidation: safeOptions.threadJsonValidation,
     threadSnapshotContract: contractSummary
   };
@@ -86,6 +96,11 @@ function sourceValidationStatus(sourceValidation) {
 function threadJsonValidationStatus(threadJsonValidation) {
   if (!threadJsonValidation.valid) return 'fail';
   return threadJsonValidation.status || 'ok';
+}
+
+function connectorModuleValidationStatus(connectorModuleValidation) {
+  if (!connectorModuleValidation.valid) return 'fail';
+  return connectorModuleValidation.status || 'ok';
 }
 
 function summarizeContract(contract) {

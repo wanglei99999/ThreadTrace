@@ -107,11 +107,12 @@ Use the same flow for built-in forums and future connectors:
 
 1. Add or inject a `SourceIngestHandler`.
 2. For external modules, run `validate-connector-module` before setting `THREADTRACE_CONNECTOR_MODULES`.
-3. Confirm it appears in `GET /api/connectors/catalog`.
-4. Check connector readiness with `GET /api/connectors/readiness`.
-5. Validate a draft source with `POST /api/sources/validate` or `node src/presentation/cli/threadtrace.js validate-source`.
-6. Register the source with `POST /api/sources` only after the validation report is acceptable for the rollout stage.
-7. Confirm saved-source readiness with `GET /api/sources/diagnostics`.
+3. Use `source-onboarding-preflight --module-path ...` to simulate catalog, readiness, and source validation before changing runtime configuration.
+4. Confirm it appears in `GET /api/connectors/catalog`.
+5. Check connector readiness with `GET /api/connectors/readiness`.
+6. Validate a draft source with `POST /api/sources/validate` or `node src/presentation/cli/threadtrace.js validate-source`.
+7. Register the source with `POST /api/sources` only after the validation report is acceptable for the rollout stage.
+8. Confirm saved-source readiness with `GET /api/sources/diagnostics`.
 
 The validation report separates `valid` from operational readiness. A staged unknown source can be `valid=true` with `allowUnknownSourceType=true`, while diagnostics still report `status=fail` until a handler exists. This lets operators plan migrations without making a source look runnable too early.
 

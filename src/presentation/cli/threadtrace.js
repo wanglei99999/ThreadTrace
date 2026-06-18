@@ -645,6 +645,7 @@ function main(argv) {
       sourceKey: options.sourceKey,
       sourceType,
       displayName: options.name,
+      modulePath: options.modulePath,
       inputDir,
       inputFile: options.inputFile,
       url: options.url,
@@ -1276,7 +1277,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js ack-event --event-id id [--by user] [--note text] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js validate-source [--forum nga] [--source-type type] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js validate-thread-json --input-file file [--forum sourceKey] [--now iso]');
-  console.log('  node src/presentation/cli/threadtrace.js source-onboarding-preflight [--forum nga] [--source-type type] [--input dir] [--input-file file] [--url url] [--store-dir dir] [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js source-onboarding-preflight [--forum nga] [--source-type type] [--module-path file] [--input dir] [--input-file file] [--url url] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--source-type type] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-diagnostics [--forum nga] [--enabled true] [--store-dir dir]');

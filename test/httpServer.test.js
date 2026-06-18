@@ -43,6 +43,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(homeHtml, /ThreadTrace/);
     assert.match(homeHtml, /sourceOnboardingForm/);
     assert.match(homeHtml, /onboardingResult/);
+    assert.match(homeHtml, /modulePath/);
     assert.match(homeHtml, /connectorModuleValidationForm/);
     assert.match(homeHtml, /connectorModuleResult/);
     assert.match(homeHtml, /runbookResult/);
@@ -413,6 +414,50 @@ test('http server validates connector module files', async function () {
     assert.equal(broken.valid, false);
     assert.match(broken.errors[0].message, /http validation boom/);
     assert.equal(missingPath.error.code, 'connector_module_path_required');
+  } finally {
+    await close(server);
+  }
+});
+
+test('http server source onboarding preflight can simulate connector modules', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-http-source-onboarding-module-'));
+  const modulePath = path.join(tempDir, 'externalConnector.cjs');
+  await fs.writeFile(modulePath, [
+    "'use strict';",
+    "module.exports = {",
+    "  sourceIngestHandlers: [{",
+    "    sourceType: 'http-onboarding-feed',",
+    "    requiresAdapter: false,",
+    "    description: 'HTTP onboarding feed.',",
+    "    locationSchema: { required: ['feedUrl'], properties: { feedUrl: { type: 'string' } } },",
+    "    async run() { throw new Error('not used in this test'); }",
+    "  }]",
+    "};",
+    ""
+  ].join('\n'), 'utf8');
+
+  const server = createThreadTraceServer({
+    defaultInputDir: path.resolve(__dirname, '..', 'example')
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const preflight = await postJson(baseUrl + '/api/sources/onboarding/preflight', {
+      sourceKey: 'external',
+      sourceType: 'http-onboarding-feed',
+      modulePath,
+      location: {
+        feedUrl: 'https://example.test/feed'
+      },
+      now: '2026-06-19T10:00:00.000Z'
+    });
+
+    assert.equal(preflight.status, 'ok');
+    assert.equal(preflight.connectorModuleValidation.valid, true);
+    assert.equal(preflight.sourceValidation.valid, true);
+    assert.equal(preflight.catalog.sourceType.sourceType, 'http-onboarding-feed');
   } finally {
     await close(server);
   }

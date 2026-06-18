@@ -14,6 +14,7 @@ content-type: application/json
   "forum": "external",
   "sourceType": "normalized-thread-json",
   "displayName": "External normalized feed",
+  "modulePath": "D:/connectors/custom-forum.cjs",
   "inputFile": "D:/feeds/threadtrace/thread.json",
   "now": "2026-06-19T10:00:00.000Z"
 }
@@ -22,8 +23,10 @@ content-type: application/json
 CLI equivalent:
 
 ```powershell
-node src/presentation/cli/threadtrace.js source-onboarding-preflight --forum external --source-type normalized-thread-json --input-file D:/feeds/threadtrace/thread.json
+node src/presentation/cli/threadtrace.js source-onboarding-preflight --forum external --source-type normalized-thread-json --module-path D:/connectors/custom-forum.cjs --input-file D:/feeds/threadtrace/thread.json
 ```
+
+`modulePath` is optional. When provided, ThreadTrace loads that connector module into temporary registries for the preflight only, so teams can validate a future `sourceType` before adding it to `THREADTRACE_CONNECTOR_MODULES`.
 
 ## HTTP Entry
 

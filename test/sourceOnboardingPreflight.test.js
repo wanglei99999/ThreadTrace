@@ -97,3 +97,46 @@ test('runtime source onboarding preflight validates normalized thread JSON input
   }).status, 'ok');
   assert.deepEqual(preflight.threadSnapshotContract.required, ['sourceKey', 'sourceThreadId', 'title', 'posts']);
 });
+
+test('runtime source onboarding preflight can simulate an external connector module', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-source-onboarding-module-'));
+  const modulePath = path.join(tempDir, 'externalConnector.cjs');
+  await fs.writeFile(modulePath, [
+    "'use strict';",
+    "module.exports = {",
+    "  sourceIngestHandlers: [{",
+    "    sourceType: 'external-feed',",
+    "    requiresAdapter: false,",
+    "    description: 'External feed supplied by a module.',",
+    "    locationSchema: { required: ['feedUrl'], properties: { feedUrl: { type: 'string' } } },",
+    "    capabilities: { fetchesRemote: true },",
+    "    async run() { throw new Error('not used in this test'); }",
+    "  }]",
+    "};",
+    ""
+  ].join('\n'), 'utf8');
+
+  const runtime = createThreadTraceRuntime({
+    storeDir: path.join(tempDir, 'store')
+  });
+  const preflight = await runtime.getSourceOnboardingPreflight({
+    sourceKey: 'external',
+    sourceType: 'external-feed',
+    modulePath,
+    location: {
+      feedUrl: 'https://example.test/feed'
+    },
+    now: '2026-06-19T10:00:00.000Z'
+  });
+
+  assert.equal(preflight.status, 'ok');
+  assert.equal(preflight.connectorModuleValidation.valid, true);
+  assert.equal(preflight.catalog.sourceType.sourceType, 'external-feed');
+  assert.equal(preflight.sourceValidation.valid, true);
+  assert.equal(preflight.steps.find(function (step) {
+    return step.key === 'connectorModule.validation';
+  }).status, 'ok');
+  assert.equal(runtime.listSourceIngestHandlers().some(function (handler) {
+    return handler.sourceType === 'external-feed';
+  }), false);
+});

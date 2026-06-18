@@ -209,19 +209,46 @@ function createThreadTraceRuntime(options) {
       const sourceInput = Object.assign(buildSourceRegistrationInput(safeRequest), {
         sourceType
       });
-      const catalog = this.getSourceConnectorCatalog({
+      const modulePath = safeRequest.modulePath || safeRequest.connectorModulePath;
+      const preflightForumAdapterRegistry = modulePath ? createDefaultForumAdapterRegistry() : forumAdapterRegistry;
+      const preflightSourceIngestHandlerRegistry = modulePath ? createDefaultSourceIngestHandlerRegistry() : sourceIngestHandlerRegistry;
+      const connectorModuleReport = modulePath
+        ? loadConnectorModulesReport({
+          modulePaths: [modulePath],
+          cwd: safeOptions.cwd,
+          forumAdapterRegistry: preflightForumAdapterRegistry,
+          sourceIngestHandlerRegistry: preflightSourceIngestHandlerRegistry,
+          runtimeConfig
+        })
+        : undefined;
+      const connectorModuleValidation = connectorModuleReport
+        ? validateConnectorModuleLoad({
+          modulePath: path.resolve(safeOptions.cwd || process.cwd(), modulePath),
+          report: connectorModuleReport,
+          now: safeRequest.now
+        })
+        : undefined;
+      const catalog = getSourceConnectorCatalog({
+        sourceIngestHandlerRegistry: preflightSourceIngestHandlerRegistry,
+        forumAdapterRegistry: preflightForumAdapterRegistry,
         now: safeRequest.now
       });
-      const connectorReadiness = await this.getConnectorReadiness({
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      const connectorReadiness = await getConnectorReadiness({
+        sourceRepository: repositories.sourceRepository,
+        sourceIngestHandlerRegistry: preflightSourceIngestHandlerRegistry,
+        forumAdapterRegistry: preflightForumAdapterRegistry,
+        getAdapter: preflightForumAdapterRegistry.get,
+        connectorModules: connectorModuleReport ? connectorModuleReport.modules : connectorModules,
+        connectorModuleErrors: connectorModuleReport ? connectorModuleReport.errors : connectorModuleErrors,
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
         enabled: safeRequest.enabled,
         limit: safeRequest.limit || 100,
-        now: safeRequest.now,
-        storeDir: safeRequest.storeDir
+        now: safeRequest.now
       });
       const sourceValidation = validateTrackedSourceRegistration({
-        sourceIngestHandlerRegistry,
-        getAdapter: forumAdapterRegistry.get,
+        sourceIngestHandlerRegistry: preflightSourceIngestHandlerRegistry,
+        getAdapter: preflightForumAdapterRegistry.get,
         allowUnknownSourceType: safeRequest.allowUnknownSourceType,
         now: safeRequest.now,
         source: sourceInput
@@ -243,6 +270,7 @@ function createThreadTraceRuntime(options) {
         catalog,
         connectorReadiness,
         sourceValidation,
+        connectorModuleValidation,
         threadJsonValidation,
         threadSnapshotContract: getThreadSnapshotJsonContract()
       });

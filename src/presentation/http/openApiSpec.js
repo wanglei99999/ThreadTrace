@@ -759,6 +759,7 @@ function createOpenApiSpec() {
                     sourceKey: { type: 'string', example: 'nga' },
                     sourceType: { type: 'string', example: 'normalized-thread-json' },
                     displayName: { type: 'string', example: 'External ThreadSnapshot feed' },
+                    modulePath: { type: 'string', example: 'D:/connectors/custom-forum.cjs' },
                     inputDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/example' },
                     inputFile: { type: 'string', example: 'D:/feeds/threadtrace/thread.json' },
                     url: { type: 'string' },

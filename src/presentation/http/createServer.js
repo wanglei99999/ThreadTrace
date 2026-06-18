@@ -520,6 +520,7 @@ async function routeRequest(request, response, context) {
       sourceKey: body.sourceKey,
       sourceType: body.sourceType,
       displayName: body.displayName || body.name,
+      modulePath: body.modulePath || body.connectorModulePath,
       inputDir: body.inputDir,
       inputFile: body.inputFile,
       url: body.url,
