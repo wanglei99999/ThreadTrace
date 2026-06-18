@@ -33,6 +33,14 @@ GET /api/raw-pages
 - PostgreSQL mode stores records in `raw_thread_pages`.
 - `(source_key, content_sha1)` is the dedupe key.
 
-## Next Integration Step
+## Thread URL Ingestion
 
-The next pipeline step should parse stored raw pages through the existing forum adapter and then call the same snapshot/report repositories used by saved HTML ingestion. That keeps online collection, parsing, analysis, and notifications independently replaceable.
+Registered `thread-url` sources can now run through the tracked source ingestion flow:
+
+1. `ForumCrawler` fetches the raw page.
+2. `RawThreadPageRepository` stores the evidence and content hash.
+3. The forum adapter parses raw HTML into a `ThreadSnapshot`.
+4. The analyzer creates the report.
+5. Snapshot, report, task, cursor, and notification event repositories update through the same ports used by saved HTML ingestion.
+
+This keeps online collection, parsing, analysis, and notifications independently replaceable.

@@ -16,7 +16,9 @@ const { assertSourceRepository } = require('../ports/sourceRepository');
 const { assertThreadRepository } = require('../ports/threadRepository');
 const { assertAnalysisReportRepository } = require('../ports/analysisReportRepository');
 const { assertTaskRepository } = require('../ports/taskRepository');
+const { assertRawThreadPageRepository } = require('../ports/rawThreadPageRepository');
 const { runIngestSavedThreadDirectoryTask } = require('./runIngestSavedThreadDirectoryTask');
+const { runIngestThreadUrlTask } = require('./runIngestThreadUrlTask');
 
 async function runTrackedSourceIngestTask(options) {
   const safeOptions = options || {};
@@ -30,7 +32,7 @@ async function runTrackedSourceIngestTask(options) {
   if (source.enabled === false) {
     throw new Error('Tracked source is disabled: ' + source.id);
   }
-  if (source.sourceType !== SOURCE_TYPES.SAVED_HTML_DIRECTORY) {
+  if (source.sourceType !== SOURCE_TYPES.SAVED_HTML_DIRECTORY && source.sourceType !== SOURCE_TYPES.THREAD_URL) {
     throw new Error('Tracked source type is not ingestible yet: ' + source.sourceType);
   }
 
@@ -38,14 +40,25 @@ async function runTrackedSourceIngestTask(options) {
   await sourceRepository.saveSource(runningSource);
 
   try {
-    const result = await runIngestSavedThreadDirectoryTask({
-      forum: source.sourceKey,
-      adapter,
-      inputDir: source.location.inputDir,
-      threadRepository: assertThreadRepository(safeOptions.threadRepository),
-      reportRepository: assertAnalysisReportRepository(safeOptions.reportRepository),
-      taskRepository: assertTaskRepository(safeOptions.taskRepository)
-    });
+    const result = source.sourceType === SOURCE_TYPES.THREAD_URL
+      ? await runIngestThreadUrlTask({
+        forum: source.sourceKey,
+        source,
+        adapter,
+        crawler: safeOptions.crawler,
+        rawThreadPageRepository: assertRawThreadPageRepository(safeOptions.rawThreadPageRepository),
+        threadRepository: assertThreadRepository(safeOptions.threadRepository),
+        reportRepository: assertAnalysisReportRepository(safeOptions.reportRepository),
+        taskRepository: assertTaskRepository(safeOptions.taskRepository)
+      })
+      : await runIngestSavedThreadDirectoryTask({
+        forum: source.sourceKey,
+        adapter,
+        inputDir: source.location.inputDir,
+        threadRepository: assertThreadRepository(safeOptions.threadRepository),
+        reportRepository: assertAnalysisReportRepository(safeOptions.reportRepository),
+        taskRepository: assertTaskRepository(safeOptions.taskRepository)
+      });
     const cursor = buildThreadSnapshotCursor(result.threadSnapshot);
     const cursorDiff = compareThreadSnapshotCursor(source.cursor, cursor);
     runningSource = markTrackedSourceRunCompleted(runningSource, result.task, cursor, cursorDiff);

@@ -48,9 +48,11 @@ async function runEnabledSourcesIngestTasks(options) {
           sourceId: source.id,
           sourceRepository,
           adapter: getAdapter(source.sourceKey),
+          crawler: safeOptions.crawler,
           threadRepository,
           reportRepository,
           taskRepository,
+          rawThreadPageRepository: safeOptions.rawThreadPageRepository,
           notificationEventRepository: safeOptions.notificationEventRepository
         });
         results.push({

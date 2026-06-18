@@ -178,9 +178,11 @@ function createThreadTraceRuntime(options) {
         sourceId: safeRequest.sourceId,
         sourceRepository: repositories.sourceRepository,
         adapter: getForumAdapter(source.sourceKey),
+        crawler: safeOptions.crawler || createHttpForumCrawler(safeOptions.crawlerOptions),
         threadRepository: repositories.threadRepository,
         reportRepository: repositories.reportRepository,
         taskRepository: repositories.taskRepository,
+        rawThreadPageRepository: repositories.rawThreadPageRepository,
         notificationEventRepository: repositories.notificationEventRepository
       });
     },
@@ -194,6 +196,8 @@ function createThreadTraceRuntime(options) {
         reportRepository: repositories.reportRepository,
         taskRepository: repositories.taskRepository,
         notificationEventRepository: repositories.notificationEventRepository,
+        rawThreadPageRepository: repositories.rawThreadPageRepository,
+        crawler: safeOptions.crawler || createHttpForumCrawler(safeOptions.crawlerOptions),
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
         limit: safeRequest.limit || 50,
         getAdapter: getForumAdapter
@@ -209,6 +213,8 @@ function createThreadTraceRuntime(options) {
         reportRepository: repositories.reportRepository,
         taskRepository: repositories.taskRepository,
         notificationEventRepository: repositories.notificationEventRepository,
+        rawThreadPageRepository: repositories.rawThreadPageRepository,
+        crawler: safeOptions.crawler || createHttpForumCrawler(safeOptions.crawlerOptions),
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
         limit: safeRequest.limit || 50,
         now: safeRequest.now,
