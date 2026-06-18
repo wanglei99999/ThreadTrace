@@ -2,6 +2,7 @@
 
 const path = require('path');
 const { createThreadTraceConfig } = require('./threadTraceConfig');
+const { loadConnectorModules } = require('./loadConnectorModules');
 const { createDefaultForumAdapterRegistry } = require('../infrastructure/forum-adapters/registry');
 const { analyzeSavedThreadDirectory } = require('../application/use-cases/analyzeSavedThreadDirectory');
 const { interpretNewPostFromSavedThreadDirectory } = require('../application/use-cases/interpretNewPostFromSavedThreadDirectory');
@@ -65,7 +66,8 @@ function createThreadTraceRuntime(options) {
     defaultInputDir: safeOptions.defaultInputDir,
     storeDir: safeOptions.storeDir,
     storageMode: safeOptions.storageMode,
-    sourceTaskMode: safeOptions.sourceTaskMode
+    sourceTaskMode: safeOptions.sourceTaskMode,
+    connectorModules: safeOptions.connectorModules
   });
   const defaults = {
     defaultForum: runtimeConfig.defaultForum,
@@ -76,6 +78,13 @@ function createThreadTraceRuntime(options) {
   let postgresClient = safeOptions.postgresClient;
   const forumAdapterRegistry = safeOptions.forumAdapterRegistry || createDefaultForumAdapterRegistry();
   const sourceIngestHandlerRegistry = safeOptions.sourceIngestHandlerRegistry || createDefaultSourceIngestHandlerRegistry();
+  const connectorModules = loadConnectorModules({
+    modulePaths: connectorModulePaths(safeOptions, runtimeConfig),
+    cwd: safeOptions.cwd,
+    forumAdapterRegistry,
+    sourceIngestHandlerRegistry,
+    runtimeConfig
+  });
   const createRetrievalIndexFor = function (storeDir) {
     return createFileTextRetrievalIndex({
       indexFile: path.join(resolveStoreDir(defaults, storeDir), 'retrieval', 'documents.json')
@@ -109,6 +118,7 @@ function createThreadTraceRuntime(options) {
 
   return {
     defaults,
+    connectorModules,
 
     getAdapter(forum) {
       return forumAdapterRegistry.get(forum || defaults.defaultForum);
@@ -783,6 +793,11 @@ function resolveStoreDir(defaults, storeDir) {
 function resolveSourceRunStaleAfterMs(request, config) {
   if (request && request.sourceRunStaleAfterMs !== undefined) return request.sourceRunStaleAfterMs;
   return config && config.workers ? config.workers.sourceRunStaleAfterMs : undefined;
+}
+
+function connectorModulePaths(options, config) {
+  if (Array.isArray(options.connectorModules)) return options.connectorModules;
+  return (config.connectors && config.connectors.modules) || [];
 }
 
 async function inspectRuntimeResources(config, getPostgresClient) {

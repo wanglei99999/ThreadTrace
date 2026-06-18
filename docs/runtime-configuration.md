@@ -46,6 +46,28 @@ Use `THREADTRACE_SOURCE_TASK_MODE=insight-pipeline` when background workers shou
 | --- | --- | --- |
 | `THREADTRACE_WEBHOOK_URL` |  | Default webhook URL for notification dispatch. |
 
+## Connectors
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `THREADTRACE_CONNECTOR_MODULES` |  | External connector module paths, separated by the platform path delimiter (`;` on Windows, `:` on Linux/macOS). |
+
+Connector modules are loaded by the runtime composition root before HTTP, CLI, or workers use adapter and source-handler registries. A module can export `forumAdapters`, `sourceIngestHandlers`, or a `register(context)` function:
+
+```js
+module.exports = {
+  forumAdapters: [customForumAdapter],
+  sourceIngestHandlers: [customSourceHandler]
+};
+```
+
+```js
+module.exports.register = function (context) {
+  context.registerForumAdapter(customForumAdapter);
+  context.registerSourceIngestHandler(customSourceHandler);
+};
+```
+
 ## PostgreSQL
 
 PostgreSQL config is still implemented in `src/infrastructure/postgres/postgresConfig.js`; the runtime config selects `THREADTRACE_STORAGE=postgres`, while the PostgreSQL adapter reads:

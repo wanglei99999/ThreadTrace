@@ -6,6 +6,7 @@ async function getRuntimeDiagnostics(options) {
   const llm = config.llm || {};
   const workers = config.workers || {};
   const notifications = config.notifications || {};
+  const connectors = config.connectors || {};
   const resources = safeOptions.inspectResources
     ? await safeOptions.inspectResources(config)
     : undefined;
@@ -37,6 +38,10 @@ async function getRuntimeDiagnostics(options) {
       },
       notifications: {
         webhookConfigured: Boolean(notifications.webhookUrl)
+      },
+      connectors: {
+        moduleCount: (connectors.modules || []).length,
+        modules: connectors.modules || []
       }
     },
     resources,
@@ -51,7 +56,8 @@ function buildRuntimeDiagnosticChecks(config) {
   const checks = [
     check('config.storageMode', safeConfig.storageMode ? 'ok' : 'fail', safeConfig.storageMode || 'missing', 'Storage mode is configured.'),
     check('config.storeDir', safeConfig.storeDir ? 'ok' : 'fail', safeConfig.storeDir || 'missing', 'Store directory is configured.'),
-    check('config.sourceTaskMode', workers.sourceTaskMode ? 'ok' : 'fail', workers.sourceTaskMode || 'missing', 'Worker source task mode is configured.')
+    check('config.sourceTaskMode', workers.sourceTaskMode ? 'ok' : 'fail', workers.sourceTaskMode || 'missing', 'Worker source task mode is configured.'),
+    check('config.connectorModules', 'ok', ((safeConfig.connectors && safeConfig.connectors.modules) || []).length, 'External connector module configuration is parsed.')
   ];
 
   if (isRemoteLlmProvider(llm.provider)) {

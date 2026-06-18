@@ -61,6 +61,9 @@ function createThreadTraceConfig(options) {
     },
     notifications: {
       webhookUrl: firstValue(safeOptions.webhookUrl, env.THREADTRACE_WEBHOOK_URL, undefined)
+    },
+    connectors: {
+      modules: connectorModules(cwd, firstValue(safeOptions.connectorModules, env.THREADTRACE_CONNECTOR_MODULES, undefined))
     }
   };
 }
@@ -90,6 +93,17 @@ function resolvePath(cwd, value) {
   return path.resolve(cwd, String(value));
 }
 
+function connectorModules(cwd, value) {
+  if (!value) return [];
+  const items = Array.isArray(value)
+    ? value
+    : String(value).split(path.delimiter);
+  return items
+    .map(function (item) { return String(item || '').trim(); })
+    .filter(Boolean)
+    .map(function (item) { return resolvePath(cwd, item); });
+}
+
 function numberWithDefault(value, defaultValue) {
   const parsed = numberOrUndefined(value);
   return parsed === undefined ? defaultValue : parsed;
@@ -108,6 +122,7 @@ module.exports = {
   SOURCE_TASK_MODES,
   STORAGE_MODES,
   createThreadTraceConfig,
+  connectorModules,
   normalizeSourceTaskMode,
   normalizeStorageMode
 };

@@ -42,6 +42,15 @@ createThreadTraceRuntime({
 });
 ```
 
+Production-style connector packages can also be loaded by path:
+
+```powershell
+$env:THREADTRACE_CONNECTOR_MODULES="D:\connectors\custom-forum.cjs"
+node src/presentation/cli/threadtrace.js connector-readiness
+```
+
+Connector modules may export `sourceIngestHandlers`, `forumAdapters`, or a `register(context)` function that calls `context.registerSourceIngestHandler(...)` and `context.registerForumAdapter(...)`.
+
 Runtime and HTTP discovery:
 
 ```text

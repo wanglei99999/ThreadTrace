@@ -17,6 +17,8 @@ const runtime = createThreadTraceRuntime({
 });
 ```
 
+For deployable extension packages, set `THREADTRACE_CONNECTOR_MODULES` to one or more module paths. Each module can register forum adapters and source ingest handlers without changing ThreadTrace core code.
+
 ## Adapter Contract
 
 ```text

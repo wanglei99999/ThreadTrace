@@ -30,7 +30,8 @@ test('threadtrace config resolves defaults and environment overrides', function 
       THREADTRACE_EVENT_WORKER_INTERVAL_MS: '3000',
       THREADTRACE_WORKER_LEASE_TTL_MS: '4000',
       THREADTRACE_SOURCE_RUN_STALE_AFTER_MS: '5000',
-      THREADTRACE_WEBHOOK_URL: 'https://example.test/hook'
+      THREADTRACE_WEBHOOK_URL: 'https://example.test/hook',
+      THREADTRACE_CONNECTOR_MODULES: ['connectors/a.cjs', 'connectors/b.cjs'].join(path.delimiter)
     }
   });
 
@@ -50,6 +51,10 @@ test('threadtrace config resolves defaults and environment overrides', function 
   assert.equal(config.workers.leaseTtlMs, 4000);
   assert.equal(config.workers.sourceRunStaleAfterMs, 5000);
   assert.equal(config.notifications.webhookUrl, 'https://example.test/hook');
+  assert.deepEqual(config.connectors.modules, [
+    path.join(cwd, 'connectors', 'a.cjs'),
+    path.join(cwd, 'connectors', 'b.cjs')
+  ]);
 });
 
 test('threadtrace config validates known modes', function () {
