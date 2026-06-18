@@ -1,7 +1,7 @@
 'use strict';
 
 const path = require('path');
-const { getForumAdapter, listForumAdapters } = require('../infrastructure/forum-adapters/registry');
+const { createDefaultForumAdapterRegistry } = require('../infrastructure/forum-adapters/registry');
 const { analyzeSavedThreadDirectory } = require('../application/use-cases/analyzeSavedThreadDirectory');
 const { interpretNewPostFromSavedThreadDirectory } = require('../application/use-cases/interpretNewPostFromSavedThreadDirectory');
 const { ingestSavedThreadDirectory } = require('../application/use-cases/ingestSavedThreadDirectory');
@@ -46,6 +46,7 @@ function createThreadTraceRuntime(options) {
     storageMode: normalizeStorageMode(safeOptions.storageMode || process.env.THREADTRACE_STORAGE || 'file')
   };
   let postgresClient = safeOptions.postgresClient;
+  const forumAdapterRegistry = safeOptions.forumAdapterRegistry || createDefaultForumAdapterRegistry();
   const sourceIngestHandlerRegistry = safeOptions.sourceIngestHandlerRegistry || createDefaultSourceIngestHandlerRegistry();
   const createRetrievalIndexFor = function (storeDir) {
     return createFileTextRetrievalIndex({
@@ -74,11 +75,11 @@ function createThreadTraceRuntime(options) {
     defaults,
 
     getAdapter(forum) {
-      return getForumAdapter(forum || defaults.defaultForum);
+      return forumAdapterRegistry.get(forum || defaults.defaultForum);
     },
 
     listAdapters() {
-      return listForumAdapters();
+      return forumAdapterRegistry.list();
     },
 
     listSourceIngestHandlers() {
@@ -96,7 +97,7 @@ function createThreadTraceRuntime(options) {
     analyzeDirectory(request) {
       const safeRequest = request || {};
       return analyzeSavedThreadDirectory({
-        adapter: getForumAdapter(safeRequest.forum || defaults.defaultForum),
+        adapter: forumAdapterRegistry.get(safeRequest.forum || defaults.defaultForum),
         inputDir: safeRequest.inputDir || defaults.defaultInputDir
       });
     },
@@ -104,7 +105,7 @@ function createThreadTraceRuntime(options) {
     async enrichDirectory(request) {
       const safeRequest = request || {};
       const result = analyzeSavedThreadDirectory({
-        adapter: getForumAdapter(safeRequest.forum || defaults.defaultForum),
+        adapter: forumAdapterRegistry.get(safeRequest.forum || defaults.defaultForum),
         inputDir: safeRequest.inputDir || defaults.defaultInputDir
       });
       const enrichedReport = await enrichAnalysisReportWithLlm({
@@ -127,7 +128,7 @@ function createThreadTraceRuntime(options) {
     interpretText(request) {
       const safeRequest = request || {};
       return interpretNewPostFromSavedThreadDirectory({
-        adapter: getForumAdapter(safeRequest.forum || defaults.defaultForum),
+        adapter: forumAdapterRegistry.get(safeRequest.forum || defaults.defaultForum),
         inputDir: safeRequest.inputDir || defaults.defaultInputDir,
         authorId: safeRequest.authorId,
         author: safeRequest.author,
@@ -140,7 +141,7 @@ function createThreadTraceRuntime(options) {
       const safeRequest = request || {};
       const repositories = createRepositoriesFor(safeRequest.storeDir);
       return ingestSavedThreadDirectory({
-        adapter: getForumAdapter(safeRequest.forum || defaults.defaultForum),
+        adapter: forumAdapterRegistry.get(safeRequest.forum || defaults.defaultForum),
         inputDir: safeRequest.inputDir || defaults.defaultInputDir,
         threadRepository: repositories.threadRepository,
         reportRepository: repositories.reportRepository
@@ -152,7 +153,7 @@ function createThreadTraceRuntime(options) {
       const repositories = createRepositoriesFor(safeRequest.storeDir);
       return runIngestSavedThreadDirectoryTask({
         forum: safeRequest.forum || defaults.defaultForum,
-        adapter: getForumAdapter(safeRequest.forum || defaults.defaultForum),
+        adapter: forumAdapterRegistry.get(safeRequest.forum || defaults.defaultForum),
         inputDir: safeRequest.inputDir || defaults.defaultInputDir,
         threadRepository: repositories.threadRepository,
         reportRepository: repositories.reportRepository,
@@ -243,7 +244,7 @@ function createThreadTraceRuntime(options) {
       return runTrackedSourceIngestTask({
         sourceId: safeRequest.sourceId,
         sourceRepository: repositories.sourceRepository,
-        getAdapter: getForumAdapter,
+        getAdapter: forumAdapterRegistry.get,
         crawler: safeOptions.crawler || createHttpForumCrawler(safeOptions.crawlerOptions),
         threadRepository: repositories.threadRepository,
         reportRepository: repositories.reportRepository,
@@ -267,7 +268,7 @@ function createThreadTraceRuntime(options) {
         crawler: safeOptions.crawler || createHttpForumCrawler(safeOptions.crawlerOptions),
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
         limit: safeRequest.limit || 50,
-        getAdapter: getForumAdapter,
+        getAdapter: forumAdapterRegistry.get,
         sourceIngestHandlerRegistry
       });
     },
@@ -286,7 +287,7 @@ function createThreadTraceRuntime(options) {
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
         limit: safeRequest.limit || 50,
         now: safeRequest.now,
-        getAdapter: getForumAdapter,
+        getAdapter: forumAdapterRegistry.get,
         sourceIngestHandlerRegistry
       });
     },
@@ -294,7 +295,7 @@ function createThreadTraceRuntime(options) {
     async indexDirectory(request) {
       const safeRequest = request || {};
       return indexSavedThreadDirectory({
-        adapter: getForumAdapter(safeRequest.forum || defaults.defaultForum),
+        adapter: forumAdapterRegistry.get(safeRequest.forum || defaults.defaultForum),
         inputDir: safeRequest.inputDir || defaults.defaultInputDir,
         retrievalIndex: createRetrievalIndexFor(safeRequest.storeDir)
       });
@@ -348,7 +349,7 @@ function createThreadTraceRuntime(options) {
       const repositories = createRepositoriesFor(safeRequest.storeDir);
       const sourceKey = safeRequest.sourceKey || safeRequest.forum || defaults.defaultForum;
       return runIngestRawThreadPageTask({
-        adapter: getForumAdapter(sourceKey),
+        adapter: forumAdapterRegistry.get(sourceKey),
         rawThreadPageRepository: repositories.rawThreadPageRepository,
         threadRepository: repositories.threadRepository,
         reportRepository: repositories.reportRepository,
