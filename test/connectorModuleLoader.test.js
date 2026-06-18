@@ -82,6 +82,62 @@ test('threadtrace config parses connector module paths', function () {
   ]);
 });
 
+test('runtime validates connector module files before startup configuration', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-connector-module-validation-'));
+  const goodModulePath = path.join(tempDir, 'goodConnector.cjs');
+  const emptyModulePath = path.join(tempDir, 'emptyConnector.cjs');
+  const brokenModulePath = path.join(tempDir, 'brokenConnector.cjs');
+  await fs.writeFile(goodModulePath, [
+    "'use strict';",
+    "module.exports = {",
+    "  sourceIngestHandlers: [{",
+    "    sourceType: 'external-validate-feed',",
+    "    requiresAdapter: false,",
+    "    description: 'External validation feed.',",
+    "    locationSchema: { required: ['feedUrl'], properties: { feedUrl: { type: 'string' } } },",
+    "    async run() { throw new Error('not used in this test'); }",
+    "  }]",
+    "};",
+    ""
+  ].join('\n'), 'utf8');
+  await fs.writeFile(emptyModulePath, [
+    "'use strict';",
+    "module.exports = {};",
+    ""
+  ].join('\n'), 'utf8');
+  await fs.writeFile(brokenModulePath, [
+    "'use strict';",
+    "throw new Error('validation boom');",
+    ""
+  ].join('\n'), 'utf8');
+
+  const runtime = createThreadTraceRuntime({
+    storeDir: path.join(tempDir, 'store')
+  });
+  const good = runtime.validateConnectorModule({
+    modulePath: goodModulePath,
+    now: '2026-06-19T10:00:00.000Z'
+  });
+  const empty = runtime.validateConnectorModule({
+    modulePath: emptyModulePath,
+    now: '2026-06-19T10:00:00.000Z'
+  });
+  const broken = runtime.validateConnectorModule({
+    modulePath: brokenModulePath,
+    now: '2026-06-19T10:00:00.000Z'
+  });
+
+  assert.equal(good.valid, true);
+  assert.equal(good.status, 'ok');
+  assert.equal(good.modules[0].sourceIngestHandlers[0], 'external-validate-feed');
+  assert.equal(empty.valid, false);
+  assert.equal(empty.checks.find(function (check) {
+    return check.key === 'connectorModule.registrations';
+  }).status, 'fail');
+  assert.equal(broken.valid, false);
+  assert.match(broken.errors[0].message, /validation boom/);
+});
+
 test('runtime reports connector module load failures without blocking startup', async function () {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-broken-connector-module-'));
   const modulePath = path.join(tempDir, 'brokenConnector.cjs');

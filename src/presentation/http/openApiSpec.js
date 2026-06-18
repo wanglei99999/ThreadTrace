@@ -299,6 +299,37 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/connectors/modules/validate': {
+        post: {
+          summary: 'Validate that a connector module file can load and register adapters or handlers',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    modulePath: { type: 'string', example: 'D:/connectors/custom-forum.cjs' },
+                    now: { type: 'string', example: '2026-06-18T10:00:00.000Z' }
+                  },
+                  required: ['modulePath']
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Connector module validation passed'
+            },
+            503: {
+              description: 'Connector module validation failed'
+            },
+            400: {
+              $ref: '#/components/responses/BadRequest'
+            }
+          }
+        }
+      },
       '/api/operations/overview': {
         get: {
           summary: 'Get operational overview across sources, tasks, events, and raw pages',

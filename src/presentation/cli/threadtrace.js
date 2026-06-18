@@ -773,6 +773,23 @@ function main(argv) {
     return;
   }
 
+  if (command === 'validate-connector-module') {
+    const result = runtime.validateConnectorModule({
+      modulePath: options.modulePath || options.inputFile || options.input,
+      now: options.now
+    });
+    console.log('Connector module validation: valid=' + result.valid + ', status=' + result.status);
+    console.log('Module: ' + (result.modulePath || 'missing'));
+    console.log('Registrations: modules=' + result.modules.length + ', errors=' + result.errors.length);
+    result.checks.forEach(function (check) {
+      console.log(check.status + '\t' + check.key + '\t' + check.summary + '\t' + check.value);
+    });
+    if (!result.valid) {
+      process.exitCode = 2;
+    }
+    return;
+  }
+
   if (command === 'connector-readiness') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.getConnectorReadiness({
@@ -1111,6 +1128,9 @@ function parseArgs(args) {
     } else if (item === '--input-file') {
       options.inputFile = args[index + 1];
       index += 1;
+    } else if (item === '--module-path') {
+      options.modulePath = args[index + 1];
+      index += 1;
     } else if (item === '--enabled') {
       options.enabled = args[index + 1];
       index += 1;
@@ -1263,6 +1283,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js connector-catalog [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js thread-snapshot-contract');
   console.log('  node src/presentation/cli/threadtrace.js connector-module-contract');
+  console.log('  node src/presentation/cli/threadtrace.js validate-connector-module --module-path file [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js connector-readiness [--forum nga] [--enabled true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js notification-diagnostics [--channel file|webhook] [--webhook-url url] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-source-task --source-id id [--trace-id id] [--source-run-stale-after-ms ms] [--store-dir dir]');

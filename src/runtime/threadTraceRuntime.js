@@ -39,6 +39,7 @@ const { createDefaultSourceIngestHandlerRegistry } = require('../application/sou
 const { migrateStoreRecords } = require('../application/use-cases/migrateStoreRecords');
 const { runIngestRawThreadPageTask } = require('../application/use-cases/runIngestRawThreadPageTask');
 const { validateNormalizedThreadJsonFile } = require('../application/use-cases/validateNormalizedThreadJsonFile');
+const { validateConnectorModuleLoad } = require('../application/use-cases/validateConnectorModuleLoad');
 const { indexSavedThreadDirectory } = require('../application/use-cases/indexSavedThreadDirectory');
 const { searchEvidence } = require('../application/use-cases/searchEvidence');
 const { createApplicationError } = require('../application/errors/applicationError');
@@ -154,6 +155,26 @@ function createThreadTraceRuntime(options) {
 
     getConnectorModuleContract() {
       return getConnectorModuleContract();
+    },
+
+    validateConnectorModule(request) {
+      const safeRequest = request || {};
+      const modulePath = safeRequest.modulePath || safeRequest.path;
+      const resolvedModulePath = modulePath ? path.resolve(safeOptions.cwd || process.cwd(), modulePath) : undefined;
+      const report = modulePath
+        ? loadConnectorModulesReport({
+          modulePaths: [modulePath],
+          cwd: safeOptions.cwd,
+          forumAdapterRegistry: createDefaultForumAdapterRegistry(),
+          sourceIngestHandlerRegistry: createDefaultSourceIngestHandlerRegistry(),
+          runtimeConfig
+        })
+        : { modules: [], errors: [] };
+      return validateConnectorModuleLoad({
+        modulePath: resolvedModulePath,
+        report,
+        now: safeRequest.now
+      });
     },
 
     getSourceConnectorCatalog(request) {

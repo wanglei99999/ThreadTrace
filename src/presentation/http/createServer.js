@@ -121,6 +121,20 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/connectors/modules/validate') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    if (!body.modulePath && !body.path) {
+      writeError(response, 400, 'connector_module_path_required', 'POST /api/connectors/modules/validate requires modulePath.');
+      return;
+    }
+    const result = context.runtime.validateConnectorModule({
+      modulePath: body.modulePath || body.path,
+      now: body.now
+    });
+    writeJson(response, result.status === 'fail' ? 503 : 200, result);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/openapi.json') {
     writeJson(response, 200, createOpenApiSpec());
     return;

@@ -76,6 +76,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/contracts/connector-module']);
     assert.ok(openApi.paths['/api/connectors/catalog']);
     assert.ok(openApi.paths['/api/connectors/readiness']);
+    assert.ok(openApi.paths['/api/connectors/modules/validate']);
     assert.ok(openApi.paths['/api/sources/onboarding/preflight']);
     assert.ok(openApi.paths['/api/runtime/diagnostics']);
     assert.ok(openApi.paths['/api/sources/validate']);
@@ -356,6 +357,59 @@ test('http server exposes operations runbook API', async function () {
     assert.equal(runbook.generatedAt, '2026-06-19T10:00:00.000Z');
     assert.equal(runbook.actionCount, 0);
     assert.ok(openApi.paths['/api/operations/runbook']);
+  } finally {
+    await close(server);
+  }
+});
+
+test('http server validates connector module files', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-http-connector-module-validation-'));
+  const goodModulePath = path.join(tempDir, 'goodConnector.cjs');
+  const brokenModulePath = path.join(tempDir, 'brokenConnector.cjs');
+  await fs.writeFile(goodModulePath, [
+    "'use strict';",
+    "module.exports = {",
+    "  sourceIngestHandlers: [{",
+    "    sourceType: 'http-external-feed',",
+    "    requiresAdapter: false,",
+    "    description: 'HTTP external feed.',",
+    "    locationSchema: { required: ['feedUrl'], properties: { feedUrl: { type: 'string' } } },",
+    "    async run() { throw new Error('not used in this test'); }",
+    "  }]",
+    "};",
+    ""
+  ].join('\n'), 'utf8');
+  await fs.writeFile(brokenModulePath, [
+    "'use strict';",
+    "throw new Error('http validation boom');",
+    ""
+  ].join('\n'), 'utf8');
+
+  const server = createThreadTraceServer({
+    defaultInputDir: path.resolve(__dirname, '..', 'example')
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const good = await postJson(baseUrl + '/api/connectors/modules/validate', {
+      modulePath: goodModulePath,
+      now: '2026-06-19T10:00:00.000Z'
+    });
+    const broken = await postJsonWithStatus(baseUrl + '/api/connectors/modules/validate', {
+      modulePath: brokenModulePath,
+      now: '2026-06-19T10:00:00.000Z'
+    }, 503);
+    const missingPath = await postJsonWithStatus(baseUrl + '/api/connectors/modules/validate', {
+      now: '2026-06-19T10:00:00.000Z'
+    }, 400);
+
+    assert.equal(good.valid, true);
+    assert.equal(good.modules[0].sourceIngestHandlers[0], 'http-external-feed');
+    assert.equal(broken.valid, false);
+    assert.match(broken.errors[0].message, /http validation boom/);
+    assert.equal(missingPath.error.code, 'connector_module_path_required');
   } finally {
     await close(server);
   }

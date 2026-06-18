@@ -62,12 +62,28 @@ node src/presentation/cli/threadtrace.js connector-module-contract
 GET /api/contracts/connector-module
 ```
 
+Validate a connector module file before adding it to `THREADTRACE_CONNECTOR_MODULES`:
+
+```powershell
+node src/presentation/cli/threadtrace.js validate-connector-module --module-path D:\connectors\custom-forum.cjs
+```
+
+```http
+POST /api/connectors/modules/validate
+content-type: application/json
+
+{
+  "modulePath": "D:/connectors/custom-forum.cjs"
+}
+```
+
 Runtime and HTTP discovery:
 
 ```text
 runtime.listSourceIngestHandlers()
 GET /api/source-ingest-handlers
 GET /api/contracts/connector-module
+POST /api/connectors/modules/validate
 GET /api/connectors/catalog
 GET /api/connectors/readiness
 POST /api/sources/validate
@@ -90,11 +106,12 @@ When the runtime registers a tracked source, it validates the source type and re
 Use the same flow for built-in forums and future connectors:
 
 1. Add or inject a `SourceIngestHandler`.
-2. Confirm it appears in `GET /api/connectors/catalog`.
-3. Check connector readiness with `GET /api/connectors/readiness`.
-4. Validate a draft source with `POST /api/sources/validate` or `node src/presentation/cli/threadtrace.js validate-source`.
-5. Register the source with `POST /api/sources` only after the validation report is acceptable for the rollout stage.
-6. Confirm saved-source readiness with `GET /api/sources/diagnostics`.
+2. For external modules, run `validate-connector-module` before setting `THREADTRACE_CONNECTOR_MODULES`.
+3. Confirm it appears in `GET /api/connectors/catalog`.
+4. Check connector readiness with `GET /api/connectors/readiness`.
+5. Validate a draft source with `POST /api/sources/validate` or `node src/presentation/cli/threadtrace.js validate-source`.
+6. Register the source with `POST /api/sources` only after the validation report is acceptable for the rollout stage.
+7. Confirm saved-source readiness with `GET /api/sources/diagnostics`.
 
 The validation report separates `valid` from operational readiness. A staged unknown source can be `valid=true` with `allowUnknownSourceType=true`, while diagnostics still report `status=fail` until a handler exists. This lets operators plan migrations without making a source look runnable too early.
 
