@@ -507,6 +507,16 @@ test('http server can run and list ingest tasks', async function () {
       body: '{}'
     });
     const taskResult = await taskResponse.json();
+    const replayResponse = await fetch(baseUrl + '/api/tasks/ingest-directory', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-request-id': 'http-task-request-2',
+        'idempotency-key': 'http-task-idem-1'
+      },
+      body: '{}'
+    });
+    const replayResult = await replayResponse.json();
     const tasksResult = await getJson(baseUrl + '/api/tasks');
     const tasksByRequestId = await getJson(baseUrl + '/api/tasks?requestId=http-task-request-1');
     const tasksByIdempotencyKey = await getJson(baseUrl + '/api/tasks?idempotencyKey=http-task-idem-1');
@@ -518,6 +528,10 @@ test('http server can run and list ingest tasks', async function () {
     assert.equal(taskResult.task.output.sourceThreadId, '45974302');
     assert.equal(taskResult.task.input._trace.requestId, 'http-task-request-1');
     assert.equal(taskResult.task.input._trace.idempotencyKey, 'http-task-idem-1');
+    assert.equal(replayResponse.status, 200);
+    assert.equal(replayResult.task.id, taskResult.task.id);
+    assert.equal(replayResult.idempotency.reused, true);
+    assert.equal(replayResult.report.thread.sourceThreadId, '45974302');
     assert.equal(tasksResult.tasks.length, 1);
     assert.equal(tasksResult.tasks[0].id, taskResult.task.id);
     assert.equal(tasksResult.tasks[0].input._trace.requestId, 'http-task-request-1');

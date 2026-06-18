@@ -12,6 +12,10 @@ const {
   markTaskFailed,
   markTaskRunning
 } = require('../jobs/taskRecordFactory');
+const {
+  buildIdempotentReplay,
+  findReusableCompletedTask
+} = require('../jobs/taskIdempotency');
 
 async function runIngestRawThreadPageTask(options) {
   const safeOptions = options || {};
@@ -29,6 +33,16 @@ async function runIngestRawThreadPageTask(options) {
     sourceKey: safeOptions.sourceKey,
     contentSha1: safeOptions.contentSha1
   }, safeOptions);
+  const reusableTask = await findReusableCompletedTask(taskRepository, task);
+  if (reusableTask) {
+    return buildReplayResult({
+      task: reusableTask,
+      rawThreadPageRepository,
+      threadRepository,
+      reportRepository
+    });
+  }
+
   await taskRepository.saveTask(task);
 
   task = markTaskRunning(task);
@@ -58,7 +72,8 @@ async function runIngestRawThreadPageTask(options) {
       sourceThreadId: threadSnapshot.sourceThreadId,
       title: threadSnapshot.title,
       postCount: threadSnapshot.posts.length,
-      rawPageHash: rawPage.contentSha1
+      rawPageHash: rawPage.contentSha1,
+      reportType: report.reportType
     });
     await taskRepository.saveTask(task);
 
@@ -73,6 +88,39 @@ async function runIngestRawThreadPageTask(options) {
     await taskRepository.saveTask(task);
     throw error;
   }
+}
+
+async function buildReplayResult(options) {
+  const task = options.task;
+  const input = task.input || {};
+  const output = task.output || {};
+  const rawPage = input.sourceKey && input.contentSha1
+    ? await options.rawThreadPageRepository.findRawThreadPageByHash({
+      sourceKey: input.sourceKey,
+      contentSha1: input.contentSha1
+    })
+    : undefined;
+  const threadSnapshot = output.sourceKey && output.sourceThreadId
+    ? await options.threadRepository.findSnapshot({
+      sourceKey: output.sourceKey,
+      sourceThreadId: output.sourceThreadId
+    })
+    : undefined;
+  const reports = output.sourceKey && output.sourceThreadId
+    ? await options.reportRepository.findReports({
+      sourceKey: output.sourceKey,
+      sourceThreadId: output.sourceThreadId,
+      reportType: output.reportType || 'basic-history'
+    })
+    : [];
+
+  return {
+    task,
+    rawPage,
+    threadSnapshot,
+    report: reports[0],
+    idempotency: buildIdempotentReplay(task)
+  };
 }
 
 module.exports = {

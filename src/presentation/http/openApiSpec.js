@@ -170,7 +170,7 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Completed task and report'
+              description: 'Completed task and report; includes idempotency replay metadata when a completed task is reused'
             }
           }
         }
@@ -251,7 +251,7 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Completed semantic enrichment task'
+              description: 'Completed semantic enrichment task; includes idempotency replay metadata when a completed task is reused'
             },
             400: {
               description: 'Invalid request'
@@ -513,7 +513,7 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Completed raw page replay task'
+              description: 'Completed raw page replay task; includes idempotency replay metadata when a completed task is reused'
             },
             400: {
               description: 'Invalid request'

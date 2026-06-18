@@ -24,7 +24,15 @@ Task records may include:
 
 ## Current Behavior
 
-The metadata is observational. It does not yet deduplicate task execution. That is intentional: persisted `_trace.idempotencyKey` gives us a compatible migration path toward real idempotent command handling without changing the PostgreSQL task schema.
+For explicit command-style tasks with stable inputs, ThreadTrace uses `_trace.idempotencyKey` to replay a matching completed task instead of creating and executing a duplicate task. The replay check compares the task type, idempotency key, and task input with trace metadata removed.
+
+The first replay-enabled use cases are:
+
+- `ingest-saved-thread-directory`
+- `ingest-raw-thread-page`
+- `semantic-enrichment`
+
+Dynamic batch and scheduler-driven tasks still treat idempotency metadata as observational because their effective inputs depend on source state, due times, and worker leases.
 
 PostgreSQL deployments should apply `docs/postgresql-schema.sql`; it includes expression indexes for `requestId`, `traceId`, and `idempotencyKey` task lookups. Runtime diagnostics report missing baseline indexes as `resources.postgresIndexes`.
 
@@ -35,6 +43,7 @@ PostgreSQL deployments should apply `docs/postgresql-schema.sql`; it includes ex
 - Due-source and operations workers use the `workerRun.id` as the default `traceId` for source tasks, unless the caller supplied an explicit trace id.
 - CLI source task commands accept `--trace-id` for operator-driven runs.
 - New task-producing use cases should call `createTaskRecord(type, input, options)` with the original request options.
+- Replay-enabled use cases should call `findReusableCompletedTask(taskRepository, task)` before saving a new queued task.
 
 ## Querying Tasks
 

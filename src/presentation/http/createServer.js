@@ -155,7 +155,8 @@ async function routeRequest(request, response, context) {
     });
     writeJson(response, 200, {
       task: result.task,
-      report: result.report
+      report: result.report,
+      idempotency: result.idempotency
     });
     return;
   }
@@ -219,7 +220,8 @@ async function routeRequest(request, response, context) {
     });
     writeJson(response, 200, {
       task: result.task,
-      report: result.report
+      report: result.report,
+      idempotency: result.idempotency
     });
     return;
   }
@@ -372,7 +374,8 @@ async function routeRequest(request, response, context) {
     writeJson(response, 200, {
       task: result.task,
       rawPage: result.rawPage,
-      report: result.report
+      report: result.report,
+      idempotency: result.idempotency
     });
     return;
   }

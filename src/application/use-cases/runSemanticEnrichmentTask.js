@@ -9,6 +9,10 @@ const {
   markTaskFailed,
   markTaskRunning
 } = require('../jobs/taskRecordFactory');
+const {
+  buildIdempotentReplay,
+  findReusableCompletedTask
+} = require('../jobs/taskIdempotency');
 const { enrichAnalysisReportWithLlm } = require('./enrichAnalysisReportWithLlm');
 
 async function runSemanticEnrichmentTask(options) {
@@ -30,6 +34,14 @@ async function runSemanticEnrichmentTask(options) {
     baseReportType,
     provider: safeOptions.providerKey
   }, safeOptions);
+  const reusableTask = await findReusableCompletedTask(taskRepository, task);
+  if (reusableTask) {
+    return buildReplayResult({
+      task: reusableTask,
+      reportRepository
+    });
+  }
+
   await taskRepository.saveTask(task);
 
   task = markTaskRunning(task);
@@ -80,6 +92,33 @@ async function runSemanticEnrichmentTask(options) {
     await taskRepository.saveTask(task);
     throw error;
   }
+}
+
+async function buildReplayResult(options) {
+  const task = options.task;
+  const input = task.input || {};
+  const output = task.output || {};
+  const baseReports = input.sourceKey && input.sourceThreadId
+    ? await options.reportRepository.findReports({
+      sourceKey: input.sourceKey,
+      sourceThreadId: input.sourceThreadId,
+      reportType: input.baseReportType || 'basic-history'
+    })
+    : [];
+  const semanticReports = output.sourceKey && output.sourceThreadId
+    ? await options.reportRepository.findReports({
+      sourceKey: output.sourceKey,
+      sourceThreadId: output.sourceThreadId,
+      reportType: output.reportType || 'semantic-enrichment'
+    })
+    : [];
+
+  return {
+    task,
+    baseReport: baseReports[0],
+    report: semanticReports[0],
+    idempotency: buildIdempotentReplay(task)
+  };
 }
 
 module.exports = {
