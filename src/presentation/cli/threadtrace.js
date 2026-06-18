@@ -307,6 +307,7 @@ function main(argv) {
       console.log('Store dir: ' + diagnostics.configuration.storeDir);
       console.log('LLM provider: ' + diagnostics.configuration.llm.provider);
       console.log('Source task mode: ' + diagnostics.configuration.workers.sourceTaskMode);
+      console.log('Source run stale after ms: ' + diagnostics.configuration.workers.sourceRunStaleAfterMs);
       diagnostics.checks.forEach(function (check) {
         console.log(check.status + '\t' + check.key + '\t' + check.summary);
       });

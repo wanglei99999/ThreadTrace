@@ -18,6 +18,7 @@ async function main(argv) {
     storeDir: options.storeDir,
     sourceTaskMode: options.sourceTaskMode,
     llmProvider: options.provider,
+    sourceRunStaleAfterMs: options.sourceRunStaleAfterMs,
     operationsWorkerIntervalMs: options.intervalMs,
     workerLeaseTtlMs: options.leaseTtlMs
   });
@@ -75,6 +76,7 @@ function buildRequest(options, storeDir, config) {
       baseReportType: options.baseReportType,
       semanticEnrichmentEnabled: parseOptionalBoolean(options.semanticEnrichmentEnabled),
       semanticSkipIfUnchanged: parseOptionalBoolean(options.semanticSkipIfUnchanged),
+      sourceRunStaleAfterMs: config.workers.sourceRunStaleAfterMs,
       storeDir
     },
     events: {
@@ -159,6 +161,9 @@ function parseArgs(args) {
       index += 1;
     } else if (item === '--lease-ttl-ms') {
       options.leaseTtlMs = args[index + 1];
+      index += 1;
+    } else if (item === '--source-run-stale-after-ms') {
+      options.sourceRunStaleAfterMs = args[index + 1];
       index += 1;
     }
   }

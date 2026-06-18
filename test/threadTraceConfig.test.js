@@ -29,6 +29,7 @@ test('threadtrace config resolves defaults and environment overrides', function 
       THREADTRACE_OPERATIONS_WORKER_INTERVAL_MS: '2000',
       THREADTRACE_EVENT_WORKER_INTERVAL_MS: '3000',
       THREADTRACE_WORKER_LEASE_TTL_MS: '4000',
+      THREADTRACE_SOURCE_RUN_STALE_AFTER_MS: '5000',
       THREADTRACE_WEBHOOK_URL: 'https://example.test/hook'
     }
   });
@@ -47,6 +48,7 @@ test('threadtrace config resolves defaults and environment overrides', function 
   assert.equal(config.workers.operationsIntervalMs, 2000);
   assert.equal(config.workers.eventIntervalMs, 3000);
   assert.equal(config.workers.leaseTtlMs, 4000);
+  assert.equal(config.workers.sourceRunStaleAfterMs, 5000);
   assert.equal(config.notifications.webhookUrl, 'https://example.test/hook');
 });
 

@@ -80,6 +80,16 @@ test('stale source run helper treats invalid timestamps as recoverable', functio
   }), true);
 });
 
+test('stale source run helper respects explicit zero stale window', function () {
+  assert.equal(isStaleSourceRun({
+    status: 'running',
+    lastStartedAt: '2026-06-19T10:00:00.000Z'
+  }, {
+    now: '2026-06-19T10:00:00.001Z',
+    staleAfterMs: 0
+  }), true);
+});
+
 test('enabled source batch records active duplicate runs as source failures', async function () {
   let handlerCalls = 0;
   const source = createSource({

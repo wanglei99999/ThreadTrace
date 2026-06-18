@@ -53,6 +53,7 @@ function createThreadTraceConfig(options) {
     },
     workers: {
       sourceTaskMode,
+      sourceRunStaleAfterMs: numberWithDefault(firstValue(safeOptions.sourceRunStaleAfterMs, env.THREADTRACE_SOURCE_RUN_STALE_AFTER_MS), 10 * 60 * 1000),
       leaseTtlMs: numberWithDefault(firstValue(safeOptions.workerLeaseTtlMs, env.THREADTRACE_WORKER_LEASE_TTL_MS), 5 * 60 * 1000),
       dueSourceIntervalMs: numberWithDefault(firstValue(safeOptions.workerIntervalMs, env.THREADTRACE_WORKER_INTERVAL_MS), 5 * 60 * 1000),
       operationsIntervalMs: numberWithDefault(firstValue(safeOptions.operationsWorkerIntervalMs, env.THREADTRACE_OPERATIONS_WORKER_INTERVAL_MS), 60 * 1000),

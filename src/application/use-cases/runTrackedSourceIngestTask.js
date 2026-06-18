@@ -83,7 +83,7 @@ function assertSourceNotAlreadyRunning(source, options) {
 
 function isStaleSourceRun(runState, options) {
   const safeOptions = options || {};
-  const staleAfterMs = safeOptions.staleAfterMs || DEFAULT_SOURCE_RUN_STALE_AFTER_MS;
+  const staleAfterMs = safeOptions.staleAfterMs === undefined ? DEFAULT_SOURCE_RUN_STALE_AFTER_MS : safeOptions.staleAfterMs;
   const startedTime = Date.parse(runState.lastStartedAt);
   const nowTime = Date.parse(safeOptions.now || new Date().toISOString());
   if (Number.isNaN(startedTime) || Number.isNaN(nowTime)) return true;

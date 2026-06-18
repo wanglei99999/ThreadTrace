@@ -440,7 +440,7 @@ function createThreadTraceRuntime(options) {
         rawThreadPageRepository: repositories.rawThreadPageRepository,
         notificationEventRepository: repositories.notificationEventRepository,
         sourceIngestHandlerRegistry,
-        sourceRunStaleAfterMs: safeRequest.sourceRunStaleAfterMs,
+        sourceRunStaleAfterMs: resolveSourceRunStaleAfterMs(safeRequest, runtimeConfig),
         now: safeRequest.now
       });
     },
@@ -465,7 +465,7 @@ function createThreadTraceRuntime(options) {
         notificationEventRepository: repositories.notificationEventRepository,
         sourceIngestHandlerRegistry,
         llmProvider: createLlmProviderFor(safeRequest),
-        sourceRunStaleAfterMs: safeRequest.sourceRunStaleAfterMs,
+        sourceRunStaleAfterMs: resolveSourceRunStaleAfterMs(safeRequest, runtimeConfig),
         now: safeRequest.now,
         semanticEnrichment: {
           enabled: safeRequest.semanticEnrichmentEnabled !== false,
@@ -491,7 +491,7 @@ function createThreadTraceRuntime(options) {
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
         limit: safeRequest.limit || 50,
         now: safeRequest.now,
-        sourceRunStaleAfterMs: safeRequest.sourceRunStaleAfterMs,
+        sourceRunStaleAfterMs: resolveSourceRunStaleAfterMs(safeRequest, runtimeConfig),
         getAdapter: forumAdapterRegistry.get,
         sourceIngestHandlerRegistry
       });
@@ -511,7 +511,7 @@ function createThreadTraceRuntime(options) {
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
         limit: safeRequest.limit || 50,
         now: safeRequest.now,
-        sourceRunStaleAfterMs: safeRequest.sourceRunStaleAfterMs,
+        sourceRunStaleAfterMs: resolveSourceRunStaleAfterMs(safeRequest, runtimeConfig),
         getAdapter: forumAdapterRegistry.get,
         sourceIngestHandlerRegistry
       });
@@ -543,7 +543,7 @@ function createThreadTraceRuntime(options) {
         sourceKey: safeRequest.forum || safeRequest.sourceKey,
         limit: safeRequest.limit,
         now: safeRequest.now,
-        sourceRunStaleAfterMs: safeRequest.sourceRunStaleAfterMs,
+        sourceRunStaleAfterMs: resolveSourceRunStaleAfterMs(safeRequest, runtimeConfig),
         sourceRepository: repositories.sourceRepository,
         getAdapter: forumAdapterRegistry.get,
         crawler: safeOptions.crawler || createHttpForumCrawler(safeOptions.crawlerOptions),
@@ -682,6 +682,11 @@ function createFileRepositories(storeDir) {
 
 function resolveStoreDir(defaults, storeDir) {
   return storeDir || defaults.storeDir;
+}
+
+function resolveSourceRunStaleAfterMs(request, config) {
+  if (request && request.sourceRunStaleAfterMs !== undefined) return request.sourceRunStaleAfterMs;
+  return config && config.workers ? config.workers.sourceRunStaleAfterMs : undefined;
 }
 
 async function inspectRuntimeResources(config, getPostgresClient) {
