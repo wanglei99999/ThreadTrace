@@ -161,7 +161,35 @@
           <button id="crawlUrlButton" class="secondary-button" type="button">抓取页面</button>
           <button id="refreshRawPagesButton" class="secondary-button" type="button">刷新原始页</button>
         </form>
+        <form id="sourceOnboardingForm" class="control-strip">
+          <label>
+            <span>接入论坛</span>
+            <select name="forum" id="onboardingForum"></select>
+          </label>
+          <label>
+            <span>来源类型</span>
+            <select name="sourceType">
+              <option value="saved-html-directory">saved-html-directory</option>
+              <option value="thread-url">thread-url</option>
+              <option value="normalized-thread-json">normalized-thread-json</option>
+            </select>
+          </label>
+          <label class="grow">
+            <span>来源名称</span>
+            <input name="displayName" value="Onboarding source" autocomplete="off">
+          </label>
+          <label class="grow">
+            <span>本地目录</span>
+            <input name="inputDir" value="example" autocomplete="off">
+          </label>
+          <label class="grow">
+            <span>JSON 文件 / URL</span>
+            <input name="locationValue" placeholder="D:/feeds/thread.json or https://..." autocomplete="off">
+          </label>
+          <button type="submit">接入预检</button>
+        </form>
         <div class="status-list" id="systemStatus"></div>
+        <div class="result-grid task-grid" id="onboardingResult"></div>
         <div class="result-grid task-grid" id="sourceResult"></div>
         <div class="result-grid task-grid" id="rawPageResult"></div>
         <div class="result-grid task-grid" id="eventResult"></div>

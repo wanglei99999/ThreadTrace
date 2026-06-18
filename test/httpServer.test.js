@@ -39,7 +39,10 @@ test('http server exposes health, adapters, and context APIs', async function ()
 
     assert.equal(health.ok, true);
     assert.equal(home.status, 200);
-    assert.match(await home.text(), /ThreadTrace/);
+    const homeHtml = await home.text();
+    assert.match(homeHtml, /ThreadTrace/);
+    assert.match(homeHtml, /sourceOnboardingForm/);
+    assert.match(homeHtml, /onboardingResult/);
     assert.equal(adapters.adapters[0].sourceKey, 'nga');
     assert.equal(adapterDiagnostics.status, 'ok');
     assert.equal(adapterDiagnostics.adapterCount, 1);

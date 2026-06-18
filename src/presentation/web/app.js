@@ -119,6 +119,16 @@ function bindForms() {
     await loadSources();
   });
 
+  document.getElementById('sourceOnboardingForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await renderAsync('onboardingResult', function () {
+      return requestJson('/api/sources/onboarding/preflight', buildSourceOnboardingRequest(form), {
+        acceptErrorStatus: true
+      });
+    }, renderSourceOnboardingPreflight);
+  });
+
   document.getElementById('sourceResult').addEventListener('click', async function (event) {
     const button = event.target.closest('button[data-action="run-source"],button[data-action="run-source-pipeline"]');
     if (!button) return;
@@ -194,6 +204,24 @@ async function enrichHistoryDirectory() {
   }, renderHistoryReport);
 }
 
+function buildSourceOnboardingRequest(form) {
+  const sourceType = form.get('sourceType') || 'saved-html-directory';
+  const locationValue = String(form.get('locationValue') || '').trim();
+  const request = {
+    forum: form.get('forum'),
+    sourceType,
+    displayName: form.get('displayName')
+  };
+  if (sourceType === 'thread-url') {
+    request.url = locationValue;
+  } else if (sourceType === 'normalized-thread-json') {
+    request.inputFile = locationValue;
+  } else {
+    request.inputDir = form.get('inputDir');
+  }
+  return request;
+}
+
 function setView(viewName) {
   state.currentView = viewName;
   document.querySelectorAll('.nav-item').forEach(function (button) {
@@ -220,6 +248,7 @@ async function loadAdapters() {
     fillAdapterSelect('searchForum');
     fillAdapterSelect('sourceForum');
     fillAdapterSelect('threadUrlForum');
+    fillAdapterSelect('onboardingForum');
   } catch (error) {
     renderError('historyResult', error);
   }
@@ -487,6 +516,41 @@ function renderSourceSaveResult(result) {
   ].join(''), 'wide');
 }
 
+function renderSourceOnboardingPreflight(result) {
+  const steps = result.steps || [];
+  const failedSteps = steps.filter(function (step) {
+    return step.status === 'fail';
+  });
+  const panels = [
+    panel('来源接入预检', [
+      metric('状态', result.status),
+      metric('论坛', result.sourceKey || 'unknown'),
+      metric('来源类型', result.sourceType || 'unknown'),
+      metric('步骤', steps.length),
+      metric('失败', failedSteps.length)
+    ].join('')),
+    panel('预检步骤', evidenceList(steps.map(function (step) {
+      return step.status + ' · ' + step.key + ' · ' + step.summary;
+    })), 'wide')
+  ];
+  if (result.sourceValidation && result.sourceValidation.source) {
+    panels.push(panel('来源草稿', [
+      metric('来源 ID', result.sourceValidation.source.id),
+      metric('可保存', result.sourceValidation.valid ? 'yes' : 'no'),
+      metric('诊断', result.sourceValidation.status)
+    ].join('')));
+  }
+  if (result.threadJsonValidation) {
+    panels.push(panel('ThreadSnapshot JSON', [
+      metric('可导入', result.threadJsonValidation.valid ? 'yes' : 'no'),
+      metric('状态', result.threadJsonValidation.status),
+      metric('主题', result.threadJsonValidation.thread ? result.threadJsonValidation.thread.sourceThreadId : ''),
+      metric('楼层', result.threadJsonValidation.thread ? result.threadJsonValidation.thread.postCount : '')
+    ].join('')));
+  }
+  return panels.join('');
+}
+
 function renderSourceTaskRunResult(result) {
   return panel('来源任务完成', [
     metric('来源 ID', result.sourceId),
@@ -716,7 +780,8 @@ function statusRow(label, value) {
   return '<div class="status-row"><span class="muted">' + escapeHtml(label) + '</span><strong>' + escapeHtml(value) + '</strong></div>';
 }
 
-async function requestJson(url, body) {
+async function requestJson(url, body, options) {
+  const safeOptions = options || {};
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -724,7 +789,7 @@ async function requestJson(url, body) {
     },
     body: JSON.stringify(body)
   });
-  if (!response.ok) {
+  if (!response.ok && !safeOptions.acceptErrorStatus) {
     const errorBody = await response.json().catch(function () { return {}; });
     throw new Error(errorBody.error && errorBody.error.message ? errorBody.error.message : response.statusText);
   }
