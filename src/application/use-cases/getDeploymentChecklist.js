@@ -19,7 +19,8 @@ function getDeploymentChecklist(options) {
       adapterCount: adapterDiagnostics.adapterCount
     }),
     item('sources.ingestConfiguration', 'sources', sourceDiagnostics.status || 'fail', 'Tracked sources have usable locations, handlers, and adapters.', {
-      sourceCount: sourceDiagnostics.sourceCount
+      sourceCount: sourceDiagnostics.sourceCount,
+      summary: summarizeSourceDiagnostics(sourceDiagnostics)
     }),
     item('workers.readiness', 'workers', readiness.status || 'fail', 'Background workers and leases are ready for production traffic.', {
       checks: selectCheckKeys(readiness.checks, /^workers\.|^workerLeases\./)
@@ -79,6 +80,37 @@ function selectCheckKeys(checks, pattern) {
   });
 }
 
+function summarizeSourceDiagnostics(sourceDiagnostics) {
+  const sources = sourceDiagnostics && Array.isArray(sourceDiagnostics.sources)
+    ? sourceDiagnostics.sources
+    : [];
+  return {
+    sourceCount: sourceDiagnostics && sourceDiagnostics.sourceCount !== undefined ? sourceDiagnostics.sourceCount : sources.length,
+    ok: sources.filter(function (source) { return source.status === 'ok'; }).length,
+    warn: sources.filter(function (source) { return source.status === 'warn'; }).length,
+    fail: sources.filter(function (source) { return source.status === 'fail'; }).length,
+    failedSources: sources.filter(function (source) {
+      return source.status === 'fail';
+    }).slice(0, 10).map(function (source) {
+      return {
+        sourceId: source.sourceId,
+        sourceKey: source.sourceKey,
+        sourceType: source.sourceType,
+        displayName: source.displayName,
+        failedChecks: (source.checks || []).filter(function (check) {
+          return check.status === 'fail';
+        }).map(function (check) {
+          return {
+            key: check.key,
+            summary: check.summary,
+            value: check.value
+          };
+        })
+      };
+    })
+  };
+}
+
 function aggregateStatuses(statuses) {
   if (statuses.some(function (status) { return status === 'fail'; })) return 'fail';
   if (statuses.some(function (status) { return status === 'warn'; })) return 'warn';
@@ -86,5 +118,6 @@ function aggregateStatuses(statuses) {
 }
 
 module.exports = {
-  getDeploymentChecklist
+  getDeploymentChecklist,
+  summarizeSourceDiagnostics
 };

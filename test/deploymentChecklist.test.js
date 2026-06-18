@@ -22,8 +22,33 @@ test('deployment checklist aggregates runtime, source, readiness, notification, 
       ]
     },
     sourceDiagnostics: {
-      status: 'ok',
-      sourceCount: 1
+      status: 'fail',
+      sourceCount: 2,
+      sources: [
+        {
+          sourceId: 'source-ok',
+          sourceKey: 'nga',
+          sourceType: 'saved-html-directory',
+          displayName: 'NGA archive',
+          status: 'ok',
+          checks: []
+        },
+        {
+          sourceId: 'source-fail',
+          sourceKey: 'missing',
+          sourceType: 'external-feed',
+          displayName: 'External feed',
+          status: 'fail',
+          checks: [
+            {
+              key: 'source.handler',
+              status: 'fail',
+              value: 'external-feed',
+              summary: 'Tracked source type has an ingest handler.'
+            }
+          ]
+        }
+      ]
     },
     adapterDiagnostics: {
       status: 'ok',
@@ -56,6 +81,14 @@ test('deployment checklist aggregates runtime, source, readiness, notification, 
   assert.equal(checklist.items.find(function (item) {
     return item.key === 'adapters.contract';
   }).status, 'ok');
+  const sourceItem = checklist.items.find(function (item) {
+    return item.key === 'sources.ingestConfiguration';
+  });
+  assert.equal(sourceItem.status, 'fail');
+  assert.equal(sourceItem.evidence.summary.sourceCount, 2);
+  assert.equal(sourceItem.evidence.summary.fail, 1);
+  assert.equal(sourceItem.evidence.summary.failedSources[0].sourceId, 'source-fail');
+  assert.equal(sourceItem.evidence.summary.failedSources[0].failedChecks[0].key, 'source.handler');
   assert.equal(checklist.items.find(function (item) {
     return item.key === 'notifications.outbox';
   }).status, 'warn');
