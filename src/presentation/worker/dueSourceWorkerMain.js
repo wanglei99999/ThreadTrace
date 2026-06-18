@@ -16,6 +16,8 @@ async function main(argv) {
   const worker = createDueSourceWorker({
     runtime,
     workerRunRepository: repositories.workerRunRepository,
+    workerLeaseRepository: repositories.workerLeaseRepository,
+    leaseTtlMs: options.leaseTtlMs ? Number(options.leaseTtlMs) : Number(process.env.THREADTRACE_WORKER_LEASE_TTL_MS || 5 * 60 * 1000),
     pollIntervalMs: options.intervalMs ? Number(options.intervalMs) : Number(process.env.THREADTRACE_WORKER_INTERVAL_MS || 5 * 60 * 1000)
   });
   const request = {
@@ -69,6 +71,9 @@ function parseArgs(args) {
       index += 1;
     } else if (item === '--interval-ms') {
       options.intervalMs = args[index + 1];
+      index += 1;
+    } else if (item === '--lease-ttl-ms') {
+      options.leaseTtlMs = args[index + 1];
       index += 1;
     }
   }

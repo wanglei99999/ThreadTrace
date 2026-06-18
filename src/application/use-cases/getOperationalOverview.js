@@ -5,6 +5,7 @@ const { assertNotificationEventRepository } = require('../ports/notificationEven
 const { assertRawThreadPageRepository } = require('../ports/rawThreadPageRepository');
 const { assertSourceRepository } = require('../ports/sourceRepository');
 const { assertTaskRepository } = require('../ports/taskRepository');
+const { assertWorkerLeaseRepository } = require('../ports/workerLeaseRepository');
 const { assertWorkerRunRepository } = require('../ports/workerRunRepository');
 
 async function getOperationalOverview(options) {
@@ -18,6 +19,9 @@ async function getOperationalOverview(options) {
   const workerRunRepository = safeOptions.workerRunRepository
     ? assertWorkerRunRepository(safeOptions.workerRunRepository)
     : undefined;
+  const workerLeaseRepository = safeOptions.workerLeaseRepository
+    ? assertWorkerLeaseRepository(safeOptions.workerLeaseRepository)
+    : undefined;
 
   const sources = await sourceRepository.listSources({ limit });
   const recentTasks = await taskRepository.listTasks({ limit });
@@ -26,6 +30,7 @@ async function getOperationalOverview(options) {
   const unacknowledgedEvents = await notificationEventRepository.listEvents({ acknowledged: false, limit });
   const rawPages = await rawThreadPageRepository.listRawThreadPages({ limit });
   const workerRuns = workerRunRepository ? await workerRunRepository.listWorkerRuns({ limit }) : [];
+  const workerLeases = workerLeaseRepository ? await workerLeaseRepository.listWorkerLeases({ limit }) : [];
 
   return {
     generatedAt: now,
@@ -33,13 +38,14 @@ async function getOperationalOverview(options) {
     sources: summarizeSources(sources, now),
     tasks: summarizeTasks(recentTasks),
     events: summarizeEvents(pendingEvents, failedEvents, unacknowledgedEvents, now),
-    workers: summarizeWorkerRuns(workerRuns, now, safeOptions.workerStaleAfterMs),
+    workers: summarizeWorkers(workerRuns, workerLeases, now, safeOptions.workerStaleAfterMs),
     rawPages: summarizeRawPages(rawPages),
     recent: {
       tasks: recentTasks.slice(0, 10),
       events: unacknowledgedEvents.slice(0, 10),
       rawPages: rawPages.slice(0, 10),
-      workerRuns: workerRuns.slice(0, 10)
+      workerRuns: workerRuns.slice(0, 10),
+      workerLeases: workerLeases.slice(0, 10)
     }
   };
 }
@@ -106,7 +112,7 @@ function summarizeRawPages(rawPages) {
   };
 }
 
-function summarizeWorkerRuns(workerRuns, now, staleAfterMs) {
+function summarizeWorkers(workerRuns, workerLeases, now, staleAfterMs) {
   const staleWindowMs = staleAfterMs || 5 * 60 * 1000;
   const runningRuns = workerRuns.filter(function (run) {
     return run.status === 'running';
@@ -124,6 +130,7 @@ function summarizeWorkerRuns(workerRuns, now, staleAfterMs) {
     latestHeartbeatAt: latestTimestamp(workerRuns.map(function (run) {
       return run.heartbeatAt;
     })),
+    leases: summarizeWorkerLeases(workerLeases, now),
     latestRun: workerRuns[0],
     staleRuns: staleRuns.slice(0, 10).map(function (run) {
       return {
@@ -135,6 +142,19 @@ function summarizeWorkerRuns(workerRuns, now, staleAfterMs) {
         startedAt: run.startedAt
       };
     })
+  };
+}
+
+function summarizeWorkerLeases(workerLeases, now) {
+  const expiredLeases = workerLeases.filter(function (lease) {
+    return isExpiredLease(lease, now);
+  });
+  return {
+    total: workerLeases.length,
+    active: workerLeases.length - expiredLeases.length,
+    expired: expiredLeases.length,
+    latest: workerLeases[0],
+    expiredLeases: expiredLeases.slice(0, 10)
   };
 }
 
@@ -171,6 +191,13 @@ function latestTimestamp(values) {
     .filter(Boolean)
     .sort()
     .reverse()[0];
+}
+
+function isExpiredLease(lease, now) {
+  const expiresTime = Date.parse(lease.expiresAt);
+  const nowTime = Date.parse(now);
+  if (Number.isNaN(expiresTime) || Number.isNaN(nowTime)) return true;
+  return expiresTime <= nowTime;
 }
 
 module.exports = {

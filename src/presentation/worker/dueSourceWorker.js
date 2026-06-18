@@ -1,5 +1,6 @@
 'use strict';
 
+const { createWorkerLeaseGuard } = require('./workerLeaseGuard');
 const { createWorkerRunTracker } = require('./workerRunTracker');
 
 function createDueSourceWorker(options) {
@@ -7,6 +8,14 @@ function createDueSourceWorker(options) {
   const runtime = safeOptions.runtime;
   const logger = safeOptions.logger || console;
   const pollIntervalMs = safeOptions.pollIntervalMs || 5 * 60 * 1000;
+  const leaseGuard = createWorkerLeaseGuard({
+    workerType: 'due-source',
+    workerId: safeOptions.workerId,
+    workerLeaseRepository: safeOptions.workerLeaseRepository,
+    leaseKey: safeOptions.leaseKey,
+    leaseTtlMs: safeOptions.leaseTtlMs,
+    logger
+  });
   const tracker = createWorkerRunTracker({
     workerType: 'due-source',
     workerId: safeOptions.workerId,
@@ -33,9 +42,21 @@ function createDueSourceWorker(options) {
 
     running = true;
     let workerRun;
+    let lease;
     try {
+      lease = await leaseGuard.acquire();
+      if (!lease.acquired) {
+        logger.warn('[worker] due-source run skipped because lease is held by ' + (lease.lease && lease.lease.ownerId ? lease.lease.ownerId : 'another worker'));
+        await tracker.skip('lease-held', safeRequest);
+        return {
+          skipped: true,
+          reason: 'lease-held',
+          lease: lease.lease
+        };
+      }
       workerRun = await tracker.start(safeRequest);
       workerRun = await tracker.heartbeat(workerRun, { step: 'ingest-due-sources' });
+      await leaseGuard.renew();
       const result = await runtime.runDueSourcesIngestTasks(safeRequest);
       await tracker.complete(workerRun, summarizeDueSourceResult(result));
       logger.log('[worker] due-source run completed: due=' + result.dueCount + ', completed=' + result.completedCount + ', failed=' + result.failedCount);
@@ -44,6 +65,9 @@ function createDueSourceWorker(options) {
       await tracker.fail(workerRun, error);
       throw error;
     } finally {
+      if (lease && lease.acquired) {
+        await leaseGuard.release();
+      }
       running = false;
     }
   }

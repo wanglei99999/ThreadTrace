@@ -93,6 +93,31 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
           }
         ];
       }
+    },
+    workerLeaseRepository: {
+      async acquireWorkerLease() {},
+      async renewWorkerLease() {},
+      async releaseWorkerLease() {},
+      async listWorkerLeases() {
+        return [
+          {
+            leaseKey: 'worker:operations',
+            workerType: 'operations',
+            ownerId: 'worker-a',
+            acquiredAt: '2026-06-18T09:00:00.000Z',
+            updatedAt: '2026-06-18T09:00:00.000Z',
+            expiresAt: '2026-06-18T09:05:00.000Z'
+          },
+          {
+            leaseKey: 'worker:notification-event',
+            workerType: 'notification-event',
+            ownerId: 'worker-b',
+            acquiredAt: '2026-06-18T09:59:00.000Z',
+            updatedAt: '2026-06-18T09:59:00.000Z',
+            expiresAt: '2026-06-18T10:04:00.000Z'
+          }
+        ];
+      }
     }
   });
 
@@ -108,6 +133,8 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
   assert.equal(overview.workers.stale, 1);
   assert.equal(overview.workers.completed, 1);
   assert.equal(overview.workers.latestHeartbeatAt, '2026-06-18T09:56:00.000Z');
+  assert.equal(overview.workers.leases.active, 1);
+  assert.equal(overview.workers.leases.expired, 1);
   assert.equal(overview.rawPages.total, 1);
   assert.equal(overview.rawPages.latestFetchedAt, '2026-06-18T09:50:00.000Z');
 });

@@ -36,7 +36,7 @@ The operations worker runs due-source ingestion, notification event dispatch, an
 - Sources: total, enabled, disabled, due, running, failed, and due source samples.
 - Tasks: recent task totals grouped by status and last failure.
 - Events: pending, failed, unacknowledged, delivery-due count, and next delivery time.
-- Workers: recent run totals, running/stale counts, latest heartbeat time, and stale run samples.
+- Workers: recent run totals, running/stale counts, latest heartbeat time, active/expired leases, and stale run samples.
 - Raw pages: recent raw evidence count and latest fetch time.
 - Storage mode and generation time.
 
@@ -52,3 +52,15 @@ Background workers write one durable `worker_runs` record per execution:
 - `skipped`: a local non-overlap guard skipped a run because the previous one was still active.
 
 The default stale window is five minutes. File storage writes JSON records under `worker-runs`; PostgreSQL storage uses the `worker_runs` table in `docs/postgresql-schema.sql`.
+
+## Worker Leases
+
+Workers also use short-lived leases to avoid duplicate background execution across processes:
+
+- `worker:operations`: the combined operations worker.
+- `worker:due-source`: the due-source ingestion worker.
+- `worker:notification-event`: the notification dispatch worker.
+
+Each run acquires its worker lease before executing, renews it between phases, and releases it at the end. If another process owns an unexpired lease, the run is skipped and recorded as `skipped` with reason `lease-held`.
+
+File storage writes lease JSON under `worker-leases` for local deployments. PostgreSQL storage uses `worker_leases` and acquires leases with a conditional `on conflict` update, which is the preferred path for multi-process or multi-host deployments.

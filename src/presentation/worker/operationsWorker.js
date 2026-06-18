@@ -1,5 +1,6 @@
 'use strict';
 
+const { createWorkerLeaseGuard } = require('./workerLeaseGuard');
 const { createWorkerRunTracker } = require('./workerRunTracker');
 
 function createOperationsWorker(options) {
@@ -7,6 +8,14 @@ function createOperationsWorker(options) {
   const runtime = safeOptions.runtime;
   const logger = safeOptions.logger || console;
   const pollIntervalMs = safeOptions.pollIntervalMs || 60 * 1000;
+  const leaseGuard = createWorkerLeaseGuard({
+    workerType: 'operations',
+    workerId: safeOptions.workerId,
+    workerLeaseRepository: safeOptions.workerLeaseRepository,
+    leaseKey: safeOptions.leaseKey,
+    leaseTtlMs: safeOptions.leaseTtlMs,
+    logger
+  });
   const tracker = createWorkerRunTracker({
     workerType: 'operations',
     workerId: safeOptions.workerId,
@@ -39,13 +48,27 @@ function createOperationsWorker(options) {
 
     running = true;
     let workerRun;
+    let lease;
     try {
+      lease = await leaseGuard.acquire();
+      if (!lease.acquired) {
+        logger.warn('[worker] operations run skipped because lease is held by ' + (lease.lease && lease.lease.ownerId ? lease.lease.ownerId : 'another worker'));
+        await tracker.skip('lease-held', safeRequest);
+        return {
+          skipped: true,
+          reason: 'lease-held',
+          lease: lease.lease
+        };
+      }
       workerRun = await tracker.start(safeRequest);
       workerRun = await tracker.heartbeat(workerRun, { step: 'ingest-due-sources' });
+      await leaseGuard.renew();
       const dueSources = await runtime.runDueSourcesIngestTasks(safeRequest.sources || {});
       workerRun = await tracker.heartbeat(workerRun, { step: 'dispatch-events' });
+      await leaseGuard.renew();
       const events = await runtime.dispatchNotificationEvents(safeRequest.events || {});
       workerRun = await tracker.heartbeat(workerRun, { step: 'overview' });
+      await leaseGuard.renew();
       const overview = await runtime.getOperationalOverview(safeRequest.overview || {});
       await tracker.complete(workerRun, summarizeOperationsResult(dueSources, events, overview));
       logger.log('[worker] operations run completed: due=' + dueSources.dueCount + ', sourceFailed=' + dueSources.failedCount + ', eventDelivered=' + events.dispatchedCount + ', eventFailed=' + events.failedCount + ', openEvents=' + overview.events.unacknowledged);
@@ -58,6 +81,9 @@ function createOperationsWorker(options) {
       await tracker.fail(workerRun, error);
       throw error;
     } finally {
+      if (lease && lease.acquired) {
+        await leaseGuard.release();
+      }
       running = false;
     }
   }

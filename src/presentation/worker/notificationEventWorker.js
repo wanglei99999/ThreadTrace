@@ -1,5 +1,6 @@
 'use strict';
 
+const { createWorkerLeaseGuard } = require('./workerLeaseGuard');
 const { createWorkerRunTracker } = require('./workerRunTracker');
 
 function createNotificationEventWorker(options) {
@@ -7,6 +8,14 @@ function createNotificationEventWorker(options) {
   const runtime = safeOptions.runtime;
   const logger = safeOptions.logger || console;
   const pollIntervalMs = safeOptions.pollIntervalMs || 60 * 1000;
+  const leaseGuard = createWorkerLeaseGuard({
+    workerType: 'notification-event',
+    workerId: safeOptions.workerId,
+    workerLeaseRepository: safeOptions.workerLeaseRepository,
+    leaseKey: safeOptions.leaseKey,
+    leaseTtlMs: safeOptions.leaseTtlMs,
+    logger
+  });
   const tracker = createWorkerRunTracker({
     workerType: 'notification-event',
     workerId: safeOptions.workerId,
@@ -33,9 +42,21 @@ function createNotificationEventWorker(options) {
 
     running = true;
     let workerRun;
+    let lease;
     try {
+      lease = await leaseGuard.acquire();
+      if (!lease.acquired) {
+        logger.warn('[worker] notification-event run skipped because lease is held by ' + (lease.lease && lease.lease.ownerId ? lease.lease.ownerId : 'another worker'));
+        await tracker.skip('lease-held', safeRequest);
+        return {
+          skipped: true,
+          reason: 'lease-held',
+          lease: lease.lease
+        };
+      }
       workerRun = await tracker.start(safeRequest);
       workerRun = await tracker.heartbeat(workerRun, { step: 'dispatch-events' });
+      await leaseGuard.renew();
       const result = await runtime.dispatchNotificationEvents(safeRequest);
       await tracker.complete(workerRun, summarizeNotificationEventResult(result));
       logger.log('[worker] notification-event run completed: delivered=' + result.dispatchedCount + ', failed=' + result.failedCount + ', skipped=' + result.skippedCount);
@@ -44,6 +65,9 @@ function createNotificationEventWorker(options) {
       await tracker.fail(workerRun, error);
       throw error;
     } finally {
+      if (lease && lease.acquired) {
+        await leaseGuard.release();
+      }
       running = false;
     }
   }

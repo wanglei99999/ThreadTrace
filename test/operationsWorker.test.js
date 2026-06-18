@@ -103,6 +103,7 @@ test('operations worker skips overlapping runs', async function () {
   });
 
   const firstRun = worker.runOnce({});
+  await waitUntil(function () { return typeof releaseRun === 'function'; });
   const secondRun = await worker.runOnce({});
   releaseRun();
   await firstRun;
@@ -112,10 +113,81 @@ test('operations worker skips overlapping runs', async function () {
   assert.equal(callCount, 1);
 });
 
+test('operations worker skips execution when another process holds the lease', async function () {
+  let sourceRuns = 0;
+  const savedRuns = [];
+  const worker = createOperationsWorker({
+    logger: silentLogger(),
+    workerId: 'worker-b',
+    workerLeaseRepository: {
+      async acquireWorkerLease() {
+        return {
+          acquired: false,
+          lease: {
+            leaseKey: 'worker:operations',
+            workerType: 'operations',
+            ownerId: 'worker-a',
+            expiresAt: '2026-06-18T10:05:00.000Z'
+          }
+        };
+      },
+      async renewWorkerLease() {
+        throw new Error('should not renew');
+      },
+      async releaseWorkerLease() {
+        throw new Error('should not release');
+      },
+      async listWorkerLeases() {
+        return [];
+      }
+    },
+    workerRunRepository: {
+      async saveWorkerRun(run) {
+        savedRuns.push(Object.assign({}, run));
+      },
+      async findWorkerRun() {},
+      async listWorkerRuns() {
+        return savedRuns;
+      }
+    },
+    runtime: {
+      async runDueSourcesIngestTasks() {
+        sourceRuns += 1;
+        return {};
+      },
+      async dispatchNotificationEvents() {
+        return {};
+      },
+      async getOperationalOverview() {
+        return {};
+      }
+    }
+  });
+
+  const result = await worker.runOnce({});
+
+  assert.equal(result.skipped, true);
+  assert.equal(result.reason, 'lease-held');
+  assert.equal(result.lease.ownerId, 'worker-a');
+  assert.equal(sourceRuns, 0);
+  assert.equal(savedRuns.at(-1).status, 'skipped');
+  assert.equal(savedRuns.at(-1).progress.reason, 'lease-held');
+});
+
 function silentLogger() {
   return {
     log() {},
     warn() {},
     error() {}
   };
+}
+
+async function waitUntil(predicate) {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    if (predicate()) return;
+    await new Promise(function (resolve) {
+      setImmediate(resolve);
+    });
+  }
+  throw new Error('Timed out waiting for worker run to start.');
 }

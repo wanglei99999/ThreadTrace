@@ -6,6 +6,7 @@ const { createPostgresRawThreadPageRepository } = require('./postgresRawThreadPa
 const { createPostgresSourceRepository } = require('./postgresSourceRepository');
 const { createPostgresTaskRepository } = require('./postgresTaskRepository');
 const { createPostgresThreadRepository } = require('./postgresThreadRepository');
+const { createPostgresWorkerLeaseRepository } = require('./postgresWorkerLeaseRepository');
 const { createPostgresWorkerRunRepository } = require('./postgresWorkerRunRepository');
 
 function createPostgresRepositories(options) {
@@ -18,7 +19,8 @@ function createPostgresRepositories(options) {
     sourceRepository: createPostgresSourceRepository({ client }),
     notificationEventRepository: createPostgresNotificationEventRepository({ client }),
     rawThreadPageRepository: createPostgresRawThreadPageRepository({ client }),
-    workerRunRepository: createPostgresWorkerRunRepository({ client })
+    workerRunRepository: createPostgresWorkerRunRepository({ client }),
+    workerLeaseRepository: createPostgresWorkerLeaseRepository({ client })
   };
 }
 

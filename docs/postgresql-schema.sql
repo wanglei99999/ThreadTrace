@@ -147,3 +147,15 @@ create table if not exists worker_runs (
 
 create index if not exists idx_worker_runs_type_started on worker_runs(worker_type, started_at desc);
 create index if not exists idx_worker_runs_status_heartbeat on worker_runs(status, heartbeat_at desc);
+
+create table if not exists worker_leases (
+  lease_key text primary key,
+  worker_type text not null,
+  owner_id text not null,
+  acquired_at timestamptz not null,
+  updated_at timestamptz not null,
+  expires_at timestamptz not null
+);
+
+create index if not exists idx_worker_leases_type on worker_leases(worker_type);
+create index if not exists idx_worker_leases_expires on worker_leases(expires_at);

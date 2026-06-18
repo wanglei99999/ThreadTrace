@@ -26,6 +26,7 @@ const { createFileSourceRepository } = require('../infrastructure/storage/fileSo
 const { createFileNotificationEventRepository } = require('../infrastructure/storage/fileNotificationEventRepository');
 const { createFileRawThreadPageRepository } = require('../infrastructure/storage/fileRawThreadPageRepository');
 const { createFileWorkerRunRepository } = require('../infrastructure/storage/fileWorkerRunRepository');
+const { createFileWorkerLeaseRepository } = require('../infrastructure/storage/fileWorkerLeaseRepository');
 const { createFileNotificationChannel } = require('../infrastructure/notifications/fileNotificationChannel');
 const { createWebhookNotificationChannel } = require('../infrastructure/notifications/webhookNotificationChannel');
 const { createHttpForumCrawler } = require('../infrastructure/crawlers/httpForumCrawler');
@@ -172,6 +173,7 @@ function createThreadTraceRuntime(options) {
         notificationEventRepository: repositories.notificationEventRepository,
         rawThreadPageRepository: repositories.rawThreadPageRepository,
         workerRunRepository: repositories.workerRunRepository,
+        workerLeaseRepository: repositories.workerLeaseRepository,
         now: safeRequest.now,
         limit: safeRequest.limit || 100,
         workerStaleAfterMs: safeRequest.workerStaleAfterMs
@@ -398,6 +400,9 @@ function createFileRepositories(storeDir) {
     }),
     workerRunRepository: createFileWorkerRunRepository({
       baseDir: path.join(storeDir, 'worker-runs')
+    }),
+    workerLeaseRepository: createFileWorkerLeaseRepository({
+      baseDir: path.join(storeDir, 'worker-leases')
     })
   };
 }
