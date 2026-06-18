@@ -243,9 +243,15 @@ async function loadSystemStatus() {
     const adapters = await fetchJson('/adapters');
     const openApi = await fetchJson('/openapi.json');
     const overview = await fetchJson('/api/operations/overview?limit=100');
+    const diagnostics = await fetchJson('/api/runtime/diagnostics');
     target.innerHTML = [
       statusRow('服务', health.ok ? '运行中' : '异常'),
+      statusRow('诊断', diagnostics.status),
       statusRow('存储', overview.storageMode),
+      statusRow('Source mode', diagnostics.configuration.workers.sourceTaskMode),
+      statusRow('LLM', diagnostics.configuration.llm.provider),
+      statusRow('Input dir', diagnosticStatus(diagnostics, 'resources.inputDir')),
+      statusRow('Store dir', diagnosticStatus(diagnostics, 'resources.storeDir')),
       statusRow('适配器', String((adapters.adapters || []).length)),
       statusRow('API 契约', openApi.openapi),
       statusRow('端点', String(Object.keys(openApi.paths || {}).length)),
@@ -258,6 +264,13 @@ async function loadSystemStatus() {
   } catch (error) {
     target.innerHTML = '<div class="error">' + escapeHtml(error.message) + '</div>';
   }
+}
+
+function diagnosticStatus(diagnostics, key) {
+  const item = (diagnostics.checks || []).find(function (check) {
+    return check.key === key;
+  });
+  return item ? item.status : 'unknown';
 }
 
 async function loadTasks() {
