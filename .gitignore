@@ -16,8 +16,14 @@ data/store-copy/
 data/tmp/
 
 coverage/
+.nyc_output/
 dist/
 build/
+test-results/
+playwright-report/
+.cache/
+.vite/
 .tmp/
+tmp/
 .DS_Store
 Thumbs.db
