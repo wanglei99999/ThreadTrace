@@ -1,0 +1,69 @@
+# 架构设计
+
+## 总体思路
+
+ThreadTrace 采用分层架构。核心原则是：论坛采集和页面解析属于基础设施，观点建模和证据分析属于领域层，CLI、Web、定时任务只是不同入口。
+
+```text
+presentation
+  CLI / HTTP API / Web UI / Scheduler
+application
+  use cases: parse saved thread, analyze history, interpret new post
+domain
+  models: Forum, Author, Thread, Post, Evidence, Opinion
+  services: historical analyzer, evidence linker, opinion tracker
+infrastructure
+  forum adapters: NGA, future forums
+  storage: file, PostgreSQL, object storage
+  retrieval: full-text, vector, rerank
+  llm providers: OpenAI-compatible, local model, mock
+```
+
+## 可扩展论坛适配器
+
+每个论坛只需要实现统一适配器接口：
+
+```text
+ForumAdapter
+  sourceKey
+  parseSavedHtml(html, context) -> ThreadSnapshot
+  fetchThread?(url, options) -> RawThreadPage[]
+```
+
+NGA 适配器只负责理解 NGA 的 DOM、分页、楼层、uid、引用和正文结构。应用层和领域层不直接依赖 NGA。
+
+## 领域数据模型
+
+当前先落地最小结构，后续可以持久化到 PostgreSQL。
+
+- `ForumSource`: 论坛来源。
+- `Author`: 作者身份。
+- `ThreadSnapshot`: 单次解析得到的主题帖快照。
+- `Post`: 楼层发言。
+- `PostRelation`: 引用、回复、上下文关系。
+- `Evidence`: 支撑某个结论的原文证据。
+- `Opinion`: 从楼层中抽取出的观点。
+- `OpinionChain`: 围绕实体或主题的观点时间线。
+- `AnalysisReport`: 历史分析或新发言解读报告。
+
+## 入口设计
+
+当前先提供 CLI：
+
+- `parse-html`: 解析本地 HTML，输出标准 JSON。
+- `analyze-html`: 解析并生成基础历史分析。
+
+后续入口：
+
+- HTTP API：供网页工作台调用。
+- Worker：定时采集论坛新楼层。
+- Job Queue：批量解析、LLM 抽取、索引刷新。
+- Web UI：作者看板、主题时间线、证据报告。
+
+## 高可用与可维护策略
+
+- 原始 HTML 和解析结果分开保存，解析规则变更后可以重跑。
+- 分析报告引用楼层证据，不把模型输出当作事实。
+- 所有外部能力都通过接口接入，包括论坛、数据库、LLM、向量库和通知渠道。
+- 采集任务与分析任务分离，避免论坛访问波动影响历史报告查看。
+- 适配器层做容错和降级，核心领域层只处理标准结构。

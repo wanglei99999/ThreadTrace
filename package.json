@@ -1,0 +1,14 @@
+{
+  "name": "threadtrace",
+  "version": "0.1.0",
+  "private": true,
+  "description": "语脉 ThreadTrace: forum opinion context tracing and evidence analysis.",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "parse:sample": "node src/presentation/cli/threadtrace.js parse-html",
+    "analyze:sample": "node src/presentation/cli/threadtrace.js analyze-html"
+  }
+}
