@@ -381,6 +381,8 @@ function createThreadTraceRuntime(options) {
       const repositories = createRepositoriesFor(safeRequest.storeDir);
       return registerTrackedSource({
         sourceRepository: repositories.sourceRepository,
+        sourceIngestHandlerRegistry,
+        allowUnknownSourceType: safeRequest.allowUnknownSourceType,
         source: {
           id: safeRequest.id,
           sourceKey: safeRequest.sourceKey || safeRequest.forum,

@@ -113,18 +113,72 @@ test('runtime rejects custom source types without a registered ingest handler', 
   const runtime = createThreadTraceRuntime({
     storeDir: tempDir
   });
+
+  await assert.rejects(function () {
+    return runtime.registerSource({
+      sourceKey: 'custom',
+      sourceType: 'custom-feed',
+      displayName: 'Custom feed',
+      location: {
+        url: 'https://example.test/custom'
+      }
+    });
+  }, /source type is not registered: custom-feed/);
+});
+
+test('runtime can explicitly pre-register an unknown source type', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-unknown-source-'));
+  const runtime = createThreadTraceRuntime({
+    storeDir: tempDir
+  });
+
   const registered = await runtime.registerSource({
     sourceKey: 'custom',
     sourceType: 'custom-feed',
     displayName: 'Custom feed',
+    allowUnknownSourceType: true,
     location: {
       url: 'https://example.test/custom'
     }
   });
 
+  assert.equal(registered.created, true);
+  assert.equal(registered.source.sourceType, 'custom-feed');
   await assert.rejects(function () {
     return runtime.runSourceIngestTask({
       sourceId: registered.source.id
     });
   }, /not ingestible yet: custom-feed/);
+});
+
+test('runtime validates custom source locations through handler schema', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-custom-source-schema-'));
+  const registry = createSourceIngestHandlerRegistry([
+    {
+      sourceType: 'custom-feed',
+      requiresAdapter: false,
+      locationSchema: {
+        required: ['endpoint'],
+        properties: {
+          endpoint: { type: 'string', format: 'uri' }
+        }
+      },
+      async run() {}
+    }
+  ]);
+  const runtime = createThreadTraceRuntime({
+    storeDir: tempDir,
+    sourceIngestHandlerRegistry: registry
+  });
+
+  await assert.rejects(function () {
+    return runtime.registerSource({
+      sourceKey: 'custom',
+      sourceType: 'custom-feed',
+      displayName: 'Custom feed',
+      location: {
+        url: 'https://example.test/custom'
+      }
+    });
+  }, /missing required field\(s\): endpoint/);
 });

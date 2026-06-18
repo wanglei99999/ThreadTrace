@@ -543,6 +543,7 @@ function createOpenApiSpec() {
                     nextRunAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
                     scheduleEnabled: { type: 'boolean' },
                     enabled: { type: 'boolean' },
+                    allowUnknownSourceType: { type: 'boolean', example: false },
                     storeDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/data/store' }
                   }
                 }

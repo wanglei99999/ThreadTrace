@@ -51,6 +51,8 @@ GET /api/source-ingest-handlers
 
 Discovery returns each handler's adapter requirement, location schema, and capability flags. UI, API clients, and future connector tooling should use this catalog instead of hard-coding required fields for each `sourceType`.
 
+When the runtime registers a tracked source, it validates the source type and required location fields against the handler catalog. Unknown source types are rejected by default; operators can explicitly opt into pre-registration with `allowUnknownSourceType` for migration or staged connector rollout.
+
 ## Diagnostics
 
 Tracked source diagnostics verify that each registered source has:

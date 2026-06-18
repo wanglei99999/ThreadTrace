@@ -530,6 +530,7 @@ function main(argv) {
       inputDir,
       url: options.url,
       enabled: options.enabled !== 'false',
+      allowUnknownSourceType: options.allowUnknownSourceType === 'true',
       intervalMinutes: options.intervalMinutes,
       nextRunAt: options.nextRunAt,
       scheduleEnabled: options.scheduleEnabled === undefined ? undefined : options.scheduleEnabled !== 'false',
@@ -921,6 +922,13 @@ function parseArgs(args) {
     } else if (item === '--enabled') {
       options.enabled = args[index + 1];
       index += 1;
+    } else if (item === '--allow-unknown-source-type') {
+      if (args[index + 1] && !String(args[index + 1]).startsWith('--')) {
+        options.allowUnknownSourceType = args[index + 1];
+        index += 1;
+      } else {
+        options.allowUnknownSourceType = 'true';
+      }
     } else if (item === '--interval-minutes') {
       options.intervalMinutes = args[index + 1];
       index += 1;
@@ -1053,7 +1061,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js ingest-raw-page [--forum nga] --content-sha1 sha1 [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js dispatch-events [--channel file|webhook] [--webhook-url url] [--limit n] [--max-attempts n] [--retry-backoff-ms ms] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js ack-event --event-id id [--by user] [--note text] [--store-dir dir]');
-  console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--input dir] [--name name] [--interval-minutes n] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--source-type type] [--input dir] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-diagnostics [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js notification-diagnostics [--channel file|webhook] [--webhook-url url] [--store-dir dir]');

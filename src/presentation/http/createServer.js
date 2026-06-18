@@ -423,6 +423,7 @@ async function routeRequest(request, response, context) {
       location: body.location,
       enabled: body.enabled,
       tags: body.tags,
+      allowUnknownSourceType: body.allowUnknownSourceType,
       schedule: body.schedule,
       intervalMinutes: body.intervalMinutes,
       nextRunAt: body.nextRunAt,
