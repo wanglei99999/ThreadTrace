@@ -24,6 +24,7 @@ const { runSemanticEnrichmentTask } = require('../application/use-cases/runSeman
 const { getOperationalOverview } = require('../application/use-cases/getOperationalOverview');
 const { getOperationalReadiness } = require('../application/use-cases/getOperationalReadiness');
 const { getRuntimeDiagnostics } = require('../application/use-cases/getRuntimeDiagnostics');
+const { getDeploymentChecklist } = require('../application/use-cases/getDeploymentChecklist');
 const { createDefaultSourceIngestHandlerRegistry } = require('../application/source-ingest/standardSourceIngestHandlers');
 const { migrateStoreRecords } = require('../application/use-cases/migrateStoreRecords');
 const { runIngestRawThreadPageTask } = require('../application/use-cases/runIngestRawThreadPageTask');
@@ -273,6 +274,35 @@ function createThreadTraceRuntime(options) {
         inspectResources: function (config) {
           return inspectRuntimeResources(config, getPostgresClient);
         },
+        now: safeRequest.now
+      });
+    },
+
+    async getDeploymentChecklist(request) {
+      const safeRequest = request || {};
+      const diagnostics = await this.getRuntimeDiagnostics({
+        now: safeRequest.now
+      });
+      const sourceDiagnostics = await this.diagnoseSources({
+        forum: safeRequest.forum,
+        sourceKey: safeRequest.sourceKey,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 100,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir
+      });
+      const readiness = await getOperationalReadiness({
+        getOperationalOverview: this.getOperationalOverview,
+        diagnostics,
+        now: safeRequest.now,
+        limit: safeRequest.limit || 100,
+        storeDir: safeRequest.storeDir,
+        workerStaleAfterMs: safeRequest.workerStaleAfterMs
+      });
+      return getDeploymentChecklist({
+        diagnostics,
+        sourceDiagnostics,
+        readiness,
         now: safeRequest.now
       });
     },

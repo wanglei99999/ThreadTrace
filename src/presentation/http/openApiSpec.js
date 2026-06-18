@@ -276,6 +276,27 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/deployment/checklist': {
+        get: {
+          summary: 'Get deployment readiness checklist across runtime, sources, workers, notifications, and LLM',
+          parameters: [
+            { name: 'forum', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'enabled', in: 'query', required: false, schema: { type: 'boolean' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Deployment checklist is ok or warn'
+            },
+            503: {
+              description: 'Deployment checklist failed'
+            }
+          }
+        }
+      },
       '/api/events': {
         get: {
           summary: 'List notification events',

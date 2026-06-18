@@ -228,6 +228,34 @@ test('http server exposes runtime diagnostics API', async function () {
   }
 });
 
+test('http server exposes deployment checklist API', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-http-deployment-checklist-'));
+  const server = createThreadTraceServer({
+    defaultInputDir: path.resolve(__dirname, '..', 'example'),
+    storeDir: tempDir
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const checklist = await getJson(baseUrl + '/api/deployment/checklist?now=2026-06-19T10:00:00.000Z');
+    const openApi = await getJson(baseUrl + '/openapi.json');
+
+    assert.equal(checklist.status, 'ok');
+    assert.equal(checklist.generatedAt, '2026-06-19T10:00:00.000Z');
+    assert.ok(checklist.items.find(function (item) {
+      return item.key === 'runtime.configuration';
+    }));
+    assert.ok(checklist.items.find(function (item) {
+      return item.key === 'sources.ingestConfiguration';
+    }));
+    assert.ok(openApi.paths['/api/deployment/checklist']);
+  } finally {
+    await close(server);
+  }
+});
+
 test('http server handles CORS preflight and validates interpret text input', async function () {
   const server = createThreadTraceServer({
     defaultInputDir: path.resolve(__dirname, '..', 'example')

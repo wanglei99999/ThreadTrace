@@ -201,6 +201,19 @@ Returns: stable run summaries with task id, source metadata, cursor diff, semant
 
 返回：整体 `status`、每个来源的 `status` 和检查项。存在失败检查时 HTTP 状态码为 503，响应体仍包含完整诊断。
 
+### `GET /api/deployment/checklist`
+
+查询部署前验收清单。它聚合 runtime diagnostics、source diagnostics 和 operations readiness，用于部署脚本或控制台判断当前实例是否具备上线条件。
+
+查询参数：
+
+- `forum` / `sourceKey`: 可选，按来源论坛过滤来源诊断。
+- `enabled`: 可选，`true` 或 `false`。
+- `limit`: 可选，默认 100。
+- `now`: 可选，用于测试或固定探测时间。
+
+返回：整体 `status`、分区 `items` 和底层诊断证据。存在失败检查时 HTTP 状态码为 503，响应体仍包含完整清单。
+
 ### `POST /api/sources/{sourceId}/tasks/ingest`
 
 按已注册来源触发一次导入任务。当前支持 `saved-html-directory` 来源，后续会扩展到在线主题 URL、批量来源和定时计划。

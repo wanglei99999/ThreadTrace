@@ -290,6 +290,30 @@ function main(argv) {
     return;
   }
 
+  if (command === 'deployment-checklist') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.getDeploymentChecklist({
+      forum: options.forum,
+      sourceKey: options.sourceKey,
+      enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
+      limit: options.limit ? Number(options.limit) : 100,
+      now: options.now,
+      storeDir
+    }).then(function (checklist) {
+      console.log('Deployment checklist: ' + checklist.status);
+      checklist.items.forEach(function (item) {
+        console.log(item.status + '\t' + item.area + '\t' + item.key + '\t' + item.summary);
+      });
+      if (checklist.status === 'fail') {
+        process.exitCode = 2;
+      }
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'migrate-store') {
     const fromStoreDir = options.fromStoreDir || options.storeDir || defaultStoreDir;
     runtime.migrateStore({
@@ -925,6 +949,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js operations-overview [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-readiness [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js runtime-diagnostics [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js deployment-checklist [--forum nga] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js migrate-store --from-store-dir dir [--to-store-dir dir] [--dry-run true|false] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js list-events [--source-id id] [--type type] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js fetch-thread-page [--forum nga] [--url url | --source-id id] [--source-thread-id id] [--store-dir dir]');

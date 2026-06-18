@@ -249,6 +249,9 @@ async function loadSystemStatus() {
     const sourceDiagnostics = await fetchJson('/api/sources/diagnostics?limit=100', {
       acceptErrorStatus: true
     });
+    const deploymentChecklist = await fetchJson('/api/deployment/checklist?limit=100', {
+      acceptErrorStatus: true
+    });
     const resourceStatusRows = diagnostics.configuration.storageMode === 'postgres'
       ? [statusRow('Postgres', diagnosticStatus(diagnostics, 'resources.postgres'))]
       : [
@@ -258,6 +261,7 @@ async function loadSystemStatus() {
     const rows = [
       statusRow('服务', health.ok ? '运行中' : '异常'),
       statusRow('诊断', diagnostics.status),
+      statusRow('Deploy', deploymentChecklist.status),
       statusRow('存储', overview.storageMode),
       statusRow('Source config', sourceDiagnostics.status + ' · ' + sourceDiagnostics.sourceCount),
       statusRow('Source mode', diagnostics.configuration.workers.sourceTaskMode),
