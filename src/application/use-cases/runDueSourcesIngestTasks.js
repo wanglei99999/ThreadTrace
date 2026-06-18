@@ -30,7 +30,7 @@ async function runDueSourcesIngestTasks(options) {
     sourceKey: safeOptions.sourceKey,
     limit: safeOptions.limit || 50,
     checkedAt
-  });
+  }, safeOptions);
   await taskRepository.saveTask(batchTask);
 
   batchTask = markTaskRunning(batchTask);
@@ -78,7 +78,10 @@ async function runDueSourcesIngestTasks(options) {
           notificationEventRepository: safeOptions.notificationEventRepository,
           sourceIngestHandlerRegistry: safeOptions.sourceIngestHandlerRegistry,
           sourceRunStaleAfterMs: safeOptions.sourceRunStaleAfterMs,
-          now: checkedAt
+          now: checkedAt,
+          requestId: safeOptions.requestId,
+          traceId: safeOptions.traceId,
+          idempotencyKey: safeOptions.idempotencyKey
         });
         results.push({
           source: result.source || item.source,

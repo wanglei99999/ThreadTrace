@@ -496,13 +496,25 @@ test('http server can run and list ingest tasks', async function () {
   const baseUrl = 'http://127.0.0.1:' + address.port;
 
   try {
-    const taskResult = await postJson(baseUrl + '/api/tasks/ingest-directory', {});
+    const taskResponse = await fetch(baseUrl + '/api/tasks/ingest-directory', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-request-id': 'http-task-request-1',
+        'idempotency-key': 'http-task-idem-1'
+      },
+      body: '{}'
+    });
+    const taskResult = await taskResponse.json();
     const tasksResult = await getJson(baseUrl + '/api/tasks');
 
     assert.equal(taskResult.task.status, 'completed');
     assert.equal(taskResult.task.output.sourceThreadId, '45974302');
+    assert.equal(taskResult.task.input._trace.requestId, 'http-task-request-1');
+    assert.equal(taskResult.task.input._trace.idempotencyKey, 'http-task-idem-1');
     assert.equal(tasksResult.tasks.length, 1);
     assert.equal(tasksResult.tasks[0].id, taskResult.task.id);
+    assert.equal(tasksResult.tasks[0].input._trace.requestId, 'http-task-request-1');
   } finally {
     await close(server);
   }

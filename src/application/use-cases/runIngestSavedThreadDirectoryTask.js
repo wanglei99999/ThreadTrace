@@ -11,11 +11,12 @@ const {
 } = require('../jobs/taskRecordFactory');
 
 async function runIngestSavedThreadDirectoryTask(options) {
-  const taskRepository = assertTaskRepository(options.taskRepository);
+  const safeOptions = options || {};
+  const taskRepository = assertTaskRepository(safeOptions.taskRepository);
   let task = createTaskRecord('ingest-saved-thread-directory', {
-    forum: options.forum || 'nga',
-    inputDir: options.inputDir
-  });
+    forum: safeOptions.forum || 'nga',
+    inputDir: safeOptions.inputDir
+  }, safeOptions);
   await taskRepository.saveTask(task);
 
   task = markTaskRunning(task);
@@ -23,10 +24,10 @@ async function runIngestSavedThreadDirectoryTask(options) {
 
   try {
     const result = await ingestSavedThreadDirectory({
-      adapter: options.adapter,
-      inputDir: options.inputDir,
-      threadRepository: options.threadRepository,
-      reportRepository: options.reportRepository
+      adapter: safeOptions.adapter,
+      inputDir: safeOptions.inputDir,
+      threadRepository: safeOptions.threadRepository,
+      reportRepository: safeOptions.reportRepository
     });
     const cursor = buildThreadSnapshotCursor(result.threadSnapshot);
 

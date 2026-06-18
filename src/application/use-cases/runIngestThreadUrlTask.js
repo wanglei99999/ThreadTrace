@@ -31,7 +31,7 @@ async function runIngestThreadUrlTask(options) {
     sourceId: source.id,
     url,
     page: safeOptions.page
-  });
+  }, safeOptions);
   await taskRepository.saveTask(task);
 
   task = markTaskRunning(task);

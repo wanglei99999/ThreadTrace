@@ -27,7 +27,10 @@ test('ingest task records status and output in task repository', async function 
     reportRepository: createFileAnalysisReportRepository({
       baseDir: path.join(tempDir, 'reports')
     }),
-    taskRepository
+    taskRepository,
+    requestId: 'task-request-1',
+    traceId: 'trace-1',
+    idempotencyKey: 'idem-1'
   });
 
   const loadedTask = await taskRepository.findTask(result.task.id);
@@ -37,6 +40,12 @@ test('ingest task records status and output in task repository', async function 
   });
 
   assert.equal(result.task.status, 'completed');
+  assert.deepEqual(result.task.input._trace, {
+    requestId: 'task-request-1',
+    traceId: 'trace-1',
+    idempotencyKey: 'idem-1'
+  });
   assert.equal(loadedTask.output.sourceThreadId, '45974302');
+  assert.equal(loadedTask.input._trace.requestId, 'task-request-1');
   assert.equal(tasks.length, 1);
 });

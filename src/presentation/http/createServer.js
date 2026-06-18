@@ -20,6 +20,7 @@ function createThreadTraceServer(options) {
 
   return http.createServer(async function (request, response) {
     const requestId = resolveRequestId(request);
+    const idempotencyKey = resolveHeaderValue(request, 'idempotency-key');
     try {
       applyCors(response);
       response.setHeader('x-request-id', requestId);
@@ -34,6 +35,8 @@ function createThreadTraceServer(options) {
         webDir,
         storeDir,
         runtime,
+        requestId,
+        idempotencyKey,
         maxBodyBytes: safeOptions.maxBodyBytes || 1024 * 1024
       });
     } catch (error) {
@@ -146,7 +149,9 @@ async function routeRequest(request, response, context) {
     const result = await context.runtime.runIngestDirectoryTask({
       forum: body.forum,
       inputDir: body.inputDir || context.defaultInputDir,
-      storeDir: body.storeDir || context.storeDir
+      storeDir: body.storeDir || context.storeDir,
+      requestId: context.requestId,
+      idempotencyKey: context.idempotencyKey
     });
     writeJson(response, 200, {
       task: result.task,
@@ -205,7 +210,9 @@ async function routeRequest(request, response, context) {
       baseReportType: body.baseReportType,
       provider: body.provider || 'mock',
       traceId: body.traceId,
-      storeDir: body.storeDir || context.storeDir
+      storeDir: body.storeDir || context.storeDir,
+      requestId: context.requestId,
+      idempotencyKey: context.idempotencyKey
     });
     writeJson(response, 200, {
       task: result.task,
@@ -340,7 +347,9 @@ async function routeRequest(request, response, context) {
     const result = await context.runtime.runRawThreadPageIngestTask({
       forum: body.forum,
       contentSha1: body.contentSha1,
-      storeDir: body.storeDir || context.storeDir
+      storeDir: body.storeDir || context.storeDir,
+      requestId: context.requestId,
+      idempotencyKey: context.idempotencyKey
     });
     writeJson(response, 200, {
       task: result.task,
@@ -463,7 +472,9 @@ async function routeRequest(request, response, context) {
       limit: body.limit,
       sourceRunStaleAfterMs: body.sourceRunStaleAfterMs,
       now: body.now,
-      storeDir: body.storeDir || context.storeDir
+      storeDir: body.storeDir || context.storeDir,
+      requestId: context.requestId,
+      idempotencyKey: context.idempotencyKey
     });
     writeJson(response, 200, result);
     return;
@@ -476,7 +487,9 @@ async function routeRequest(request, response, context) {
       limit: body.limit,
       now: body.now,
       sourceRunStaleAfterMs: body.sourceRunStaleAfterMs,
-      storeDir: body.storeDir || context.storeDir
+      storeDir: body.storeDir || context.storeDir,
+      requestId: context.requestId,
+      idempotencyKey: context.idempotencyKey
     });
     writeJson(response, 200, result);
     return;
@@ -494,7 +507,9 @@ async function routeRequest(request, response, context) {
       baseReportType: body.baseReportType,
       semanticEnrichmentEnabled: body.semanticEnrichmentEnabled,
       semanticSkipIfUnchanged: body.semanticSkipIfUnchanged,
-      storeDir: body.storeDir || context.storeDir
+      storeDir: body.storeDir || context.storeDir,
+      requestId: context.requestId,
+      idempotencyKey: context.idempotencyKey
     });
     writeJson(response, 200, result);
     return;
@@ -507,7 +522,9 @@ async function routeRequest(request, response, context) {
       sourceId: decodeURIComponent(sourceIngestMatch[1]),
       sourceRunStaleAfterMs: body.sourceRunStaleAfterMs,
       now: body.now,
-      storeDir: body.storeDir || context.storeDir
+      storeDir: body.storeDir || context.storeDir,
+      requestId: context.requestId,
+      idempotencyKey: context.idempotencyKey
     });
     writeJson(response, 200, {
       sourceId: decodeURIComponent(sourceIngestMatch[1]),
@@ -529,7 +546,9 @@ async function routeRequest(request, response, context) {
       semanticSkipIfUnchanged: body.semanticSkipIfUnchanged,
       sourceRunStaleAfterMs: body.sourceRunStaleAfterMs,
       now: body.now,
-      storeDir: body.storeDir || context.storeDir
+      storeDir: body.storeDir || context.storeDir,
+      requestId: context.requestId,
+      idempotencyKey: context.idempotencyKey
     });
     writeJson(response, 200, {
       sourceId: decodeURIComponent(sourcePipelineMatch[1]),
@@ -650,15 +669,19 @@ function writeError(response, statusCode, code, message, details) {
 }
 
 function resolveRequestId(request) {
-  const value = request.headers['x-request-id'];
-  if (Array.isArray(value)) return value[0] || crypto.randomUUID();
-  return value || crypto.randomUUID();
+  return resolveHeaderValue(request, 'x-request-id') || crypto.randomUUID();
+}
+
+function resolveHeaderValue(request, name) {
+  const value = request.headers[name];
+  if (Array.isArray(value)) return value[0];
+  return value;
 }
 
 function applyCors(response) {
   response.setHeader('access-control-allow-origin', '*');
   response.setHeader('access-control-allow-methods', 'GET,POST,OPTIONS');
-  response.setHeader('access-control-allow-headers', 'content-type');
+  response.setHeader('access-control-allow-headers', 'content-type,x-request-id,idempotency-key');
 }
 
 function httpInputError(code, message, statusCode) {

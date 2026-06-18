@@ -46,7 +46,10 @@ async function runTrackedSourceIngestTask(options) {
       threadRepository: safeOptions.threadRepository,
       reportRepository: safeOptions.reportRepository,
       taskRepository: safeOptions.taskRepository,
-      rawThreadPageRepository: safeOptions.rawThreadPageRepository
+      rawThreadPageRepository: safeOptions.rawThreadPageRepository,
+      requestId: safeOptions.requestId,
+      traceId: safeOptions.traceId,
+      idempotencyKey: safeOptions.idempotencyKey
     });
     const cursor = buildThreadSnapshotCursor(result.threadSnapshot);
     const cursorDiff = compareThreadSnapshotCursor(source.cursor, cursor);

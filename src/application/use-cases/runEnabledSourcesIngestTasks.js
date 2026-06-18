@@ -27,7 +27,7 @@ async function runEnabledSourcesIngestTasks(options) {
   let batchTask = createTaskRecord('ingest-enabled-sources', {
     sourceKey: safeOptions.sourceKey,
     limit: safeOptions.limit || 50
-  });
+  }, safeOptions);
   await taskRepository.saveTask(batchTask);
 
   batchTask = markTaskRunning(batchTask);
@@ -56,7 +56,10 @@ async function runEnabledSourcesIngestTasks(options) {
           notificationEventRepository: safeOptions.notificationEventRepository,
           sourceIngestHandlerRegistry: safeOptions.sourceIngestHandlerRegistry,
           sourceRunStaleAfterMs: safeOptions.sourceRunStaleAfterMs,
-          now: safeOptions.now
+          now: safeOptions.now,
+          requestId: safeOptions.requestId,
+          traceId: safeOptions.traceId,
+          idempotencyKey: safeOptions.idempotencyKey
         });
         results.push({
           source: result.source || source,

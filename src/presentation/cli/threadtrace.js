@@ -676,6 +676,7 @@ function main(argv) {
       sourceId: options.sourceId,
       sourceRunStaleAfterMs: options.sourceRunStaleAfterMs ? Number(options.sourceRunStaleAfterMs) : undefined,
       now: options.now,
+      traceId: options.traceId,
       storeDir
     }).then(function (result) {
       console.log('Task completed: ' + result.task.id);
@@ -702,6 +703,7 @@ function main(argv) {
       semanticSkipIfUnchanged: parseOptionalBoolean(options.semanticSkipIfUnchanged),
       sourceRunStaleAfterMs: options.sourceRunStaleAfterMs ? Number(options.sourceRunStaleAfterMs) : undefined,
       now: options.now,
+      traceId: options.traceId,
       storeDir
     }).then(function (result) {
       console.log('Task completed: ' + result.task.id);
@@ -752,6 +754,7 @@ function main(argv) {
       limit: options.limit ? Number(options.limit) : 50,
       now: options.now,
       sourceRunStaleAfterMs: options.sourceRunStaleAfterMs ? Number(options.sourceRunStaleAfterMs) : undefined,
+      traceId: options.traceId,
       storeDir
     }).then(function (result) {
       console.log('Sources: ' + result.sourceCount);
@@ -1116,11 +1119,11 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js source-diagnostics [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js connector-catalog [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js notification-diagnostics [--channel file|webhook] [--webhook-url url] [--store-dir dir]');
-  console.log('  node src/presentation/cli/threadtrace.js run-source-task --source-id id [--source-run-stale-after-ms ms] [--store-dir dir]');
-  console.log('  node src/presentation/cli/threadtrace.js run-source-insight-pipeline --source-id id [--provider mock] [--semantic-enrichment-enabled true|false] [--semantic-skip-if-unchanged true|false] [--source-run-stale-after-ms ms] [--store-dir dir]');
-  console.log('  node src/presentation/cli/threadtrace.js run-sources-task [--forum nga] [--limit n] [--source-run-stale-after-ms ms] [--store-dir dir]');
-  console.log('  node src/presentation/cli/threadtrace.js run-due-sources-task [--forum nga] [--now iso] [--source-run-stale-after-ms ms] [--store-dir dir]');
-  console.log('  node src/presentation/cli/threadtrace.js run-due-source-insight-pipelines [--forum nga] [--provider mock] [--now iso] [--source-run-stale-after-ms ms] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js run-source-task --source-id id [--trace-id id] [--source-run-stale-after-ms ms] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js run-source-insight-pipeline --source-id id [--provider mock] [--trace-id id] [--semantic-enrichment-enabled true|false] [--semantic-skip-if-unchanged true|false] [--source-run-stale-after-ms ms] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js run-sources-task [--forum nga] [--limit n] [--trace-id id] [--source-run-stale-after-ms ms] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js run-due-sources-task [--forum nga] [--now iso] [--trace-id id] [--source-run-stale-after-ms ms] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js run-due-source-insight-pipelines [--forum nga] [--provider mock] [--trace-id id] [--now iso] [--source-run-stale-after-ms ms] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js index-html-dir [--forum nga] [--input dir] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js search-index --text text [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js interpret-text-dir [--forum nga] [--input dir] --text text [--author-id id] [--output file] [--markdown-output file]');

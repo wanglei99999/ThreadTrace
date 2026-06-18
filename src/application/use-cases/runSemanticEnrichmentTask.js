@@ -29,7 +29,7 @@ async function runSemanticEnrichmentTask(options) {
     sourceThreadId,
     baseReportType,
     provider: safeOptions.providerKey
-  });
+  }, safeOptions);
   await taskRepository.saveTask(task);
 
   task = markTaskRunning(task);

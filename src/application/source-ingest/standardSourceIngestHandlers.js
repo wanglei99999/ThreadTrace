@@ -45,7 +45,10 @@ function createSavedHtmlDirectoryIngestHandler() {
         inputDir: source.location.inputDir,
         threadRepository: assertThreadRepository(context.threadRepository),
         reportRepository: assertAnalysisReportRepository(context.reportRepository),
-        taskRepository: assertTaskRepository(context.taskRepository)
+        taskRepository: assertTaskRepository(context.taskRepository),
+        requestId: context.requestId,
+        traceId: context.traceId,
+        idempotencyKey: context.idempotencyKey
       });
     }
   };
@@ -81,7 +84,10 @@ function createThreadUrlIngestHandler() {
         rawThreadPageRepository: assertRawThreadPageRepository(context.rawThreadPageRepository),
         threadRepository: assertThreadRepository(context.threadRepository),
         reportRepository: assertAnalysisReportRepository(context.reportRepository),
-        taskRepository: assertTaskRepository(context.taskRepository)
+        taskRepository: assertTaskRepository(context.taskRepository),
+        requestId: context.requestId,
+        traceId: context.traceId,
+        idempotencyKey: context.idempotencyKey
       });
     }
   };

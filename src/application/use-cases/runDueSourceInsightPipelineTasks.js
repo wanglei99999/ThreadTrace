@@ -32,7 +32,7 @@ async function runDueSourceInsightPipelineTasks(options) {
     limit: safeOptions.limit || 50,
     checkedAt,
     semanticEnrichment
-  });
+  }, safeOptions);
   await taskRepository.saveTask(batchTask);
 
   batchTask = markTaskRunning(batchTask);
@@ -82,7 +82,10 @@ async function runDueSourceInsightPipelineTasks(options) {
           llmProvider: safeOptions.llmProvider,
           semanticEnrichment,
           sourceRunStaleAfterMs: safeOptions.sourceRunStaleAfterMs,
-          now: checkedAt
+          now: checkedAt,
+          requestId: safeOptions.requestId,
+          traceId: safeOptions.traceId,
+          idempotencyKey: safeOptions.idempotencyKey
         });
         results.push({
           source: result.ingest.source || item.source,

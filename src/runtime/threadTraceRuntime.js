@@ -205,7 +205,10 @@ function createThreadTraceRuntime(options) {
         threadRepository: repositories.threadRepository,
         reportRepository: repositories.reportRepository,
         taskRepository: repositories.taskRepository,
-        notificationEventRepository: repositories.notificationEventRepository
+        notificationEventRepository: repositories.notificationEventRepository,
+        requestId: safeRequest.requestId,
+        traceId: safeRequest.traceId,
+        idempotencyKey: safeRequest.idempotencyKey
       });
     },
 
@@ -254,7 +257,9 @@ function createThreadTraceRuntime(options) {
         traceId: safeRequest.traceId,
         reportRepository: repositories.reportRepository,
         taskRepository: repositories.taskRepository,
-        llmProvider: createLlmProviderFor(safeRequest)
+        llmProvider: createLlmProviderFor(safeRequest),
+        requestId: safeRequest.requestId,
+        idempotencyKey: safeRequest.idempotencyKey
       });
     },
 
@@ -455,7 +460,10 @@ function createThreadTraceRuntime(options) {
         notificationEventRepository: repositories.notificationEventRepository,
         sourceIngestHandlerRegistry,
         sourceRunStaleAfterMs: resolveSourceRunStaleAfterMs(safeRequest, runtimeConfig),
-        now: safeRequest.now
+        now: safeRequest.now,
+        requestId: safeRequest.requestId,
+        traceId: safeRequest.traceId,
+        idempotencyKey: safeRequest.idempotencyKey
       });
     },
 
@@ -481,6 +489,9 @@ function createThreadTraceRuntime(options) {
         llmProvider: createLlmProviderFor(safeRequest),
         sourceRunStaleAfterMs: resolveSourceRunStaleAfterMs(safeRequest, runtimeConfig),
         now: safeRequest.now,
+        requestId: safeRequest.requestId,
+        traceId: safeRequest.traceId,
+        idempotencyKey: safeRequest.idempotencyKey,
         semanticEnrichment: {
           enabled: safeRequest.semanticEnrichmentEnabled !== false,
           skipIfUnchanged: safeRequest.semanticSkipIfUnchanged !== false,
@@ -507,7 +518,10 @@ function createThreadTraceRuntime(options) {
         now: safeRequest.now,
         sourceRunStaleAfterMs: resolveSourceRunStaleAfterMs(safeRequest, runtimeConfig),
         getAdapter: forumAdapterRegistry.get,
-        sourceIngestHandlerRegistry
+        sourceIngestHandlerRegistry,
+        requestId: safeRequest.requestId,
+        traceId: safeRequest.traceId,
+        idempotencyKey: safeRequest.idempotencyKey
       });
     },
 
@@ -527,7 +541,10 @@ function createThreadTraceRuntime(options) {
         now: safeRequest.now,
         sourceRunStaleAfterMs: resolveSourceRunStaleAfterMs(safeRequest, runtimeConfig),
         getAdapter: forumAdapterRegistry.get,
-        sourceIngestHandlerRegistry
+        sourceIngestHandlerRegistry,
+        requestId: safeRequest.requestId,
+        traceId: safeRequest.traceId,
+        idempotencyKey: safeRequest.idempotencyKey
       });
     },
 
@@ -572,7 +589,9 @@ function createThreadTraceRuntime(options) {
         traceId: safeRequest.traceId,
         baseReportType: safeRequest.baseReportType,
         semanticEnrichmentEnabled: safeRequest.semanticEnrichmentEnabled,
-        semanticSkipIfUnchanged: safeRequest.semanticSkipIfUnchanged
+        semanticSkipIfUnchanged: safeRequest.semanticSkipIfUnchanged,
+        requestId: safeRequest.requestId,
+        idempotencyKey: safeRequest.idempotencyKey
       });
     },
 
@@ -620,7 +639,10 @@ function createThreadTraceRuntime(options) {
         reportRepository: repositories.reportRepository,
         taskRepository: repositories.taskRepository,
         sourceKey,
-        contentSha1: safeRequest.contentSha1
+        contentSha1: safeRequest.contentSha1,
+        requestId: safeRequest.requestId,
+        traceId: safeRequest.traceId,
+        idempotencyKey: safeRequest.idempotencyKey
       });
     },
 

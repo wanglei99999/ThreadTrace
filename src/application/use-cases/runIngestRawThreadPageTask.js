@@ -28,7 +28,7 @@ async function runIngestRawThreadPageTask(options) {
   let task = createTaskRecord('ingest-raw-thread-page', {
     sourceKey: safeOptions.sourceKey,
     contentSha1: safeOptions.contentSha1
-  });
+  }, safeOptions);
   await taskRepository.saveTask(task);
 
   task = markTaskRunning(task);

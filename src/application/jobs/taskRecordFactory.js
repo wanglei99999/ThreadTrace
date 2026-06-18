@@ -2,13 +2,13 @@
 
 const crypto = require('crypto');
 
-function createTaskRecord(type, input) {
+function createTaskRecord(type, input, options) {
   const now = new Date().toISOString();
   return {
     id: crypto.randomUUID(),
     type,
     status: 'queued',
-    input: input || {},
+    input: attachTaskTrace(input, options),
     createdAt: now,
     updatedAt: now
   };
@@ -46,9 +46,23 @@ function markTaskFailed(task, error) {
   });
 }
 
+function attachTaskTrace(input, options) {
+  const safeInput = input || {};
+  const safeOptions = options || {};
+  const trace = {};
+  if (safeOptions.requestId) trace.requestId = safeOptions.requestId;
+  if (safeOptions.traceId) trace.traceId = safeOptions.traceId;
+  if (safeOptions.idempotencyKey) trace.idempotencyKey = safeOptions.idempotencyKey;
+  if (Object.keys(trace).length === 0) return safeInput;
+  return Object.assign({}, safeInput, {
+    _trace: Object.assign({}, safeInput._trace || {}, trace)
+  });
+}
+
 module.exports = {
   createTaskRecord,
   markTaskRunning,
   markTaskCompleted,
-  markTaskFailed
+  markTaskFailed,
+  attachTaskTrace
 };

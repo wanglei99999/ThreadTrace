@@ -33,7 +33,7 @@ async function runSourceInsightPipelineTask(options) {
   let task = createTaskRecord('source-insight-pipeline', {
     sourceId,
     semanticEnrichment: buildSemanticOptions(safeOptions.semanticEnrichment)
-  });
+  }, safeOptions);
   await taskRepository.saveTask(task);
 
   task = markTaskRunning(task);
@@ -53,14 +53,20 @@ async function runSourceInsightPipelineTask(options) {
       notificationEventRepository: safeOptions.notificationEventRepository,
       sourceIngestHandlerRegistry: safeOptions.sourceIngestHandlerRegistry,
       sourceRunStaleAfterMs: safeOptions.sourceRunStaleAfterMs,
-      now: safeOptions.now
+      now: safeOptions.now,
+      requestId: safeOptions.requestId,
+      traceId: safeOptions.traceId,
+      idempotencyKey: safeOptions.idempotencyKey
     });
     const semantic = await maybeRunSemanticEnrichment({
       ingest,
       semanticEnrichment: buildSemanticOptions(safeOptions.semanticEnrichment),
       llmProvider: safeOptions.llmProvider,
       reportRepository,
-      taskRepository
+      taskRepository,
+      requestId: safeOptions.requestId,
+      traceId: safeOptions.traceId,
+      idempotencyKey: safeOptions.idempotencyKey
     });
 
     task = markTaskCompleted(task, {
@@ -108,7 +114,9 @@ async function maybeRunSemanticEnrichment(options) {
     traceId: semanticOptions.traceId,
     reportRepository: options.reportRepository,
     taskRepository: options.taskRepository,
-    llmProvider
+    llmProvider,
+    requestId: options.requestId,
+    idempotencyKey: options.idempotencyKey
   });
   return {
     status: 'completed',
