@@ -1,6 +1,8 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 const { createThreadTraceServer } = require('../src/presentation/http/createServer');
@@ -62,6 +64,29 @@ test('http server handles CORS preflight and validates interpret text input', as
     assert.equal(preflight.headers.get('access-control-allow-origin'), '*');
     assert.equal(invalid.status, 400);
     assert.match(invalidBody.error.message, /requires text/);
+  } finally {
+    await close(server);
+  }
+});
+
+test('http server can run and list ingest tasks', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-http-task-'));
+  const server = createThreadTraceServer({
+    defaultInputDir: path.resolve(__dirname, '..', 'example'),
+    storeDir: tempDir
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const taskResult = await postJson(baseUrl + '/api/tasks/ingest-directory', {});
+    const tasksResult = await getJson(baseUrl + '/api/tasks');
+
+    assert.equal(taskResult.task.status, 'completed');
+    assert.equal(taskResult.task.output.sourceThreadId, '45974302');
+    assert.equal(tasksResult.tasks.length, 1);
+    assert.equal(tasksResult.tasks[0].id, taskResult.task.id);
   } finally {
     await close(server);
   }

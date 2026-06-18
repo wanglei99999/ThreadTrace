@@ -6,12 +6,17 @@ const path = require('path');
 const { getForumAdapter, listForumAdapters } = require('../../infrastructure/forum-adapters/registry');
 const { analyzeSavedThreadDirectory } = require('../../application/use-cases/analyzeSavedThreadDirectory');
 const { interpretNewPostFromSavedThreadDirectory } = require('../../application/use-cases/interpretNewPostFromSavedThreadDirectory');
+const { runIngestSavedThreadDirectoryTask } = require('../../application/use-cases/runIngestSavedThreadDirectoryTask');
+const { createFileThreadRepository } = require('../../infrastructure/storage/fileThreadRepository');
+const { createFileAnalysisReportRepository } = require('../../infrastructure/storage/fileAnalysisReportRepository');
+const { createFileTaskRepository } = require('../../infrastructure/storage/fileTaskRepository');
 const { createOpenApiSpec } = require('./openApiSpec');
 
 function createThreadTraceServer(options) {
   const safeOptions = options || {};
   const defaultInputDir = safeOptions.defaultInputDir || path.resolve(process.cwd(), 'example');
   const webDir = safeOptions.webDir || path.resolve(__dirname, '..', 'web');
+  const storeDir = safeOptions.storeDir || path.resolve(process.cwd(), 'data', 'store');
 
   return http.createServer(async function (request, response) {
     try {
@@ -25,6 +30,7 @@ function createThreadTraceServer(options) {
       await routeRequest(request, response, {
         defaultInputDir,
         webDir,
+        storeDir,
         maxBodyBytes: safeOptions.maxBodyBytes || 1024 * 1024
       });
     } catch (error) {
@@ -98,6 +104,46 @@ async function routeRequest(request, response, context) {
       publishedAt: body.publishedAt
     });
     writeJson(response, 200, report);
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/tasks/ingest-directory') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const adapter = getForumAdapter(body.forum || 'nga');
+    const storeDir = body.storeDir || context.storeDir;
+    const result = await runIngestSavedThreadDirectoryTask({
+      forum: body.forum || 'nga',
+      adapter,
+      inputDir: body.inputDir || context.defaultInputDir,
+      threadRepository: createFileThreadRepository({
+        baseDir: path.join(storeDir, 'threads')
+      }),
+      reportRepository: createFileAnalysisReportRepository({
+        baseDir: path.join(storeDir, 'reports')
+      }),
+      taskRepository: createFileTaskRepository({
+        baseDir: path.join(storeDir, 'tasks')
+      })
+    });
+    writeJson(response, 200, {
+      task: result.task,
+      report: result.report
+    });
+    return;
+  }
+
+  if (request.method === 'GET' && url.pathname === '/api/tasks') {
+    const taskRepository = createFileTaskRepository({
+      baseDir: path.join(context.storeDir, 'tasks')
+    });
+    const tasks = await taskRepository.listTasks({
+      status: url.searchParams.get('status') || undefined,
+      type: url.searchParams.get('type') || undefined,
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 20
+    });
+    writeJson(response, 200, {
+      tasks
+    });
     return;
   }
 

@@ -61,6 +61,32 @@ http://127.0.0.1:3017
 
 返回：新发言语境还原报告，包括新发言实体候选、观点候选和相关历史证据。
 
+### `POST /api/tasks/ingest-directory`
+
+执行一次“导入目录 -> 分析 -> 持久化”的任务。
+
+请求：
+
+```json
+{
+  "forum": "nga",
+  "inputDir": "D:/Coding/GitCoding/ThreadTrace/example",
+  "storeDir": "D:/Coding/GitCoding/ThreadTrace/data/store"
+}
+```
+
+返回：任务记录和基础历史分析报告。
+
+### `GET /api/tasks`
+
+查询任务记录。
+
+查询参数：
+
+- `status`: 可选，如 `completed`。
+- `type`: 可选，如 `ingest-saved-thread-directory`。
+- `limit`: 可选，默认 20。
+
 ## 工程约束
 
 - API 默认允许 CORS，方便本地前端工作台调试。

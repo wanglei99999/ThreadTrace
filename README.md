@@ -13,6 +13,7 @@ npm run parse:sample
 npm run analyze:sample
 npm run analyze:sample-dir
 npm run ingest:sample-dir
+npm run task:ingest:sample
 npm run interpret:sample
 npm run test:unit
 ```
@@ -44,6 +45,8 @@ node src/presentation/cli/threadtrace.js interpret-text-dir --forum nga --input 
 - `GET /openapi.json`
 - `POST /api/analyze-directory`
 - `POST /api/interpret-text`
+- `POST /api/tasks/ingest-directory`
+- `GET /api/tasks`
 
 详细说明见 `docs/api.md`。
 
@@ -67,6 +70,7 @@ node src/presentation/cli/threadtrace.js interpret-text-dir --forum nga --input 
 - 预留数据库、LLM、检索索引和论坛采集器端口。
 - 提供本地文件仓库实现，可作为 PostgreSQL 前的开发替身。
 - 支持导入目录、分析并持久化主题快照和报告。
+- 支持任务记录，为后续定时采集、增量分析和提醒队列打基础。
 - 支持新发言语境还原 MVP，按实体、观点关键词和作者线索召回历史证据。
 - 提供无依赖 HTTP API，供后续前端工作台和定时任务调用。
 - 提供无依赖 Web 工作台原型，可直接调用本地 HTTP API。

@@ -84,6 +84,46 @@ function createOpenApiSpec() {
             }
           }
         }
+      },
+      '/api/tasks/ingest-directory': {
+        post: {
+          summary: 'Run an ingest/analyze/persist task for a saved HTML directory',
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    forum: { type: 'string', example: 'nga' },
+                    inputDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/example' },
+                    storeDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/data/store' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Completed task and report'
+            }
+          }
+        }
+      },
+      '/api/tasks': {
+        get: {
+          summary: 'List task records',
+          parameters: [
+            { name: 'status', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'type', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } }
+          ],
+          responses: {
+            200: {
+              description: 'Task records'
+            }
+          }
+        }
       }
     }
   };

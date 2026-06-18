@@ -8,6 +8,7 @@ const { analyzeSavedThread } = require('../../application/use-cases/analyzeSaved
 const { parseSavedThreadDirectory } = require('../../application/use-cases/parseSavedThreadDirectory');
 const { analyzeSavedThreadDirectory } = require('../../application/use-cases/analyzeSavedThreadDirectory');
 const { ingestSavedThreadDirectory } = require('../../application/use-cases/ingestSavedThreadDirectory');
+const { runIngestSavedThreadDirectoryTask } = require('../../application/use-cases/runIngestSavedThreadDirectoryTask');
 const { interpretNewPostFromSavedThreadDirectory } = require('../../application/use-cases/interpretNewPostFromSavedThreadDirectory');
 const { writeJsonFile } = require('../../infrastructure/storage/jsonFileStorage');
 const { writeTextFile } = require('../../infrastructure/storage/textFileWriter');
@@ -16,6 +17,7 @@ const { renderBasicHistoryMarkdown } = require('../../domain/analysis/markdownRe
 const { renderNewPostContextMarkdown } = require('../../domain/analysis/contextMarkdownRenderer');
 const { createFileThreadRepository } = require('../../infrastructure/storage/fileThreadRepository');
 const { createFileAnalysisReportRepository } = require('../../infrastructure/storage/fileAnalysisReportRepository');
+const { createFileTaskRepository } = require('../../infrastructure/storage/fileTaskRepository');
 
 function main(argv) {
   const command = argv[2] || 'help';
@@ -113,6 +115,53 @@ function main(argv) {
     return;
   }
 
+  if (command === 'run-ingest-task') {
+    const inputDir = options.input || path.resolve(process.cwd(), 'example');
+    const adapter = getForumAdapter(options.forum || 'nga');
+    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    runIngestSavedThreadDirectoryTask({
+      forum: options.forum || 'nga',
+      adapter,
+      inputDir,
+      threadRepository: createFileThreadRepository({
+        baseDir: path.join(storeDir, 'threads')
+      }),
+      reportRepository: createFileAnalysisReportRepository({
+        baseDir: path.join(storeDir, 'reports')
+      }),
+      taskRepository: createFileTaskRepository({
+        baseDir: path.join(storeDir, 'tasks')
+      })
+    }).then(function (result) {
+      console.log('Task completed: ' + result.task.id);
+      console.log('Snapshot and report stored under: ' + storeDir);
+      printThreadSummary(result.threadSnapshot);
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
+  if (command === 'list-tasks') {
+    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    createFileTaskRepository({
+      baseDir: path.join(storeDir, 'tasks')
+    }).listTasks({
+      status: options.status,
+      type: options.type,
+      limit: options.limit ? Number(options.limit) : 20
+    }).then(function (tasks) {
+      tasks.forEach(function (task) {
+        console.log(task.id + '\t' + task.status + '\t' + task.type + '\t' + task.createdAt);
+      });
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'interpret-text-dir') {
     const inputDir = options.input || path.resolve(process.cwd(), 'example');
     const text = options.text;
@@ -177,6 +226,15 @@ function parseArgs(args) {
     } else if (item === '--author') {
       options.author = args[index + 1];
       index += 1;
+    } else if (item === '--status') {
+      options.status = args[index + 1];
+      index += 1;
+    } else if (item === '--type') {
+      options.type = args[index + 1];
+      index += 1;
+    } else if (item === '--limit') {
+      options.limit = args[index + 1];
+      index += 1;
     }
   }
   return options;
@@ -238,6 +296,8 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js analyze-html [--forum nga] [--input file] [--output file] [--markdown-output file]');
   console.log('  node src/presentation/cli/threadtrace.js analyze-html-dir [--forum nga] [--input dir] [--output file] [--markdown-output file]');
   console.log('  node src/presentation/cli/threadtrace.js ingest-html-dir [--forum nga] [--input dir] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js run-ingest-task [--forum nga] [--input dir] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js list-tasks [--store-dir dir] [--status status] [--type type] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js interpret-text-dir [--forum nga] [--input dir] --text text [--author-id id] [--output file] [--markdown-output file]');
 }
 
