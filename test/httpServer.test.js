@@ -50,6 +50,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(handlers.handlers[0].requiresAdapter, true);
     assert.deepEqual(handlers.handlers[0].locationSchema.required, ['inputDir']);
     const threadSnapshotContract = await getJson(baseUrl + '/api/contracts/thread-snapshot-json');
+    const connectorModuleContract = await getJson(baseUrl + '/api/contracts/connector-module');
     assert.equal(connectorCatalog.generatedAt, '2026-06-19T10:00:00.000Z');
     assert.ok(connectorCatalog.sourceTypes.some(function (sourceType) {
       return sourceType.sourceType === 'thread-url';
@@ -66,10 +67,13 @@ test('http server exposes health, adapters, and context APIs', async function ()
     }));
     assert.equal(threadSnapshotContract.version, '1.0.0');
     assert.deepEqual(threadSnapshotContract.schema.required, ['sourceKey', 'sourceThreadId', 'title', 'posts']);
+    assert.equal(connectorModuleContract.version, '1.0.0');
+    assert.ok(connectorModuleContract.sourceIngestHandler.required.includes('sourceType'));
     assert.equal(openApi.openapi, '3.0.3');
     assert.ok(openApi.paths['/api/interpret-text']);
     assert.ok(openApi.paths['/api/adapters/diagnostics']);
     assert.ok(openApi.paths['/api/contracts/thread-snapshot-json']);
+    assert.ok(openApi.paths['/api/contracts/connector-module']);
     assert.ok(openApi.paths['/api/connectors/catalog']);
     assert.ok(openApi.paths['/api/connectors/readiness']);
     assert.ok(openApi.paths['/api/sources/onboarding/preflight']);

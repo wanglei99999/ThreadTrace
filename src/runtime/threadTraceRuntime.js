@@ -4,6 +4,7 @@ const path = require('path');
 const { createThreadTraceConfig } = require('./threadTraceConfig');
 const { loadConnectorModulesReport } = require('./loadConnectorModules');
 const { getThreadSnapshotJsonContract } = require('../domain/contracts/threadSnapshotJsonContract');
+const { getConnectorModuleContract } = require('../domain/contracts/connectorModuleContract');
 const { createDefaultForumAdapterRegistry } = require('../infrastructure/forum-adapters/registry');
 const { analyzeSavedThreadDirectory } = require('../application/use-cases/analyzeSavedThreadDirectory');
 const { interpretNewPostFromSavedThreadDirectory } = require('../application/use-cases/interpretNewPostFromSavedThreadDirectory');
@@ -149,6 +150,10 @@ function createThreadTraceRuntime(options) {
 
     getThreadSnapshotJsonContract() {
       return getThreadSnapshotJsonContract();
+    },
+
+    getConnectorModuleContract() {
+      return getConnectorModuleContract();
     },
 
     getSourceConnectorCatalog(request) {

@@ -52,11 +52,22 @@ node src/presentation/cli/threadtrace.js connector-readiness
 
 Connector modules may export `sourceIngestHandlers`, `forumAdapters`, or a `register(context)` function that calls `context.registerSourceIngestHandler(...)` and `context.registerForumAdapter(...)`.
 
+Fetch the machine-readable connector module contract before implementing a custom package:
+
+```powershell
+node src/presentation/cli/threadtrace.js connector-module-contract
+```
+
+```http
+GET /api/contracts/connector-module
+```
+
 Runtime and HTTP discovery:
 
 ```text
 runtime.listSourceIngestHandlers()
 GET /api/source-ingest-handlers
+GET /api/contracts/connector-module
 GET /api/connectors/catalog
 GET /api/connectors/readiness
 POST /api/sources/validate

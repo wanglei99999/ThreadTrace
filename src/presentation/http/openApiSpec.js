@@ -65,6 +65,16 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/contracts/connector-module': {
+        get: {
+          summary: 'Get the external connector module contract for runtime extension modules',
+          responses: {
+            200: {
+              description: 'Connector module export shapes, registration context, and example module'
+            }
+          }
+        }
+      },
       '/api/connectors/catalog': {
         get: {
           summary: 'List source connector catalog',
