@@ -209,6 +209,26 @@ function main(argv) {
     return;
   }
 
+  if (command === 'ingest-raw-page') {
+    if (!options.contentSha1) {
+      throw new Error('ingest-raw-page requires --content-sha1.');
+    }
+    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    runtime.runRawThreadPageIngestTask({
+      forum: options.forum,
+      contentSha1: options.contentSha1,
+      storeDir
+    }).then(function (result) {
+      console.log('Task completed: ' + result.task.id);
+      console.log('Raw page: ' + result.rawPage.contentSha1);
+      printThreadSummary(result.threadSnapshot);
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'dispatch-events') {
     const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
     runtime.dispatchNotificationEvents({
@@ -474,6 +494,9 @@ function parseArgs(args) {
     } else if (item === '--source-thread-id') {
       options.sourceThreadId = args[index + 1];
       index += 1;
+    } else if (item === '--content-sha1') {
+      options.contentSha1 = args[index + 1];
+      index += 1;
     } else if (item === '--page') {
       options.page = args[index + 1];
       index += 1;
@@ -603,6 +626,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js list-events [--source-id id] [--type type] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js fetch-thread-page [--forum nga] [--url url | --source-id id] [--source-thread-id id] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-raw-pages [--forum nga] [--source-thread-id id] [--limit n] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js ingest-raw-page [--forum nga] --content-sha1 sha1 [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js dispatch-events [--channel file|webhook] [--webhook-url url] [--limit n] [--max-attempts n] [--retry-backoff-ms ms] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js ack-event --event-id id [--by user] [--note text] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--input dir] [--name name] [--interval-minutes n] [--store-dir dir]');

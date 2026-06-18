@@ -183,6 +183,29 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/raw-pages/tasks/ingest') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    if (!body.contentSha1) {
+      writeJson(response, 400, {
+        error: {
+          message: 'POST /api/raw-pages/tasks/ingest requires contentSha1.'
+        }
+      });
+      return;
+    }
+    const result = await context.runtime.runRawThreadPageIngestTask({
+      forum: body.forum,
+      contentSha1: body.contentSha1,
+      storeDir: body.storeDir || context.storeDir
+    });
+    writeJson(response, 200, {
+      task: result.task,
+      rawPage: result.rawPage,
+      report: result.report
+    });
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/events/dispatch') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     const result = await context.runtime.dispatchNotificationEvents({

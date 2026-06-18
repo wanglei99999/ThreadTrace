@@ -224,6 +224,35 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/raw-pages/tasks/ingest': {
+        post: {
+          summary: 'Replay a stored raw page into snapshot and report storage',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['contentSha1'],
+                  properties: {
+                    forum: { type: 'string', example: 'nga' },
+                    contentSha1: { type: 'string' },
+                    storeDir: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Completed raw page replay task'
+            },
+            400: {
+              description: 'Invalid request'
+            }
+          }
+        }
+      },
       '/api/events/{eventId}/ack': {
         post: {
           summary: 'Acknowledge a notification event',

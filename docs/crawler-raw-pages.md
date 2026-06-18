@@ -16,6 +16,7 @@ CLI:
 ```powershell
 node src/presentation/cli/threadtrace.js fetch-thread-page --forum nga --url https://bbs.nga.cn/read.php?tid=45974302
 node src/presentation/cli/threadtrace.js list-raw-pages --forum nga
+node src/presentation/cli/threadtrace.js ingest-raw-page --forum nga --content-sha1 <sha1>
 ```
 
 HTTP:
@@ -23,6 +24,7 @@ HTTP:
 ```text
 POST /api/crawl-page
 GET /api/raw-pages
+POST /api/raw-pages/tasks/ingest
 ```
 
 `fetch-thread-page` can also use `--source-id` for a registered `thread-url` source. The stored record includes `sourceKey`, `sourceThreadId`, `sourceUrl`, `contentSha1`, raw `contentText`, `fetchedAt`, and crawler metadata.
@@ -44,3 +46,5 @@ Registered `thread-url` sources can now run through the tracked source ingestion
 5. Snapshot, report, task, cursor, and notification event repositories update through the same ports used by saved HTML ingestion.
 
 This keeps online collection, parsing, analysis, and notifications independently replaceable.
+
+Stored raw pages can also be replayed by `contentSha1`. Replay does not fetch the network again; it reuses preserved evidence to regenerate snapshots and reports after parser or analyzer changes.

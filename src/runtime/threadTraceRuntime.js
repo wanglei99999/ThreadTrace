@@ -14,6 +14,7 @@ const { runDueSourcesIngestTasks } = require('../application/use-cases/runDueSou
 const { acknowledgeNotificationEvent } = require('../application/use-cases/acknowledgeNotificationEvent');
 const { dispatchPendingNotificationEvents } = require('../application/use-cases/dispatchPendingNotificationEvents');
 const { fetchAndStoreThreadPage } = require('../application/use-cases/fetchAndStoreThreadPage');
+const { runIngestRawThreadPageTask } = require('../application/use-cases/runIngestRawThreadPageTask');
 const { indexSavedThreadDirectory } = require('../application/use-cases/indexSavedThreadDirectory');
 const { searchEvidence } = require('../application/use-cases/searchEvidence');
 const { createFileThreadRepository } = require('../infrastructure/storage/fileThreadRepository');
@@ -271,6 +272,21 @@ function createThreadTraceRuntime(options) {
         sourceThreadId: safeRequest.sourceThreadId,
         sourceUrl: safeRequest.sourceUrl || safeRequest.url,
         limit: safeRequest.limit || 50
+      });
+    },
+
+    async runRawThreadPageIngestTask(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      const sourceKey = safeRequest.sourceKey || safeRequest.forum || defaults.defaultForum;
+      return runIngestRawThreadPageTask({
+        adapter: getForumAdapter(sourceKey),
+        rawThreadPageRepository: repositories.rawThreadPageRepository,
+        threadRepository: repositories.threadRepository,
+        reportRepository: repositories.reportRepository,
+        taskRepository: repositories.taskRepository,
+        sourceKey,
+        contentSha1: safeRequest.contentSha1
       });
     },
 
