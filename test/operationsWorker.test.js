@@ -6,8 +6,19 @@ const { createOperationsWorker } = require('../src/presentation/worker/operation
 
 test('operations worker runs due sources, event dispatch, and overview in order', async function () {
   const calls = [];
+  const workerRuns = [];
   const worker = createOperationsWorker({
     logger: silentLogger(),
+    workerId: 'test-worker',
+    workerRunRepository: {
+      async saveWorkerRun(run) {
+        workerRuns.push(Object.assign({}, run));
+      },
+      async findWorkerRun() {},
+      async listWorkerRuns() {
+        return workerRuns;
+      }
+    },
     runtime: {
       async runDueSourcesIngestTasks(request) {
         calls.push(['sources', request.limit]);
@@ -50,6 +61,11 @@ test('operations worker runs due sources, event dispatch, and overview in order'
   assert.equal(result.dueSources.completedCount, 1);
   assert.equal(result.events.dispatchedCount, 2);
   assert.equal(result.overview.events.unacknowledged, 0);
+  assert.equal(workerRuns[0].workerType, 'operations');
+  assert.equal(workerRuns[0].workerId, 'test-worker');
+  assert.equal(workerRuns.at(-1).status, 'completed');
+  assert.equal(workerRuns.at(-1).progress.step, 'overview');
+  assert.equal(workerRuns.at(-1).output.events.dispatchedCount, 2);
 });
 
 test('operations worker skips overlapping runs', async function () {

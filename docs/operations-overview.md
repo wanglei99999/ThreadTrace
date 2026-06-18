@@ -36,7 +36,19 @@ The operations worker runs due-source ingestion, notification event dispatch, an
 - Sources: total, enabled, disabled, due, running, failed, and due source samples.
 - Tasks: recent task totals grouped by status and last failure.
 - Events: pending, failed, unacknowledged, delivery-due count, and next delivery time.
+- Workers: recent run totals, running/stale counts, latest heartbeat time, and stale run samples.
 - Raw pages: recent raw evidence count and latest fetch time.
 - Storage mode and generation time.
 
 The first implementation uses repository list operations with a bounded window. PostgreSQL deployments can later optimize the same use case with aggregate queries without changing API or Web contracts.
+
+## Worker Run Records
+
+Background workers write one durable `worker_runs` record per execution:
+
+- `running`: run has started and should keep refreshing `heartbeatAt`.
+- `completed`: run finished successfully and stores a small output summary.
+- `failed`: run threw an error and stores the failure message/stack.
+- `skipped`: a local non-overlap guard skipped a run because the previous one was still active.
+
+The default stale window is five minutes. File storage writes JSON records under `worker-runs`; PostgreSQL storage uses the `worker_runs` table in `docs/postgresql-schema.sql`.

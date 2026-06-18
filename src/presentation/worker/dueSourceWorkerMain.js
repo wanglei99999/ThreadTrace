@@ -12,8 +12,10 @@ async function main(argv) {
     storeDir,
     defaultInputDir: options.input || process.env.THREADTRACE_EXAMPLE_DIR || path.resolve(process.cwd(), 'example')
   });
+  const repositories = runtime.createRepositories(storeDir);
   const worker = createDueSourceWorker({
     runtime,
+    workerRunRepository: repositories.workerRunRepository,
     pollIntervalMs: options.intervalMs ? Number(options.intervalMs) : Number(process.env.THREADTRACE_WORKER_INTERVAL_MS || 5 * 60 * 1000)
   });
   const request = {

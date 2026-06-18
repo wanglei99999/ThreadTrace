@@ -6,6 +6,7 @@ const { createThreadTraceRuntime } = require('../src/runtime/threadTraceRuntime'
 const { createPostgresConfig } = require('../src/infrastructure/postgres/postgresConfig');
 const { createPostgresNotificationEventRepository } = require('../src/infrastructure/postgres/postgresNotificationEventRepository');
 const { createPostgresSourceRepository } = require('../src/infrastructure/postgres/postgresSourceRepository');
+const { createPostgresWorkerRunRepository } = require('../src/infrastructure/postgres/postgresWorkerRunRepository');
 
 test('postgres config reads ThreadTrace environment names', function () {
   const config = createPostgresConfig({
@@ -129,6 +130,63 @@ test('postgres notification repository queries due outbox events', async functio
   assert.equal(events[0].deliveryStatus, 'failed');
   assert.equal(events[0].nextDeliveryAt, '2026-06-18T10:01:00.000Z');
   assert.equal(events[0].lastDeliveryError.message, 'timeout');
+});
+
+test('postgres worker run repository maps rows and filters runs', async function () {
+  const queries = [];
+  const repository = createPostgresWorkerRunRepository({
+    client: {
+      async query(sql, params) {
+        queries.push({ sql, params });
+        if (sql.startsWith('select * from worker_runs')) {
+          return {
+            rows: [
+              {
+                id: '7d0b0bb6-0f1d-4bfe-a7e9-0d58a6ea79f0',
+                worker_type: 'operations',
+                worker_id: 'worker-a',
+                status: 'running',
+                input: { limit: 5 },
+                progress: { step: 'overview' },
+                output: null,
+                error: null,
+                started_at: new Date('2026-06-18T10:00:00.000Z'),
+                updated_at: new Date('2026-06-18T10:01:00.000Z'),
+                heartbeat_at: new Date('2026-06-18T10:01:00.000Z'),
+                finished_at: null
+              }
+            ]
+          };
+        }
+        return { rows: [] };
+      }
+    }
+  });
+
+  await repository.saveWorkerRun({
+    id: '7d0b0bb6-0f1d-4bfe-a7e9-0d58a6ea79f0',
+    workerType: 'operations',
+    workerId: 'worker-a',
+    status: 'running',
+    input: { limit: 5 },
+    progress: { step: 'overview' },
+    startedAt: '2026-06-18T10:00:00.000Z',
+    updatedAt: '2026-06-18T10:01:00.000Z',
+    heartbeatAt: '2026-06-18T10:01:00.000Z'
+  });
+  const runs = await repository.listWorkerRuns({
+    workerType: 'operations',
+    status: 'running',
+    limit: 10
+  });
+
+  assert.match(queries[0].sql, /insert into worker_runs/);
+  assert.match(queries[1].sql, /worker_type = \$1/);
+  assert.match(queries[1].sql, /status = \$2/);
+  assert.deepEqual(queries[1].params, ['operations', 'running', 10]);
+  assert.equal(runs[0].workerType, 'operations');
+  assert.equal(runs[0].progress.step, 'overview');
+  assert.equal(runs[0].heartbeatAt, '2026-06-18T10:01:00.000Z');
 });
 
 test('runtime can compose postgres repositories with an injected client', async function () {

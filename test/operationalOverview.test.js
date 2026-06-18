@@ -66,6 +66,33 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
           { contentSha1: 'raw-1', fetchedAt: '2026-06-18T09:50:00.000Z' }
         ];
       }
+    },
+    workerRunRepository: {
+      async saveWorkerRun() {},
+      async findWorkerRun() {},
+      async listWorkerRuns() {
+        return [
+          {
+            id: 'worker-run-1',
+            workerType: 'operations',
+            workerId: 'worker-a',
+            status: 'running',
+            startedAt: '2026-06-18T09:00:00.000Z',
+            updatedAt: '2026-06-18T09:00:00.000Z',
+            heartbeatAt: '2026-06-18T09:00:00.000Z'
+          },
+          {
+            id: 'worker-run-2',
+            workerType: 'notification-event',
+            workerId: 'worker-b',
+            status: 'completed',
+            startedAt: '2026-06-18T09:55:00.000Z',
+            updatedAt: '2026-06-18T09:56:00.000Z',
+            heartbeatAt: '2026-06-18T09:56:00.000Z',
+            finishedAt: '2026-06-18T09:56:00.000Z'
+          }
+        ];
+      }
     }
   });
 
@@ -77,6 +104,10 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
   assert.equal(overview.events.failed, 1);
   assert.equal(overview.events.unacknowledged, 2);
   assert.equal(overview.events.dueForDelivery, 1);
+  assert.equal(overview.workers.running, 1);
+  assert.equal(overview.workers.stale, 1);
+  assert.equal(overview.workers.completed, 1);
+  assert.equal(overview.workers.latestHeartbeatAt, '2026-06-18T09:56:00.000Z');
   assert.equal(overview.rawPages.total, 1);
   assert.equal(overview.rawPages.latestFetchedAt, '2026-06-18T09:50:00.000Z');
 });

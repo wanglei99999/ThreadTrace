@@ -129,3 +129,21 @@ create table if not exists raw_thread_pages (
 
 create unique index if not exists idx_raw_thread_pages_hash on raw_thread_pages(source_key, content_sha1);
 create index if not exists idx_raw_thread_pages_thread on raw_thread_pages(source_key, source_thread_id, page_number);
+
+create table if not exists worker_runs (
+  id uuid primary key,
+  worker_type text not null,
+  worker_id text not null,
+  status text not null,
+  input jsonb not null default '{}'::jsonb,
+  progress jsonb not null default '{}'::jsonb,
+  output jsonb,
+  error jsonb,
+  started_at timestamptz not null,
+  updated_at timestamptz not null,
+  heartbeat_at timestamptz not null,
+  finished_at timestamptz
+);
+
+create index if not exists idx_worker_runs_type_started on worker_runs(worker_type, started_at desc);
+create index if not exists idx_worker_runs_status_heartbeat on worker_runs(status, heartbeat_at desc);

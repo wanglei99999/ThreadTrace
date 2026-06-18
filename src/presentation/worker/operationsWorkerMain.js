@@ -12,8 +12,10 @@ async function main(argv) {
     storeDir,
     defaultInputDir: options.input || process.env.THREADTRACE_EXAMPLE_DIR || path.resolve(process.cwd(), 'example')
   });
+  const repositories = runtime.createRepositories(storeDir);
   const worker = createOperationsWorker({
     runtime,
+    workerRunRepository: repositories.workerRunRepository,
     pollIntervalMs: options.intervalMs ? Number(options.intervalMs) : Number(process.env.THREADTRACE_OPERATIONS_WORKER_INTERVAL_MS || 60 * 1000)
   });
   const request = buildRequest(options, storeDir);
@@ -40,6 +42,7 @@ async function main(argv) {
     console.log('Events delivered: ' + result.events.dispatchedCount);
     console.log('Events failed: ' + result.events.failedCount);
     console.log('Open events: ' + result.overview.events.unacknowledged);
+    console.log('Worker stale: ' + result.overview.workers.stale);
   }
 }
 

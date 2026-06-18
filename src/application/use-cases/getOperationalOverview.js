@@ -5,6 +5,7 @@ const { assertNotificationEventRepository } = require('../ports/notificationEven
 const { assertRawThreadPageRepository } = require('../ports/rawThreadPageRepository');
 const { assertSourceRepository } = require('../ports/sourceRepository');
 const { assertTaskRepository } = require('../ports/taskRepository');
+const { assertWorkerRunRepository } = require('../ports/workerRunRepository');
 
 async function getOperationalOverview(options) {
   const safeOptions = options || {};
@@ -14,6 +15,9 @@ async function getOperationalOverview(options) {
   const taskRepository = assertTaskRepository(safeOptions.taskRepository);
   const notificationEventRepository = assertNotificationEventRepository(safeOptions.notificationEventRepository);
   const rawThreadPageRepository = assertRawThreadPageRepository(safeOptions.rawThreadPageRepository);
+  const workerRunRepository = safeOptions.workerRunRepository
+    ? assertWorkerRunRepository(safeOptions.workerRunRepository)
+    : undefined;
 
   const sources = await sourceRepository.listSources({ limit });
   const recentTasks = await taskRepository.listTasks({ limit });
@@ -21,6 +25,7 @@ async function getOperationalOverview(options) {
   const failedEvents = await notificationEventRepository.listEvents({ deliveryStatus: 'failed', limit });
   const unacknowledgedEvents = await notificationEventRepository.listEvents({ acknowledged: false, limit });
   const rawPages = await rawThreadPageRepository.listRawThreadPages({ limit });
+  const workerRuns = workerRunRepository ? await workerRunRepository.listWorkerRuns({ limit }) : [];
 
   return {
     generatedAt: now,
@@ -28,11 +33,13 @@ async function getOperationalOverview(options) {
     sources: summarizeSources(sources, now),
     tasks: summarizeTasks(recentTasks),
     events: summarizeEvents(pendingEvents, failedEvents, unacknowledgedEvents, now),
+    workers: summarizeWorkerRuns(workerRuns, now, safeOptions.workerStaleAfterMs),
     rawPages: summarizeRawPages(rawPages),
     recent: {
       tasks: recentTasks.slice(0, 10),
       events: unacknowledgedEvents.slice(0, 10),
-      rawPages: rawPages.slice(0, 10)
+      rawPages: rawPages.slice(0, 10),
+      workerRuns: workerRuns.slice(0, 10)
     }
   };
 }
@@ -99,6 +106,38 @@ function summarizeRawPages(rawPages) {
   };
 }
 
+function summarizeWorkerRuns(workerRuns, now, staleAfterMs) {
+  const staleWindowMs = staleAfterMs || 5 * 60 * 1000;
+  const runningRuns = workerRuns.filter(function (run) {
+    return run.status === 'running';
+  });
+  const staleRuns = runningRuns.filter(function (run) {
+    return isStaleWorkerRun(run, now, staleWindowMs);
+  });
+  return {
+    total: workerRuns.length,
+    running: runningRuns.length,
+    stale: staleRuns.length,
+    completed: countByStatus(workerRuns, 'completed'),
+    failed: countByStatus(workerRuns, 'failed'),
+    skipped: countByStatus(workerRuns, 'skipped'),
+    latestHeartbeatAt: latestTimestamp(workerRuns.map(function (run) {
+      return run.heartbeatAt;
+    })),
+    latestRun: workerRuns[0],
+    staleRuns: staleRuns.slice(0, 10).map(function (run) {
+      return {
+        id: run.id,
+        workerType: run.workerType,
+        workerId: run.workerId,
+        status: run.status,
+        heartbeatAt: run.heartbeatAt,
+        startedAt: run.startedAt
+      };
+    })
+  };
+}
+
 function countByStatus(tasks, status) {
   return tasks.filter(function (task) {
     return task.status === status;
@@ -118,6 +157,20 @@ function nextDeliveryAt(events) {
     .map(function (event) { return event.nextDeliveryAt; })
     .filter(Boolean)
     .sort()[0];
+}
+
+function isStaleWorkerRun(run, now, staleAfterMs) {
+  const heartbeatTime = Date.parse(run.heartbeatAt || run.updatedAt || run.startedAt);
+  const nowTime = Date.parse(now);
+  if (Number.isNaN(heartbeatTime) || Number.isNaN(nowTime)) return false;
+  return nowTime - heartbeatTime > staleAfterMs;
+}
+
+function latestTimestamp(values) {
+  return values
+    .filter(Boolean)
+    .sort()
+    .reverse()[0];
 }
 
 module.exports = {
