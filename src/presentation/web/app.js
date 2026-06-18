@@ -31,9 +31,11 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshTasksButton').addEventListener('click', loadTasks);
   document.getElementById('refreshSourcesButton').addEventListener('click', loadSources);
   document.getElementById('refreshEventsButton').addEventListener('click', loadEvents);
+  document.getElementById('refreshRawPagesButton').addEventListener('click', loadRawPages);
   document.getElementById('dispatchEventsButton').addEventListener('click', dispatchEvents);
   document.getElementById('runSourcesButton').addEventListener('click', runAllSources);
   document.getElementById('runDueSourcesButton').addEventListener('click', runDueSources);
+  document.getElementById('crawlUrlButton').addEventListener('click', crawlThreadUrl);
   loadAdapters();
   loadSystemStatus();
 });
@@ -99,6 +101,22 @@ function bindForms() {
     await loadSources();
   });
 
+  document.getElementById('threadUrlForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await renderAsync('sourceResult', function () {
+      return requestJson('/api/sources', {
+        forum: form.get('forum'),
+        sourceType: 'thread-url',
+        displayName: form.get('displayName'),
+        url: form.get('url'),
+        intervalMinutes: Number(form.get('intervalMinutes')) || undefined
+      });
+    }, renderSourceSaveResult);
+    await loadSystemStatus();
+    await loadSources();
+  });
+
   document.getElementById('sourceResult').addEventListener('click', async function (event) {
     const button = event.target.closest('button[data-action="run-source"]');
     if (!button) return;
@@ -108,6 +126,20 @@ function bindForms() {
     await loadSystemStatus();
     await loadTasks();
     await loadEvents();
+    await loadRawPages();
+  });
+
+  document.getElementById('rawPageResult').addEventListener('click', async function (event) {
+    const button = event.target.closest('button[data-action="replay-raw-page"]');
+    if (!button) return;
+    await renderAsync('taskResult', function () {
+      return requestJson('/api/raw-pages/tasks/ingest', {
+        forum: button.dataset.sourceKey,
+        contentSha1: button.dataset.contentSha1
+      });
+    }, renderRawPageReplayResult);
+    await loadSystemStatus();
+    await loadTasks();
   });
 
   document.getElementById('eventResult').addEventListener('click', async function (event) {
@@ -159,6 +191,7 @@ function setView(viewName) {
   if (viewName === 'system') loadSystemStatus();
   if (viewName === 'system') loadSources();
   if (viewName === 'system') loadEvents();
+  if (viewName === 'system') loadRawPages();
 }
 
 async function loadAdapters() {
@@ -169,6 +202,7 @@ async function loadAdapters() {
     fillAdapterSelect('contextForum');
     fillAdapterSelect('searchForum');
     fillAdapterSelect('sourceForum');
+    fillAdapterSelect('threadUrlForum');
   } catch (error) {
     renderError('historyResult', error);
   }
@@ -194,12 +228,14 @@ async function loadSystemStatus() {
     const tasks = await fetchJson('/api/tasks?limit=5');
     const sources = await fetchJson('/api/sources?limit=5');
     const events = await fetchJson('/api/events?limit=5');
+    const rawPages = await fetchJson('/api/raw-pages?limit=5');
     target.innerHTML = [
       statusRow('服务', health.ok ? '运行中' : '异常'),
       statusRow('适配器', String((adapters.adapters || []).length)),
       statusRow('API 契约', openApi.openapi),
       statusRow('端点', String(Object.keys(openApi.paths || {}).length)),
       statusRow('来源', String((sources.sources || []).length)),
+      statusRow('原始页', String((rawPages.pages || []).length)),
       statusRow('事件', String((events.events || []).length)),
       statusRow('最近任务', String((tasks.tasks || []).length))
     ].join('');
@@ -226,6 +262,24 @@ async function loadEvents() {
   }, renderEventList);
 }
 
+async function loadRawPages() {
+  await renderAsync('rawPageResult', function () {
+    return fetchJson('/api/raw-pages?limit=10');
+  }, renderRawPageList);
+}
+
+async function crawlThreadUrl() {
+  const form = new FormData(document.getElementById('threadUrlForm'));
+  await renderAsync('rawPageResult', function () {
+    return requestJson('/api/crawl-page', {
+      forum: form.get('forum'),
+      url: form.get('url')
+    });
+  }, renderRawPageFetchResult);
+  await loadSystemStatus();
+  await loadRawPages();
+}
+
 async function runAllSources() {
   await renderAsync('taskResult', function () {
     return requestJson('/api/sources/tasks/ingest', {});
@@ -234,6 +288,7 @@ async function runAllSources() {
   await loadTasks();
   await loadSources();
   await loadEvents();
+  await loadRawPages();
 }
 
 async function runDueSources() {
@@ -244,6 +299,7 @@ async function runDueSources() {
   await loadTasks();
   await loadSources();
   await loadEvents();
+  await loadRawPages();
 }
 
 async function dispatchEvents() {
@@ -406,6 +462,40 @@ function renderEventAckResult(result) {
     metric('确认时间', result.event.acknowledgedAt),
     metric('确认人', result.event.acknowledgedBy)
   ].join(''), 'wide');
+}
+
+function renderRawPageFetchResult(result) {
+  return panel('原始页已抓取', [
+    metric('SHA1', result.rawPage.contentSha1),
+    metric('论坛', result.rawPage.sourceKey),
+    metric('URL', result.rawPage.sourceUrl),
+    metric('重复', result.duplicate ? '是' : '否')
+  ].join(''), 'wide');
+}
+
+function renderRawPageReplayResult(result) {
+  return panel('原始页回放完成', [
+    metric('任务 ID', result.task.id),
+    metric('状态', result.task.status),
+    metric('主题', result.report.thread.title),
+    metric('楼层', result.report.thread.parsedPostCount)
+  ].join(''), 'wide');
+}
+
+function renderRawPageList(result) {
+  const pages = result.pages || [];
+  if (pages.length === 0) return panel('原始页证据', '<div class="muted">暂无</div>', 'wide');
+  return panel('原始页证据', pages.map(function (page) {
+    const meta = page.metadata || {};
+    const details = [
+      page.sourceKey,
+      page.sourceThreadId || 'unknown-thread',
+      page.contentSha1,
+      meta.status ? 'HTTP ' + meta.status : '',
+      page.fetchedAt
+    ].filter(Boolean).join(' · ');
+    return '<div class="action-row"><span>' + escapeHtml(page.sourceUrl || page.contentSha1) + '<small>' + escapeHtml(details) + '</small></span><button class="inline-button" type="button" data-action="replay-raw-page" data-source-key="' + escapeHtml(page.sourceKey) + '" data-content-sha1="' + escapeHtml(page.contentSha1) + '">回放</button></div>';
+  }).join(''), 'wide');
 }
 
 function renderSourceList(result) {

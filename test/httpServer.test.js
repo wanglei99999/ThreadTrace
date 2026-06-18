@@ -180,6 +180,86 @@ test('http server can register sources and run source ingest tasks', async funct
   }
 });
 
+test('http server exposes raw page crawl, list, and replay APIs', async function () {
+  const calls = [];
+  const server = createThreadTraceServer({
+    runtime: {
+      listAdapters() {
+        return [{ sourceKey: 'nga', displayName: 'NGA' }];
+      },
+      async fetchThreadPage(request) {
+        calls.push(['fetchThreadPage', request]);
+        return {
+          duplicate: false,
+          rawPage: {
+            sourceKey: request.forum,
+            sourceThreadId: request.sourceThreadId,
+            sourceUrl: request.url,
+            contentSha1: 'abc123',
+            fetchedAt: '2026-06-18T10:00:00.000Z',
+            metadata: { status: 200 }
+          }
+        };
+      },
+      async listRawThreadPages(request) {
+        calls.push(['listRawThreadPages', request]);
+        return [{
+          sourceKey: request.forum,
+          sourceThreadId: '45974302',
+          sourceUrl: 'https://example.test/thread',
+          contentSha1: 'abc123',
+          fetchedAt: '2026-06-18T10:00:00.000Z',
+          metadata: { status: 200 }
+        }];
+      },
+      async runRawThreadPageIngestTask(request) {
+        calls.push(['runRawThreadPageIngestTask', request]);
+        return {
+          task: {
+            id: 'task-1',
+            status: 'completed'
+          },
+          rawPage: {
+            contentSha1: request.contentSha1
+          },
+          report: {
+            thread: {
+              sourceThreadId: '45974302'
+            }
+          }
+        };
+      }
+    }
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const crawlResult = await postJson(baseUrl + '/api/crawl-page', {
+      forum: 'nga',
+      sourceThreadId: '45974302',
+      url: 'https://example.test/thread'
+    });
+    const pagesResult = await getJson(baseUrl + '/api/raw-pages?forum=nga&limit=5');
+    const replayResult = await postJson(baseUrl + '/api/raw-pages/tasks/ingest', {
+      forum: 'nga',
+      contentSha1: 'abc123'
+    });
+
+    assert.equal(crawlResult.rawPage.contentSha1, 'abc123');
+    assert.equal(pagesResult.pages.length, 1);
+    assert.equal(replayResult.task.status, 'completed');
+    assert.deepEqual(calls.map(function (call) { return call[0]; }), [
+      'fetchThreadPage',
+      'listRawThreadPages',
+      'runRawThreadPageIngestTask'
+    ]);
+  } finally {
+    await close(server);
+  }
+});
+
 function listen(server, port) {
   return new Promise(function (resolve, reject) {
     server.once('error', reject);

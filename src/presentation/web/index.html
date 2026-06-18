@@ -138,8 +138,30 @@
           <button id="refreshEventsButton" class="secondary-button" type="button">刷新事件</button>
           <button id="dispatchEventsButton" class="secondary-button" type="button">投递事件</button>
         </form>
+        <form id="threadUrlForm" class="control-strip">
+          <label>
+            <span>论坛</span>
+            <select name="forum" id="threadUrlForum"></select>
+          </label>
+          <label class="grow">
+            <span>在线主题 URL</span>
+            <input name="url" placeholder="https://bbs.nga.cn/read.php?tid=..." autocomplete="off">
+          </label>
+          <label class="grow">
+            <span>来源名称</span>
+            <input name="displayName" value="NGA online thread" autocomplete="off">
+          </label>
+          <label class="compact">
+            <span>间隔分钟</span>
+            <input name="intervalMinutes" value="60" inputmode="numeric" autocomplete="off">
+          </label>
+          <button type="submit">保存 URL 来源</button>
+          <button id="crawlUrlButton" class="secondary-button" type="button">抓取页面</button>
+          <button id="refreshRawPagesButton" class="secondary-button" type="button">刷新原始页</button>
+        </form>
         <div class="status-list" id="systemStatus"></div>
         <div class="result-grid task-grid" id="sourceResult"></div>
+        <div class="result-grid task-grid" id="rawPageResult"></div>
         <div class="result-grid task-grid" id="eventResult"></div>
         <div class="result-grid task-grid" id="taskResult"></div>
       </section>
