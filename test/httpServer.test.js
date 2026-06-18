@@ -477,6 +477,45 @@ test('http server source onboarding preflight can simulate connector modules', a
   }
 });
 
+test('http server previews source ingest dry-runs without durable writes', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-http-source-dry-run-'));
+  const inputFile = path.join(tempDir, 'thread.json');
+  await fs.writeFile(inputFile, JSON.stringify({
+    sourceKey: 'external',
+    sourceThreadId: 'http-dry-run-thread',
+    title: 'HTTP dry-run thread',
+    posts: []
+  }, null, 2) + '\n', 'utf8');
+
+  const server = createThreadTraceServer({
+    defaultInputDir: path.resolve(__dirname, '..', 'example'),
+    storeDir: path.join(tempDir, 'store')
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const preview = await postJson(baseUrl + '/api/sources/ingest/dry-run', {
+      sourceKey: 'external',
+      sourceType: 'normalized-thread-json',
+      inputFile,
+      now: '2026-06-19T10:00:00.000Z'
+    });
+    const reports = await getJson(baseUrl + '/api/reports?sourceKey=external&sourceThreadId=http-dry-run-thread');
+    const openApi = await getJson(baseUrl + '/openapi.json');
+
+    assert.equal(preview.status, 'ok');
+    assert.equal(preview.dryRun, true);
+    assert.equal(preview.thread.sourceThreadId, 'http-dry-run-thread');
+    assert.equal(preview.repositoryWrites.reports, 1);
+    assert.equal(reports.reports.length, 0);
+    assert.ok(openApi.paths['/api/sources/ingest/dry-run']);
+  } finally {
+    await close(server);
+  }
+});
+
 test('http server handles CORS preflight and validates interpret text input', async function () {
   const server = createThreadTraceServer({
     defaultInputDir: path.resolve(__dirname, '..', 'example')

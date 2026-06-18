@@ -586,6 +586,33 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/sources/ingest/dry-run') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.dryRunSourceIngest({
+      id: body.id,
+      forum: body.forum,
+      sourceKey: body.sourceKey,
+      sourceType: body.sourceType,
+      displayName: body.displayName || body.name,
+      modulePath: body.modulePath || body.connectorModulePath,
+      inputDir: body.inputDir,
+      inputFile: body.inputFile,
+      url: body.url,
+      location: body.location,
+      enabled: body.enabled,
+      tags: body.tags,
+      allowUnknownSourceType: body.allowUnknownSourceType,
+      allowRemoteFetch: body.allowRemoteFetch,
+      schedule: body.schedule,
+      intervalMinutes: body.intervalMinutes,
+      nextRunAt: body.nextRunAt,
+      scheduleEnabled: body.scheduleEnabled,
+      now: body.now
+    });
+    writeJson(response, result.status === 'fail' ? 503 : 200, result);
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/sources') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     const result = await context.runtime.registerSource({

@@ -716,6 +716,54 @@ function main(argv) {
     return;
   }
 
+  if (command === 'source-ingest-dry-run') {
+    const sourceType = options.sourceType || (options.inputFile ? 'normalized-thread-json' : 'saved-html-directory');
+    const inputDir = options.input || (sourceType === 'saved-html-directory' ? defaultInputDir : undefined);
+    runtime.dryRunSourceIngest({
+      id: options.sourceId,
+      forum: options.forum,
+      sourceKey: options.sourceKey,
+      sourceType,
+      displayName: options.name,
+      modulePath: options.modulePath,
+      inputDir,
+      inputFile: options.inputFile,
+      url: options.url,
+      location: parseLocationOption(options),
+      enabled: options.enabled === undefined ? undefined : options.enabled !== 'false',
+      allowUnknownSourceType: options.allowUnknownSourceType === 'true',
+      allowRemoteFetch: options.allowRemoteFetch === 'true',
+      intervalMinutes: options.intervalMinutes,
+      nextRunAt: options.nextRunAt,
+      scheduleEnabled: options.scheduleEnabled === undefined ? undefined : options.scheduleEnabled !== 'false',
+      now: options.now
+    }).then(function (preview) {
+      console.log('Source ingest dry-run: ' + preview.status);
+      console.log('Dry run: ' + preview.dryRun);
+      console.log('Source: ' + (preview.source ? preview.source.sourceKey : 'unknown') + '\t' + (preview.source ? preview.source.sourceType : 'unknown'));
+      if (preview.thread) {
+        console.log('Thread: ' + preview.thread.sourceThreadId + '\tposts=' + preview.thread.postCount + '\t' + preview.thread.title);
+      }
+      if (preview.task) {
+        console.log('Task: ' + preview.task.type + '\t' + preview.task.status);
+      }
+      console.log('Repository writes: snapshots=' + preview.repositoryWrites.threadSnapshots + ', reports=' + preview.repositoryWrites.reports + ', tasks=' + preview.repositoryWrites.tasks + ', rawPages=' + preview.repositoryWrites.rawThreadPages);
+      preview.checks.forEach(function (check) {
+        console.log(check.status + '\t' + check.key + '\t' + check.summary);
+      });
+      if (preview.error) {
+        console.log('Error: ' + (preview.error.code || 'error') + '\t' + preview.error.message);
+      }
+      if (preview.status === 'fail') {
+        process.exitCode = 2;
+      }
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'connector-rollout-plan') {
     const sourceType = options.sourceType || (options.inputFile ? 'normalized-thread-json' : undefined);
     const storeDir = options.storeDir || defaultStoreDir;
@@ -1243,6 +1291,13 @@ function parseArgs(args) {
       } else {
         options.allowUnknownSourceType = 'true';
       }
+    } else if (item === '--allow-remote-fetch') {
+      if (args[index + 1] && !String(args[index + 1]).startsWith('--')) {
+        options.allowRemoteFetch = args[index + 1];
+        index += 1;
+      } else {
+        options.allowRemoteFetch = 'true';
+      }
     } else if (item === '--interval-minutes') {
       options.intervalMinutes = args[index + 1];
       index += 1;
@@ -1402,6 +1457,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js validate-source [--forum nga] [--source-type type] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js validate-thread-json --input-file file [--forum sourceKey] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js source-onboarding-preflight [--forum nga] [--source-type type] [--module-path file] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--store-dir dir] [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js source-ingest-dry-run [--forum nga] [--source-type type] [--module-path file] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--allow-remote-fetch true] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js connector-rollout-plan [--forum nga] [--source-type type] [--module-path file] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--source-type type] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');

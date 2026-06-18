@@ -130,6 +130,18 @@ Use the same flow for built-in forums and future connectors:
 
 The validation report separates `valid` from operational readiness. A staged unknown source can be `valid=true` with `allowUnknownSourceType=true`, while diagnostics still report `status=fail` until a handler exists. This lets operators plan migrations without making a source look runnable too early.
 
+After preflight, use source ingest dry-run to execute the handler with isolated in-memory repositories before registering or scheduling the source:
+
+```powershell
+node src/presentation/cli/threadtrace.js source-ingest-dry-run --source-type normalized-thread-json --input-file D:\feeds\threadtrace\thread.json
+```
+
+```http
+POST /api/sources/ingest/dry-run
+```
+
+See `docs/source-ingest-dry-run.md` for the full report shape.
+
 ## Diagnostics
 
 Tracked source diagnostics verify that each registered source has:

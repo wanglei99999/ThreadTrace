@@ -48,6 +48,7 @@ node src/presentation/cli/threadtrace.js analyze-html --forum nga --input exampl
 node src/presentation/cli/threadtrace.js analyze-html-dir --forum nga --input example
 node src/presentation/cli/threadtrace.js ingest-html-dir --forum nga --input example --store-dir data/store
 node src/presentation/cli/threadtrace.js register-source --forum nga --input example --name "NGA sample archive" --interval-minutes 60
+node src/presentation/cli/threadtrace.js source-ingest-dry-run --forum nga --source-type saved-html-directory --input example
 node src/presentation/cli/threadtrace.js list-sources
 node src/presentation/cli/threadtrace.js list-events
 node src/presentation/cli/threadtrace.js dispatch-events
@@ -95,6 +96,7 @@ These commands use the same runtime composition as the HTTP API and Web console.
 - `POST /api/sources`
 - `GET /api/sources`
 - `GET /api/sources/diagnostics`
+- `POST /api/sources/ingest/dry-run`
 - `POST /api/sources/tasks/ingest`
 - `POST /api/sources/tasks/ingest-due`
 - `POST /api/sources/tasks/insight-pipeline-due`

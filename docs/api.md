@@ -246,6 +246,23 @@ Returns: stable run summaries with task id, source metadata, cursor diff, semant
 
 返回：通道、检查项和状态。存在失败检查时 HTTP 状态码为 503，响应体仍包含完整诊断。
 
+### `POST /api/sources/ingest/dry-run`
+
+Executes a source ingest handler with isolated in-memory repositories. It validates the source draft, runs the handler, returns thread/task/report summaries, and does not write to the configured durable store.
+
+Request:
+
+```json
+{
+  "sourceKey": "external",
+  "sourceType": "normalized-thread-json",
+  "inputFile": "D:/feeds/threadtrace/thread.json",
+  "allowRemoteFetch": false
+}
+```
+
+Remote-fetching handlers are blocked unless `allowRemoteFetch` is `true`. A failing dry-run returns HTTP `503` with the diagnostic report body.
+
 ### `POST /api/sources/{sourceId}/tasks/ingest`
 
 按已注册来源触发一次导入任务。当前支持 `saved-html-directory` 来源，后续会扩展到在线主题 URL、批量来源和定时计划。

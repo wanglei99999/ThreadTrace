@@ -860,6 +860,47 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/sources/ingest/dry-run': {
+        post: {
+          summary: 'Execute a source ingest handler against isolated in-memory repositories before registering or scheduling a source',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string' },
+                    forum: { type: 'string', example: 'external' },
+                    sourceKey: { type: 'string', example: 'external' },
+                    sourceType: { type: 'string', example: 'normalized-thread-json' },
+                    displayName: { type: 'string', example: 'External dry-run feed' },
+                    modulePath: { type: 'string', example: 'D:/connectors/custom-forum.cjs' },
+                    inputDir: { type: 'string' },
+                    inputFile: { type: 'string', example: 'D:/feeds/threadtrace/thread.json' },
+                    url: { type: 'string' },
+                    location: { type: 'object' },
+                    allowRemoteFetch: { type: 'boolean', example: false },
+                    allowUnknownSourceType: { type: 'boolean', example: false },
+                    now: { type: 'string', example: '2026-06-18T10:00:00.000Z' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Dry-run completed successfully'
+            },
+            503: {
+              description: 'Dry-run validation or handler execution failed'
+            },
+            400: {
+              $ref: '#/components/responses/BadRequest'
+            }
+          }
+        }
+      },
       '/api/sources/diagnostics': {
         get: {
           summary: 'Diagnose tracked source ingest configuration',

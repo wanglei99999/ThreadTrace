@@ -30,6 +30,7 @@
     "diagnostics:notifications": "node src/presentation/cli/threadtrace.js notification-diagnostics",
     "connectors:catalog": "node src/presentation/cli/threadtrace.js connector-catalog",
     "source:validate:sample": "node src/presentation/cli/threadtrace.js validate-source --forum nga --source-type saved-html-directory --input example",
+    "source:dry-run:sample": "node src/presentation/cli/threadtrace.js source-ingest-dry-run --forum nga --source-type saved-html-directory --input example",
     "deployment:checklist": "node src/presentation/cli/threadtrace.js deployment-checklist",
     "operations:trace-context": "node src/presentation/cli/threadtrace.js trace-context",
     "operations:worker-topology-plan": "node src/presentation/cli/threadtrace.js worker-topology-plan",

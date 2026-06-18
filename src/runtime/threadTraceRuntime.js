@@ -37,6 +37,7 @@ const { getConnectorReadiness } = require('../application/use-cases/getConnector
 const { getSourceOnboardingPreflight } = require('../application/use-cases/getSourceOnboardingPreflight');
 const { getConnectorRolloutPlan } = require('../application/use-cases/getConnectorRolloutPlan');
 const { getWorkerTopologyPlan } = require('../application/use-cases/getWorkerTopologyPlan');
+const { dryRunSourceIngest } = require('../application/use-cases/dryRunSourceIngest');
 const { createDefaultSourceIngestHandlerRegistry } = require('../application/source-ingest/standardSourceIngestHandlers');
 const { migrateStoreRecords } = require('../application/use-cases/migrateStoreRecords');
 const { runIngestRawThreadPageTask } = require('../application/use-cases/runIngestRawThreadPageTask');
@@ -277,6 +278,40 @@ function createThreadTraceRuntime(options) {
         connectorModuleValidation,
         threadJsonValidation,
         threadSnapshotContract: getThreadSnapshotJsonContract()
+      });
+    },
+
+    async dryRunSourceIngest(request) {
+      const safeRequest = request || {};
+      const sourceType = safeRequest.sourceType || (safeRequest.inputFile ? 'normalized-thread-json' : 'saved-html-directory');
+      const sourceInput = Object.assign(buildSourceRegistrationInput(safeRequest), {
+        sourceType
+      });
+      const modulePath = safeRequest.modulePath || safeRequest.connectorModulePath;
+      const dryRunForumAdapterRegistry = modulePath ? createDefaultForumAdapterRegistry() : forumAdapterRegistry;
+      const dryRunSourceIngestHandlerRegistry = modulePath ? createDefaultSourceIngestHandlerRegistry() : sourceIngestHandlerRegistry;
+      if (modulePath) {
+        loadConnectorModulesReport({
+          modulePaths: [modulePath],
+          cwd: safeOptions.cwd,
+          forumAdapterRegistry: dryRunForumAdapterRegistry,
+          sourceIngestHandlerRegistry: dryRunSourceIngestHandlerRegistry,
+          runtimeConfig,
+          reload: true
+        });
+      }
+
+      return dryRunSourceIngest({
+        source: sourceInput,
+        sourceIngestHandlerRegistry: dryRunSourceIngestHandlerRegistry,
+        getAdapter: dryRunForumAdapterRegistry.get,
+        crawler: safeOptions.crawler || createHttpForumCrawler(safeOptions.crawlerOptions),
+        allowUnknownSourceType: safeRequest.allowUnknownSourceType,
+        allowRemoteFetch: safeRequest.allowRemoteFetch,
+        requestId: safeRequest.requestId,
+        traceId: safeRequest.traceId,
+        idempotencyKey: safeRequest.idempotencyKey,
+        now: safeRequest.now
       });
     },
 
