@@ -48,6 +48,7 @@ Runtime and HTTP discovery:
 runtime.listSourceIngestHandlers()
 GET /api/source-ingest-handlers
 GET /api/connectors/catalog
+POST /api/sources/validate
 ```
 
 Discovery returns each handler's adapter requirement, location schema, and capability flags. UI, API clients, and future connector tooling should use this catalog instead of hard-coding required fields for each `sourceType`.
@@ -55,6 +56,18 @@ Discovery returns each handler's adapter requirement, location schema, and capab
 `/api/connectors/catalog` combines source types with registered forum adapters, including `compatibleSourceKeys` for handler types that require an adapter.
 
 When the runtime registers a tracked source, it validates the source type and required location fields against the handler catalog. Unknown source types are rejected by default; operators can explicitly opt into pre-registration with `allowUnknownSourceType` for migration or staged connector rollout.
+
+## Connector Onboarding Flow
+
+Use the same flow for built-in forums and future connectors:
+
+1. Add or inject a `SourceIngestHandler`.
+2. Confirm it appears in `GET /api/connectors/catalog`.
+3. Validate a draft source with `POST /api/sources/validate` or `node src/presentation/cli/threadtrace.js validate-source`.
+4. Register the source with `POST /api/sources` only after the validation report is acceptable for the rollout stage.
+5. Confirm saved-source readiness with `GET /api/sources/diagnostics`.
+
+The validation report separates `valid` from operational readiness. A staged unknown source can be `valid=true` with `allowUnknownSourceType=true`, while diagnostics still report `status=fail` until a handler exists. This lets operators plan migrations without making a source look runnable too early.
 
 ## Diagnostics
 

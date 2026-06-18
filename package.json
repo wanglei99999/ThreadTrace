@@ -28,7 +28,10 @@
     "diagnostics:adapters": "node src/presentation/cli/threadtrace.js adapter-diagnostics",
     "diagnostics:sources": "node src/presentation/cli/threadtrace.js source-diagnostics",
     "diagnostics:notifications": "node src/presentation/cli/threadtrace.js notification-diagnostics",
+    "connectors:catalog": "node src/presentation/cli/threadtrace.js connector-catalog",
+    "source:validate:sample": "node src/presentation/cli/threadtrace.js validate-source --forum nga --source-type saved-html-directory --input example",
     "deployment:checklist": "node src/presentation/cli/threadtrace.js deployment-checklist",
+    "operations:trace-context": "node src/presentation/cli/threadtrace.js trace-context",
     "operations:runbook": "node src/presentation/cli/threadtrace.js operations-runbook",
     "test:unit": "node --test test"
   }
