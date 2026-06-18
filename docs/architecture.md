@@ -34,6 +34,7 @@ infrastructure
 ## 运行时组合根
 
 `src/runtime/threadTraceRuntime.js` 是当前应用的组合根，负责把论坛适配器、文件仓库、检索索引和应用用例装配成统一运行时。CLI、HTTP API、未来 Worker 或 Scheduler 都应优先依赖 runtime，而不是各自创建仓库、索引或外部服务实例。
+`src/runtime/threadTraceConfig.js` 负责把环境变量和入口参数规范化成统一运行配置，避免 CLI、HTTP、Worker 各自散落默认值和资源开关。
 
 这样做的目的：
 - 换 PostgreSQL、对象存储、向量库或任务队列时，只需要替换 runtime 的装配逻辑。

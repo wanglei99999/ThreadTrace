@@ -1,28 +1,38 @@
 #!/usr/bin/env node
 'use strict';
 
-const path = require('path');
 const { createThreadTraceRuntime } = require('../../runtime/threadTraceRuntime');
+const { createThreadTraceConfig } = require('../../runtime/threadTraceConfig');
 const { createNotificationEventWorker } = require('./notificationEventWorker');
 
 async function main(argv) {
   const options = parseArgs(argv.slice(2));
-  const storeDir = options.storeDir || process.env.THREADTRACE_STORE_DIR || path.resolve(process.cwd(), 'data', 'store');
+  const config = createThreadTraceConfig({
+    env: process.env,
+    cwd: process.cwd(),
+    defaultInputDir: options.input,
+    storeDir: options.storeDir,
+    eventWorkerIntervalMs: options.intervalMs,
+    workerLeaseTtlMs: options.leaseTtlMs,
+    webhookUrl: options.webhookUrl
+  });
+  const storeDir = config.storeDir;
   const runtime = createThreadTraceRuntime({
     storeDir,
-    defaultInputDir: options.input || process.env.THREADTRACE_EXAMPLE_DIR || path.resolve(process.cwd(), 'example')
+    defaultInputDir: config.defaultInputDir,
+    config
   });
   const repositories = runtime.createRepositories(storeDir);
   const worker = createNotificationEventWorker({
     runtime,
     workerRunRepository: repositories.workerRunRepository,
     workerLeaseRepository: repositories.workerLeaseRepository,
-    leaseTtlMs: options.leaseTtlMs ? Number(options.leaseTtlMs) : Number(process.env.THREADTRACE_WORKER_LEASE_TTL_MS || 5 * 60 * 1000),
-    pollIntervalMs: options.intervalMs ? Number(options.intervalMs) : Number(process.env.THREADTRACE_EVENT_WORKER_INTERVAL_MS || 60 * 1000)
+    leaseTtlMs: config.workers.leaseTtlMs,
+    pollIntervalMs: config.workers.eventIntervalMs
   });
   const request = {
     channel: options.channel,
-    webhookUrl: options.webhookUrl,
+    webhookUrl: options.webhookUrl || config.notifications.webhookUrl,
     timeoutMs: options.timeoutMs ? Number(options.timeoutMs) : undefined,
     limit: options.limit ? Number(options.limit) : undefined,
     maxAttempts: options.maxAttempts ? Number(options.maxAttempts) : undefined,

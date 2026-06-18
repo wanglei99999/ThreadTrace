@@ -1,6 +1,7 @@
 'use strict';
 
 const path = require('path');
+const { createThreadTraceConfig } = require('./threadTraceConfig');
 const { createDefaultForumAdapterRegistry } = require('../infrastructure/forum-adapters/registry');
 const { analyzeSavedThreadDirectory } = require('../application/use-cases/analyzeSavedThreadDirectory');
 const { interpretNewPostFromSavedThreadDirectory } = require('../application/use-cases/interpretNewPostFromSavedThreadDirectory');
@@ -43,11 +44,20 @@ const { createPostgresRepositories } = require('../infrastructure/postgres/postg
 
 function createThreadTraceRuntime(options) {
   const safeOptions = options || {};
+  const runtimeConfig = safeOptions.config || createThreadTraceConfig({
+    env: safeOptions.env,
+    cwd: safeOptions.cwd,
+    defaultForum: safeOptions.defaultForum,
+    defaultInputDir: safeOptions.defaultInputDir,
+    storeDir: safeOptions.storeDir,
+    storageMode: safeOptions.storageMode,
+    sourceTaskMode: safeOptions.sourceTaskMode
+  });
   const defaults = {
-    defaultForum: safeOptions.defaultForum || 'nga',
-    defaultInputDir: safeOptions.defaultInputDir || path.resolve(process.cwd(), 'example'),
-    storeDir: safeOptions.storeDir || path.resolve(process.cwd(), 'data', 'store'),
-    storageMode: normalizeStorageMode(safeOptions.storageMode || process.env.THREADTRACE_STORAGE || 'file')
+    defaultForum: runtimeConfig.defaultForum,
+    defaultInputDir: runtimeConfig.defaultInputDir,
+    storeDir: runtimeConfig.storeDir,
+    storageMode: runtimeConfig.storageMode
   };
   let postgresClient = safeOptions.postgresClient;
   const forumAdapterRegistry = safeOptions.forumAdapterRegistry || createDefaultForumAdapterRegistry();
@@ -491,7 +501,7 @@ function createThreadTraceRuntime(options) {
       const repositories = createRepositoriesFor(storeDir);
       return dispatchPendingNotificationEvents({
         notificationEventRepository: repositories.notificationEventRepository,
-        notificationChannel: createNotificationChannel(safeRequest, storeDir),
+        notificationChannel: createNotificationChannel(safeRequest, storeDir, runtimeConfig.notifications),
         limit: safeRequest.limit || 50,
         maxAttempts: safeRequest.maxAttempts || 3,
         includeFailed: safeRequest.includeFailed,
@@ -536,10 +546,6 @@ function resolveStoreDir(defaults, storeDir) {
   return storeDir || defaults.storeDir;
 }
 
-function normalizeStorageMode(value) {
-  return String(value || 'file').trim().toLowerCase();
-}
-
 function buildSchedule(request) {
   if (!request.intervalMinutes && !request.nextRunAt) return undefined;
   return {
@@ -549,11 +555,11 @@ function buildSchedule(request) {
   };
 }
 
-function createNotificationChannel(request, storeDir) {
+function createNotificationChannel(request, storeDir, notificationConfig) {
   const channel = request.channel || (request.webhookUrl ? 'webhook' : 'file');
   if (channel === 'webhook') {
     return createWebhookNotificationChannel({
-      url: request.webhookUrl || process.env.THREADTRACE_WEBHOOK_URL,
+      url: request.webhookUrl || (notificationConfig && notificationConfig.webhookUrl),
       timeoutMs: request.timeoutMs ? Number(request.timeoutMs) : undefined
     });
   }

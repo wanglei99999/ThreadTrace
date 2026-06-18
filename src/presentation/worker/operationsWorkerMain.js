@@ -1,27 +1,38 @@
 #!/usr/bin/env node
 'use strict';
 
-const path = require('path');
 const { createThreadTraceRuntime } = require('../../runtime/threadTraceRuntime');
+const { createThreadTraceConfig } = require('../../runtime/threadTraceConfig');
 const { createOperationsWorker } = require('./operationsWorker');
 
 async function main(argv) {
   const options = parseArgs(argv.slice(2));
-  const storeDir = options.storeDir || process.env.THREADTRACE_STORE_DIR || path.resolve(process.cwd(), 'data', 'store');
+  const config = createThreadTraceConfig({
+    env: process.env,
+    cwd: process.cwd(),
+    defaultInputDir: options.input,
+    storeDir: options.storeDir,
+    sourceTaskMode: options.sourceTaskMode,
+    llmProvider: options.provider,
+    operationsWorkerIntervalMs: options.intervalMs,
+    workerLeaseTtlMs: options.leaseTtlMs
+  });
+  const storeDir = config.storeDir;
   const runtime = createThreadTraceRuntime({
     storeDir,
-    defaultInputDir: options.input || process.env.THREADTRACE_EXAMPLE_DIR || path.resolve(process.cwd(), 'example')
+    defaultInputDir: config.defaultInputDir,
+    config
   });
   const repositories = runtime.createRepositories(storeDir);
   const worker = createOperationsWorker({
     runtime,
     workerRunRepository: repositories.workerRunRepository,
     workerLeaseRepository: repositories.workerLeaseRepository,
-    sourceTaskMode: options.sourceTaskMode || process.env.THREADTRACE_SOURCE_TASK_MODE || 'ingest',
-    leaseTtlMs: options.leaseTtlMs ? Number(options.leaseTtlMs) : Number(process.env.THREADTRACE_WORKER_LEASE_TTL_MS || 5 * 60 * 1000),
-    pollIntervalMs: options.intervalMs ? Number(options.intervalMs) : Number(process.env.THREADTRACE_OPERATIONS_WORKER_INTERVAL_MS || 60 * 1000)
+    sourceTaskMode: config.workers.sourceTaskMode,
+    leaseTtlMs: config.workers.leaseTtlMs,
+    pollIntervalMs: config.workers.operationsIntervalMs
   });
-  const request = buildRequest(options, storeDir);
+  const request = buildRequest(options, storeDir, config);
 
   if (options.loop) {
     console.log('ThreadTrace operations worker running. Store: ' + storeDir);
@@ -49,13 +60,13 @@ async function main(argv) {
   }
 }
 
-function buildRequest(options, storeDir) {
+function buildRequest(options, storeDir, config) {
   return {
     sources: {
       forum: options.forum,
       limit: options.limit ? Number(options.limit) : undefined,
-      sourceTaskMode: options.sourceTaskMode || process.env.THREADTRACE_SOURCE_TASK_MODE || undefined,
-      provider: options.provider || process.env.THREADTRACE_LLM_PROVIDER || 'mock',
+      sourceTaskMode: config.workers.sourceTaskMode,
+      provider: config.llm.provider,
       traceId: options.traceId,
       baseReportType: options.baseReportType,
       semanticEnrichmentEnabled: parseOptionalBoolean(options.semanticEnrichmentEnabled),

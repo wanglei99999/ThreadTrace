@@ -1,17 +1,21 @@
 #!/usr/bin/env node
 'use strict';
 
-const path = require('path');
+const { createThreadTraceConfig } = require('../../runtime/threadTraceConfig');
 const { createThreadTraceServer } = require('./createServer');
 
-const port = Number(process.env.PORT || 3017);
-const defaultInputDir = process.env.THREADTRACE_EXAMPLE_DIR || path.resolve(process.cwd(), 'example');
-
-const server = createThreadTraceServer({
-  defaultInputDir
+const config = createThreadTraceConfig({
+  env: process.env,
+  cwd: process.cwd()
 });
 
-server.listen(port, function () {
-  console.log('ThreadTrace HTTP API listening on http://127.0.0.1:' + port);
-  console.log('Default input dir: ' + defaultInputDir);
+const server = createThreadTraceServer({
+  defaultInputDir: config.defaultInputDir,
+  storeDir: config.storeDir
+});
+
+server.listen(config.http.port, config.http.host, function () {
+  console.log('ThreadTrace HTTP API listening on http://' + config.http.host + ':' + config.http.port);
+  console.log('Default input dir: ' + config.defaultInputDir);
+  console.log('Store dir: ' + config.storeDir);
 });

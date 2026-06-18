@@ -78,7 +78,7 @@ node src/presentation/cli/threadtrace.js interpret-text-dir --forum nga --input 
 - `POST /api/index-directory`
 - `POST /api/search`
 
-详细说明见 `docs/api.md`。PostgreSQL 基线表结构见 `docs/postgresql-schema.sql`，持久化迁移计划见 `docs/persistence-plan.md`。
+详细说明见 `docs/api.md`。运行配置见 `docs/runtime-configuration.md`。PostgreSQL 基线表结构见 `docs/postgresql-schema.sql`，持久化迁移计划见 `docs/persistence-plan.md`。
 
 ## 项目分层
 

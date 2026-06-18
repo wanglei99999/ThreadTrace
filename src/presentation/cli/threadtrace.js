@@ -13,20 +13,32 @@ const { writeTextFile } = require('../../infrastructure/storage/textFileWriter')
 const { getForumAdapter } = require('../../infrastructure/forum-adapters/registry');
 const { renderBasicHistoryMarkdown } = require('../../domain/analysis/markdownReportRenderer');
 const { renderNewPostContextMarkdown } = require('../../domain/analysis/contextMarkdownRenderer');
+const { createThreadTraceConfig } = require('../../runtime/threadTraceConfig');
 const { createThreadTraceRuntime } = require('../../runtime/threadTraceRuntime');
 
 function main(argv) {
   const command = argv[2] || 'help';
   const options = parseArgs(argv.slice(3));
-  const runtime = createThreadTraceRuntime({
-    defaultForum: options.forum || 'nga',
-    defaultInputDir: options.input || path.resolve(process.cwd(), 'example'),
-    storeDir: options.storeDir || path.resolve(process.cwd(), 'data', 'store')
+  const config = createThreadTraceConfig({
+    env: process.env,
+    cwd: process.cwd(),
+    defaultForum: options.forum,
+    defaultInputDir: options.input,
+    storeDir: options.storeDir,
+    llmProvider: options.provider,
+    sourceTaskMode: options.sourceTaskMode
   });
+  const runtime = createThreadTraceRuntime({
+    config
+  });
+  const defaultForum = config.defaultForum;
+  const defaultInputDir = config.defaultInputDir;
+  const defaultStoreDir = config.storeDir;
+  const defaultLlmProvider = config.llm.provider;
 
   if (command === 'parse-html') {
-    const inputPath = options.input || findDefaultExampleHtml();
-    const adapter = getForumAdapter(options.forum || 'nga');
+    const inputPath = options.input || findDefaultExampleHtml(defaultInputDir);
+    const adapter = getForumAdapter(options.forum || defaultForum);
     const threadSnapshot = parseSavedThread({
       adapter,
       inputPath
@@ -40,8 +52,8 @@ function main(argv) {
   }
 
   if (command === 'parse-html-dir') {
-    const inputDir = options.input || path.resolve(process.cwd(), 'example');
-    const adapter = getForumAdapter(options.forum || 'nga');
+    const inputDir = options.input || defaultInputDir;
+    const adapter = getForumAdapter(options.forum || defaultForum);
     const threadSnapshot = parseSavedThreadDirectory({
       adapter,
       inputDir
@@ -55,8 +67,8 @@ function main(argv) {
   }
 
   if (command === 'analyze-html') {
-    const inputPath = options.input || findDefaultExampleHtml();
-    const adapter = getForumAdapter(options.forum || 'nga');
+    const inputPath = options.input || findDefaultExampleHtml(defaultInputDir);
+    const adapter = getForumAdapter(options.forum || defaultForum);
     const result = analyzeSavedThread({
       adapter,
       inputPath
@@ -74,8 +86,8 @@ function main(argv) {
   }
 
   if (command === 'analyze-html-dir') {
-    const inputDir = options.input || path.resolve(process.cwd(), 'example');
-    const adapter = getForumAdapter(options.forum || 'nga');
+    const inputDir = options.input || defaultInputDir;
+    const adapter = getForumAdapter(options.forum || defaultForum);
     const result = analyzeSavedThreadDirectory({
       adapter,
       inputDir
@@ -93,11 +105,11 @@ function main(argv) {
   }
 
   if (command === 'enrich-html-dir') {
-    const inputDir = options.input || path.resolve(process.cwd(), 'example');
+    const inputDir = options.input || defaultInputDir;
     runtime.enrichDirectory({
       forum: options.forum,
       inputDir,
-      provider: options.provider || 'mock'
+      provider: options.provider || defaultLlmProvider
     }).then(function (result) {
       printThreadSummary(result.threadSnapshot);
       printReportSummary(result.report);
@@ -111,8 +123,8 @@ function main(argv) {
   }
 
   if (command === 'ingest-html-dir') {
-    const inputDir = options.input || path.resolve(process.cwd(), 'example');
-    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    const inputDir = options.input || defaultInputDir;
+    const storeDir = options.storeDir || defaultStoreDir;
     runtime.ingestDirectory({
       forum: options.forum,
       inputDir,
@@ -129,8 +141,8 @@ function main(argv) {
   }
 
   if (command === 'run-ingest-task') {
-    const inputDir = options.input || path.resolve(process.cwd(), 'example');
-    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    const inputDir = options.input || defaultInputDir;
+    const storeDir = options.storeDir || defaultStoreDir;
     runtime.runIngestDirectoryTask({
       forum: options.forum,
       inputDir,
@@ -147,7 +159,7 @@ function main(argv) {
   }
 
   if (command === 'list-tasks') {
-    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    const storeDir = options.storeDir || defaultStoreDir;
     runtime.listTasks({
       storeDir,
       status: options.status,
@@ -165,7 +177,7 @@ function main(argv) {
   }
 
   if (command === 'list-reports') {
-    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    const storeDir = options.storeDir || defaultStoreDir;
     runtime.listAnalysisReports({
       storeDir,
       sourceKey: options.sourceKey || options.forum,
@@ -190,13 +202,13 @@ function main(argv) {
       process.exitCode = 1;
       return;
     }
-    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    const storeDir = options.storeDir || defaultStoreDir;
     runtime.runSemanticEnrichmentTask({
       storeDir,
       sourceKey: options.sourceKey || options.forum,
       sourceThreadId: options.sourceThreadId,
       baseReportType: options.baseReportType,
-      provider: options.provider || 'mock',
+      provider: options.provider || defaultLlmProvider,
       traceId: options.traceId
     }).then(function (result) {
       console.log('Task completed: ' + result.task.id);
@@ -211,7 +223,7 @@ function main(argv) {
   }
 
   if (command === 'operations-overview') {
-    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    const storeDir = options.storeDir || defaultStoreDir;
     runtime.getOperationalOverview({
       limit: options.limit ? Number(options.limit) : 100,
       now: options.now,
@@ -232,7 +244,7 @@ function main(argv) {
   }
 
   if (command === 'operations-readiness') {
-    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    const storeDir = options.storeDir || defaultStoreDir;
     runtime.getOperationalReadiness({
       limit: options.limit ? Number(options.limit) : 100,
       now: options.now,
@@ -253,7 +265,7 @@ function main(argv) {
   }
 
   if (command === 'migrate-store') {
-    const fromStoreDir = options.fromStoreDir || options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    const fromStoreDir = options.fromStoreDir || options.storeDir || defaultStoreDir;
     runtime.migrateStore({
       fromStoreDir,
       toStoreDir: options.toStoreDir,
@@ -276,7 +288,7 @@ function main(argv) {
   }
 
   if (command === 'list-events') {
-    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    const storeDir = options.storeDir || defaultStoreDir;
     runtime.listNotificationEvents({
       storeDir,
       type: options.type,
@@ -299,7 +311,7 @@ function main(argv) {
     if (!options.url && !options.sourceId) {
       throw new Error('fetch-thread-page requires --url or --source-id.');
     }
-    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    const storeDir = options.storeDir || defaultStoreDir;
     runtime.fetchThreadPage({
       sourceId: options.sourceId,
       forum: options.forum,
@@ -320,7 +332,7 @@ function main(argv) {
   }
 
   if (command === 'list-raw-pages') {
-    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    const storeDir = options.storeDir || defaultStoreDir;
     runtime.listRawThreadPages({
       forum: options.forum,
       sourceThreadId: options.sourceThreadId,
@@ -342,7 +354,7 @@ function main(argv) {
     if (!options.contentSha1) {
       throw new Error('ingest-raw-page requires --content-sha1.');
     }
-    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    const storeDir = options.storeDir || defaultStoreDir;
     runtime.runRawThreadPageIngestTask({
       forum: options.forum,
       contentSha1: options.contentSha1,
@@ -359,7 +371,7 @@ function main(argv) {
   }
 
   if (command === 'dispatch-events') {
-    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    const storeDir = options.storeDir || defaultStoreDir;
     runtime.dispatchNotificationEvents({
       channel: options.channel,
       webhookUrl: options.webhookUrl,
@@ -386,7 +398,7 @@ function main(argv) {
     if (!options.eventId) {
       throw new Error('ack-event requires --event-id.');
     }
-    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    const storeDir = options.storeDir || defaultStoreDir;
     runtime.acknowledgeNotificationEvent({
       eventId: options.eventId,
       acknowledgedBy: options.by,
@@ -403,8 +415,8 @@ function main(argv) {
   }
 
   if (command === 'register-source') {
-    const inputDir = options.input || path.resolve(process.cwd(), 'example');
-    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    const inputDir = options.input || defaultInputDir;
+    const storeDir = options.storeDir || defaultStoreDir;
     runtime.registerSource({
       id: options.sourceId,
       forum: options.forum,
@@ -428,7 +440,7 @@ function main(argv) {
   }
 
   if (command === 'list-sources') {
-    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    const storeDir = options.storeDir || defaultStoreDir;
     runtime.listSources({
       forum: options.forum,
       enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
@@ -449,7 +461,7 @@ function main(argv) {
     if (!options.sourceId) {
       throw new Error('run-source-task requires --source-id.');
     }
-    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    const storeDir = options.storeDir || defaultStoreDir;
     runtime.runSourceIngestTask({
       sourceId: options.sourceId,
       storeDir
@@ -468,10 +480,10 @@ function main(argv) {
     if (!options.sourceId) {
       throw new Error('run-source-insight-pipeline requires --source-id.');
     }
-    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    const storeDir = options.storeDir || defaultStoreDir;
     runtime.runSourceInsightPipelineTask({
       sourceId: options.sourceId,
-      provider: options.provider || 'mock',
+      provider: options.provider || defaultLlmProvider,
       traceId: options.traceId,
       baseReportType: options.baseReportType,
       semanticEnrichmentEnabled: parseOptionalBoolean(options.semanticEnrichmentEnabled),
@@ -498,7 +510,7 @@ function main(argv) {
   }
 
   if (command === 'run-sources-task') {
-    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    const storeDir = options.storeDir || defaultStoreDir;
     runtime.runEnabledSourcesIngestTasks({
       forum: options.forum,
       limit: options.limit ? Number(options.limit) : 50,
@@ -518,7 +530,7 @@ function main(argv) {
   }
 
   if (command === 'run-due-sources-task') {
-    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    const storeDir = options.storeDir || defaultStoreDir;
     runtime.runDueSourcesIngestTasks({
       forum: options.forum,
       limit: options.limit ? Number(options.limit) : 50,
@@ -541,12 +553,12 @@ function main(argv) {
   }
 
   if (command === 'run-due-source-insight-pipelines') {
-    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    const storeDir = options.storeDir || defaultStoreDir;
     runtime.runDueSourceInsightPipelineTasks({
       forum: options.forum,
       limit: options.limit ? Number(options.limit) : 50,
       now: options.now,
-      provider: options.provider || 'mock',
+      provider: options.provider || defaultLlmProvider,
       traceId: options.traceId,
       baseReportType: options.baseReportType,
       semanticEnrichmentEnabled: parseOptionalBoolean(options.semanticEnrichmentEnabled),
@@ -569,13 +581,13 @@ function main(argv) {
   }
 
   if (command === 'interpret-text-dir') {
-    const inputDir = options.input || path.resolve(process.cwd(), 'example');
+    const inputDir = options.input || defaultInputDir;
     const text = options.text;
     if (!text) {
       throw new Error('interpret-text-dir requires --text.');
     }
 
-    const adapter = getForumAdapter(options.forum || 'nga');
+    const adapter = getForumAdapter(options.forum || defaultForum);
     const report = interpretNewPostFromSavedThreadDirectory({
       adapter,
       inputDir,
@@ -595,8 +607,8 @@ function main(argv) {
   }
 
   if (command === 'index-html-dir') {
-    const inputDir = options.input || path.resolve(process.cwd(), 'example');
-    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    const inputDir = options.input || defaultInputDir;
+    const storeDir = options.storeDir || defaultStoreDir;
     runtime.indexDirectory({
       forum: options.forum,
       inputDir,
@@ -615,7 +627,7 @@ function main(argv) {
     if (!options.text) {
       throw new Error('search-index requires --text.');
     }
-    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    const storeDir = options.storeDir || defaultStoreDir;
     runtime.search({
       text: options.text,
       limit: options.limit ? Number(options.limit) : 10,
@@ -677,6 +689,9 @@ function parseArgs(args) {
       index += 1;
     } else if (item === '--semantic-skip-if-unchanged') {
       options.semanticSkipIfUnchanged = args[index + 1];
+      index += 1;
+    } else if (item === '--source-task-mode') {
+      options.sourceTaskMode = args[index + 1];
       index += 1;
     } else if (item === '--store-dir') {
       options.storeDir = args[index + 1];
@@ -790,8 +805,8 @@ function parseOptionalBoolean(value) {
   return value !== 'false';
 }
 
-function findDefaultExampleHtml() {
-  const exampleDir = path.resolve(process.cwd(), 'example');
+function findDefaultExampleHtml(inputDir) {
+  const exampleDir = inputDir || path.resolve(process.cwd(), 'example');
   const files = fs.readdirSync(exampleDir)
     .filter(function (name) {
       return /\.html?$/i.test(name);
