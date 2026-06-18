@@ -90,4 +90,4 @@ In file storage mode, diagnostics verify:
 - default input directory readability
 - store directory writability
 
-In PostgreSQL mode, diagnostics currently report a warning placeholder so deployments remember to run database migrations and external database health checks before production traffic.
+In PostgreSQL mode, diagnostics create or use the configured PostgreSQL client and run a lightweight `select 1 as ok` ping. Missing client configuration, missing `pg`, or connection errors are reported as `fail` resource checks so readiness probes can block traffic before workers start writing production data.

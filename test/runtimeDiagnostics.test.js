@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 const { getRuntimeDiagnostics } = require('../src/application/use-cases/getRuntimeDiagnostics');
 const { createThreadTraceConfig } = require('../src/runtime/threadTraceConfig');
+const { createThreadTraceRuntime } = require('../src/runtime/threadTraceRuntime');
 
 test('runtime diagnostics redacts sensitive LLM configuration', async function () {
   const config = createThreadTraceConfig({
@@ -76,5 +77,29 @@ test('runtime diagnostics includes resource checks', async function () {
   assert.equal(diagnostics.resources.storageMode, 'file');
   assert.equal(diagnostics.checks.find(function (item) {
     return item.key === 'resources.storeDir';
+  }).status, 'ok');
+});
+
+test('runtime diagnostics pings injected PostgreSQL client', async function () {
+  const queries = [];
+  const runtime = createThreadTraceRuntime({
+    storageMode: 'postgres',
+    postgresClient: {
+      async query(sql) {
+        queries.push(sql);
+        return { rows: [{ ok: 1 }] };
+      }
+    }
+  });
+
+  const diagnostics = await runtime.getRuntimeDiagnostics({
+    now: '2026-06-18T10:00:00.000Z'
+  });
+
+  assert.equal(diagnostics.status, 'ok');
+  assert.equal(diagnostics.resources.storageMode, 'postgres');
+  assert.deepEqual(queries, ['select 1 as ok']);
+  assert.equal(diagnostics.checks.find(function (item) {
+    return item.key === 'resources.postgres';
   }).status, 'ok');
 });

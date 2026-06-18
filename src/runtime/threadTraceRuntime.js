@@ -39,6 +39,7 @@ const { createFileWorkerLeaseRepository } = require('../infrastructure/storage/f
 const { createFileNotificationChannel } = require('../infrastructure/notifications/fileNotificationChannel');
 const { createWebhookNotificationChannel } = require('../infrastructure/notifications/webhookNotificationChannel');
 const { inspectFileResources } = require('../infrastructure/diagnostics/fileResourceDiagnostics');
+const { inspectPostgresResources } = require('../infrastructure/diagnostics/postgresResourceDiagnostics');
 const { createHttpForumCrawler } = require('../infrastructure/crawlers/httpForumCrawler');
 const { createLlmProvider } = require('../infrastructure/llm/llmProviderFactory');
 const { createFileTextRetrievalIndex } = require('../infrastructure/retrieval/fileTextRetrievalIndex');
@@ -268,7 +269,9 @@ function createThreadTraceRuntime(options) {
       const safeRequest = request || {};
       return getRuntimeDiagnostics({
         config: runtimeConfig,
-        inspectResources: inspectRuntimeResources,
+        inspectResources: function (config) {
+          return inspectRuntimeResources(config, getPostgresClient);
+        },
         now: safeRequest.now
       });
     },
@@ -574,7 +577,7 @@ function resolveStoreDir(defaults, storeDir) {
   return storeDir || defaults.storeDir;
 }
 
-async function inspectRuntimeResources(config) {
+async function inspectRuntimeResources(config, getPostgresClient) {
   if (config.storageMode === 'file') {
     return inspectFileResources({
       inputDir: config.defaultInputDir,
@@ -582,17 +585,15 @@ async function inspectRuntimeResources(config) {
     });
   }
   if (config.storageMode === 'postgres') {
-    return {
-      storageMode: 'postgres',
-      checks: [
-        {
-          key: 'resources.postgres',
-          status: 'warn',
-          value: 'not-pinged',
-          summary: 'PostgreSQL storage is selected. Use database migrations and external health checks before production traffic.'
-        }
-      ]
-    };
+    try {
+      return inspectPostgresResources({
+        client: getPostgresClient()
+      });
+    } catch (error) {
+      return inspectPostgresResources({
+        error
+      });
+    }
   }
   return {
     storageMode: config.storageMode,
