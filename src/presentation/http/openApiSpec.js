@@ -166,6 +166,24 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/operations/readiness': {
+        get: {
+          summary: 'Get operations readiness status for probes and monitoring',
+          parameters: [
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Readiness is ok or warn'
+            },
+            503: {
+              description: 'Readiness failed'
+            }
+          }
+        }
+      },
       '/api/events': {
         get: {
           summary: 'List notification events',

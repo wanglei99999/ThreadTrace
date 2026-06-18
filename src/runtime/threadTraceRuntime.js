@@ -16,6 +16,7 @@ const { dispatchPendingNotificationEvents } = require('../application/use-cases/
 const { fetchAndStoreThreadPage } = require('../application/use-cases/fetchAndStoreThreadPage');
 const { enrichAnalysisReportWithLlm } = require('../application/use-cases/enrichAnalysisReportWithLlm');
 const { getOperationalOverview } = require('../application/use-cases/getOperationalOverview');
+const { getOperationalReadiness } = require('../application/use-cases/getOperationalReadiness');
 const { runIngestRawThreadPageTask } = require('../application/use-cases/runIngestRawThreadPageTask');
 const { indexSavedThreadDirectory } = require('../application/use-cases/indexSavedThreadDirectory');
 const { searchEvidence } = require('../application/use-cases/searchEvidence');
@@ -181,6 +182,17 @@ function createThreadTraceRuntime(options) {
       return Object.assign({
         storageMode: defaults.storageMode
       }, overview);
+    },
+
+    async getOperationalReadiness(request) {
+      const safeRequest = request || {};
+      return getOperationalReadiness({
+        getOperationalOverview: this.getOperationalOverview,
+        now: safeRequest.now,
+        limit: safeRequest.limit || 100,
+        storeDir: safeRequest.storeDir,
+        workerStaleAfterMs: safeRequest.workerStaleAfterMs
+      });
     },
 
     async registerSource(request) {

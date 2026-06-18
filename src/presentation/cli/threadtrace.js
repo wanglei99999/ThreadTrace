@@ -185,6 +185,27 @@ function main(argv) {
     return;
   }
 
+  if (command === 'operations-readiness') {
+    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    runtime.getOperationalReadiness({
+      limit: options.limit ? Number(options.limit) : 100,
+      now: options.now,
+      storeDir
+    }).then(function (readiness) {
+      console.log('Readiness: ' + readiness.status);
+      readiness.checks.forEach(function (check) {
+        console.log(check.status + '\t' + check.key + '\t' + check.count + '\t' + check.summary);
+      });
+      if (readiness.status === 'fail') {
+        process.exitCode = 2;
+      }
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'list-events') {
     const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
     runtime.listNotificationEvents({
@@ -667,6 +688,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js run-ingest-task [--forum nga] [--input dir] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-tasks [--store-dir dir] [--status status] [--type type] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-overview [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js operations-readiness [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js list-events [--source-id id] [--type type] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js fetch-thread-page [--forum nga] [--url url | --source-id id] [--source-thread-id id] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-raw-pages [--forum nga] [--source-thread-id id] [--limit n] [--store-dir dir]');

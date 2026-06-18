@@ -14,12 +14,14 @@ HTTP:
 
 ```text
 GET /api/operations/overview
+GET /api/operations/readiness
 ```
 
 Runtime:
 
 ```js
 runtime.getOperationalOverview({ limit: 100 })
+runtime.getOperationalReadiness({ limit: 100 })
 ```
 
 Combined worker:
@@ -64,3 +66,13 @@ Workers also use short-lived leases to avoid duplicate background execution acro
 Each run acquires its worker lease before executing, renews it between phases, and releases it at the end. If another process owns an unexpired lease, the run is skipped and recorded as `skipped` with reason `lease-held`.
 
 File storage writes lease JSON under `worker-leases` for local deployments. PostgreSQL storage uses `worker_leases` and acquires leases with a conditional `on conflict` update, which is the preferred path for multi-process or multi-host deployments.
+
+## Readiness
+
+`operations-readiness` turns overview signals into probe-friendly status:
+
+- `ok`: no warning or failure signals in the bounded overview window.
+- `warn`: failed tasks, failed sources, failed event delivery, failed worker runs, or expired leases need attention.
+- `fail`: stale worker runs indicate a likely stuck background process.
+
+The HTTP endpoint returns `503` only for `fail`; `warn` still returns `200` so dashboards can alert without forcing a service restart loop.

@@ -152,6 +152,16 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/operations/readiness') {
+    const readiness = await context.runtime.getOperationalReadiness({
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,
+      now: url.searchParams.get('now') || undefined,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, readiness.status === 'fail' ? 503 : 200, readiness);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/events') {
     const acknowledgedParam = url.searchParams.get('acknowledged');
     const events = await context.runtime.listNotificationEvents({

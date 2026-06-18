@@ -98,6 +98,46 @@ test('http server exposes operational overview API', async function () {
   }
 });
 
+test('http server exposes operational readiness API', async function () {
+  const server = createThreadTraceServer({
+    runtime: {
+      listAdapters() {
+        return [{ sourceKey: 'nga', displayName: 'NGA' }];
+      },
+      async getOperationalReadiness() {
+        return {
+          generatedAt: '2026-06-18T10:00:00.000Z',
+          status: 'fail',
+          checks: [
+            { key: 'workers.stale', status: 'fail', count: 1, summary: 'Worker runs are stale.' }
+          ],
+          overview: {
+            workers: {
+              stale: 1
+            }
+          }
+        };
+      }
+    }
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const response = await fetch(baseUrl + '/api/operations/readiness?limit=10');
+    const readiness = await response.json();
+    const openApi = await getJson(baseUrl + '/openapi.json');
+
+    assert.equal(response.status, 503);
+    assert.equal(readiness.status, 'fail');
+    assert.equal(readiness.checks[0].key, 'workers.stale');
+    assert.ok(openApi.paths['/api/operations/readiness']);
+  } finally {
+    await close(server);
+  }
+});
+
 test('http server handles CORS preflight and validates interpret text input', async function () {
   const server = createThreadTraceServer({
     defaultInputDir: path.resolve(__dirname, '..', 'example')
