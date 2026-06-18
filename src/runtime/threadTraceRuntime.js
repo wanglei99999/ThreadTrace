@@ -35,6 +35,7 @@ const { getConnectorReadiness } = require('../application/use-cases/getConnector
 const { createDefaultSourceIngestHandlerRegistry } = require('../application/source-ingest/standardSourceIngestHandlers');
 const { migrateStoreRecords } = require('../application/use-cases/migrateStoreRecords');
 const { runIngestRawThreadPageTask } = require('../application/use-cases/runIngestRawThreadPageTask');
+const { validateNormalizedThreadJsonFile } = require('../application/use-cases/validateNormalizedThreadJsonFile');
 const { indexSavedThreadDirectory } = require('../application/use-cases/indexSavedThreadDirectory');
 const { searchEvidence } = require('../application/use-cases/searchEvidence');
 const { createApplicationError } = require('../application/errors/applicationError');
@@ -688,6 +689,15 @@ function createThreadTraceRuntime(options) {
         requestId: safeRequest.requestId,
         traceId: safeRequest.traceId,
         idempotencyKey: safeRequest.idempotencyKey
+      });
+    },
+
+    async validateNormalizedThreadJsonFile(request) {
+      const safeRequest = request || {};
+      return validateNormalizedThreadJsonFile({
+        inputFile: safeRequest.inputFile,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        now: safeRequest.now
       });
     },
 

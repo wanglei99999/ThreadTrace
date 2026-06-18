@@ -107,6 +107,22 @@ This keeps future integrations such as other forums, RSS-like sources, webhook s
 
 For early integrations, `normalized-thread-json` is the lowest-friction bridge: external collectors can normalize their data into ThreadTrace's canonical snapshot shape first, then let ThreadTrace handle persistence, analysis, scheduling, trace metadata, and operations visibility.
 
+Validate the JSON file before registering the source:
+
+```powershell
+node src/presentation/cli/threadtrace.js validate-thread-json --input-file D:\feeds\threadtrace\thread.json --forum external
+```
+
+```http
+POST /api/thread-json/validate
+content-type: application/json
+
+{
+  "forum": "external",
+  "inputFile": "D:/feeds/threadtrace/thread.json"
+}
+```
+
 ## Source Run Guard
 
 Source runs reject duplicate execution while a source is already `running`. The default stale window is 10 minutes; after that, a stuck `running` state is considered recoverable and the next run can proceed. Runtime, HTTP, CLI, batch, and due-worker entrypoints may pass `sourceRunStaleAfterMs` for controlled recovery.

@@ -393,6 +393,18 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/thread-json/validate') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.validateNormalizedThreadJsonFile({
+      forum: body.forum,
+      sourceKey: body.sourceKey,
+      inputFile: body.inputFile,
+      now: body.now
+    });
+    writeJson(response, result.valid ? 200 : 400, result);
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/events/dispatch') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     const result = await context.runtime.dispatchNotificationEvents({

@@ -541,6 +541,36 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/thread-json/validate': {
+        post: {
+          summary: 'Validate a normalized ThreadSnapshot JSON file before registering or ingesting it',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['inputFile'],
+                  properties: {
+                    forum: { type: 'string', example: 'external' },
+                    sourceKey: { type: 'string', example: 'external' },
+                    inputFile: { type: 'string', example: 'D:/feeds/threadtrace/thread.json' },
+                    now: { type: 'string', example: '2026-06-18T10:00:00.000Z' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Thread JSON is valid'
+            },
+            400: {
+              description: 'Thread JSON is invalid'
+            }
+          }
+        }
+      },
       '/api/events/{eventId}/ack': {
         post: {
           summary: 'Acknowledge a notification event',

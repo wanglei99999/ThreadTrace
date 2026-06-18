@@ -57,6 +57,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/runtime/diagnostics']);
     assert.ok(openApi.paths['/api/sources/validate']);
     assert.ok(openApi.paths['/api/operations/trace-context']);
+    assert.ok(openApi.paths['/api/thread-json/validate']);
     assert.equal(openApi.components.schemas.ErrorResponse.properties.error.properties.code.example, 'source_run_already_running');
     assert.equal(openApi.components.schemas.ErrorResponse.properties.error.properties.requestId.type, 'string');
     assert.equal(openApi.components.responses.BadRequest.content['application/json'].schema.$ref, '#/components/schemas/ErrorResponse');

@@ -80,7 +80,7 @@ async function runIngestNormalizedThreadJsonTask(options) {
 }
 
 async function readThreadSnapshotJson(inputFile, defaults) {
-  const parsed = JSON.parse(await fs.readFile(inputFile, 'utf8'));
+  const parsed = JSON.parse(stripUtf8Bom(await fs.readFile(inputFile, 'utf8')));
   const safeDefaults = defaults || {};
   const sourceKey = parsed.sourceKey || (parsed.forum && parsed.forum.sourceKey) || safeDefaults.sourceKey;
   const threadSnapshot = createThreadSnapshot(Object.assign({}, parsed, {
@@ -97,6 +97,10 @@ async function readThreadSnapshotJson(inputFile, defaults) {
     throw new Error('Normalized thread JSON requires sourceThreadId.');
   }
   return threadSnapshot;
+}
+
+function stripUtf8Bom(text) {
+  return String(text || '').replace(/^\uFEFF/, '');
 }
 
 async function buildReplayResult(options) {
@@ -126,5 +130,6 @@ async function buildReplayResult(options) {
 
 module.exports = {
   runIngestNormalizedThreadJsonTask,
-  readThreadSnapshotJson
+  readThreadSnapshotJson,
+  stripUtf8Bom
 };
