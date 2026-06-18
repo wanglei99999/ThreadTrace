@@ -3,6 +3,7 @@
 const http = require('http');
 const fs = require('fs/promises');
 const path = require('path');
+const { isApplicationError } = require('../../application/errors/applicationError');
 const { createThreadTraceRuntime } = require('../../runtime/threadTraceRuntime');
 const { createOpenApiSpec } = require('./openApiSpec');
 
@@ -33,9 +34,11 @@ function createThreadTraceServer(options) {
         maxBodyBytes: safeOptions.maxBodyBytes || 1024 * 1024
       });
     } catch (error) {
-      writeJson(response, 500, {
+      writeJson(response, httpStatusForError(error), {
         error: {
           message: error.message,
+          code: error.code,
+          details: error.details,
           stack: safeOptions.exposeStack ? error.stack : undefined
         }
       });
@@ -600,7 +603,7 @@ function readJsonBody(request, maxBodyBytes) {
     request.on('data', function (chunk) {
       totalBytes += chunk.length;
       if (totalBytes > maxBodyBytes) {
-        reject(new Error('Request body is too large.'));
+        reject(httpInputError('request_body_too_large', 'Request body is too large.', 413));
         request.destroy();
         return;
       }
@@ -616,7 +619,7 @@ function readJsonBody(request, maxBodyBytes) {
       try {
         resolve(JSON.parse(text));
       } catch (error) {
-        reject(new Error('Invalid JSON body: ' + error.message));
+        reject(httpInputError('invalid_json_body', 'Invalid JSON body: ' + error.message, 400));
       }
     });
   });
@@ -635,6 +638,21 @@ function applyCors(response) {
   response.setHeader('access-control-allow-origin', '*');
   response.setHeader('access-control-allow-methods', 'GET,POST,OPTIONS');
   response.setHeader('access-control-allow-headers', 'content-type');
+}
+
+function httpInputError(code, message, statusCode) {
+  const error = new Error(message);
+  error.code = code;
+  error.statusCode = statusCode;
+  return error;
+}
+
+function httpStatusForError(error) {
+  if (isApplicationError(error)) return error.statusCode || 500;
+  if (error && Number.isInteger(error.statusCode) && error.statusCode >= 400 && error.statusCode <= 599) {
+    return error.statusCode;
+  }
+  return 500;
 }
 
 module.exports = {

@@ -1,6 +1,7 @@
 'use strict';
 
 const { createTrackedSource } = require('../../domain/models/trackedSource');
+const { createApplicationError } = require('../errors/applicationError');
 const { assertSourceRepository } = require('../ports/sourceRepository');
 
 async function registerTrackedSource(options) {
@@ -33,7 +34,12 @@ function validateSourceRegistration(source, options) {
 
   if (!handler) {
     if (safeOptions.allowUnknownSourceType === true) return;
-    throw new Error('Tracked source type is not registered: ' + source.sourceType);
+    throw createApplicationError('source_type_unregistered', 'Tracked source type is not registered: ' + source.sourceType, {
+      statusCode: 400,
+      details: {
+        sourceType: source.sourceType
+      }
+    });
   }
 
   const required = handler.locationSchema && Array.isArray(handler.locationSchema.required)
@@ -44,7 +50,13 @@ function validateSourceRegistration(source, options) {
     return value === undefined || value === null || value === '';
   });
   if (missing.length > 0) {
-    throw new Error('Tracked source location for ' + source.sourceType + ' is missing required field(s): ' + missing.join(', '));
+    throw createApplicationError('source_location_invalid', 'Tracked source location for ' + source.sourceType + ' is missing required field(s): ' + missing.join(', '), {
+      statusCode: 400,
+      details: {
+        sourceType: source.sourceType,
+        missingFields: missing
+      }
+    });
   }
 }
 

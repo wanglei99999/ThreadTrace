@@ -123,7 +123,11 @@ test('runtime rejects custom source types without a registered ingest handler', 
         url: 'https://example.test/custom'
       }
     });
-  }, /source type is not registered: custom-feed/);
+  }, function (error) {
+    assert.equal(error.code, 'source_type_unregistered');
+    assert.match(error.message, /source type is not registered: custom-feed/);
+    return true;
+  });
 });
 
 test('runtime can explicitly pre-register an unknown source type', async function () {
@@ -180,5 +184,10 @@ test('runtime validates custom source locations through handler schema', async f
         url: 'https://example.test/custom'
       }
     });
-  }, /missing required field\(s\): endpoint/);
+  }, function (error) {
+    assert.equal(error.code, 'source_location_invalid');
+    assert.deepEqual(error.details.missingFields, ['endpoint']);
+    assert.match(error.message, /missing required field\(s\): endpoint/);
+    return true;
+  });
 });

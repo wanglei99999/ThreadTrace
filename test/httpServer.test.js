@@ -5,6 +5,7 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
+const { createApplicationError } = require('../src/application/errors/applicationError');
 const { createThreadTraceServer } = require('../src/presentation/http/createServer');
 
 test('http server exposes health, adapters, and context APIs', async function () {
@@ -346,6 +347,86 @@ test('http server handles CORS preflight and validates interpret text input', as
     assert.equal(preflight.headers.get('access-control-allow-origin'), '*');
     assert.equal(invalid.status, 400);
     assert.match(invalidBody.error.message, /requires text/);
+  } finally {
+    await close(server);
+  }
+});
+
+test('http server maps expected application and request errors', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-http-errors-'));
+  const server = createThreadTraceServer({
+    defaultInputDir: path.resolve(__dirname, '..', 'example'),
+    storeDir: tempDir
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const invalidJson = await fetch(baseUrl + '/api/search', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: '{'
+    });
+    const invalidJsonBody = await invalidJson.json();
+    const invalidSource = await fetch(baseUrl + '/api/sources', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        sourceKey: 'custom',
+        sourceType: 'unknown-feed',
+        displayName: 'Unknown feed',
+        location: {
+          endpoint: 'https://example.test/feed'
+        }
+      })
+    });
+    const invalidSourceBody = await invalidSource.json();
+
+    assert.equal(invalidJson.status, 400);
+    assert.equal(invalidJsonBody.error.code, 'invalid_json_body');
+    assert.equal(invalidSource.status, 400);
+    assert.equal(invalidSourceBody.error.code, 'source_type_unregistered');
+    assert.equal(invalidSourceBody.error.details.sourceType, 'unknown-feed');
+  } finally {
+    await close(server);
+  }
+});
+
+test('http server maps source run conflicts to 409', async function () {
+  const server = createThreadTraceServer({
+    runtime: {
+      async runSourceIngestTask() {
+        throw createApplicationError('source_run_already_running', 'Tracked source is already running: source-1', {
+          statusCode: 409,
+          details: {
+            sourceId: 'source-1'
+          }
+        });
+      }
+    }
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const response = await fetch(baseUrl + '/api/sources/source-1/tasks/ingest', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: '{}'
+    });
+    const body = await response.json();
+
+    assert.equal(response.status, 409);
+    assert.equal(body.error.code, 'source_run_already_running');
+    assert.equal(body.error.details.sourceId, 'source-1');
   } finally {
     await close(server);
   }

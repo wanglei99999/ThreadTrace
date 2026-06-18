@@ -11,6 +11,7 @@ const {
   compareThreadSnapshotCursor
 } = require('../../domain/sources/threadSnapshotCursor');
 const { createSourceChangedEvent } = require('../../domain/events/notificationEvent');
+const { createApplicationError } = require('../errors/applicationError');
 const { createDefaultSourceIngestHandlerRegistry } = require('../source-ingest/standardSourceIngestHandlers');
 const { assertSourceRepository } = require('../ports/sourceRepository');
 
@@ -79,7 +80,7 @@ async function acquireSourceRun(sourceRepository, source, options) {
       staleAfterMs: options && options.staleAfterMs
     });
     if (!result || !result.acquired) {
-      throw new Error(sourceAcquireFailureMessage(source, result));
+      throw sourceAcquireFailureError(source, result);
     }
     return result.source || markTrackedSourceRunStarted(source, options && options.now);
   }
@@ -90,21 +91,41 @@ async function acquireSourceRun(sourceRepository, source, options) {
   return runningSource;
 }
 
-function sourceAcquireFailureMessage(source, result) {
+function sourceAcquireFailureError(source, result) {
   if (result && result.reason === 'unknown-source') {
-    return 'Unknown tracked source: ' + source.id;
+    return createApplicationError('source_not_found', 'Unknown tracked source: ' + source.id, {
+      statusCode: 404,
+      details: {
+        sourceId: source.id
+      }
+    });
   }
   if (result && result.reason === 'transition-lock-held') {
-    return 'Tracked source run transition is locked: ' + source.id;
+    return createApplicationError('source_run_transition_locked', 'Tracked source run transition is locked: ' + source.id, {
+      statusCode: 409,
+      details: {
+        sourceId: source.id
+      }
+    });
   }
-  return 'Tracked source is already running: ' + source.id;
+  return createApplicationError('source_run_already_running', 'Tracked source is already running: ' + source.id, {
+    statusCode: 409,
+    details: {
+      sourceId: source.id
+    }
+  });
 }
 
 function assertSourceNotAlreadyRunning(source, options) {
   const runState = source.runState || {};
   if (runState.status !== 'running') return;
   if (isStaleSourceRun(runState, options)) return;
-  throw new Error('Tracked source is already running: ' + source.id);
+  throw createApplicationError('source_run_already_running', 'Tracked source is already running: ' + source.id, {
+    statusCode: 409,
+    details: {
+      sourceId: source.id
+    }
+  });
 }
 
 function isStaleSourceRun(runState, options) {
