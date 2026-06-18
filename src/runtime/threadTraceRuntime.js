@@ -27,6 +27,8 @@ const { fetchAndStoreThreadPage } = require('../application/use-cases/fetchAndSt
 const { enrichAnalysisReportWithLlm } = require('../application/use-cases/enrichAnalysisReportWithLlm');
 const { runSemanticEnrichmentTask } = require('../application/use-cases/runSemanticEnrichmentTask');
 const { runRolloutManifestApplyTask } = require('../application/use-cases/runRolloutManifestApplyTask');
+const { disableTrackedSource } = require('../application/use-cases/disableTrackedSource');
+const { runDisableTrackedSourceTask } = require('../application/use-cases/runDisableTrackedSourceTask');
 const { getOperationalOverview } = require('../application/use-cases/getOperationalOverview');
 const { getOperationalReadiness } = require('../application/use-cases/getOperationalReadiness');
 const { getTaskTraceContext } = require('../application/use-cases/getTaskTraceContext');
@@ -878,6 +880,36 @@ function createThreadTraceRuntime(options) {
         sourceIngestHandlerRegistry,
         allowUnknownSourceType: safeRequest.allowUnknownSourceType,
         source: buildSourceRegistrationInput(safeRequest)
+      });
+    },
+
+    async disableSource(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return disableTrackedSource({
+        sourceRepository: repositories.sourceRepository,
+        sourceId: safeRequest.sourceId,
+        execute: safeRequest.execute,
+        now: safeRequest.now
+      });
+    },
+
+    async runDisableSourceTask(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      const runtime = this;
+      return runDisableTrackedSourceTask({
+        taskRepository: repositories.taskRepository,
+        disableTrackedSource(requestForDisable) {
+          return runtime.disableSource(requestForDisable);
+        },
+        sourceId: safeRequest.sourceId,
+        execute: safeRequest.execute,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir,
+        requestId: safeRequest.requestId,
+        traceId: safeRequest.traceId,
+        idempotencyKey: safeRequest.idempotencyKey
       });
     },
 

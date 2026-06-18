@@ -198,6 +198,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/operations/resource-provisioning-plan']);
     assert.ok(openApi.paths['/api/deployment/gate']);
     assert.ok(openApi.paths['/api/operations/rollout-manifest/apply']);
+    assert.ok(openApi.paths['/api/sources/{sourceId}/disable']);
     assert.ok(openApi.paths['/api/sources/onboarding/preflight']);
     assert.ok(openApi.paths['/api/runtime/diagnostics']);
     assert.ok(openApi.paths['/api/sources/validate']);
@@ -900,6 +901,11 @@ test('http server can register sources and run source ingest tasks', async funct
     });
     const registerResult = await registerResponse.json();
     const sourcesResult = await getJson(baseUrl + '/api/sources');
+    const disableDryRun = await postJson(baseUrl + '/api/sources/' + encodeURIComponent(registerResult.source.id) + '/disable', {
+      execute: false,
+      now: '2026-06-19T10:00:00.000Z'
+    });
+    const sourcesAfterDisableDryRun = await getJson(baseUrl + '/api/sources');
     const dueResult = await postJson(baseUrl + '/api/sources/tasks/ingest-due', {});
     const skippedDueResult = await postJson(baseUrl + '/api/sources/tasks/ingest-due', {});
     const eventsResult = await getJson(baseUrl + '/api/events');
@@ -919,6 +925,9 @@ test('http server can register sources and run source ingest tasks', async funct
     assert.equal(registerResponse.status, 201);
     assert.equal(sourcesResult.sources.length, 1);
     assert.equal(sourcesResult.sources[0].id, registerResult.source.id);
+    assert.equal(disableDryRun.task.type, 'disable-tracked-source');
+    assert.equal(disableDryRun.result.dryRun, true);
+    assert.equal(sourcesAfterDisableDryRun.sources[0].enabled, true);
     assert.equal(dueResult.task.type, 'ingest-due-sources');
     assert.equal(dueResult.dueCount, 1);
     assert.equal(skippedDueResult.dueCount, 0);

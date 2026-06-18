@@ -711,6 +711,21 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  const disableSourceMatch = url.pathname.match(/^\/api\/sources\/([^/]+)\/disable$/);
+  if (request.method === 'POST' && disableSourceMatch) {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.runDisableSourceTask({
+      sourceId: decodeURIComponent(disableSourceMatch[1]),
+      execute: body.execute === true || body.dryRun === false,
+      now: body.now,
+      storeDir: body.storeDir || context.storeDir,
+      requestId: context.requestId,
+      idempotencyKey: context.idempotencyKey
+    });
+    writeJson(response, 200, result);
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/sources/tasks/ingest') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     const result = await context.runtime.runEnabledSourcesIngestTasks({

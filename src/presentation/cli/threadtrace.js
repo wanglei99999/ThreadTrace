@@ -617,6 +617,36 @@ function main(argv) {
     return;
   }
 
+  if (command === 'disable-source') {
+    if (!options.sourceId) {
+      throw new Error('disable-source requires --source-id.');
+    }
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.runDisableSourceTask({
+      sourceId: options.sourceId,
+      execute: options.execute === 'true' || options.dryRun === 'false',
+      now: options.now,
+      storeDir,
+      requestId: options.requestId,
+      traceId: options.traceId,
+      idempotencyKey: options.idempotencyKey
+    }).then(function (result) {
+      const disableResult = result.result;
+      console.log('Disable source: ' + disableResult.status);
+      console.log('Task: ' + result.task.id + '\t' + result.task.status);
+      if (result.idempotency) {
+        console.log('Idempotency: reused=' + result.idempotency.reused + '\ttask=' + result.idempotency.taskId);
+      }
+      console.log('Mode: ' + (disableResult.dryRun ? 'dry-run' : 'execute'));
+      console.log('Changed: ' + disableResult.changed);
+      console.log('Source: ' + disableResult.sourceBefore.id + '\t' + disableResult.sourceBefore.displayName);
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'validate-source') {
     const sourceType = options.sourceType || 'saved-html-directory';
     const inputDir = options.input || (sourceType === 'saved-html-directory' ? defaultInputDir : undefined);
@@ -1665,6 +1695,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js deployment-gate [--manifest-file file] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js rollout-manifest-apply --manifest-file file [--execute true] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--source-type type] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js disable-source --source-id id [--execute true] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-diagnostics [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js connector-catalog [--now iso]');
