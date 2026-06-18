@@ -1,9 +1,12 @@
 'use strict';
 
+const { extractMarketEntities } = require('./ruleBasedMarketEntityExtractor');
+
 function analyzeThreadHistory(threadSnapshot) {
   const posts = threadSnapshot.posts || [];
   const authorStats = summarizeAuthors(posts);
   const primaryAuthor = posts[0] ? posts[0].author : undefined;
+  const entityCandidates = extractMarketEntities(posts);
 
   return {
     reportType: 'basic-history',
@@ -19,6 +22,7 @@ function analyzeThreadHistory(threadSnapshot) {
     },
     primaryAuthor,
     authorStats,
+    entityCandidates,
     evidenceCandidates: {
       highSignalPosts: pickHighSignalPosts(posts),
       externalLinks: collectExternalLinks(posts),

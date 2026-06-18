@@ -26,6 +26,11 @@ function renderBasicHistoryMarkdown(report) {
   });
 
   lines.push('');
+  lines.push('## 实体与线索候选');
+  lines.push('');
+  appendEntityCandidates(lines, report.entityCandidates || []);
+
+  lines.push('');
   lines.push('## 高信号楼层候选');
   lines.push('');
   appendEvidenceList(lines, report.evidenceCandidates.highSignalPosts);
@@ -58,6 +63,20 @@ function renderBasicHistoryMarkdown(report) {
   lines.push('');
 
   return lines.join('\n');
+}
+
+function appendEntityCandidates(lines, entities) {
+  if (!entities || entities.length === 0) {
+    lines.push('暂无。');
+    return;
+  }
+
+  entities.slice(0, 20).forEach(function (entity) {
+    lines.push('- ' + entity.displayName + '（' + entity.type + '）：出现 ' + entity.mentions.length + ' 次');
+    entity.mentions.slice(0, 3).forEach(function (mention) {
+      lines.push('  - #' + mention.floor + ' ' + mention.author + '：' + safeInline(mention.excerpt));
+    });
+  });
 }
 
 function appendEvidenceList(lines, items) {

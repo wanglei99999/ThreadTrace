@@ -44,6 +44,7 @@ node src/presentation/cli/threadtrace.js analyze-html-dir --forum nga --input ex
 - 抽取主题 ID、标题、分页、楼层、作者、uid、发布时间、正文、链接和推荐值。
 - 输出统一 `ThreadSnapshot`。
 - 支持目录内多个保存页合并，面向长帖多页归档。
+- 规则型抽取市场实体与线索候选，包括股票代码、主题关键词和论坛主题链接。
 - 生成基础历史分析 JSON。
 - 生成可读 Markdown 报告。
 - 通过适配器注册表预留多论坛接入点。
