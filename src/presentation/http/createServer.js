@@ -375,6 +375,23 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/operations/resource-provisioning-plan') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const manifest = body.manifest || (body.source ? body : undefined);
+    const plan = await context.runtime.getResourceProvisioningPlan({
+      manifest,
+      forum: body.forum,
+      sourceKey: body.sourceKey,
+      enabled: body.enabled,
+      limit: body.limit,
+      now: body.now,
+      storeDir: body.storeDir || context.storeDir,
+      workerStaleAfterMs: body.workerStaleAfterMs
+    });
+    writeJson(response, plan.status === 'fail' ? 503 : 200, plan);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/runtime/diagnostics') {
     const diagnostics = await context.runtime.getRuntimeDiagnostics({
       now: url.searchParams.get('now') || undefined

@@ -552,6 +552,49 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/operations/resource-provisioning-plan': {
+        post: {
+          summary: 'Plan external resources, environment variables, and bootstrap commands required by the current runtime and optional rollout manifest',
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    manifest: {
+                      type: 'object',
+                      description: 'Optional rollout manifest to include source, connector, ingest, and worker-specific resource requirements'
+                    },
+                    source: {
+                      type: 'object',
+                      description: 'A rollout manifest can also be supplied directly as the request body'
+                    },
+                    forum: { type: 'string', example: 'nga' },
+                    sourceKey: { type: 'string', example: 'nga' },
+                    enabled: { type: 'boolean' },
+                    limit: { type: 'number', example: 100 },
+                    now: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+                    storeDir: { type: 'string' },
+                    workerStaleAfterMs: { type: 'number' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Resource provisioning plan is ok or has warnings'
+            },
+            503: {
+              description: 'Required resource provisioning has failing checks'
+            },
+            400: {
+              $ref: '#/components/responses/BadRequest'
+            }
+          }
+        }
+      },
       '/api/runtime/diagnostics': {
         get: {
           summary: 'Get redacted runtime configuration diagnostics',

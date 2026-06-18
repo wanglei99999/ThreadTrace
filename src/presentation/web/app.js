@@ -187,6 +187,16 @@ function bindForms() {
     }, renderRolloutManifestPlan);
   });
 
+  document.getElementById('resourceProvisioningForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await renderAsync('resourceProvisioningResult', function () {
+      return requestJson('/api/operations/resource-provisioning-plan', parseManifestJson(form.get('manifestJson')), {
+        acceptErrorStatus: true
+      });
+    }, renderResourceProvisioningPlan);
+  });
+
   document.getElementById('sourceResult').addEventListener('click', async function (event) {
     const button = event.target.closest('button[data-action="run-source"],button[data-action="run-source-pipeline"]');
     if (!button) return;
@@ -786,6 +796,29 @@ function renderRolloutManifestPlan(result) {
     panels.push(panel('Manifest actions', evidenceList(actions.map(function (action) {
       const related = (action.relatedCommands || []).length > 0 ? ' -> ' + action.relatedCommands.join(' | ') : '';
       return action.severity + ' 路 ' + action.key + ' 路 ' + action.command + related;
+    })), 'wide'));
+  }
+  return panels.join('');
+}
+
+function renderResourceProvisioningPlan(result) {
+  const resources = result.resources || [];
+  const actions = result.nextActions || [];
+  const panels = [
+    panel('Resource provisioning plan', [
+      metric('Status', result.status),
+      metric('Storage', result.environment ? result.environment.storageMode : 'unknown'),
+      metric('Source', result.environment ? (result.environment.sourceKey || 'unknown') + ' / ' + (result.environment.sourceType || 'unknown') : 'unknown'),
+      metric('LLM', result.environment ? result.environment.llmProvider || 'unknown' : 'unknown')
+    ].join('')),
+    panel('Resources', evidenceList(resources.map(function (item) {
+      const env = item.env && item.env.length > 0 ? ' env=' + item.env.join(',') : '';
+      return item.status + ' 路 ' + item.area + ' 路 ' + item.key + ' 路 ' + (item.required ? 'required' : 'optional') + ' 路 ' + item.summary + env;
+    })), 'wide')
+  ];
+  if (actions.length > 0) {
+    panels.push(panel('Resource actions', evidenceList(actions.map(function (action) {
+      return action.severity + ' 路 ' + action.key + ' 路 ' + action.summary + ' 路 ' + (action.commands || []).join(' | ');
     })), 'wide'));
   }
   return panels.join('');

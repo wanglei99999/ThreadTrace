@@ -357,6 +357,36 @@ Request:
 
 The response includes `steps`, `nextActions`, the composed `connectorRolloutPlan`, and the composed `workerTopologyPlan`. A failing plan returns HTTP `503`; warnings return `200`.
 
+### `POST /api/operations/resource-provisioning-plan`
+
+Builds a read-only provisioning checklist from runtime diagnostics, deployment checklist signals, and an optional rollout manifest.
+
+Request:
+
+```json
+{
+  "manifest": {
+    "version": "1.0",
+    "name": "nga-sample-rollout",
+    "source": {
+      "sourceKey": "nga",
+      "sourceType": "saved-html-directory",
+      "displayName": "NGA sample archive",
+      "inputDir": "example"
+    },
+    "ingest": {
+      "dryRun": true
+    },
+    "workers": {
+      "topology": "operations-worker",
+      "sourceTaskMode": "ingest"
+    }
+  }
+}
+```
+
+The response includes `resources`, required/optional status, expected environment variables, verification commands, and `nextActions` for missing required resources. A failing required resource returns HTTP `503`; warnings on optional resources return `200`.
+
 ### `POST /api/index-directory`
 
 将保存页目录解析为楼层文档并写入本地检索索引。

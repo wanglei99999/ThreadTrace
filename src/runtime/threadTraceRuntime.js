@@ -38,6 +38,7 @@ const { getSourceOnboardingPreflight } = require('../application/use-cases/getSo
 const { getConnectorRolloutPlan } = require('../application/use-cases/getConnectorRolloutPlan');
 const { getWorkerTopologyPlan } = require('../application/use-cases/getWorkerTopologyPlan');
 const { getRolloutManifestPlan } = require('../application/use-cases/getRolloutManifestPlan');
+const { getResourceProvisioningPlan } = require('../application/use-cases/getResourceProvisioningPlan');
 const { dryRunSourceIngest } = require('../application/use-cases/dryRunSourceIngest');
 const { createDefaultSourceIngestHandlerRegistry } = require('../application/source-ingest/standardSourceIngestHandlers');
 const { migrateStoreRecords } = require('../application/use-cases/migrateStoreRecords');
@@ -396,6 +397,40 @@ function createThreadTraceRuntime(options) {
         manifest,
         connectorRolloutPlan,
         workerTopologyPlan
+      });
+    },
+
+    async getResourceProvisioningPlan(request) {
+      const safeRequest = request || {};
+      const diagnostics = await this.getRuntimeDiagnostics({
+        now: safeRequest.now
+      });
+      const deploymentChecklist = await this.getDeploymentChecklist({
+        forum: safeRequest.forum,
+        sourceKey: safeRequest.sourceKey,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 100,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir,
+        workerStaleAfterMs: safeRequest.workerStaleAfterMs
+      });
+      const rolloutManifestPlan = safeRequest.manifest
+        ? await this.getRolloutManifestPlan({
+          manifest: safeRequest.manifest,
+          now: safeRequest.now,
+          storeDir: safeRequest.storeDir,
+          limit: safeRequest.limit,
+          workerStaleAfterMs: safeRequest.workerStaleAfterMs
+        })
+        : undefined;
+
+      return getResourceProvisioningPlan({
+        config: runtimeConfig,
+        runtimeDiagnostics: diagnostics,
+        deploymentChecklist,
+        rolloutManifestPlan,
+        manifest: safeRequest.manifest,
+        now: safeRequest.now
       });
     },
 

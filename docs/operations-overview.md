@@ -18,6 +18,7 @@ GET /api/operations/readiness
 GET /api/operations/trace-context
 GET /api/operations/runbook
 POST /api/operations/rollout-manifest-plan
+POST /api/operations/resource-provisioning-plan
 GET /api/runtime/diagnostics
 ```
 
@@ -28,6 +29,7 @@ runtime.getOperationalOverview({ limit: 100 })
 runtime.getOperationalReadiness({ limit: 100 })
 runtime.getOperationsRunbook({ limit: 100 })
 runtime.getRolloutManifestPlan({ manifest })
+runtime.getResourceProvisioningPlan({ manifest })
 ```
 
 Combined worker:
@@ -54,6 +56,14 @@ node src/presentation/cli/threadtrace.js rollout-manifest-plan --manifest-file <
 ```
 
 See `docs/rollout-manifest-plan.md` for the manifest contract.
+
+Use the resource provisioning plan to turn runtime diagnostics and an optional rollout manifest into a concrete infrastructure checklist:
+
+```powershell
+node src/presentation/cli/threadtrace.js resource-provisioning-plan --manifest-file docs/examples/rollout-manifest.sample.json
+```
+
+See `docs/resource-provisioning-plan.md` for database, worker, notification, LLM, and connector module preparation notes.
 
 ## Included Signals
 

@@ -857,6 +857,44 @@ function main(argv) {
     return;
   }
 
+  if (command === 'resource-provisioning-plan') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.getResourceProvisioningPlan({
+      manifest: options.manifestFile ? parseManifestOption(options) : undefined,
+      forum: options.forum,
+      sourceKey: options.sourceKey,
+      enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
+      limit: options.limit ? Number(options.limit) : 100,
+      now: options.now,
+      storeDir,
+      workerStaleAfterMs: options.workerStaleAfterMs ? Number(options.workerStaleAfterMs) : undefined
+    }).then(function (plan) {
+      console.log('Resource provisioning plan: ' + plan.status);
+      console.log('Environment: storage=' + plan.environment.storageMode + '\tsourceTaskMode=' + (plan.environment.sourceTaskMode || 'unknown') + '\tllm=' + (plan.environment.llmProvider || 'unknown'));
+      console.log('Resources: ' + plan.resources.length);
+      plan.resources.forEach(function (item) {
+        console.log(item.status + '\t' + item.area + '\t' + item.key + '\t' + (item.required ? 'required' : 'optional') + '\t' + item.summary);
+        if (item.env.length > 0) {
+          console.log('  env: ' + item.env.join(', '));
+        }
+        item.commands.forEach(function (command) {
+          console.log('  command: ' + command);
+        });
+      });
+      console.log('Next actions: ' + plan.nextActions.length);
+      plan.nextActions.forEach(function (action) {
+        console.log(action.severity + '\t' + action.key + '\t' + action.summary);
+      });
+      if (plan.status === 'fail') {
+        process.exitCode = 2;
+      }
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'list-sources') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.listSources({
@@ -1532,6 +1570,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js source-ingest-dry-run [--forum nga] [--source-type type] [--module-path file] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--allow-remote-fetch true] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js connector-rollout-plan [--forum nga] [--source-type type] [--module-path file] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--dry-run-ingest true] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js rollout-manifest-plan --manifest-file file [--store-dir dir] [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js resource-provisioning-plan [--manifest-file file] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--source-type type] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-diagnostics [--forum nga] [--enabled true] [--store-dir dir]');

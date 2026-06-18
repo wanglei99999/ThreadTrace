@@ -50,6 +50,7 @@ node src/presentation/cli/threadtrace.js ingest-html-dir --forum nga --input exa
 node src/presentation/cli/threadtrace.js register-source --forum nga --input example --name "NGA sample archive" --interval-minutes 60
 node src/presentation/cli/threadtrace.js source-ingest-dry-run --forum nga --source-type saved-html-directory --input example
 node src/presentation/cli/threadtrace.js rollout-manifest-plan --manifest-file <file>
+node src/presentation/cli/threadtrace.js resource-provisioning-plan --manifest-file <file>
 node src/presentation/cli/threadtrace.js list-sources
 node src/presentation/cli/threadtrace.js list-events
 node src/presentation/cli/threadtrace.js dispatch-events
@@ -70,6 +71,7 @@ npm run diagnostics:notifications
 npm run deployment:checklist
 npm run operations:worker-topology-plan
 npm run operations:runbook
+npm run operations:resource-provisioning-plan
 ```
 
 These commands use the same runtime composition as the HTTP API and Web console. `deployment:checklist` aggregates runtime resources, PostgreSQL schema readiness, adapter contracts, tracked source configuration, workers, notifications, and LLM configuration. `operations:runbook` turns failed or warning checks into actionable next commands.
@@ -88,6 +90,7 @@ These commands use the same runtime composition as the HTTP API and Web console.
 - `GET /api/operations/runbook`
 - `GET /api/operations/worker-topology-plan`
 - `POST /api/operations/rollout-manifest-plan`
+- `POST /api/operations/resource-provisioning-plan`
 - `POST /api/analyze-directory`
 - `POST /api/interpret-text`
 - `POST /api/tasks/ingest-directory`
