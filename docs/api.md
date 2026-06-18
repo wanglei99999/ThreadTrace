@@ -98,7 +98,8 @@ http://127.0.0.1:3017
   "forum": "nga",
   "sourceType": "saved-html-directory",
   "displayName": "NGA sample archive",
-  "inputDir": "D:/Coding/GitCoding/ThreadTrace/example"
+  "inputDir": "D:/Coding/GitCoding/ThreadTrace/example",
+  "intervalMinutes": 60
 }
 ```
 
@@ -146,6 +147,22 @@ http://127.0.0.1:3017
 ```
 
 返回：父任务记录、批量执行汇总、成功/失败数量和每个来源的任务结果。父任务类型为 `ingest-enabled-sources`，每个来源仍会生成自己的导入任务记录。
+
+### `POST /api/sources/tasks/ingest-due`
+
+只运行已启用且调度到期的来源。调度规则来自来源的 `schedule.intervalMinutes` 或 `schedule.nextRunAt`，运行中的来源会被跳过，未设置调度的来源不会自动运行。
+
+请求：
+
+```json
+{
+  "forum": "nga",
+  "limit": 50,
+  "now": "2026-06-18T10:00:00.000Z"
+}
+```
+
+返回：父任务记录、到期数量、跳过数量、成功/失败数量和每个来源的调度原因。父任务类型为 `ingest-due-sources`。
 
 ### `POST /api/index-directory`
 

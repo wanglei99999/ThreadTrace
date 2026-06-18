@@ -17,9 +17,12 @@ test('runtime registers tracked sources and runs ingest from a source', async fu
   const registerResult = await runtime.registerSource({
     forum: 'nga',
     displayName: 'NGA sample archive',
-    inputDir: path.resolve(__dirname, '..', 'example')
+    inputDir: path.resolve(__dirname, '..', 'example'),
+    intervalMinutes: 60
   });
   const sources = await runtime.listSources({});
+  const dueResult = await runtime.runDueSourcesIngestTasks({});
+  const skippedDueResult = await runtime.runDueSourcesIngestTasks({});
   const taskResult = await runtime.runSourceIngestTask({
     sourceId: registerResult.source.id
   });
@@ -34,6 +37,12 @@ test('runtime registers tracked sources and runs ingest from a source', async fu
   assert.equal(registerResult.created, true);
   assert.equal(sources.length, 1);
   assert.equal(sources[0].id, registerResult.source.id);
+  assert.equal(dueResult.task.status, 'completed');
+  assert.equal(dueResult.task.type, 'ingest-due-sources');
+  assert.equal(dueResult.dueCount, 1);
+  assert.equal(dueResult.completedCount, 1);
+  assert.equal(skippedDueResult.dueCount, 0);
+  assert.equal(skippedDueResult.skippedCount, 1);
   assert.equal(taskResult.task.status, 'completed');
   assert.equal(taskResult.threadSnapshot.sourceThreadId, '45974302');
   assert.equal(sourcesAfterTask[0].runState.status, 'completed');

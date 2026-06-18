@@ -154,6 +154,9 @@ function createOpenApiSpec() {
                     displayName: { type: 'string', example: 'NGA sample archive' },
                     inputDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/example' },
                     url: { type: 'string' },
+                    intervalMinutes: { type: 'number', example: 60 },
+                    nextRunAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+                    scheduleEnabled: { type: 'boolean' },
                     enabled: { type: 'boolean' },
                     storeDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/data/store' }
                   }
@@ -218,6 +221,32 @@ function createOpenApiSpec() {
           responses: {
             200: {
               description: 'Batch task summary'
+            }
+          }
+        }
+      },
+      '/api/sources/tasks/ingest-due': {
+        post: {
+          summary: 'Run ingest tasks for due tracked sources only',
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    forum: { type: 'string', example: 'nga' },
+                    limit: { type: 'number', example: 50 },
+                    now: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+                    storeDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/data/store' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Due-source batch task summary'
             }
           }
         }

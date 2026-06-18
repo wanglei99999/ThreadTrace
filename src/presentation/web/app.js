@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshTasksButton').addEventListener('click', loadTasks);
   document.getElementById('refreshSourcesButton').addEventListener('click', loadSources);
   document.getElementById('runSourcesButton').addEventListener('click', runAllSources);
+  document.getElementById('runDueSourcesButton').addEventListener('click', runDueSources);
   loadAdapters();
   loadSystemStatus();
 });
@@ -88,7 +89,8 @@ function bindForms() {
       return requestJson('/api/sources', {
         forum: form.get('forum'),
         displayName: form.get('displayName'),
-        inputDir: form.get('inputDir')
+        inputDir: form.get('inputDir'),
+        intervalMinutes: Number(form.get('intervalMinutes')) || undefined
       });
     }, renderSourceSaveResult);
     await loadSystemStatus();
@@ -209,6 +211,15 @@ async function runAllSources() {
   await loadSources();
 }
 
+async function runDueSources() {
+  await renderAsync('taskResult', function () {
+    return requestJson('/api/sources/tasks/ingest-due', {});
+  }, renderDueSourceBatchRunResult);
+  await loadSystemStatus();
+  await loadTasks();
+  await loadSources();
+}
+
 async function renderAsync(targetId, task, renderer) {
   const target = document.getElementById(targetId);
   target.innerHTML = '<div class="empty">分析中...</div>';
@@ -314,6 +325,19 @@ function renderSourceBatchRunResult(result) {
   ].join(''), 'wide');
 }
 
+function renderDueSourceBatchRunResult(result) {
+  return panel('到期来源任务完成', [
+    metric('来源数', result.sourceCount),
+    metric('到期', result.dueCount),
+    metric('跳过', result.skippedCount),
+    metric('完成', result.completedCount),
+    metric('失败', result.failedCount),
+    evidenceList((result.results || []).map(function (item) {
+      return item.status + ' · ' + item.scheduleReason + ' · ' + item.source.displayName + ' · ' + (item.task ? item.task.id : item.error.message);
+    }))
+  ].join(''), 'wide');
+}
+
 function renderTaskList(result) {
   const tasks = result.tasks || [];
   return panel('最近任务', evidenceList(tasks.map(function (task) {
@@ -327,9 +351,11 @@ function renderSourceList(result) {
   if (sources.length === 0) return panel('跟踪来源', '<div class="muted">暂无</div>', 'wide');
   return panel('跟踪来源', sources.map(function (source) {
     const runState = source.runState || {};
+    const schedule = source.schedule || {};
     const runLabel = runState.status || 'never-run';
+    const scheduleLabel = schedule.intervalMinutes ? ' · every ' + schedule.intervalMinutes + 'm' : '';
     const lastTask = runState.lastTaskId ? ' · ' + runState.lastTaskId : '';
-    return '<div class="action-row"><span>' + escapeHtml(source.displayName) + '<small>' + escapeHtml(source.id + ' · ' + source.sourceType + ' · ' + runLabel + lastTask) + '</small></span><button class="inline-button" type="button" data-action="run-source" data-source-id="' + escapeHtml(source.id) + '">运行</button></div>';
+    return '<div class="action-row"><span>' + escapeHtml(source.displayName) + '<small>' + escapeHtml(source.id + ' · ' + source.sourceType + ' · ' + runLabel + scheduleLabel + lastTask) + '</small></span><button class="inline-button" type="button" data-action="run-source" data-source-id="' + escapeHtml(source.id) + '">运行</button></div>';
   }).join(''), 'wide');
 }
 

@@ -157,6 +157,9 @@ async function routeRequest(request, response, context) {
       enabled: body.enabled,
       tags: body.tags,
       schedule: body.schedule,
+      intervalMinutes: body.intervalMinutes,
+      nextRunAt: body.nextRunAt,
+      scheduleEnabled: body.scheduleEnabled,
       storeDir: body.storeDir || context.storeDir
     });
     writeJson(response, result.created ? 201 : 200, result);
@@ -168,6 +171,18 @@ async function routeRequest(request, response, context) {
     const result = await context.runtime.runEnabledSourcesIngestTasks({
       forum: body.forum,
       limit: body.limit,
+      storeDir: body.storeDir || context.storeDir
+    });
+    writeJson(response, 200, result);
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/sources/tasks/ingest-due') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.runDueSourcesIngestTasks({
+      forum: body.forum,
+      limit: body.limit,
+      now: body.now,
       storeDir: body.storeDir || context.storeDir
     });
     writeJson(response, 200, result);

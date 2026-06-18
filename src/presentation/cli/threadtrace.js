@@ -157,6 +157,9 @@ function main(argv) {
       inputDir,
       url: options.url,
       enabled: options.enabled !== 'false',
+      intervalMinutes: options.intervalMinutes,
+      nextRunAt: options.nextRunAt,
+      scheduleEnabled: options.scheduleEnabled === undefined ? undefined : options.scheduleEnabled !== 'false',
       storeDir
     }).then(function (result) {
       console.log((result.created ? 'Created' : 'Updated') + ' source: ' + result.source.id);
@@ -217,6 +220,29 @@ function main(argv) {
       console.log('Failed: ' + result.failedCount);
       result.results.forEach(function (item) {
         console.log(item.status + '\t' + item.source.id + '\t' + (item.task ? item.task.id : item.error.message));
+      });
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
+  if (command === 'run-due-sources-task') {
+    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    runtime.runDueSourcesIngestTasks({
+      forum: options.forum,
+      limit: options.limit ? Number(options.limit) : 50,
+      now: options.now,
+      storeDir
+    }).then(function (result) {
+      console.log('Sources: ' + result.sourceCount);
+      console.log('Due: ' + result.dueCount);
+      console.log('Skipped: ' + result.skippedCount);
+      console.log('Completed: ' + result.completedCount);
+      console.log('Failed: ' + result.failedCount);
+      result.results.forEach(function (item) {
+        console.log(item.status + '\t' + item.scheduleReason + '\t' + item.source.id + '\t' + (item.task ? item.task.id : item.error.message));
       });
     }).catch(function (error) {
       console.error(error && error.stack ? error.stack : error);
@@ -350,6 +376,18 @@ function parseArgs(args) {
     } else if (item === '--enabled') {
       options.enabled = args[index + 1];
       index += 1;
+    } else if (item === '--interval-minutes') {
+      options.intervalMinutes = args[index + 1];
+      index += 1;
+    } else if (item === '--next-run-at') {
+      options.nextRunAt = args[index + 1];
+      index += 1;
+    } else if (item === '--schedule-enabled') {
+      options.scheduleEnabled = args[index + 1];
+      index += 1;
+    } else if (item === '--now') {
+      options.now = args[index + 1];
+      index += 1;
     }
   }
   return options;
@@ -413,10 +451,11 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js ingest-html-dir [--forum nga] [--input dir] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-ingest-task [--forum nga] [--input dir] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-tasks [--store-dir dir] [--status status] [--type type] [--limit n]');
-  console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--input dir] [--name name] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--input dir] [--name name] [--interval-minutes n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-source-task --source-id id [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-sources-task [--forum nga] [--limit n] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js run-due-sources-task [--forum nga] [--now iso] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js index-html-dir [--forum nga] [--input dir] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js search-index --text text [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js interpret-text-dir [--forum nga] [--input dir] --text text [--author-id id] [--output file] [--markdown-output file]');

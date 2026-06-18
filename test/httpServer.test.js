@@ -137,17 +137,24 @@ test('http server can register sources and run source ingest tasks', async funct
       body: JSON.stringify({
         forum: 'nga',
         displayName: 'NGA sample archive',
-        inputDir: path.resolve(__dirname, '..', 'example')
+        inputDir: path.resolve(__dirname, '..', 'example'),
+        intervalMinutes: 60
       })
     });
     const registerResult = await registerResponse.json();
     const sourcesResult = await getJson(baseUrl + '/api/sources');
+    const dueResult = await postJson(baseUrl + '/api/sources/tasks/ingest-due', {});
+    const skippedDueResult = await postJson(baseUrl + '/api/sources/tasks/ingest-due', {});
     const taskResult = await postJson(baseUrl + '/api/sources/' + encodeURIComponent(registerResult.source.id) + '/tasks/ingest', {});
     const batchResult = await postJson(baseUrl + '/api/sources/tasks/ingest', {});
 
     assert.equal(registerResponse.status, 201);
     assert.equal(sourcesResult.sources.length, 1);
     assert.equal(sourcesResult.sources[0].id, registerResult.source.id);
+    assert.equal(dueResult.task.type, 'ingest-due-sources');
+    assert.equal(dueResult.dueCount, 1);
+    assert.equal(skippedDueResult.dueCount, 0);
+    assert.equal(skippedDueResult.skippedCount, 1);
     assert.equal(taskResult.sourceId, registerResult.source.id);
     assert.equal(taskResult.task.status, 'completed');
     assert.equal(batchResult.task.status, 'completed');
