@@ -23,10 +23,14 @@ test('runtime registers tracked sources and runs ingest from a source', async fu
   const taskResult = await runtime.runSourceIngestTask({
     sourceId: registerResult.source.id
   });
+  const batchResult = await runtime.runEnabledSourcesIngestTasks({});
 
   assert.equal(registerResult.created, true);
   assert.equal(sources.length, 1);
   assert.equal(sources[0].id, registerResult.source.id);
   assert.equal(taskResult.task.status, 'completed');
   assert.equal(taskResult.threadSnapshot.sourceThreadId, '45974302');
+  assert.equal(batchResult.sourceCount, 1);
+  assert.equal(batchResult.completedCount, 1);
+  assert.equal(batchResult.failedCount, 0);
 });

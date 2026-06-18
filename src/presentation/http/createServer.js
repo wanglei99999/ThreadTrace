@@ -163,6 +163,17 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/sources/tasks/ingest') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.runEnabledSourcesIngestTasks({
+      forum: body.forum,
+      limit: body.limit,
+      storeDir: body.storeDir || context.storeDir
+    });
+    writeJson(response, 200, result);
+    return;
+  }
+
   const sourceIngestMatch = url.pathname.match(/^\/api\/sources\/([^/]+)\/tasks\/ingest$/);
   if (request.method === 'POST' && sourceIngestMatch) {
     const body = await readJsonBody(request, context.maxBodyBytes);

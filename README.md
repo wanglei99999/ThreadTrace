@@ -39,6 +39,7 @@ node src/presentation/cli/threadtrace.js analyze-html-dir --forum nga --input ex
 node src/presentation/cli/threadtrace.js ingest-html-dir --forum nga --input example --store-dir data/store
 node src/presentation/cli/threadtrace.js register-source --forum nga --input example --name "NGA sample archive"
 node src/presentation/cli/threadtrace.js list-sources
+node src/presentation/cli/threadtrace.js run-sources-task
 node src/presentation/cli/threadtrace.js interpret-text-dir --forum nga --input example --text 科技后面看量确认
 ```
 
@@ -53,6 +54,7 @@ node src/presentation/cli/threadtrace.js interpret-text-dir --forum nga --input 
 - `GET /api/tasks`
 - `POST /api/sources`
 - `GET /api/sources`
+- `POST /api/sources/tasks/ingest`
 - `POST /api/sources/{sourceId}/tasks/ingest`
 - `POST /api/index-directory`
 - `POST /api/search`

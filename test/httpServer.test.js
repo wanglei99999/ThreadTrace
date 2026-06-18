@@ -143,12 +143,16 @@ test('http server can register sources and run source ingest tasks', async funct
     const registerResult = await registerResponse.json();
     const sourcesResult = await getJson(baseUrl + '/api/sources');
     const taskResult = await postJson(baseUrl + '/api/sources/' + encodeURIComponent(registerResult.source.id) + '/tasks/ingest', {});
+    const batchResult = await postJson(baseUrl + '/api/sources/tasks/ingest', {});
 
     assert.equal(registerResponse.status, 201);
     assert.equal(sourcesResult.sources.length, 1);
     assert.equal(sourcesResult.sources[0].id, registerResult.source.id);
     assert.equal(taskResult.sourceId, registerResult.source.id);
     assert.equal(taskResult.task.status, 'completed');
+    assert.equal(batchResult.sourceCount, 1);
+    assert.equal(batchResult.completedCount, 1);
+    assert.equal(batchResult.failedCount, 0);
   } finally {
     await close(server);
   }

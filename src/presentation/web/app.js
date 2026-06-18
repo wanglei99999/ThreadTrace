@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshAdaptersButton').addEventListener('click', loadAdapters);
   document.getElementById('refreshTasksButton').addEventListener('click', loadTasks);
   document.getElementById('refreshSourcesButton').addEventListener('click', loadSources);
+  document.getElementById('runSourcesButton').addEventListener('click', runAllSources);
   loadAdapters();
   loadSystemStatus();
 });
@@ -199,6 +200,15 @@ async function loadSources() {
   }, renderSourceList);
 }
 
+async function runAllSources() {
+  await renderAsync('taskResult', function () {
+    return requestJson('/api/sources/tasks/ingest', {});
+  }, renderSourceBatchRunResult);
+  await loadSystemStatus();
+  await loadTasks();
+  await loadSources();
+}
+
 async function renderAsync(targetId, task, renderer) {
   const target = document.getElementById(targetId);
   target.innerHTML = '<div class="empty">分析中...</div>';
@@ -290,6 +300,17 @@ function renderSourceTaskRunResult(result) {
     metric('任务 ID', result.task.id),
     metric('状态', result.task.status),
     metric('主题', result.task.output ? result.task.output.title : '')
+  ].join(''), 'wide');
+}
+
+function renderSourceBatchRunResult(result) {
+  return panel('来源批量任务完成', [
+    metric('来源数', result.sourceCount),
+    metric('完成', result.completedCount),
+    metric('失败', result.failedCount),
+    evidenceList((result.results || []).map(function (item) {
+      return item.status + ' · ' + item.source.displayName + ' · ' + (item.task ? item.task.id : item.error.message);
+    }))
   ].join(''), 'wide');
 }
 

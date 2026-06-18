@@ -205,6 +205,26 @@ function main(argv) {
     return;
   }
 
+  if (command === 'run-sources-task') {
+    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    runtime.runEnabledSourcesIngestTasks({
+      forum: options.forum,
+      limit: options.limit ? Number(options.limit) : 50,
+      storeDir
+    }).then(function (result) {
+      console.log('Sources: ' + result.sourceCount);
+      console.log('Completed: ' + result.completedCount);
+      console.log('Failed: ' + result.failedCount);
+      result.results.forEach(function (item) {
+        console.log(item.status + '\t' + item.source.id + '\t' + (item.task ? item.task.id : item.error.message));
+      });
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'interpret-text-dir') {
     const inputDir = options.input || path.resolve(process.cwd(), 'example');
     const text = options.text;
@@ -396,6 +416,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--input dir] [--name name] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-source-task --source-id id [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js run-sources-task [--forum nga] [--limit n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js index-html-dir [--forum nga] [--input dir] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js search-index --text text [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js interpret-text-dir [--forum nga] [--input dir] --text text [--author-id id] [--output file] [--markdown-output file]');

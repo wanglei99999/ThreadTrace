@@ -9,6 +9,7 @@ const { runIngestSavedThreadDirectoryTask } = require('../application/use-cases/
 const { registerTrackedSource } = require('../application/use-cases/registerTrackedSource');
 const { listTrackedSources } = require('../application/use-cases/listTrackedSources');
 const { runTrackedSourceIngestTask } = require('../application/use-cases/runTrackedSourceIngestTask');
+const { runEnabledSourcesIngestTasks } = require('../application/use-cases/runEnabledSourcesIngestTasks');
 const { indexSavedThreadDirectory } = require('../application/use-cases/indexSavedThreadDirectory');
 const { searchEvidence } = require('../application/use-cases/searchEvidence');
 const { createFileThreadRepository } = require('../infrastructure/storage/fileThreadRepository');
@@ -149,6 +150,20 @@ function createThreadTraceRuntime(options) {
         threadRepository: repositories.threadRepository,
         reportRepository: repositories.reportRepository,
         taskRepository: repositories.taskRepository
+      });
+    },
+
+    async runEnabledSourcesIngestTasks(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositories(resolveStoreDir(defaults, safeRequest.storeDir));
+      return runEnabledSourcesIngestTasks({
+        sourceRepository: repositories.sourceRepository,
+        threadRepository: repositories.threadRepository,
+        reportRepository: repositories.reportRepository,
+        taskRepository: repositories.taskRepository,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        limit: safeRequest.limit || 50,
+        getAdapter: getForumAdapter
       });
     },
 

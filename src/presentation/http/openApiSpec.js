@@ -197,6 +197,31 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/sources/tasks/ingest': {
+        post: {
+          summary: 'Run ingest tasks for all enabled tracked sources',
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    forum: { type: 'string', example: 'nga' },
+                    limit: { type: 'number', example: 50 },
+                    storeDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/data/store' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Batch task summary'
+            }
+          }
+        }
+      },
       '/api/index-directory': {
         post: {
           summary: 'Index posts from a saved HTML directory into the retrieval index',

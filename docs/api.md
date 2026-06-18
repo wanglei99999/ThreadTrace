@@ -126,6 +126,21 @@ http://127.0.0.1:3017
 
 返回：任务记录和基础历史分析报告。
 
+### `POST /api/sources/tasks/ingest`
+
+批量运行所有启用来源的导入任务，可按 `forum` 过滤。这个接口是未来 Scheduler / Worker 的最小执行入口。
+
+请求：
+
+```json
+{
+  "forum": "nga",
+  "limit": 50
+}
+```
+
+返回：批量执行汇总、成功/失败数量和每个来源的任务结果。
+
 ### `POST /api/index-directory`
 
 将保存页目录解析为楼层文档并写入本地检索索引。
