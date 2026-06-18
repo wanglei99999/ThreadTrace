@@ -158,6 +158,11 @@ label {
   min-width: 160px;
 }
 
+label.compact {
+  min-width: 96px;
+  max-width: 120px;
+}
+
 label span {
   color: var(--muted);
   font-size: 13px;
@@ -250,6 +255,11 @@ form button[type="submit"]:hover {
   border-top: 1px solid #edf2ef;
 }
 
+.evidence-row span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .metric-row:first-of-type,
 .evidence-row:first-of-type,
 .status-row:first-of-type {
@@ -298,12 +308,16 @@ form button[type="submit"]:hover {
   }
 
   .nav-list {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
   }
 
   .control-strip {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  label.compact {
+    max-width: none;
   }
 
   .panel {

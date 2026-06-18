@@ -14,6 +14,10 @@ const views = {
     title: '新发言解读',
     subtitle: '输入一条新发言，召回相关历史楼层和匹配理由。'
   },
+  search: {
+    title: '历史检索',
+    subtitle: '先把保存页写入本地证据索引，再按关键词检索可引用的历史发言。'
+  },
   system: {
     title: '系统状态',
     subtitle: '查看 API、适配器和本地服务状态。'
@@ -74,6 +78,28 @@ function bindForms() {
     await loadSystemStatus();
     await loadTasks();
   });
+
+  document.getElementById('indexForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await renderAsync('searchResult', function () {
+      return requestJson('/api/index-directory', {
+        forum: form.get('forum'),
+        inputDir: form.get('inputDir')
+      });
+    }, renderIndexResult);
+  });
+
+  document.getElementById('searchForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await renderAsync('searchResult', function () {
+      return requestJson('/api/search', {
+        text: form.get('text'),
+        limit: Number(form.get('limit')) || 8
+      });
+    }, renderSearchResults);
+  });
 }
 
 function setView(viewName) {
@@ -96,6 +122,7 @@ async function loadAdapters() {
     state.adapters = result.adapters || [];
     fillAdapterSelect('historyForum');
     fillAdapterSelect('contextForum');
+    fillAdapterSelect('searchForum');
   } catch (error) {
     renderError('historyResult', error);
   }
@@ -180,6 +207,26 @@ function renderContextReport(report) {
     ].join('')),
     panel('相关历史证据', evidenceList((report.relatedEvidence || []).map(function (item) {
       return '#' + item.floor + ' ' + item.author + ' · ' + item.confidence + '：' + item.reasons.join(', ');
+    })), 'wide')
+  ].join('');
+}
+
+function renderIndexResult(result) {
+  return [
+    panel('索引已更新', [
+      metric('论坛', result.sourceKey),
+      metric('主题', result.title),
+      metric('主题 ID', result.sourceThreadId),
+      metric('文档数', result.indexedDocumentCount)
+    ].join(''), 'wide')
+  ].join('');
+}
+
+function renderSearchResults(result) {
+  const results = result.results || [];
+  return [
+    panel('证据命中', evidenceList(results.map(function (item) {
+      return '#' + item.metadata.floor + ' ' + item.metadata.author + ' · ' + item.score + '｜' + item.text;
     })), 'wide')
   ].join('');
 }

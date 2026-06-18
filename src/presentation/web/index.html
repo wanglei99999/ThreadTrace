@@ -19,6 +19,7 @@
       <nav class="nav-list" aria-label="主导航">
         <button class="nav-item active" data-view="history">历史分析</button>
         <button class="nav-item" data-view="context">新发言解读</button>
+        <button class="nav-item" data-view="search">历史检索</button>
         <button class="nav-item" data-view="system">系统状态</button>
       </nav>
     </aside>
@@ -76,6 +77,32 @@
           <button type="submit">还原语境</button>
         </form>
         <div id="contextResult" class="result-grid"></div>
+      </section>
+
+      <section class="view-panel hidden" id="searchView">
+        <form id="indexForm" class="control-strip">
+          <label>
+            <span>论坛</span>
+            <select name="forum" id="searchForum"></select>
+          </label>
+          <label class="grow">
+            <span>保存页目录</span>
+            <input name="inputDir" value="example" autocomplete="off">
+          </label>
+          <button type="submit">更新索引</button>
+        </form>
+        <form id="searchForm" class="control-strip">
+          <label class="grow">
+            <span>检索问题</span>
+            <input name="text" value="科技" autocomplete="off">
+          </label>
+          <label class="compact">
+            <span>结果数</span>
+            <input name="limit" value="8" inputmode="numeric" autocomplete="off">
+          </label>
+          <button type="submit">搜索证据</button>
+        </form>
+        <div id="searchResult" class="result-grid"></div>
       </section>
 
       <section class="view-panel hidden" id="systemView">
