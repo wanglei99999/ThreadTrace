@@ -79,6 +79,18 @@ content-type: application/json
 
 Validation and onboarding preflight reload the module file for each run, so connector authors can edit a module and immediately re-run the check without restarting ThreadTrace.
 
+For a full pre-release view, run the read-only connector rollout plan. It aggregates the connector contract, optional module validation, optional source onboarding preflight, current connector readiness, and deployment checklist:
+
+```powershell
+node src/presentation/cli/threadtrace.js connector-rollout-plan --module-path D:\connectors\custom-forum.cjs --source-type external-feed --location-file D:\connectors\location.json
+```
+
+```http
+POST /api/connectors/rollout-plan
+```
+
+See `docs/connector-rollout-plan.md` for the full contract.
+
 Runtime and HTTP discovery:
 
 ```text

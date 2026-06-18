@@ -35,6 +35,7 @@ const { getOperationsRunbook } = require('../application/use-cases/getOperations
 const { getSourceConnectorCatalog } = require('../application/use-cases/getSourceConnectorCatalog');
 const { getConnectorReadiness } = require('../application/use-cases/getConnectorReadiness');
 const { getSourceOnboardingPreflight } = require('../application/use-cases/getSourceOnboardingPreflight');
+const { getConnectorRolloutPlan } = require('../application/use-cases/getConnectorRolloutPlan');
 const { createDefaultSourceIngestHandlerRegistry } = require('../application/source-ingest/standardSourceIngestHandlers');
 const { migrateStoreRecords } = require('../application/use-cases/migrateStoreRecords');
 const { runIngestRawThreadPageTask } = require('../application/use-cases/runIngestRawThreadPageTask');
@@ -275,6 +276,51 @@ function createThreadTraceRuntime(options) {
         connectorModuleValidation,
         threadJsonValidation,
         threadSnapshotContract: getThreadSnapshotJsonContract()
+      });
+    },
+
+    async getConnectorRolloutPlan(request) {
+      const safeRequest = request || {};
+      const modulePath = safeRequest.modulePath || safeRequest.connectorModulePath;
+      const sourceKey = safeRequest.sourceKey || safeRequest.forum;
+      const connectorModuleValidation = modulePath
+        ? this.validateConnectorModule({
+          modulePath,
+          now: safeRequest.now
+        })
+        : undefined;
+      const sourceOnboardingPreflight = shouldRunSourceOnboardingPreflight(safeRequest)
+        ? await this.getSourceOnboardingPreflight(Object.assign({}, safeRequest, {
+          modulePath
+        }))
+        : undefined;
+      const connectorReadiness = await this.getConnectorReadiness({
+        sourceKey,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 100,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir
+      });
+      const deploymentChecklist = await this.getDeploymentChecklist({
+        forum: safeRequest.forum,
+        sourceKey,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 100,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir,
+        workerStaleAfterMs: safeRequest.workerStaleAfterMs
+      });
+
+      return getConnectorRolloutPlan({
+        connectorModuleContract: getConnectorModuleContract(),
+        connectorModuleValidation,
+        sourceOnboardingPreflight,
+        connectorReadiness,
+        deploymentChecklist,
+        sourceKey,
+        sourceType: safeRequest.sourceType || (sourceOnboardingPreflight && sourceOnboardingPreflight.sourceType),
+        modulePath,
+        now: safeRequest.now
       });
     },
 
@@ -925,6 +971,17 @@ function resolveStoreDir(defaults, storeDir) {
 function resolveSourceRunStaleAfterMs(request, config) {
   if (request && request.sourceRunStaleAfterMs !== undefined) return request.sourceRunStaleAfterMs;
   return config && config.workers ? config.workers.sourceRunStaleAfterMs : undefined;
+}
+
+function shouldRunSourceOnboardingPreflight(request) {
+  if (!request) return false;
+  return Boolean(
+    request.sourceType ||
+    request.inputDir ||
+    request.inputFile ||
+    request.url ||
+    request.location
+  );
 }
 
 function connectorModulePaths(options, config) {

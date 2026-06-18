@@ -330,6 +330,52 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/connectors/rollout-plan': {
+        post: {
+          summary: 'Build a read-only connector rollout plan from contract, module validation, onboarding preflight, readiness, and deployment checks',
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string' },
+                    forum: { type: 'string', example: 'external' },
+                    sourceKey: { type: 'string', example: 'external' },
+                    sourceType: { type: 'string', example: 'external-feed' },
+                    displayName: { type: 'string', example: 'External feed' },
+                    modulePath: { type: 'string', example: 'D:/connectors/custom-forum.cjs' },
+                    inputDir: { type: 'string' },
+                    inputFile: { type: 'string' },
+                    url: { type: 'string' },
+                    location: { type: 'object' },
+                    intervalMinutes: { type: 'number', example: 60 },
+                    nextRunAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+                    scheduleEnabled: { type: 'boolean' },
+                    enabled: { type: 'boolean' },
+                    allowUnknownSourceType: { type: 'boolean', example: false },
+                    limit: { type: 'number', example: 100 },
+                    now: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+                    storeDir: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Rollout plan is ok or has warnings'
+            },
+            503: {
+              description: 'Rollout plan contains a failing step'
+            },
+            400: {
+              $ref: '#/components/responses/BadRequest'
+            }
+          }
+        }
+      },
       '/api/operations/overview': {
         get: {
           summary: 'Get operational overview across sources, tasks, events, and raw pages',

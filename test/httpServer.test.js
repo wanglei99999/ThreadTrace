@@ -25,6 +25,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     const connectorCatalog = await getJson(baseUrl + '/api/connectors/catalog?now=2026-06-19T10:00:00.000Z');
     const connectorReadiness = await getJson(baseUrl + '/api/connectors/readiness?now=2026-06-19T10:00:00.000Z');
     const openApi = await getJson(baseUrl + '/openapi.json');
+    const connectorRolloutPlan = await postJson(baseUrl + '/api/connectors/rollout-plan', {
+      now: '2026-06-19T10:00:00.000Z'
+    });
     const sourceOnboardingPreflight = await postJson(baseUrl + '/api/sources/onboarding/preflight', {
       forum: 'nga',
       sourceType: 'saved-html-directory',
@@ -65,6 +68,10 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(connectorReadiness.connectors.some(function (connector) {
       return connector.sourceType === 'saved-html-directory';
     }));
+    assert.equal(connectorRolloutPlan.status, 'warn');
+    assert.ok(connectorRolloutPlan.steps.some(function (step) {
+      return step.key === 'connectorModule.validation';
+    }));
     assert.equal(sourceOnboardingPreflight.status, 'ok');
     assert.equal(sourceOnboardingPreflight.sourceType, 'saved-html-directory');
     assert.ok(sourceOnboardingPreflight.steps.some(function (step) {
@@ -82,6 +89,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/connectors/catalog']);
     assert.ok(openApi.paths['/api/connectors/readiness']);
     assert.ok(openApi.paths['/api/connectors/modules/validate']);
+    assert.ok(openApi.paths['/api/connectors/rollout-plan']);
     assert.ok(openApi.paths['/api/sources/onboarding/preflight']);
     assert.ok(openApi.paths['/api/runtime/diagnostics']);
     assert.ok(openApi.paths['/api/sources/validate']);

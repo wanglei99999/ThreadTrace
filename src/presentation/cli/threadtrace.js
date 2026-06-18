@@ -677,6 +677,50 @@ function main(argv) {
     return;
   }
 
+  if (command === 'connector-rollout-plan') {
+    const sourceType = options.sourceType || (options.inputFile ? 'normalized-thread-json' : undefined);
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.getConnectorRolloutPlan({
+      id: options.sourceId,
+      forum: options.forum,
+      sourceKey: options.sourceKey,
+      sourceType,
+      displayName: options.name,
+      modulePath: options.modulePath,
+      inputDir: options.input,
+      inputFile: options.inputFile,
+      url: options.url,
+      location: parseLocationOption(options),
+      enabled: options.enabled === undefined ? undefined : options.enabled !== 'false',
+      allowUnknownSourceType: options.allowUnknownSourceType === 'true',
+      intervalMinutes: options.intervalMinutes,
+      nextRunAt: options.nextRunAt,
+      scheduleEnabled: options.scheduleEnabled === undefined ? undefined : options.scheduleEnabled !== 'false',
+      limit: options.limit ? Number(options.limit) : 100,
+      now: options.now,
+      storeDir
+    }).then(function (plan) {
+      console.log('Connector rollout plan: ' + plan.status);
+      console.log('Source: ' + (plan.sourceKey || 'not provided') + '\t' + (plan.sourceType || 'not provided'));
+      console.log('Module: ' + (plan.modulePath || 'not provided'));
+      console.log('Steps: ' + plan.steps.length);
+      plan.steps.forEach(function (item) {
+        console.log(item.status + '\t' + item.key + '\t' + item.summary);
+      });
+      console.log('Next actions: ' + plan.nextActions.length);
+      plan.nextActions.forEach(function (action) {
+        console.log(action.severity + '\t' + action.key + '\t' + action.command);
+      });
+      if (plan.status === 'fail') {
+        process.exitCode = 2;
+      }
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'list-sources') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.listSources({
@@ -1309,6 +1353,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js validate-source [--forum nga] [--source-type type] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js validate-thread-json --input-file file [--forum sourceKey] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js source-onboarding-preflight [--forum nga] [--source-type type] [--module-path file] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--store-dir dir] [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js connector-rollout-plan [--forum nga] [--source-type type] [--module-path file] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--source-type type] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-diagnostics [--forum nga] [--enabled true] [--store-dir dir]');
