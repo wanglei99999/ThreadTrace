@@ -57,6 +57,8 @@ test('runtime registers tracked sources and runs ingest from a source', async fu
   assert.equal(dueResult.task.type, 'ingest-due-sources');
   assert.equal(dueResult.dueCount, 1);
   assert.equal(dueResult.completedCount, 1);
+  assert.equal(dueResult.task.output.results[0].changed, true);
+  assert.equal(dueResult.task.output.results[0].newPostCount, 20);
   assert.equal(skippedDueResult.dueCount, 0);
   assert.equal(skippedDueResult.skippedCount, 1);
   assert.equal(taskResult.task.status, 'completed');

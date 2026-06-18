@@ -556,6 +556,37 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/sources/tasks/insight-pipeline-due': {
+        post: {
+          summary: 'Run source insight pipelines for due tracked sources only',
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    forum: { type: 'string', example: 'nga' },
+                    limit: { type: 'number', example: 50 },
+                    now: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+                    provider: { type: 'string', example: 'mock' },
+                    traceId: { type: 'string' },
+                    baseReportType: { type: 'string', example: 'basic-history' },
+                    semanticEnrichmentEnabled: { type: 'boolean' },
+                    semanticSkipIfUnchanged: { type: 'boolean' },
+                    storeDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/data/store' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Due source insight pipeline batch summary'
+            }
+          }
+        }
+      },
       '/api/index-directory': {
         post: {
           summary: 'Index posts from a saved HTML directory into the retrieval index',

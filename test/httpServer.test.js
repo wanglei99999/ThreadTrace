@@ -376,6 +376,40 @@ test('http server runs source insight pipeline tasks', async function () {
   }
 });
 
+test('http server runs due source insight pipeline batches', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-http-due-source-pipeline-'));
+  const server = createThreadTraceServer({
+    defaultInputDir: path.resolve(__dirname, '..', 'example'),
+    storeDir: tempDir
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    await postJsonWithStatus(baseUrl + '/api/sources', {
+      forum: 'nga',
+      displayName: 'NGA sample archive',
+      inputDir: path.resolve(__dirname, '..', 'example'),
+      intervalMinutes: 60
+    }, 201);
+    const result = await postJson(baseUrl + '/api/sources/tasks/insight-pipeline-due', {
+      provider: 'mock',
+      traceId: 'http-due-source-pipeline'
+    });
+    const openApi = await getJson(baseUrl + '/openapi.json');
+
+    assert.equal(result.task.status, 'completed');
+    assert.equal(result.task.type, 'source-insight-pipeline-due-sources');
+    assert.equal(result.dueCount, 1);
+    assert.equal(result.completedCount, 1);
+    assert.equal(result.results[0].semantic.status, 'completed');
+    assert.ok(openApi.paths['/api/sources/tasks/insight-pipeline-due']);
+  } finally {
+    await close(server);
+  }
+});
+
 test('http server exposes raw page crawl, list, and replay APIs', async function () {
   const calls = [];
   const server = createThreadTraceServer({

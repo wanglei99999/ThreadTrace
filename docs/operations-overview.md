@@ -31,7 +31,7 @@ npm run worker:operations-once
 npm run worker:operations-loop
 ```
 
-The operations worker runs due-source ingestion, notification event dispatch, and overview logging in one non-overlapping loop. It is useful for local deployments or a single background service process. Larger deployments can still run the due-source and event workers separately.
+The operations worker runs due-source work, notification event dispatch, and overview logging in one non-overlapping loop. By default the source step is ingest-only. Set `--source-task-mode insight-pipeline` or `THREADTRACE_SOURCE_TASK_MODE=insight-pipeline` to run the full source insight pipeline for due sources. This is useful for local deployments or a single background service process. Larger deployments can still run the due-source and event workers separately.
 
 ## Included Signals
 

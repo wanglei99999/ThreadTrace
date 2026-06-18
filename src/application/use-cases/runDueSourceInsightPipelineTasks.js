@@ -5,7 +5,7 @@ const { assertSourceRepository } = require('../ports/sourceRepository');
 const { assertThreadRepository } = require('../ports/threadRepository');
 const { assertAnalysisReportRepository } = require('../ports/analysisReportRepository');
 const { assertTaskRepository } = require('../ports/taskRepository');
-const { runTrackedSourceIngestTask } = require('./runTrackedSourceIngestTask');
+const { runSourceInsightPipelineTask } = require('./runSourceInsightPipelineTask');
 const {
   createTaskRecord,
   markTaskCompleted,
@@ -13,7 +13,7 @@ const {
   markTaskRunning
 } = require('../jobs/taskRecordFactory');
 
-async function runDueSourcesIngestTasks(options) {
+async function runDueSourceInsightPipelineTasks(options) {
   const safeOptions = options || {};
   const sourceRepository = assertSourceRepository(safeOptions.sourceRepository);
   const threadRepository = assertThreadRepository(safeOptions.threadRepository);
@@ -22,14 +22,16 @@ async function runDueSourcesIngestTasks(options) {
   const getAdapter = safeOptions.getAdapter;
 
   if (typeof getAdapter !== 'function') {
-    throw new Error('runDueSourcesIngestTasks requires getAdapter(sourceKey).');
+    throw new Error('runDueSourceInsightPipelineTasks requires getAdapter(sourceKey).');
   }
 
   const checkedAt = safeOptions.now || new Date().toISOString();
-  let batchTask = createTaskRecord('ingest-due-sources', {
+  const semanticEnrichment = buildSemanticOptions(safeOptions);
+  let batchTask = createTaskRecord('source-insight-pipeline-due-sources', {
     sourceKey: safeOptions.sourceKey,
     limit: safeOptions.limit || 50,
-    checkedAt
+    checkedAt,
+    semanticEnrichment
   });
   await taskRepository.saveTask(batchTask);
 
@@ -64,7 +66,7 @@ async function runDueSourcesIngestTasks(options) {
     const results = [];
     for (const item of dueSources) {
       try {
-        const result = await runTrackedSourceIngestTask({
+        const result = await runSourceInsightPipelineTask({
           sourceId: item.source.id,
           sourceRepository,
           getAdapter,
@@ -74,14 +76,17 @@ async function runDueSourcesIngestTasks(options) {
           taskRepository,
           rawThreadPageRepository: safeOptions.rawThreadPageRepository,
           notificationEventRepository: safeOptions.notificationEventRepository,
-          sourceIngestHandlerRegistry: safeOptions.sourceIngestHandlerRegistry
+          sourceIngestHandlerRegistry: safeOptions.sourceIngestHandlerRegistry,
+          llmProvider: safeOptions.llmProvider,
+          semanticEnrichment
         });
         results.push({
-          source: result.source || item.source,
+          source: result.ingest.source || item.source,
           status: 'completed',
           task: result.task,
-          report: result.report,
-          cursorDiff: result.cursorDiff,
+          ingestTask: result.ingest.task,
+          cursorDiff: result.ingest.cursorDiff,
+          semantic: result.semantic,
           scheduleReason: item.decision.reason
         });
       } catch (error) {
@@ -96,7 +101,7 @@ async function runDueSourcesIngestTasks(options) {
       }
     }
 
-    const output = summarizeDueBatch(batchTask.startedAt, checkedAt, sources, skipped, results);
+    const output = summarizeDuePipelineBatch(batchTask.startedAt, checkedAt, sources, skipped, results);
     batchTask = markTaskCompleted(batchTask, {
       checkedAt: output.checkedAt,
       sourceCount: output.sourceCount,
@@ -111,8 +116,10 @@ async function runDueSourcesIngestTasks(options) {
           status: result.status,
           scheduleReason: result.scheduleReason,
           taskId: result.task && result.task.id,
+          ingestTaskId: result.ingestTask && result.ingestTask.id,
           changed: result.cursorDiff && result.cursorDiff.changed,
           newPostCount: result.cursorDiff && result.cursorDiff.newPostCount,
+          semantic: result.semantic,
           error: result.error
         };
       }),
@@ -137,7 +144,18 @@ async function runDueSourcesIngestTasks(options) {
   }
 }
 
-function summarizeDueBatch(startedAt, checkedAt, sources, skipped, results) {
+function buildSemanticOptions(options) {
+  const safeOptions = options || {};
+  return {
+    enabled: safeOptions.semanticEnrichmentEnabled !== false,
+    skipIfUnchanged: safeOptions.semanticSkipIfUnchanged !== false,
+    baseReportType: safeOptions.baseReportType || 'basic-history',
+    provider: safeOptions.provider || 'mock',
+    traceId: safeOptions.traceId
+  };
+}
+
+function summarizeDuePipelineBatch(startedAt, checkedAt, sources, skipped, results) {
   return {
     startedAt,
     checkedAt,
@@ -157,5 +175,5 @@ function summarizeDueBatch(startedAt, checkedAt, sources, skipped, results) {
 }
 
 module.exports = {
-  runDueSourcesIngestTasks
+  runDueSourceInsightPipelineTasks
 };

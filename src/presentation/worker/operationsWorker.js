@@ -8,6 +8,7 @@ function createOperationsWorker(options) {
   const runtime = safeOptions.runtime;
   const logger = safeOptions.logger || console;
   const pollIntervalMs = safeOptions.pollIntervalMs || 60 * 1000;
+  const defaultSourceTaskMode = safeOptions.sourceTaskMode || 'ingest';
   const leaseGuard = createWorkerLeaseGuard({
     workerType: 'operations',
     workerId: safeOptions.workerId,
@@ -25,8 +26,8 @@ function createOperationsWorker(options) {
   let timer;
   let running = false;
 
-  if (!runtime || typeof runtime.runDueSourcesIngestTasks !== 'function') {
-    throw new Error('OperationsWorker requires runtime.runDueSourcesIngestTasks(request).');
+  if (!runtime) {
+    throw new Error('OperationsWorker requires runtime.');
   }
   if (typeof runtime.dispatchNotificationEvents !== 'function') {
     throw new Error('OperationsWorker requires runtime.dispatchNotificationEvents(request).');
@@ -60,10 +61,12 @@ function createOperationsWorker(options) {
           lease: lease.lease
         };
       }
-      workerRun = await tracker.start(safeRequest);
-      workerRun = await tracker.heartbeat(workerRun, { step: 'ingest-due-sources' });
+      const sourcesRequest = safeRequest.sources || {};
+      const sourceTaskMode = sourcesRequest.sourceTaskMode || safeRequest.sourceTaskMode || defaultSourceTaskMode;
+      workerRun = await tracker.start(Object.assign({}, safeRequest, { sourceTaskMode }));
+      workerRun = await tracker.heartbeat(workerRun, { step: stepForSourceTaskMode(sourceTaskMode) });
       await leaseGuard.renew();
-      const dueSources = await runtime.runDueSourcesIngestTasks(safeRequest.sources || {});
+      const dueSources = await runDueSourceTasks(runtime, sourceTaskMode, sourcesRequest);
       workerRun = await tracker.heartbeat(workerRun, { step: 'dispatch-events' });
       await leaseGuard.renew();
       const events = await runtime.dispatchNotificationEvents(safeRequest.events || {});
@@ -116,9 +119,31 @@ function createOperationsWorker(options) {
   };
 }
 
+function runDueSourceTasks(runtime, sourceTaskMode, request) {
+  if (sourceTaskMode === 'insight-pipeline') {
+    if (typeof runtime.runDueSourceInsightPipelineTasks !== 'function') {
+      throw new Error('OperationsWorker requires runtime.runDueSourceInsightPipelineTasks(request) for insight-pipeline mode.');
+    }
+    return runtime.runDueSourceInsightPipelineTasks(request);
+  }
+  if (sourceTaskMode !== 'ingest') {
+    throw new Error('Unknown operations worker source task mode: ' + sourceTaskMode);
+  }
+  if (typeof runtime.runDueSourcesIngestTasks !== 'function') {
+    throw new Error('OperationsWorker requires runtime.runDueSourcesIngestTasks(request).');
+  }
+  return runtime.runDueSourcesIngestTasks(request);
+}
+
+function stepForSourceTaskMode(sourceTaskMode) {
+  if (sourceTaskMode === 'insight-pipeline') return 'insight-pipeline-due-sources';
+  return 'ingest-due-sources';
+}
+
 function summarizeOperationsResult(dueSources, events, overview) {
   return {
     dueSources: {
+      sourceTaskMode: dueSources.task && dueSources.task.type === 'source-insight-pipeline-due-sources' ? 'insight-pipeline' : 'ingest',
       dueCount: dueSources.dueCount,
       completedCount: dueSources.completedCount,
       failedCount: dueSources.failedCount,

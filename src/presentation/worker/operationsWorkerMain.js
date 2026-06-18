@@ -17,6 +17,7 @@ async function main(argv) {
     runtime,
     workerRunRepository: repositories.workerRunRepository,
     workerLeaseRepository: repositories.workerLeaseRepository,
+    sourceTaskMode: options.sourceTaskMode || process.env.THREADTRACE_SOURCE_TASK_MODE || 'ingest',
     leaseTtlMs: options.leaseTtlMs ? Number(options.leaseTtlMs) : Number(process.env.THREADTRACE_WORKER_LEASE_TTL_MS || 5 * 60 * 1000),
     pollIntervalMs: options.intervalMs ? Number(options.intervalMs) : Number(process.env.THREADTRACE_OPERATIONS_WORKER_INTERVAL_MS || 60 * 1000)
   });
@@ -53,6 +54,12 @@ function buildRequest(options, storeDir) {
     sources: {
       forum: options.forum,
       limit: options.limit ? Number(options.limit) : undefined,
+      sourceTaskMode: options.sourceTaskMode || process.env.THREADTRACE_SOURCE_TASK_MODE || undefined,
+      provider: options.provider || process.env.THREADTRACE_LLM_PROVIDER || 'mock',
+      traceId: options.traceId,
+      baseReportType: options.baseReportType,
+      semanticEnrichmentEnabled: parseOptionalBoolean(options.semanticEnrichmentEnabled),
+      semanticSkipIfUnchanged: parseOptionalBoolean(options.semanticSkipIfUnchanged),
       storeDir
     },
     events: {
@@ -102,6 +109,24 @@ function parseArgs(args) {
     } else if (item === '--limit') {
       options.limit = args[index + 1];
       index += 1;
+    } else if (item === '--source-task-mode') {
+      options.sourceTaskMode = args[index + 1];
+      index += 1;
+    } else if (item === '--provider') {
+      options.provider = args[index + 1];
+      index += 1;
+    } else if (item === '--trace-id') {
+      options.traceId = args[index + 1];
+      index += 1;
+    } else if (item === '--base-report-type') {
+      options.baseReportType = args[index + 1];
+      index += 1;
+    } else if (item === '--semantic-enrichment-enabled') {
+      options.semanticEnrichmentEnabled = args[index + 1];
+      index += 1;
+    } else if (item === '--semantic-skip-if-unchanged') {
+      options.semanticSkipIfUnchanged = args[index + 1];
+      index += 1;
     } else if (item === '--max-attempts') {
       options.maxAttempts = args[index + 1];
       index += 1;
@@ -123,6 +148,11 @@ function parseArgs(args) {
     }
   }
   return options;
+}
+
+function parseOptionalBoolean(value) {
+  if (value === undefined) return undefined;
+  return value !== 'false';
 }
 
 main(process.argv).catch(function (error) {

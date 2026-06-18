@@ -374,6 +374,23 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/sources/tasks/insight-pipeline-due') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.runDueSourceInsightPipelineTasks({
+      forum: body.forum,
+      limit: body.limit,
+      now: body.now,
+      provider: body.provider || 'mock',
+      traceId: body.traceId,
+      baseReportType: body.baseReportType,
+      semanticEnrichmentEnabled: body.semanticEnrichmentEnabled,
+      semanticSkipIfUnchanged: body.semanticSkipIfUnchanged,
+      storeDir: body.storeDir || context.storeDir
+    });
+    writeJson(response, 200, result);
+    return;
+  }
+
   const sourceIngestMatch = url.pathname.match(/^\/api\/sources\/([^/]+)\/tasks\/ingest$/);
   if (request.method === 'POST' && sourceIngestMatch) {
     const body = await readJsonBody(request, context.maxBodyBytes);

@@ -90,6 +90,32 @@ test('runtime can disable pipeline semantic enrichment explicitly', async functi
   assert.equal(reports.length, 0);
 });
 
+test('runtime runs insight pipelines for due sources', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-source-pipeline-due-'));
+  const runtime = createPipelineRuntime(tempDir);
+  await registerSampleSource(runtime);
+
+  const result = await runtime.runDueSourceInsightPipelineTasks({
+    traceId: 'pipeline-due-run'
+  });
+  const reports = await runtime.listAnalysisReports({
+    sourceKey: 'nga',
+    sourceThreadId: '45974302',
+    reportType: 'semantic-enrichment'
+  });
+
+  assert.equal(result.task.status, 'completed');
+  assert.equal(result.task.type, 'source-insight-pipeline-due-sources');
+  assert.equal(result.sourceCount, 1);
+  assert.equal(result.dueCount, 1);
+  assert.equal(result.completedCount, 1);
+  assert.equal(result.failedCount, 0);
+  assert.equal(result.results[0].task.type, 'source-insight-pipeline');
+  assert.equal(result.results[0].semantic.status, 'completed');
+  assert.equal(result.task.output.results[0].semantic.status, 'completed');
+  assert.equal(reports.length, 1);
+});
+
 function createPipelineRuntime(storeDir) {
   return createThreadTraceRuntime({
     defaultInputDir: path.resolve(__dirname, '..', 'example'),

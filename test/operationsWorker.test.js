@@ -113,6 +113,60 @@ test('operations worker skips overlapping runs', async function () {
   assert.equal(callCount, 1);
 });
 
+test('operations worker can run due source insight pipeline mode', async function () {
+  const calls = [];
+  const worker = createOperationsWorker({
+    logger: silentLogger(),
+    sourceTaskMode: 'insight-pipeline',
+    runtime: {
+      async runDueSourceInsightPipelineTasks(request) {
+        calls.push(['pipelines', request.provider]);
+        return {
+          task: {
+            type: 'source-insight-pipeline-due-sources'
+          },
+          dueCount: 1,
+          completedCount: 1,
+          failedCount: 0,
+          skippedCount: 0
+        };
+      },
+      async dispatchNotificationEvents() {
+        calls.push(['events']);
+        return {
+          dispatchedCount: 0,
+          failedCount: 0,
+          skippedCount: 0
+        };
+      },
+      async getOperationalOverview() {
+        calls.push(['overview']);
+        return {
+          events: {
+            unacknowledged: 0
+          },
+          workers: {
+            stale: 0
+          }
+        };
+      }
+    }
+  });
+
+  const result = await worker.runOnce({
+    sources: {
+      provider: 'mock'
+    }
+  });
+
+  assert.deepEqual(calls, [
+    ['pipelines', 'mock'],
+    ['events'],
+    ['overview']
+  ]);
+  assert.equal(result.dueSources.completedCount, 1);
+});
+
 test('operations worker skips execution when another process holds the lease', async function () {
   let sourceRuns = 0;
   const savedRuns = [];

@@ -540,6 +540,34 @@ function main(argv) {
     return;
   }
 
+  if (command === 'run-due-source-insight-pipelines') {
+    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    runtime.runDueSourceInsightPipelineTasks({
+      forum: options.forum,
+      limit: options.limit ? Number(options.limit) : 50,
+      now: options.now,
+      provider: options.provider || 'mock',
+      traceId: options.traceId,
+      baseReportType: options.baseReportType,
+      semanticEnrichmentEnabled: parseOptionalBoolean(options.semanticEnrichmentEnabled),
+      semanticSkipIfUnchanged: parseOptionalBoolean(options.semanticSkipIfUnchanged),
+      storeDir
+    }).then(function (result) {
+      console.log('Sources: ' + result.sourceCount);
+      console.log('Due: ' + result.dueCount);
+      console.log('Skipped: ' + result.skippedCount);
+      console.log('Completed: ' + result.completedCount);
+      console.log('Failed: ' + result.failedCount);
+      result.results.forEach(function (item) {
+        console.log(item.status + '\t' + item.scheduleReason + '\t' + item.source.id + '\t' + (item.task ? item.task.id : item.error.message) + '\tsemantic=' + (item.semantic ? item.semantic.status : 'none'));
+      });
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'interpret-text-dir') {
     const inputDir = options.input || path.resolve(process.cwd(), 'example');
     const text = options.text;
@@ -838,6 +866,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js run-source-insight-pipeline --source-id id [--provider mock] [--semantic-enrichment-enabled true|false] [--semantic-skip-if-unchanged true|false] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-sources-task [--forum nga] [--limit n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-due-sources-task [--forum nga] [--now iso] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js run-due-source-insight-pipelines [--forum nga] [--provider mock] [--now iso] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js index-html-dir [--forum nga] [--input dir] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js search-index --text text [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js interpret-text-dir [--forum nga] [--input dir] --text text [--author-id id] [--output file] [--markdown-output file]');

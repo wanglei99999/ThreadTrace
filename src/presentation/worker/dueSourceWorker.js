@@ -8,6 +8,7 @@ function createDueSourceWorker(options) {
   const runtime = safeOptions.runtime;
   const logger = safeOptions.logger || console;
   const pollIntervalMs = safeOptions.pollIntervalMs || 5 * 60 * 1000;
+  const defaultSourceTaskMode = safeOptions.sourceTaskMode || 'ingest';
   const leaseGuard = createWorkerLeaseGuard({
     workerType: 'due-source',
     workerId: safeOptions.workerId,
@@ -25,8 +26,8 @@ function createDueSourceWorker(options) {
   let timer;
   let running = false;
 
-  if (!runtime || typeof runtime.runDueSourcesIngestTasks !== 'function') {
-    throw new Error('DueSourceWorker requires runtime.runDueSourcesIngestTasks(request).');
+  if (!runtime) {
+    throw new Error('DueSourceWorker requires runtime.');
   }
 
   async function runOnce(request) {
@@ -54,12 +55,13 @@ function createDueSourceWorker(options) {
           lease: lease.lease
         };
       }
-      workerRun = await tracker.start(safeRequest);
-      workerRun = await tracker.heartbeat(workerRun, { step: 'ingest-due-sources' });
+      const sourceTaskMode = safeRequest.sourceTaskMode || defaultSourceTaskMode;
+      workerRun = await tracker.start(Object.assign({}, safeRequest, { sourceTaskMode }));
+      workerRun = await tracker.heartbeat(workerRun, { step: stepForSourceTaskMode(sourceTaskMode) });
       await leaseGuard.renew();
-      const result = await runtime.runDueSourcesIngestTasks(safeRequest);
-      await tracker.complete(workerRun, summarizeDueSourceResult(result));
-      logger.log('[worker] due-source run completed: due=' + result.dueCount + ', completed=' + result.completedCount + ', failed=' + result.failedCount);
+      const result = await runDueSourceTasks(runtime, sourceTaskMode, safeRequest);
+      await tracker.complete(workerRun, summarizeDueSourceResult(result, sourceTaskMode));
+      logger.log('[worker] due-source run completed: mode=' + sourceTaskMode + ', due=' + result.dueCount + ', completed=' + result.completedCount + ', failed=' + result.failedCount);
       return result;
     } catch (error) {
       await tracker.fail(workerRun, error);
@@ -100,8 +102,30 @@ function createDueSourceWorker(options) {
   };
 }
 
-function summarizeDueSourceResult(result) {
+function runDueSourceTasks(runtime, sourceTaskMode, request) {
+  if (sourceTaskMode === 'insight-pipeline') {
+    if (typeof runtime.runDueSourceInsightPipelineTasks !== 'function') {
+      throw new Error('DueSourceWorker requires runtime.runDueSourceInsightPipelineTasks(request) for insight-pipeline mode.');
+    }
+    return runtime.runDueSourceInsightPipelineTasks(request);
+  }
+  if (sourceTaskMode !== 'ingest') {
+    throw new Error('Unknown due source worker task mode: ' + sourceTaskMode);
+  }
+  if (typeof runtime.runDueSourcesIngestTasks !== 'function') {
+    throw new Error('DueSourceWorker requires runtime.runDueSourcesIngestTasks(request).');
+  }
+  return runtime.runDueSourcesIngestTasks(request);
+}
+
+function stepForSourceTaskMode(sourceTaskMode) {
+  if (sourceTaskMode === 'insight-pipeline') return 'insight-pipeline-due-sources';
+  return 'ingest-due-sources';
+}
+
+function summarizeDueSourceResult(result, sourceTaskMode) {
   return {
+    sourceTaskMode,
     dueCount: result.dueCount,
     completedCount: result.completedCount,
     failedCount: result.failedCount,
