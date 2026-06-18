@@ -11,18 +11,38 @@
 ```powershell
 npm run parse:sample
 npm run analyze:sample
+npm run test:unit
 ```
 
-默认会读取 `example` 目录中的第一个 `.html` 文件，并把解析结果写入 `data/parsed/nga-thread-45974302.json`。
+默认会读取 `example` 目录中的第一个 `.html` 文件，并把解析结果写入 `data/parsed/nga-thread-45974302.json`。基础分析会同时生成 JSON 报告和 Markdown 报告，Markdown 默认输出到 `data/reports/nga-thread-45974302.basic-report.md`。
+
+## CLI
+
+```powershell
+node src/presentation/cli/threadtrace.js list-adapters
+node src/presentation/cli/threadtrace.js parse-html --forum nga --input example/自立自强，科学技术打头阵 NGA玩家社区.html
+node src/presentation/cli/threadtrace.js analyze-html --forum nga --input example/自立自强，科学技术打头阵 NGA玩家社区.html
+```
 
 ## 项目分层
 
 - `src/domain`: 领域模型与核心分析逻辑，不依赖具体论坛、数据库或前端。
 - `src/application`: 应用用例，负责编排适配器、分析器和存储。
-- `src/infrastructure`: 基础设施实现，比如 NGA HTML 适配器、后续数据库和采集器。
+- `src/infrastructure`: 基础设施实现，比如论坛适配器、后续数据库和采集器。
 - `src/presentation`: 应用入口，比如 CLI、HTTP API、Web UI。
 - `docs`: 产品、架构、开发计划文档。
 - `example`: 用户提供的真实样例页面。
+- `test`: 面向核心解析和分析能力的轻量测试。
+
+## 当前能力
+
+- 解析 NGA 本地保存 HTML。
+- 自动识别 GBK / GB18030 / UTF-8 HTML 编码。
+- 抽取主题 ID、标题、分页、楼层、作者、uid、发布时间、正文、链接和推荐值。
+- 输出统一 `ThreadSnapshot`。
+- 生成基础历史分析 JSON。
+- 生成可读 Markdown 报告。
+- 通过适配器注册表预留多论坛接入点。
 
 ## 设计原则
 

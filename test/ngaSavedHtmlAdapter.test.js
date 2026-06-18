@@ -1,0 +1,47 @@
+'use strict';
+
+const assert = require('node:assert/strict');
+const path = require('node:path');
+const test = require('node:test');
+const { getForumAdapter } = require('../src/infrastructure/forum-adapters/registry');
+const { parseSavedThread } = require('../src/application/use-cases/parseSavedThread');
+const { analyzeThreadHistory } = require('../src/domain/analysis/basicHistoricalAnalyzer');
+
+function samplePath() {
+  return path.resolve(__dirname, '..', 'example', '自立自强，科学技术打头阵 NGA玩家社区.html');
+}
+
+test('NGA saved HTML adapter parses the provided sample into canonical posts', function () {
+  const adapter = getForumAdapter('nga');
+  const snapshot = parseSavedThread({
+    adapter,
+    inputPath: samplePath()
+  });
+
+  assert.equal(snapshot.sourceKey, 'nga');
+  assert.equal(snapshot.sourceThreadId, '45974302');
+  assert.equal(snapshot.title, '自立自强，科学技术打头阵');
+  assert.equal(snapshot.totalPages, 7676);
+  assert.equal(snapshot.posts.length, 20);
+
+  const first = snapshot.posts[0];
+  assert.equal(first.floor, 0);
+  assert.equal(first.author.displayName, '-阿狼-');
+  assert.equal(first.author.sourceAuthorId, '150058');
+  assert.match(first.contentText, /我唯一就在这里开帖子聊/);
+  assert.equal(first.links.length, 2);
+});
+
+test('basic historical analyzer identifies primary author and evidence candidates', function () {
+  const adapter = getForumAdapter('nga');
+  const snapshot = parseSavedThread({
+    adapter,
+    inputPath: samplePath()
+  });
+  const report = analyzeThreadHistory(snapshot);
+
+  assert.equal(report.primaryAuthor.displayName, '-阿狼-');
+  assert.ok(report.authorStats.length >= 10);
+  assert.ok(report.evidenceCandidates.highSignalPosts.length >= 1);
+  assert.ok(report.evidenceCandidates.lowSignalPosts.length >= 1);
+});

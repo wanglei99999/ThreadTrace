@@ -3,10 +3,12 @@
 
 const fs = require('fs');
 const path = require('path');
-const ngaSavedHtmlAdapter = require('../../infrastructure/forum-adapters/nga/ngaSavedHtmlAdapter');
 const { parseSavedThread } = require('../../application/use-cases/parseSavedThread');
 const { analyzeSavedThread } = require('../../application/use-cases/analyzeSavedThread');
 const { writeJsonFile } = require('../../infrastructure/storage/jsonFileStorage');
+const { writeTextFile } = require('../../infrastructure/storage/textFileWriter');
+const { getForumAdapter, listForumAdapters } = require('../../infrastructure/forum-adapters/registry');
+const { renderBasicHistoryMarkdown } = require('../../domain/analysis/markdownReportRenderer');
 
 function main(argv) {
   const command = argv[2] || 'help';
@@ -14,8 +16,9 @@ function main(argv) {
 
   if (command === 'parse-html') {
     const inputPath = options.input || findDefaultExampleHtml();
+    const adapter = getForumAdapter(options.forum || 'nga');
     const threadSnapshot = parseSavedThread({
-      adapter: ngaSavedHtmlAdapter,
+      adapter,
       inputPath
     });
     const outputPath = options.output || defaultParsedOutputPath(threadSnapshot);
@@ -28,16 +31,27 @@ function main(argv) {
 
   if (command === 'analyze-html') {
     const inputPath = options.input || findDefaultExampleHtml();
+    const adapter = getForumAdapter(options.forum || 'nga');
     const result = analyzeSavedThread({
-      adapter: ngaSavedHtmlAdapter,
+      adapter,
       inputPath
     });
     const outputPath = options.output || defaultReportOutputPath(result.threadSnapshot);
     const writtenPath = writeJsonFile(outputPath, result.report);
+    const markdownPath = options.markdownOutput || defaultMarkdownReportOutputPath(result.threadSnapshot);
+    const writtenMarkdownPath = writeTextFile(markdownPath, renderBasicHistoryMarkdown(result.report));
 
     printThreadSummary(result.threadSnapshot);
     printReportSummary(result.report);
     console.log('Analysis report written to: ' + writtenPath);
+    console.log('Markdown report written to: ' + writtenMarkdownPath);
+    return;
+  }
+
+  if (command === 'list-adapters') {
+    listForumAdapters().forEach(function (adapter) {
+      console.log(adapter.sourceKey + '\t' + adapter.displayName);
+    });
     return;
   }
 
@@ -53,6 +67,12 @@ function parseArgs(args) {
       index += 1;
     } else if (item === '--output' || item === '-o') {
       options.output = args[index + 1];
+      index += 1;
+    } else if (item === '--markdown-output') {
+      options.markdownOutput = args[index + 1];
+      index += 1;
+    } else if (item === '--forum') {
+      options.forum = args[index + 1];
       index += 1;
     }
   }
@@ -84,6 +104,11 @@ function defaultReportOutputPath(threadSnapshot) {
   return path.resolve(process.cwd(), 'data', 'parsed', 'nga-thread-' + id + '.basic-report.json');
 }
 
+function defaultMarkdownReportOutputPath(threadSnapshot) {
+  const id = threadSnapshot.sourceThreadId || 'unknown';
+  return path.resolve(process.cwd(), 'data', 'reports', 'nga-thread-' + id + '.basic-report.md');
+}
+
 function printThreadSummary(threadSnapshot) {
   console.log('ThreadTrace');
   console.log('Forum: ' + threadSnapshot.forum.displayName);
@@ -104,8 +129,9 @@ function printReportSummary(report) {
 
 function printHelp() {
   console.log('Usage:');
-  console.log('  node src/presentation/cli/threadtrace.js parse-html [--input file] [--output file]');
-  console.log('  node src/presentation/cli/threadtrace.js analyze-html [--input file] [--output file]');
+  console.log('  node src/presentation/cli/threadtrace.js list-adapters');
+  console.log('  node src/presentation/cli/threadtrace.js parse-html [--forum nga] [--input file] [--output file]');
+  console.log('  node src/presentation/cli/threadtrace.js analyze-html [--forum nga] [--input file] [--output file] [--markdown-output file]');
 }
 
 main(process.argv);

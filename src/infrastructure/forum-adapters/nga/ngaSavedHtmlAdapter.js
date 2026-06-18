@@ -125,5 +125,6 @@ function firstMatch(value, pattern) {
 
 module.exports = {
   sourceKey: SOURCE_KEY,
+  displayName: 'NGA 玩家社区',
   parseSavedHtml
 };

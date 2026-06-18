@@ -3,6 +3,8 @@ node_modules/
 .env.*
 !.env.example
 
+example/*_files/
+
 data/parsed/*.json
 data/reports/*.md
 data/reports/*.json

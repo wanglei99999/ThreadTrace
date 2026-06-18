@@ -9,6 +9,7 @@
   },
   "scripts": {
     "parse:sample": "node src/presentation/cli/threadtrace.js parse-html",
-    "analyze:sample": "node src/presentation/cli/threadtrace.js analyze-html"
+    "analyze:sample": "node src/presentation/cli/threadtrace.js analyze-html",
+    "test:unit": "node --test test"
   }
 }
