@@ -29,19 +29,20 @@ async function getConnectorReadiness(options) {
     });
     return summarizeConnector(sourceType, diagnostics);
   });
+  const modules = summarizeConnectorModules(safeOptions.connectorModules, safeOptions.connectorModuleErrors);
 
   return {
     generatedAt: safeOptions.now || catalog.generatedAt,
-    status: aggregateStatus(connectors.map(function (connector) { return connector.status; })),
+    status: aggregateStatus(connectors.map(function (connector) { return connector.status; }).concat(modules.errorCount > 0 ? ['fail'] : [])),
     connectorCount: connectors.length,
     sourceCount: sources.length,
-    modules: summarizeConnectorModules(safeOptions.connectorModules),
+    modules,
     connectors,
     adapters: catalog.adapters
   };
 }
 
-function summarizeConnectorModules(connectorModules) {
+function summarizeConnectorModules(connectorModules, connectorModuleErrors) {
   const modules = (connectorModules || []).map(function (connectorModule) {
     return {
       modulePath: connectorModule.modulePath,
@@ -51,6 +52,8 @@ function summarizeConnectorModules(connectorModules) {
   });
   return {
     count: modules.length,
+    errorCount: (connectorModuleErrors || []).length,
+    errors: connectorModuleErrors || [],
     modules
   };
 }

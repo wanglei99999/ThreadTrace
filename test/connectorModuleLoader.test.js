@@ -81,3 +81,35 @@ test('threadtrace config parses connector module paths', function () {
     path.join(cwd, 'connectors', 'b.cjs')
   ]);
 });
+
+test('runtime reports connector module load failures without blocking startup', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-broken-connector-module-'));
+  const modulePath = path.join(tempDir, 'brokenConnector.cjs');
+  await fs.writeFile(modulePath, [
+    "'use strict';",
+    "throw new Error('connector boom');",
+    ""
+  ].join('\n'), 'utf8');
+
+  const runtime = createThreadTraceRuntime({
+    storeDir: path.join(tempDir, 'store'),
+    connectorModules: [modulePath]
+  });
+  const diagnostics = await runtime.getRuntimeDiagnostics({
+    now: '2026-06-19T10:00:00.000Z'
+  });
+  const readiness = await runtime.getConnectorReadiness({
+    now: '2026-06-19T10:00:00.000Z'
+  });
+
+  assert.equal(runtime.connectorModules.length, 0);
+  assert.equal(runtime.connectorModuleErrors.length, 1);
+  assert.equal(diagnostics.status, 'fail');
+  assert.equal(diagnostics.configuration.connectors.errorCount, 1);
+  assert.match(diagnostics.configuration.connectors.errors[0].message, /connector boom/);
+  assert.equal(diagnostics.checks.find(function (check) {
+    return check.key === 'config.connectorModules';
+  }).status, 'fail');
+  assert.equal(readiness.status, 'fail');
+  assert.equal(readiness.modules.errorCount, 1);
+});

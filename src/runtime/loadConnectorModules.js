@@ -3,23 +3,39 @@
 const path = require('path');
 
 function loadConnectorModules(options) {
+  return loadConnectorModulesReport(options).modules;
+}
+
+function loadConnectorModulesReport(options) {
   const safeOptions = options || {};
   const modulePaths = safeOptions.modulePaths || [];
-  const loaded = [];
+  const modules = [];
+  const errors = [];
 
   modulePaths.forEach(function (modulePath) {
     const resolvedPath = path.resolve(safeOptions.cwd || process.cwd(), modulePath);
-    const loadedModule = normalizeModuleExport(require(resolvedPath));
-    const registration = applyConnectorModule(loadedModule, {
-      modulePath: resolvedPath,
-      forumAdapterRegistry: safeOptions.forumAdapterRegistry,
-      sourceIngestHandlerRegistry: safeOptions.sourceIngestHandlerRegistry,
-      runtimeConfig: safeOptions.runtimeConfig
-    });
-    loaded.push(registration);
+    try {
+      const loadedModule = normalizeModuleExport(require(resolvedPath));
+      const registration = applyConnectorModule(loadedModule, {
+        modulePath: resolvedPath,
+        forumAdapterRegistry: safeOptions.forumAdapterRegistry,
+        sourceIngestHandlerRegistry: safeOptions.sourceIngestHandlerRegistry,
+        runtimeConfig: safeOptions.runtimeConfig
+      });
+      modules.push(registration);
+    } catch (error) {
+      errors.push({
+        modulePath: resolvedPath,
+        message: error && error.message ? error.message : String(error)
+      });
+      if (safeOptions.failFast === true) throw error;
+    }
   });
 
-  return loaded;
+  return {
+    modules,
+    errors
+  };
 }
 
 function applyConnectorModule(connectorModule, context) {
@@ -87,5 +103,6 @@ function toArray(value) {
 
 module.exports = {
   loadConnectorModules,
+  loadConnectorModulesReport,
   applyConnectorModule
 };

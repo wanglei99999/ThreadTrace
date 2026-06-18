@@ -68,6 +68,8 @@ module.exports.register = function (context) {
 };
 ```
 
+If a configured connector module cannot be loaded, ThreadTrace keeps the built-in connectors available and reports the failure through `runtime-diagnostics` and `connector-readiness`.
+
 ## PostgreSQL
 
 PostgreSQL config is still implemented in `src/infrastructure/postgres/postgresConfig.js`; the runtime config selects `THREADTRACE_STORAGE=postgres`, while the PostgreSQL adapter reads:

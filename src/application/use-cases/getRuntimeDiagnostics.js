@@ -7,10 +7,11 @@ async function getRuntimeDiagnostics(options) {
   const workers = config.workers || {};
   const notifications = config.notifications || {};
   const connectors = config.connectors || {};
+  const connectorModuleErrors = safeOptions.connectorModuleErrors || [];
   const resources = safeOptions.inspectResources
     ? await safeOptions.inspectResources(config)
     : undefined;
-  const checks = buildRuntimeDiagnosticChecks(config).concat(resources && Array.isArray(resources.checks) ? resources.checks : []);
+  const checks = buildRuntimeDiagnosticChecks(config, connectorModuleErrors).concat(resources && Array.isArray(resources.checks) ? resources.checks : []);
 
   return {
     generatedAt: safeOptions.now || new Date().toISOString(),
@@ -41,7 +42,9 @@ async function getRuntimeDiagnostics(options) {
       },
       connectors: {
         moduleCount: (connectors.modules || []).length,
-        modules: connectors.modules || []
+        modules: connectors.modules || [],
+        errorCount: connectorModuleErrors.length,
+        errors: connectorModuleErrors
       }
     },
     resources,
@@ -49,15 +52,16 @@ async function getRuntimeDiagnostics(options) {
   };
 }
 
-function buildRuntimeDiagnosticChecks(config) {
+function buildRuntimeDiagnosticChecks(config, connectorModuleErrors) {
   const safeConfig = config || {};
   const llm = safeConfig.llm || {};
   const workers = safeConfig.workers || {};
+  const safeConnectorModuleErrors = connectorModuleErrors || [];
   const checks = [
     check('config.storageMode', safeConfig.storageMode ? 'ok' : 'fail', safeConfig.storageMode || 'missing', 'Storage mode is configured.'),
     check('config.storeDir', safeConfig.storeDir ? 'ok' : 'fail', safeConfig.storeDir || 'missing', 'Store directory is configured.'),
     check('config.sourceTaskMode', workers.sourceTaskMode ? 'ok' : 'fail', workers.sourceTaskMode || 'missing', 'Worker source task mode is configured.'),
-    check('config.connectorModules', 'ok', ((safeConfig.connectors && safeConfig.connectors.modules) || []).length, 'External connector module configuration is parsed.')
+    check('config.connectorModules', safeConnectorModuleErrors.length > 0 ? 'fail' : 'ok', ((safeConfig.connectors && safeConfig.connectors.modules) || []).length, 'External connector module configuration is parsed and loadable.')
   ];
 
   if (isRemoteLlmProvider(llm.provider)) {

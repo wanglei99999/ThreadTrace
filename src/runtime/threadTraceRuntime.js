@@ -2,7 +2,7 @@
 
 const path = require('path');
 const { createThreadTraceConfig } = require('./threadTraceConfig');
-const { loadConnectorModules } = require('./loadConnectorModules');
+const { loadConnectorModulesReport } = require('./loadConnectorModules');
 const { getThreadSnapshotJsonContract } = require('../domain/contracts/threadSnapshotJsonContract');
 const { createDefaultForumAdapterRegistry } = require('../infrastructure/forum-adapters/registry');
 const { analyzeSavedThreadDirectory } = require('../application/use-cases/analyzeSavedThreadDirectory');
@@ -80,13 +80,15 @@ function createThreadTraceRuntime(options) {
   let postgresClient = safeOptions.postgresClient;
   const forumAdapterRegistry = safeOptions.forumAdapterRegistry || createDefaultForumAdapterRegistry();
   const sourceIngestHandlerRegistry = safeOptions.sourceIngestHandlerRegistry || createDefaultSourceIngestHandlerRegistry();
-  const connectorModules = loadConnectorModules({
+  const connectorModuleReport = loadConnectorModulesReport({
     modulePaths: connectorModulePaths(safeOptions, runtimeConfig),
     cwd: safeOptions.cwd,
     forumAdapterRegistry,
     sourceIngestHandlerRegistry,
     runtimeConfig
   });
+  const connectorModules = connectorModuleReport.modules;
+  const connectorModuleErrors = connectorModuleReport.errors;
   const createRetrievalIndexFor = function (storeDir) {
     return createFileTextRetrievalIndex({
       indexFile: path.join(resolveStoreDir(defaults, storeDir), 'retrieval', 'documents.json')
@@ -121,6 +123,7 @@ function createThreadTraceRuntime(options) {
   return {
     defaults,
     connectorModules,
+    connectorModuleErrors,
 
     getAdapter(forum) {
       return forumAdapterRegistry.get(forum || defaults.defaultForum);
@@ -165,6 +168,7 @@ function createThreadTraceRuntime(options) {
         forumAdapterRegistry,
         getAdapter: forumAdapterRegistry.get,
         connectorModules,
+        connectorModuleErrors,
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
         enabled: safeRequest.enabled,
         limit: safeRequest.limit || 100,
@@ -355,6 +359,7 @@ function createThreadTraceRuntime(options) {
         inspectResources: function (config) {
           return inspectRuntimeResources(config, getPostgresClient);
         },
+        connectorModuleErrors,
         now: safeRequest.now
       });
     },
