@@ -869,24 +869,26 @@ function renderDeploymentGateReport(result) {
 }
 
 function renderRolloutManifestApply(result) {
-  const steps = result.steps || [];
-  const actions = result.nextActions || [];
+  const report = result.report || result;
+  const steps = report.steps || [];
+  const actions = report.nextActions || [];
   const panels = [
     panel('Rollout manifest apply', [
-      metric('Status', result.status),
-      metric('Mode', result.dryRun ? 'dry-run' : 'execute'),
-      metric('Applied', result.applied ? 'yes' : 'no'),
-      metric('Source', result.sourceDraft ? (result.sourceDraft.sourceKey || 'unknown') + ' / ' + (result.sourceDraft.sourceType || 'unknown') : 'missing')
+      metric('Status', report.status),
+      metric('Task', result.task ? result.task.id : 'none'),
+      metric('Mode', report.dryRun ? 'dry-run' : 'execute'),
+      metric('Applied', report.applied ? 'yes' : 'no'),
+      metric('Source', report.sourceDraft ? (report.sourceDraft.sourceKey || 'unknown') + ' / ' + (report.sourceDraft.sourceType || 'unknown') : 'missing')
     ].join('')),
     panel('Apply steps', evidenceList(steps.map(function (step) {
       return step.status + ' 路 ' + step.key + ' 路 ' + step.summary;
     })), 'wide')
   ];
-  if (result.registration && result.registration.source) {
+  if (report.registration && report.registration.source) {
     panels.push(panel('Registered source', [
-      metric('Source ID', result.registration.source.id),
-      metric('Created', result.registration.created ? 'yes' : 'no'),
-      metric('Name', result.registration.source.displayName)
+      metric('Source ID', report.registration.source.id),
+      metric('Created', report.registration.created ? 'yes' : 'no'),
+      metric('Name', report.registration.source.displayName)
     ].join('')));
   }
   if (actions.length > 0) {

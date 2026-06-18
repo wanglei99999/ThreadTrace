@@ -26,6 +26,7 @@ const { dispatchPendingNotificationEvents } = require('../application/use-cases/
 const { fetchAndStoreThreadPage } = require('../application/use-cases/fetchAndStoreThreadPage');
 const { enrichAnalysisReportWithLlm } = require('../application/use-cases/enrichAnalysisReportWithLlm');
 const { runSemanticEnrichmentTask } = require('../application/use-cases/runSemanticEnrichmentTask');
+const { runRolloutManifestApplyTask } = require('../application/use-cases/runRolloutManifestApplyTask');
 const { getOperationalOverview } = require('../application/use-cases/getOperationalOverview');
 const { getOperationalReadiness } = require('../application/use-cases/getOperationalReadiness');
 const { getTaskTraceContext } = require('../application/use-cases/getTaskTraceContext');
@@ -525,6 +526,32 @@ function createThreadTraceRuntime(options) {
         registration,
         registrationError,
         now: safeRequest.now
+      });
+    },
+
+    async runRolloutManifestApplyTask(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      const runtime = this;
+      return runRolloutManifestApplyTask({
+        taskRepository: repositories.taskRepository,
+        applyRolloutManifest(requestForApply) {
+          return runtime.applyRolloutManifest(requestForApply);
+        },
+        manifest: safeRequest.manifest,
+        execute: safeRequest.execute,
+        forum: safeRequest.forum,
+        sourceKey: safeRequest.sourceKey,
+        sourceId: safeRequest.sourceId,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit,
+        pipelineLimit: safeRequest.pipelineLimit,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir,
+        workerStaleAfterMs: safeRequest.workerStaleAfterMs,
+        requestId: safeRequest.requestId,
+        traceId: safeRequest.traceId,
+        idempotencyKey: safeRequest.idempotencyKey
       });
     },
 

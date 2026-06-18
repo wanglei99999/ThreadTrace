@@ -172,9 +172,10 @@ test('http server exposes health, adapters, and context APIs', async function ()
       return gate.key === 'rollout.manifest';
     }));
     assert.equal(deploymentGate.resourceProvisioningPlan.status, 'ok');
-    assert.equal(rolloutApply.status, 'warn');
-    assert.equal(rolloutApply.dryRun, true);
-    assert.equal(rolloutApply.applied, false);
+    assert.equal(rolloutApply.task.type, 'rollout-manifest-apply');
+    assert.equal(rolloutApply.report.status, 'warn');
+    assert.equal(rolloutApply.report.dryRun, true);
+    assert.equal(rolloutApply.report.applied, false);
     assert.equal(sourceOnboardingPreflight.status, 'ok');
     assert.equal(sourceOnboardingPreflight.sourceType, 'saved-html-directory');
     assert.ok(sourceOnboardingPreflight.steps.some(function (step) {

@@ -106,6 +106,43 @@ test('runtime rollout manifest apply execute registers source', async function (
   assert.equal(sources[0].displayName, 'Apply sample archive');
 });
 
+test('runtime rollout manifest apply task records audit trail and replays idempotency', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-rollout-apply-task-'));
+  const storeDir = path.join(tempDir, 'store');
+  const runtime = createThreadTraceRuntime({
+    defaultInputDir: path.resolve(__dirname, '..', 'example'),
+    storeDir
+  });
+  const first = await runtime.runRolloutManifestApplyTask({
+    manifest: sampleManifest(),
+    now: '2026-06-19T10:00:00.000Z',
+    storeDir,
+    requestId: 'rollout-request-1',
+    traceId: 'rollout-trace-1',
+    idempotencyKey: 'rollout-idem-1'
+  });
+  const replay = await runtime.runRolloutManifestApplyTask({
+    manifest: sampleManifest(),
+    now: '2026-06-19T10:00:00.000Z',
+    storeDir,
+    requestId: 'rollout-request-2',
+    traceId: 'rollout-trace-2',
+    idempotencyKey: 'rollout-idem-1'
+  });
+  const tasks = await runtime.listTasks({
+    storeDir,
+    type: 'rollout-manifest-apply'
+  });
+
+  assert.equal(first.task.type, 'rollout-manifest-apply');
+  assert.equal(first.task.status, 'completed');
+  assert.equal(first.task.output.report.status, 'warn');
+  assert.equal(first.task.input._trace.requestId, 'rollout-request-1');
+  assert.equal(replay.task.id, first.task.id);
+  assert.equal(replay.idempotency.reused, true);
+  assert.equal(tasks.length, 1);
+});
+
 function sampleManifest() {
   return {
     version: '1.0',

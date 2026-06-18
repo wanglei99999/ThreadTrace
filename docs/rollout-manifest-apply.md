@@ -62,3 +62,22 @@ The report includes:
 - `registration` when execution created or updated a source.
 - `deploymentGate` for rollout/resource/checklist/runbook evidence.
 - `steps` and `nextActions` for operator follow-up.
+
+## Audit Trail
+
+CLI and HTTP apply entrypoints create a durable task record with type `rollout-manifest-apply`. The task output stores the apply report, source summary, registration summary, and deployment gate status.
+
+Query recent rollout apply records:
+
+```powershell
+node src/presentation/cli/threadtrace.js list-tasks --type rollout-manifest-apply
+```
+
+Correlate a rollout apply request:
+
+```powershell
+node src/presentation/cli/threadtrace.js trace-context --request-id <request-id>
+node src/presentation/cli/threadtrace.js trace-context --idempotency-key <key>
+```
+
+Use `idempotency-key` on the HTTP request or `--idempotency-key` on the CLI to safely replay the same dry-run/apply call without creating duplicate audit records.

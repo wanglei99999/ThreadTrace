@@ -933,7 +933,7 @@ function main(argv) {
 
   if (command === 'rollout-manifest-apply') {
     const storeDir = options.storeDir || defaultStoreDir;
-    runtime.applyRolloutManifest({
+    runtime.runRolloutManifestApplyTask({
       manifest: parseManifestOption(options),
       execute: options.execute === 'true' || options.dryRun === 'false',
       forum: options.forum,
@@ -944,9 +944,17 @@ function main(argv) {
       pipelineLimit: options.pipelineLimit ? Number(options.pipelineLimit) : 20,
       now: options.now,
       storeDir,
-      workerStaleAfterMs: options.workerStaleAfterMs ? Number(options.workerStaleAfterMs) : undefined
-    }).then(function (report) {
+      workerStaleAfterMs: options.workerStaleAfterMs ? Number(options.workerStaleAfterMs) : undefined,
+      requestId: options.requestId,
+      traceId: options.traceId,
+      idempotencyKey: options.idempotencyKey
+    }).then(function (result) {
+      const report = result.report;
       console.log('Rollout manifest apply: ' + report.status);
+      console.log('Task: ' + result.task.id + '\t' + result.task.status);
+      if (result.idempotency) {
+        console.log('Idempotency: reused=' + result.idempotency.reused + '\ttask=' + result.idempotency.taskId);
+      }
       console.log('Mode: ' + (report.dryRun ? 'dry-run' : 'execute'));
       console.log('Applied: ' + report.applied);
       if (report.sourceDraft) {

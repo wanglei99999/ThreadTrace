@@ -414,7 +414,7 @@ async function routeRequest(request, response, context) {
   if (request.method === 'POST' && url.pathname === '/api/operations/rollout-manifest/apply') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     const manifest = body.manifest || (body.source ? body : undefined);
-    const report = await context.runtime.applyRolloutManifest({
+    const result = await context.runtime.runRolloutManifestApplyTask({
       manifest,
       execute: body.execute === true || body.dryRun === false,
       forum: body.forum,
@@ -425,9 +425,11 @@ async function routeRequest(request, response, context) {
       pipelineLimit: body.pipelineLimit,
       now: body.now,
       storeDir: body.storeDir || context.storeDir,
-      workerStaleAfterMs: body.workerStaleAfterMs
+      workerStaleAfterMs: body.workerStaleAfterMs,
+      requestId: context.requestId,
+      idempotencyKey: context.idempotencyKey
     });
-    writeJson(response, report.status === 'fail' ? 503 : 200, report);
+    writeJson(response, result.report.status === 'fail' ? 503 : 200, result);
     return;
   }
 
