@@ -17,6 +17,7 @@ const { fetchAndStoreThreadPage } = require('../application/use-cases/fetchAndSt
 const { enrichAnalysisReportWithLlm } = require('../application/use-cases/enrichAnalysisReportWithLlm');
 const { getOperationalOverview } = require('../application/use-cases/getOperationalOverview');
 const { getOperationalReadiness } = require('../application/use-cases/getOperationalReadiness');
+const { createDefaultSourceIngestHandlerRegistry } = require('../application/source-ingest/standardSourceIngestHandlers');
 const { runIngestRawThreadPageTask } = require('../application/use-cases/runIngestRawThreadPageTask');
 const { indexSavedThreadDirectory } = require('../application/use-cases/indexSavedThreadDirectory');
 const { searchEvidence } = require('../application/use-cases/searchEvidence');
@@ -45,6 +46,7 @@ function createThreadTraceRuntime(options) {
     storageMode: normalizeStorageMode(safeOptions.storageMode || process.env.THREADTRACE_STORAGE || 'file')
   };
   let postgresClient = safeOptions.postgresClient;
+  const sourceIngestHandlerRegistry = safeOptions.sourceIngestHandlerRegistry || createDefaultSourceIngestHandlerRegistry();
   const createRetrievalIndexFor = function (storeDir) {
     return createFileTextRetrievalIndex({
       indexFile: path.join(resolveStoreDir(defaults, storeDir), 'retrieval', 'documents.json')
@@ -77,6 +79,10 @@ function createThreadTraceRuntime(options) {
 
     listAdapters() {
       return listForumAdapters();
+    },
+
+    listSourceIngestHandlers() {
+      return sourceIngestHandlerRegistry.listHandlers();
     },
 
     createRepositories(storeDir) {
@@ -237,13 +243,14 @@ function createThreadTraceRuntime(options) {
       return runTrackedSourceIngestTask({
         sourceId: safeRequest.sourceId,
         sourceRepository: repositories.sourceRepository,
-        adapter: getForumAdapter(source.sourceKey),
+        getAdapter: getForumAdapter,
         crawler: safeOptions.crawler || createHttpForumCrawler(safeOptions.crawlerOptions),
         threadRepository: repositories.threadRepository,
         reportRepository: repositories.reportRepository,
         taskRepository: repositories.taskRepository,
         rawThreadPageRepository: repositories.rawThreadPageRepository,
-        notificationEventRepository: repositories.notificationEventRepository
+        notificationEventRepository: repositories.notificationEventRepository,
+        sourceIngestHandlerRegistry
       });
     },
 
@@ -260,7 +267,8 @@ function createThreadTraceRuntime(options) {
         crawler: safeOptions.crawler || createHttpForumCrawler(safeOptions.crawlerOptions),
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
         limit: safeRequest.limit || 50,
-        getAdapter: getForumAdapter
+        getAdapter: getForumAdapter,
+        sourceIngestHandlerRegistry
       });
     },
 
@@ -278,7 +286,8 @@ function createThreadTraceRuntime(options) {
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
         limit: safeRequest.limit || 50,
         now: safeRequest.now,
-        getAdapter: getForumAdapter
+        getAdapter: getForumAdapter,
+        sourceIngestHandlerRegistry
       });
     },
 

@@ -47,13 +47,14 @@ async function runEnabledSourcesIngestTasks(options) {
         const result = await runTrackedSourceIngestTask({
           sourceId: source.id,
           sourceRepository,
-          adapter: getAdapter(source.sourceKey),
+          getAdapter,
           crawler: safeOptions.crawler,
           threadRepository,
           reportRepository,
           taskRepository,
           rawThreadPageRepository: safeOptions.rawThreadPageRepository,
-          notificationEventRepository: safeOptions.notificationEventRepository
+          notificationEventRepository: safeOptions.notificationEventRepository,
+          sourceIngestHandlerRegistry: safeOptions.sourceIngestHandlerRegistry
         });
         results.push({
           source: result.source || source,

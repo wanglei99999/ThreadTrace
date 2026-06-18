@@ -19,6 +19,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     const health = await getJson(baseUrl + '/health');
     const home = await fetch(baseUrl + '/');
     const adapters = await getJson(baseUrl + '/adapters');
+    const handlers = await getJson(baseUrl + '/api/source-ingest-handlers');
     const openApi = await getJson(baseUrl + '/openapi.json');
     const context = await postJson(baseUrl + '/api/interpret-text', {
       text: '科技后面看量确认',
@@ -30,6 +31,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(home.status, 200);
     assert.match(await home.text(), /ThreadTrace/);
     assert.equal(adapters.adapters[0].sourceKey, 'nga');
+    assert.equal(handlers.handlers[0].sourceType, 'saved-html-directory');
     assert.equal(openApi.openapi, '3.0.3');
     assert.ok(openApi.paths['/api/interpret-text']);
     assert.equal(context.reportType, 'new-post-context');

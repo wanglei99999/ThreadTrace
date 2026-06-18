@@ -66,6 +66,13 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/source-ingest-handlers') {
+    writeJson(response, 200, {
+      handlers: context.runtime.listSourceIngestHandlers()
+    });
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/openapi.json') {
     writeJson(response, 200, createOpenApiSpec());
     return;

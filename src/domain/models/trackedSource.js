@@ -101,7 +101,10 @@ function normalizeLocation(sourceType, location) {
     };
   }
 
-  throw new Error('Unsupported sourceType: ' + sourceType);
+  if (Object.keys(safeLocation).length === 0) {
+    throw new Error(sourceType + ' source requires location.');
+  }
+  return Object.assign({}, safeLocation);
 }
 
 function buildSourceId(sourceKey, sourceType, location) {

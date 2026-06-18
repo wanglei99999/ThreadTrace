@@ -1,7 +1,6 @@
 'use strict';
 
 const {
-  SOURCE_TYPES,
   markTrackedSourceRunCompleted,
   markTrackedSourceRunFailed,
   markTrackedSourceRunStarted
@@ -11,19 +10,13 @@ const {
   compareThreadSnapshotCursor
 } = require('../../domain/sources/threadSnapshotCursor');
 const { createSourceChangedEvent } = require('../../domain/events/notificationEvent');
-const { assertForumAdapter } = require('../../infrastructure/forum-adapters/forumAdapter');
+const { createDefaultSourceIngestHandlerRegistry } = require('../source-ingest/standardSourceIngestHandlers');
 const { assertSourceRepository } = require('../ports/sourceRepository');
-const { assertThreadRepository } = require('../ports/threadRepository');
-const { assertAnalysisReportRepository } = require('../ports/analysisReportRepository');
-const { assertTaskRepository } = require('../ports/taskRepository');
-const { assertRawThreadPageRepository } = require('../ports/rawThreadPageRepository');
-const { runIngestSavedThreadDirectoryTask } = require('./runIngestSavedThreadDirectoryTask');
-const { runIngestThreadUrlTask } = require('./runIngestThreadUrlTask');
 
 async function runTrackedSourceIngestTask(options) {
   const safeOptions = options || {};
   const sourceRepository = assertSourceRepository(safeOptions.sourceRepository);
-  const adapter = assertForumAdapter(safeOptions.adapter);
+  const handlerRegistry = safeOptions.sourceIngestHandlerRegistry || createDefaultSourceIngestHandlerRegistry();
   const source = await sourceRepository.findSource(safeOptions.sourceId);
 
   if (!source) {
@@ -32,33 +25,25 @@ async function runTrackedSourceIngestTask(options) {
   if (source.enabled === false) {
     throw new Error('Tracked source is disabled: ' + source.id);
   }
-  if (source.sourceType !== SOURCE_TYPES.SAVED_HTML_DIRECTORY && source.sourceType !== SOURCE_TYPES.THREAD_URL) {
+  const handler = handlerRegistry.findHandler(source);
+  if (!handler) {
     throw new Error('Tracked source type is not ingestible yet: ' + source.sourceType);
   }
+  const adapter = safeOptions.adapter || resolveAdapter(handler, source, safeOptions.getAdapter);
 
   let runningSource = markTrackedSourceRunStarted(source);
   await sourceRepository.saveSource(runningSource);
 
   try {
-    const result = source.sourceType === SOURCE_TYPES.THREAD_URL
-      ? await runIngestThreadUrlTask({
-        forum: source.sourceKey,
-        source,
-        adapter,
-        crawler: safeOptions.crawler,
-        rawThreadPageRepository: assertRawThreadPageRepository(safeOptions.rawThreadPageRepository),
-        threadRepository: assertThreadRepository(safeOptions.threadRepository),
-        reportRepository: assertAnalysisReportRepository(safeOptions.reportRepository),
-        taskRepository: assertTaskRepository(safeOptions.taskRepository)
-      })
-      : await runIngestSavedThreadDirectoryTask({
-        forum: source.sourceKey,
-        adapter,
-        inputDir: source.location.inputDir,
-        threadRepository: assertThreadRepository(safeOptions.threadRepository),
-        reportRepository: assertAnalysisReportRepository(safeOptions.reportRepository),
-        taskRepository: assertTaskRepository(safeOptions.taskRepository)
-      });
+    const result = await handler.run({
+      source,
+      adapter,
+      crawler: safeOptions.crawler,
+      threadRepository: safeOptions.threadRepository,
+      reportRepository: safeOptions.reportRepository,
+      taskRepository: safeOptions.taskRepository,
+      rawThreadPageRepository: safeOptions.rawThreadPageRepository
+    });
     const cursor = buildThreadSnapshotCursor(result.threadSnapshot);
     const cursorDiff = compareThreadSnapshotCursor(source.cursor, cursor);
     runningSource = markTrackedSourceRunCompleted(runningSource, result.task, cursor, cursorDiff);
@@ -81,6 +66,12 @@ async function runTrackedSourceIngestTask(options) {
     await sourceRepository.saveSource(runningSource);
     throw error;
   }
+}
+
+function resolveAdapter(handler, source, getAdapter) {
+  if (typeof getAdapter !== 'function') return undefined;
+  if (handler.requiresAdapter === false) return undefined;
+  return getAdapter(source.sourceKey);
 }
 
 module.exports = {

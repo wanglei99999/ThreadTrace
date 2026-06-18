@@ -29,6 +29,16 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/source-ingest-handlers': {
+        get: {
+          summary: 'List source ingest handlers',
+          responses: {
+            200: {
+              description: 'Registered source ingest handlers'
+            }
+          }
+        }
+      },
       '/api/analyze-directory': {
         post: {
           summary: 'Analyze a saved HTML directory',
