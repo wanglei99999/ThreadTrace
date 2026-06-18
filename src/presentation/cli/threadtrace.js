@@ -741,6 +741,7 @@ function main(argv) {
     }).then(function (readiness) {
       console.log('Connector readiness: ' + readiness.status);
       console.log('Connectors: ' + readiness.connectorCount + ', sources=' + readiness.sourceCount);
+      console.log('Modules: ' + (readiness.modules ? readiness.modules.count : 0));
       readiness.connectors.forEach(function (connector) {
         console.log(connector.status + '\t' + connector.sourceType + '\tsources=' + connector.sourceCount + '\tenabled=' + connector.enabledSourceCount);
       });

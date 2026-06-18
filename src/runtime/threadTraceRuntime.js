@@ -164,6 +164,7 @@ function createThreadTraceRuntime(options) {
         sourceIngestHandlerRegistry,
         forumAdapterRegistry,
         getAdapter: forumAdapterRegistry.get,
+        connectorModules,
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
         enabled: safeRequest.enabled,
         limit: safeRequest.limit || 100,

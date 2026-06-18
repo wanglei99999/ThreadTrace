@@ -14,6 +14,13 @@ test('connector readiness summarizes handlers, adapter coverage, and configured 
     forumAdapterRegistry,
     sourceIngestHandlerRegistry,
     getAdapter: forumAdapterRegistry.get,
+    connectorModules: [
+      {
+        modulePath: 'D:/connectors/example.cjs',
+        forumAdapters: ['external'],
+        sourceIngestHandlers: ['external-feed']
+      }
+    ],
     sourceRepository: fakeSourceRepository([
       {
         id: 'source-1',
@@ -35,6 +42,8 @@ test('connector readiness summarizes handlers, adapter coverage, and configured 
   assert.equal(readiness.status, 'ok');
   assert.equal(readiness.connectorCount, 3);
   assert.equal(readiness.sourceCount, 1);
+  assert.equal(readiness.modules.count, 1);
+  assert.equal(readiness.modules.modules[0].sourceIngestHandlers[0], 'external-feed');
   assert.equal(savedHtml.status, 'ok');
   assert.equal(savedHtml.sourceCount, 1);
   assert.equal(savedHtml.enabledSourceCount, 1);

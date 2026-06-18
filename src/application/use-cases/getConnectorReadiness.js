@@ -35,8 +35,23 @@ async function getConnectorReadiness(options) {
     status: aggregateStatus(connectors.map(function (connector) { return connector.status; })),
     connectorCount: connectors.length,
     sourceCount: sources.length,
+    modules: summarizeConnectorModules(safeOptions.connectorModules),
     connectors,
     adapters: catalog.adapters
+  };
+}
+
+function summarizeConnectorModules(connectorModules) {
+  const modules = (connectorModules || []).map(function (connectorModule) {
+    return {
+      modulePath: connectorModule.modulePath,
+      forumAdapters: connectorModule.forumAdapters || [],
+      sourceIngestHandlers: connectorModule.sourceIngestHandlers || []
+    };
+  });
+  return {
+    count: modules.length,
+    modules
   };
 }
 
@@ -98,5 +113,6 @@ function aggregateStatus(statuses) {
 
 module.exports = {
   getConnectorReadiness,
-  summarizeConnector
+  summarizeConnector,
+  summarizeConnectorModules
 };
