@@ -7,10 +7,13 @@ const { parseSavedThread } = require('../../application/use-cases/parseSavedThre
 const { analyzeSavedThread } = require('../../application/use-cases/analyzeSavedThread');
 const { parseSavedThreadDirectory } = require('../../application/use-cases/parseSavedThreadDirectory');
 const { analyzeSavedThreadDirectory } = require('../../application/use-cases/analyzeSavedThreadDirectory');
+const { ingestSavedThreadDirectory } = require('../../application/use-cases/ingestSavedThreadDirectory');
 const { writeJsonFile } = require('../../infrastructure/storage/jsonFileStorage');
 const { writeTextFile } = require('../../infrastructure/storage/textFileWriter');
 const { getForumAdapter, listForumAdapters } = require('../../infrastructure/forum-adapters/registry');
 const { renderBasicHistoryMarkdown } = require('../../domain/analysis/markdownReportRenderer');
+const { createFileThreadRepository } = require('../../infrastructure/storage/fileThreadRepository');
+const { createFileAnalysisReportRepository } = require('../../infrastructure/storage/fileAnalysisReportRepository');
 
 function main(argv) {
   const command = argv[2] || 'help';
@@ -84,6 +87,30 @@ function main(argv) {
     return;
   }
 
+  if (command === 'ingest-html-dir') {
+    const inputDir = options.input || path.resolve(process.cwd(), 'example');
+    const adapter = getForumAdapter(options.forum || 'nga');
+    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    ingestSavedThreadDirectory({
+      adapter,
+      inputDir,
+      threadRepository: createFileThreadRepository({
+        baseDir: path.join(storeDir, 'threads')
+      }),
+      reportRepository: createFileAnalysisReportRepository({
+        baseDir: path.join(storeDir, 'reports')
+      })
+    }).then(function (result) {
+      printThreadSummary(result.threadSnapshot);
+      printReportSummary(result.report);
+      console.log('Snapshot and report stored under: ' + storeDir);
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'list-adapters') {
     listForumAdapters().forEach(function (adapter) {
       console.log(adapter.sourceKey + '\t' + adapter.displayName);
@@ -109,6 +136,9 @@ function parseArgs(args) {
       index += 1;
     } else if (item === '--forum') {
       options.forum = args[index + 1];
+      index += 1;
+    } else if (item === '--store-dir') {
+      options.storeDir = args[index + 1];
       index += 1;
     }
   }
@@ -170,6 +200,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js parse-html-dir [--forum nga] [--input dir] [--output file]');
   console.log('  node src/presentation/cli/threadtrace.js analyze-html [--forum nga] [--input file] [--output file] [--markdown-output file]');
   console.log('  node src/presentation/cli/threadtrace.js analyze-html-dir [--forum nga] [--input dir] [--output file] [--markdown-output file]');
+  console.log('  node src/presentation/cli/threadtrace.js ingest-html-dir [--forum nga] [--input dir] [--store-dir dir]');
 }
 
 main(process.argv);

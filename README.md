@@ -12,6 +12,7 @@
 npm run parse:sample
 npm run analyze:sample
 npm run analyze:sample-dir
+npm run ingest:sample-dir
 npm run test:unit
 ```
 
@@ -25,6 +26,7 @@ node src/presentation/cli/threadtrace.js parse-html --forum nga --input example/
 node src/presentation/cli/threadtrace.js parse-html-dir --forum nga --input example
 node src/presentation/cli/threadtrace.js analyze-html --forum nga --input example/自立自强，科学技术打头阵 NGA玩家社区.html
 node src/presentation/cli/threadtrace.js analyze-html-dir --forum nga --input example
+node src/presentation/cli/threadtrace.js ingest-html-dir --forum nga --input example --store-dir data/store
 ```
 
 ## 项目分层
@@ -46,6 +48,7 @@ node src/presentation/cli/threadtrace.js analyze-html-dir --forum nga --input ex
 - 规则型抽取观点候选，包括态度、周期、条件信号、证据片段和置信度。
 - 预留数据库、LLM、检索索引和论坛采集器端口。
 - 提供本地文件仓库实现，可作为 PostgreSQL 前的开发替身。
+- 支持导入目录、分析并持久化主题快照和报告。
 - 输出统一 `ThreadSnapshot`。
 - 支持目录内多个保存页合并，面向长帖多页归档。
 - 规则型抽取市场实体与线索候选，包括股票代码、主题关键词和论坛主题链接。
