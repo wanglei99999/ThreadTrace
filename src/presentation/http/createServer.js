@@ -121,11 +121,7 @@ async function routeRequest(request, response, context) {
   if (request.method === 'POST' && url.pathname === '/api/interpret-text') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     if (!body.text) {
-      writeJson(response, 400, {
-        error: {
-          message: 'POST /api/interpret-text requires text.'
-        }
-      });
+      writeError(response, 400, 'interpret_text_missing_text', 'POST /api/interpret-text requires text.');
       return;
     }
 
@@ -196,11 +192,7 @@ async function routeRequest(request, response, context) {
   if (request.method === 'POST' && url.pathname === '/api/reports/tasks/semantic-enrichment') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     if (!body.sourceThreadId) {
-      writeJson(response, 400, {
-        error: {
-          message: 'POST /api/reports/tasks/semantic-enrichment requires sourceThreadId.'
-        }
-      });
+      writeError(response, 400, 'semantic_enrichment_missing_source_thread_id', 'POST /api/reports/tasks/semantic-enrichment requires sourceThreadId.');
       return;
     }
     const result = await context.runtime.runSemanticEnrichmentTask({
@@ -319,11 +311,7 @@ async function routeRequest(request, response, context) {
   if (request.method === 'POST' && url.pathname === '/api/crawl-page') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     if (!body.url && !body.sourceId) {
-      writeJson(response, 400, {
-        error: {
-          message: 'POST /api/crawl-page requires url or sourceId.'
-        }
-      });
+      writeError(response, 400, 'crawl_page_missing_target', 'POST /api/crawl-page requires url or sourceId.');
       return;
     }
     const result = await context.runtime.fetchThreadPage({
@@ -342,11 +330,7 @@ async function routeRequest(request, response, context) {
   if (request.method === 'POST' && url.pathname === '/api/raw-pages/tasks/ingest') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     if (!body.contentSha1) {
-      writeJson(response, 400, {
-        error: {
-          message: 'POST /api/raw-pages/tasks/ingest requires contentSha1.'
-        }
-      });
+      writeError(response, 400, 'raw_page_ingest_missing_content_sha1', 'POST /api/raw-pages/tasks/ingest requires contentSha1.');
       return;
     }
     const result = await context.runtime.runRawThreadPageIngestTask({
@@ -551,11 +535,7 @@ async function routeRequest(request, response, context) {
   if (request.method === 'POST' && url.pathname === '/api/search') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     if (!body.text) {
-      writeJson(response, 400, {
-        error: {
-          message: 'POST /api/search requires text.'
-        }
-      });
+      writeError(response, 400, 'search_missing_text', 'POST /api/search requires text.');
       return;
     }
     const results = await context.runtime.search({
@@ -570,11 +550,7 @@ async function routeRequest(request, response, context) {
     return;
   }
 
-  writeJson(response, 404, {
-    error: {
-      message: 'Not found.'
-    }
-  });
+  writeError(response, 404, 'route_not_found', 'Not found.');
 }
 
 async function serveStaticAsset(response, webDir, pathname) {
@@ -632,6 +608,16 @@ function writeJson(response, statusCode, body) {
     'content-length': Buffer.byteLength(text)
   });
   response.end(text);
+}
+
+function writeError(response, statusCode, code, message, details) {
+  writeJson(response, statusCode, {
+    error: {
+      message,
+      code,
+      details
+    }
+  });
 }
 
 function applyCors(response) {

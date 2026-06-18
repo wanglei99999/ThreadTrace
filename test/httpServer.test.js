@@ -347,11 +347,16 @@ test('http server handles CORS preflight and validates interpret text input', as
       body: JSON.stringify({})
     });
     const invalidBody = await invalid.json();
+    const missingRoute = await fetch(baseUrl + '/api/missing-route');
+    const missingRouteBody = await missingRoute.json();
 
     assert.equal(preflight.status, 204);
     assert.equal(preflight.headers.get('access-control-allow-origin'), '*');
     assert.equal(invalid.status, 400);
+    assert.equal(invalidBody.error.code, 'interpret_text_missing_text');
     assert.match(invalidBody.error.message, /requires text/);
+    assert.equal(missingRoute.status, 404);
+    assert.equal(missingRouteBody.error.code, 'route_not_found');
   } finally {
     await close(server);
   }
@@ -391,12 +396,22 @@ test('http server maps expected application and request errors', async function 
       })
     });
     const invalidSourceBody = await invalidSource.json();
+    const invalidSearch = await fetch(baseUrl + '/api/search', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({})
+    });
+    const invalidSearchBody = await invalidSearch.json();
 
     assert.equal(invalidJson.status, 400);
     assert.equal(invalidJsonBody.error.code, 'invalid_json_body');
     assert.equal(invalidSource.status, 400);
     assert.equal(invalidSourceBody.error.code, 'source_type_unregistered');
     assert.equal(invalidSourceBody.error.details.sourceType, 'unknown-feed');
+    assert.equal(invalidSearch.status, 400);
+    assert.equal(invalidSearchBody.error.code, 'search_missing_text');
   } finally {
     await close(server);
   }
