@@ -5,6 +5,8 @@ const fs = require('fs');
 const path = require('path');
 const { parseSavedThread } = require('../../application/use-cases/parseSavedThread');
 const { analyzeSavedThread } = require('../../application/use-cases/analyzeSavedThread');
+const { parseSavedThreadDirectory } = require('../../application/use-cases/parseSavedThreadDirectory');
+const { analyzeSavedThreadDirectory } = require('../../application/use-cases/analyzeSavedThreadDirectory');
 const { writeJsonFile } = require('../../infrastructure/storage/jsonFileStorage');
 const { writeTextFile } = require('../../infrastructure/storage/textFileWriter');
 const { getForumAdapter, listForumAdapters } = require('../../infrastructure/forum-adapters/registry');
@@ -29,6 +31,21 @@ function main(argv) {
     return;
   }
 
+  if (command === 'parse-html-dir') {
+    const inputDir = options.input || path.resolve(process.cwd(), 'example');
+    const adapter = getForumAdapter(options.forum || 'nga');
+    const threadSnapshot = parseSavedThreadDirectory({
+      adapter,
+      inputDir
+    });
+    const outputPath = options.output || defaultParsedOutputPath(threadSnapshot);
+    const writtenPath = writeJsonFile(outputPath, threadSnapshot);
+
+    printThreadSummary(threadSnapshot);
+    console.log('Parsed merged JSON written to: ' + writtenPath);
+    return;
+  }
+
   if (command === 'analyze-html') {
     const inputPath = options.input || findDefaultExampleHtml();
     const adapter = getForumAdapter(options.forum || 'nga');
@@ -45,6 +62,25 @@ function main(argv) {
     printReportSummary(result.report);
     console.log('Analysis report written to: ' + writtenPath);
     console.log('Markdown report written to: ' + writtenMarkdownPath);
+    return;
+  }
+
+  if (command === 'analyze-html-dir') {
+    const inputDir = options.input || path.resolve(process.cwd(), 'example');
+    const adapter = getForumAdapter(options.forum || 'nga');
+    const result = analyzeSavedThreadDirectory({
+      adapter,
+      inputDir
+    });
+    const outputPath = options.output || defaultReportOutputPath(result.threadSnapshot);
+    const writtenPath = writeJsonFile(outputPath, result.report);
+    const markdownPath = options.markdownOutput || defaultMarkdownReportOutputPath(result.threadSnapshot);
+    const writtenMarkdownPath = writeTextFile(markdownPath, renderBasicHistoryMarkdown(result.report));
+
+    printThreadSummary(result.threadSnapshot);
+    printReportSummary(result.report);
+    console.log('Merged analysis report written to: ' + writtenPath);
+    console.log('Merged markdown report written to: ' + writtenMarkdownPath);
     return;
   }
 
@@ -131,7 +167,9 @@ function printHelp() {
   console.log('Usage:');
   console.log('  node src/presentation/cli/threadtrace.js list-adapters');
   console.log('  node src/presentation/cli/threadtrace.js parse-html [--forum nga] [--input file] [--output file]');
+  console.log('  node src/presentation/cli/threadtrace.js parse-html-dir [--forum nga] [--input dir] [--output file]');
   console.log('  node src/presentation/cli/threadtrace.js analyze-html [--forum nga] [--input file] [--output file] [--markdown-output file]');
+  console.log('  node src/presentation/cli/threadtrace.js analyze-html-dir [--forum nga] [--input dir] [--output file] [--markdown-output file]');
 }
 
 main(process.argv);

@@ -5,6 +5,7 @@ const path = require('node:path');
 const test = require('node:test');
 const { getForumAdapter } = require('../src/infrastructure/forum-adapters/registry');
 const { parseSavedThread } = require('../src/application/use-cases/parseSavedThread');
+const { parseSavedThreadDirectory } = require('../src/application/use-cases/parseSavedThreadDirectory');
 const { analyzeThreadHistory } = require('../src/domain/analysis/basicHistoricalAnalyzer');
 
 function samplePath() {
@@ -44,4 +45,17 @@ test('basic historical analyzer identifies primary author and evidence candidate
   assert.ok(report.authorStats.length >= 10);
   assert.ok(report.evidenceCandidates.highSignalPosts.length >= 1);
   assert.ok(report.evidenceCandidates.lowSignalPosts.length >= 1);
+});
+
+test('directory parser merges saved html pages into one thread snapshot', function () {
+  const adapter = getForumAdapter('nga');
+  const snapshot = parseSavedThreadDirectory({
+    adapter,
+    inputDir: path.resolve(__dirname, '..', 'example')
+  });
+
+  assert.equal(snapshot.sourceThreadId, '45974302');
+  assert.equal(snapshot.posts.length, 20);
+  assert.equal(snapshot.metadata.mergedSnapshotCount, 1);
+  assert.ok(snapshot.metadata.sourceFiles.length >= 1);
 });

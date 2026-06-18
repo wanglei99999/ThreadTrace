@@ -10,6 +10,7 @@
   "scripts": {
     "parse:sample": "node src/presentation/cli/threadtrace.js parse-html",
     "analyze:sample": "node src/presentation/cli/threadtrace.js analyze-html",
+    "analyze:sample-dir": "node src/presentation/cli/threadtrace.js analyze-html-dir",
     "test:unit": "node --test test"
   }
 }

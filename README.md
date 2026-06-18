@@ -11,6 +11,7 @@
 ```powershell
 npm run parse:sample
 npm run analyze:sample
+npm run analyze:sample-dir
 npm run test:unit
 ```
 
@@ -21,7 +22,9 @@ npm run test:unit
 ```powershell
 node src/presentation/cli/threadtrace.js list-adapters
 node src/presentation/cli/threadtrace.js parse-html --forum nga --input example/自立自强，科学技术打头阵 NGA玩家社区.html
+node src/presentation/cli/threadtrace.js parse-html-dir --forum nga --input example
 node src/presentation/cli/threadtrace.js analyze-html --forum nga --input example/自立自强，科学技术打头阵 NGA玩家社区.html
+node src/presentation/cli/threadtrace.js analyze-html-dir --forum nga --input example
 ```
 
 ## 项目分层
@@ -40,6 +43,7 @@ node src/presentation/cli/threadtrace.js analyze-html --forum nga --input exampl
 - 自动识别 GBK / GB18030 / UTF-8 HTML 编码。
 - 抽取主题 ID、标题、分页、楼层、作者、uid、发布时间、正文、链接和推荐值。
 - 输出统一 `ThreadSnapshot`。
+- 支持目录内多个保存页合并，面向长帖多页归档。
 - 生成基础历史分析 JSON。
 - 生成可读 Markdown 报告。
 - 通过适配器注册表预留多论坛接入点。
