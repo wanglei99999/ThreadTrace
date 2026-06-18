@@ -27,7 +27,7 @@ const { createFileRawThreadPageRepository } = require('../infrastructure/storage
 const { createFileNotificationChannel } = require('../infrastructure/notifications/fileNotificationChannel');
 const { createWebhookNotificationChannel } = require('../infrastructure/notifications/webhookNotificationChannel');
 const { createHttpForumCrawler } = require('../infrastructure/crawlers/httpForumCrawler');
-const { createMockLlmProvider } = require('../infrastructure/llm/mockLlmProvider');
+const { createLlmProvider } = require('../infrastructure/llm/llmProviderFactory');
 const { createFileTextRetrievalIndex } = require('../infrastructure/retrieval/fileTextRetrievalIndex');
 const { createPostgresPool } = require('../infrastructure/postgres/postgresConnection');
 const { createPostgresRepositories } = require('../infrastructure/postgres/postgresRepositories');
@@ -99,7 +99,12 @@ function createThreadTraceRuntime(options) {
       });
       const enrichedReport = await enrichAnalysisReportWithLlm({
         report: result.report,
-        llmProvider: safeOptions.llmProvider || createMockLlmProvider(),
+        llmProvider: safeOptions.llmProvider || createLlmProvider({
+          provider: safeRequest.provider,
+          env: safeOptions.env,
+          fetch: safeOptions.fetch,
+          openAiCompatible: safeOptions.openAiCompatibleLlm
+        }),
         providerKey: safeRequest.provider || 'mock',
         traceId: safeRequest.traceId
       });

@@ -44,5 +44,14 @@ Every entity or opinion insight should include `evidenceRefs` with floor/post re
 ## Provider Strategy
 
 - `createMockLlmProvider` is deterministic and suitable for local tests.
-- A real provider should implement the same port and return the same JSON shape.
+- `createOpenAiCompatibleLlmProvider` calls an OpenAI-compatible `/v1/chat/completions` endpoint and expects JSON content.
+- `createLlmProvider` selects `mock`, `openai-compatible`, or `openai` from explicit options or `THREADTRACE_LLM_PROVIDER`.
 - Provider-specific credentials, model names, retry logic, and rate limits belong in infrastructure, not domain or application use cases.
+
+Environment variables for real providers:
+
+- `THREADTRACE_LLM_PROVIDER=openai-compatible`
+- `THREADTRACE_LLM_BASE_URL`
+- `THREADTRACE_LLM_API_KEY` or `OPENAI_API_KEY`
+- `THREADTRACE_LLM_MODEL`
+- `THREADTRACE_LLM_TIMEOUT_MS`
