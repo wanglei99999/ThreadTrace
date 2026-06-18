@@ -258,6 +258,9 @@ async function loadSystemStatus() {
     const operationsRunbook = await fetchJson('/api/operations/runbook?limit=100', {
       acceptErrorStatus: true
     });
+    const notificationDiagnostics = await fetchJson('/api/notifications/diagnostics', {
+      acceptErrorStatus: true
+    });
     const resourceStatusRows = diagnostics.configuration.storageMode === 'postgres'
       ? [statusRow('Postgres', diagnosticStatus(diagnostics, 'resources.postgres'))]
       : [
@@ -272,6 +275,7 @@ async function loadSystemStatus() {
       statusRow('存储', overview.storageMode),
       statusRow('Adapters', adapterDiagnostics.status + ' · ' + adapterDiagnostics.adapterCount),
       statusRow('Source config', sourceDiagnostics.status + ' · ' + sourceDiagnostics.sourceCount),
+      statusRow('Notify', diagnosticStatus(notificationDiagnostics, 'notifications.channel') + ' · ' + notificationDiagnostics.channel),
       statusRow('Source mode', diagnostics.configuration.workers.sourceTaskMode),
       statusRow('LLM', diagnostics.configuration.llm.provider),
     ].concat(resourceStatusRows, [

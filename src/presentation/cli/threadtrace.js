@@ -591,6 +591,31 @@ function main(argv) {
     return;
   }
 
+  if (command === 'notification-diagnostics') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.getNotificationDiagnostics({
+      channel: options.channel,
+      webhookUrl: options.webhookUrl,
+      storeDir
+    }).then(function (diagnostics) {
+      const hasFailure = diagnostics.checks.some(function (check) {
+        return check.status === 'fail';
+      });
+      console.log('Notification diagnostics: ' + (hasFailure ? 'fail' : 'ok'));
+      console.log('Channel: ' + diagnostics.channel);
+      diagnostics.checks.forEach(function (check) {
+        console.log(check.status + '\t' + check.key + '\t' + check.summary);
+      });
+      if (hasFailure) {
+        process.exitCode = 2;
+      }
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'run-source-task') {
     if (!options.sourceId) {
       throw new Error('run-source-task requires --source-id.');
@@ -1019,6 +1044,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--input dir] [--name name] [--interval-minutes n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-diagnostics [--forum nga] [--enabled true] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js notification-diagnostics [--channel file|webhook] [--webhook-url url] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-source-task --source-id id [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-source-insight-pipeline --source-id id [--provider mock] [--semantic-enrichment-enabled true|false] [--semantic-skip-if-unchanged true|false] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-sources-task [--forum nga] [--limit n] [--store-dir dir]');

@@ -64,6 +64,7 @@ node src/presentation/cli/threadtrace.js interpret-text-dir --forum nga --input 
 npm run diagnostics:runtime
 npm run diagnostics:adapters
 npm run diagnostics:sources
+npm run diagnostics:notifications
 npm run deployment:checklist
 npm run operations:runbook
 ```
@@ -78,6 +79,7 @@ These commands use the same runtime composition as the HTTP API and Web console.
 - `GET /openapi.json`
 - `GET /api/runtime/diagnostics`
 - `GET /api/deployment/checklist`
+- `GET /api/notifications/diagnostics`
 - `GET /api/operations/overview`
 - `GET /api/operations/readiness`
 - `GET /api/operations/runbook`

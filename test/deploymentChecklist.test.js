@@ -29,6 +29,13 @@ test('deployment checklist aggregates runtime, source, readiness, notification, 
       status: 'ok',
       adapterCount: 1
     },
+    notificationDiagnostics: {
+      channel: 'file',
+      checks: [
+        { key: 'notifications.channel', status: 'ok', summary: 'Notification channel is supported.' },
+        { key: 'notifications.fileDeliveryDir', status: 'ok', summary: 'File notification delivery directory is writable.' }
+      ]
+    },
     readiness: {
       status: 'fail',
       checks: [
@@ -52,6 +59,9 @@ test('deployment checklist aggregates runtime, source, readiness, notification, 
   assert.equal(checklist.items.find(function (item) {
     return item.key === 'notifications.outbox';
   }).status, 'warn');
+  assert.equal(checklist.items.find(function (item) {
+    return item.key === 'notifications.channel';
+  }).status, 'ok');
   assert.equal(checklist.items.find(function (item) {
     return item.key === 'llm.configuration';
   }).status, 'warn');

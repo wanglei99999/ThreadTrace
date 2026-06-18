@@ -4,6 +4,7 @@ function getDeploymentChecklist(options) {
   const safeOptions = options || {};
   const diagnostics = safeOptions.diagnostics || {};
   const adapterDiagnostics = safeOptions.adapterDiagnostics || {};
+  const notificationDiagnostics = safeOptions.notificationDiagnostics || {};
   const sourceDiagnostics = safeOptions.sourceDiagnostics || {};
   const readiness = safeOptions.readiness || {};
   const items = [
@@ -23,6 +24,10 @@ function getDeploymentChecklist(options) {
     item('workers.readiness', 'workers', readiness.status || 'fail', 'Background workers and leases are ready for production traffic.', {
       checks: selectCheckKeys(readiness.checks, /^workers\.|^workerLeases\./)
     }),
+    item('notifications.channel', 'notifications', aggregateChecks(notificationDiagnostics.checks, /^notifications\./), 'Notification delivery channel is configured and locally valid.', {
+      channel: notificationDiagnostics.channel,
+      checks: selectCheckKeys(notificationDiagnostics.checks, /^notifications\./)
+    }),
     item('notifications.outbox', 'notifications', aggregateChecks(readiness.checks, /^events\./), 'Notification outbox has no recent delivery failures.', {
       checks: selectCheckKeys(readiness.checks, /^events\./)
     }),
@@ -38,6 +43,7 @@ function getDeploymentChecklist(options) {
     items,
     diagnostics,
     adapterDiagnostics,
+    notificationDiagnostics,
     sourceDiagnostics,
     readiness
   };

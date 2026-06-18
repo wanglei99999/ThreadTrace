@@ -266,6 +266,16 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/notifications/diagnostics') {
+    const diagnostics = await context.runtime.getNotificationDiagnostics({
+      channel: url.searchParams.get('channel') || undefined,
+      webhookUrl: url.searchParams.get('webhookUrl') || undefined,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, diagnostics.checks.some(function (check) { return check.status === 'fail'; }) ? 503 : 200, diagnostics);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/events') {
     const acknowledgedParam = url.searchParams.get('acknowledged');
     const events = await context.runtime.listNotificationEvents({

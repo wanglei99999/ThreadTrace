@@ -260,6 +260,36 @@ test('http server exposes deployment checklist API', async function () {
   }
 });
 
+test('http server exposes notification diagnostics API', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-http-notification-diagnostics-'));
+  const server = createThreadTraceServer({
+    defaultInputDir: path.resolve(__dirname, '..', 'example'),
+    storeDir: tempDir
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const diagnostics = await getJson(baseUrl + '/api/notifications/diagnostics?channel=file');
+    const response = await fetch(baseUrl + '/api/notifications/diagnostics?channel=webhook');
+    const failedDiagnostics = await response.json();
+    const openApi = await getJson(baseUrl + '/openapi.json');
+
+    assert.equal(diagnostics.channel, 'file');
+    assert.equal(diagnostics.checks.find(function (check) {
+      return check.key === 'notifications.fileDeliveryDir';
+    }).status, 'ok');
+    assert.equal(response.status, 503);
+    assert.equal(failedDiagnostics.checks.find(function (check) {
+      return check.key === 'notifications.webhookUrl';
+    }).status, 'fail');
+    assert.ok(openApi.paths['/api/notifications/diagnostics']);
+  } finally {
+    await close(server);
+  }
+});
+
 test('http server exposes operations runbook API', async function () {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-http-operations-runbook-'));
   const server = createThreadTraceServer({

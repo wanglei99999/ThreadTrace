@@ -6,6 +6,7 @@ const COMMANDS_BY_KEY = {
   'adapters.contract': 'node src/presentation/cli/threadtrace.js adapter-diagnostics',
   'sources.ingestConfiguration': 'node src/presentation/cli/threadtrace.js source-diagnostics',
   'workers.readiness': 'node src/presentation/cli/threadtrace.js operations-readiness',
+  'notifications.channel': 'node src/presentation/cli/threadtrace.js notification-diagnostics',
   'notifications.outbox': 'node src/presentation/cli/threadtrace.js list-events --delivery-status failed',
   'llm.configuration': 'node src/presentation/cli/threadtrace.js runtime-diagnostics'
 };

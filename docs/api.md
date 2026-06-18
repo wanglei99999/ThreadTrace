@@ -234,6 +234,18 @@ Returns: stable run summaries with task id, source metadata, cursor diff, semant
 
 返回：整体 `status`、`actionCount` 和行动项。存在 critical 行动时 HTTP 状态码为 503，响应体仍包含完整 Runbook。
 
+### `GET /api/notifications/diagnostics`
+
+诊断通知投递通道配置。`file` 通道会检查本地 deliveries 目录可写；`webhook` 通道会检查 URL 是否存在且使用 `http` 或 `https`，不会主动投递外部请求。
+
+查询参数：
+
+- `channel`: 可选，`file` 或 `webhook`。
+- `webhookUrl`: 可选，临时覆盖运行时配置中的 webhook 地址。
+- `storeDir`: 可选，文件通道的本地存储根目录。
+
+返回：通道、检查项和状态。存在失败检查时 HTTP 状态码为 503，响应体仍包含完整诊断。
+
 ### `POST /api/sources/{sourceId}/tasks/ingest`
 
 按已注册来源触发一次导入任务。当前支持 `saved-html-directory` 来源，后续会扩展到在线主题 URL、批量来源和定时计划。

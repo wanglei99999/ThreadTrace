@@ -336,6 +336,24 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/notifications/diagnostics': {
+        get: {
+          summary: 'Diagnose notification delivery channel configuration',
+          parameters: [
+            { name: 'channel', in: 'query', required: false, schema: { type: 'string', example: 'file' } },
+            { name: 'webhookUrl', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Notification channel diagnostics are ok or warn'
+            },
+            503: {
+              description: 'Notification channel diagnostics failed'
+            }
+          }
+        }
+      },
       '/api/events': {
         get: {
           summary: 'List notification events',

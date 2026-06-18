@@ -39,6 +39,8 @@ Repositories may filter by `dueBefore` for efficiency. The use case also checks 
 Manual one-shot dispatch:
 
 ```powershell
+node src/presentation/cli/threadtrace.js notification-diagnostics --channel file
+node src/presentation/cli/threadtrace.js notification-diagnostics --channel webhook --webhook-url http://127.0.0.1:9000/threadtrace-events
 node src/presentation/cli/threadtrace.js dispatch-events --channel file
 node src/presentation/cli/threadtrace.js dispatch-events --channel webhook --webhook-url http://127.0.0.1:9000/threadtrace-events
 ```

@@ -44,6 +44,7 @@ const { createFileNotificationChannel } = require('../infrastructure/notificatio
 const { createWebhookNotificationChannel } = require('../infrastructure/notifications/webhookNotificationChannel');
 const { inspectFileResources } = require('../infrastructure/diagnostics/fileResourceDiagnostics');
 const { inspectPostgresResources } = require('../infrastructure/diagnostics/postgresResourceDiagnostics');
+const { inspectNotificationChannelResources } = require('../infrastructure/diagnostics/notificationChannelDiagnostics');
 const { createHttpForumCrawler } = require('../infrastructure/crawlers/httpForumCrawler');
 const { createLlmProvider } = require('../infrastructure/llm/llmProviderFactory');
 const { createFileTextRetrievalIndex } = require('../infrastructure/retrieval/fileTextRetrievalIndex');
@@ -297,6 +298,11 @@ function createThreadTraceRuntime(options) {
       const adapterDiagnostics = await this.diagnoseAdapters({
         now: safeRequest.now
       });
+      const notificationDiagnostics = await this.getNotificationDiagnostics({
+        channel: safeRequest.channel,
+        webhookUrl: safeRequest.webhookUrl,
+        storeDir: safeRequest.storeDir
+      });
       const sourceDiagnostics = await this.diagnoseSources({
         forum: safeRequest.forum,
         sourceKey: safeRequest.sourceKey,
@@ -316,9 +322,19 @@ function createThreadTraceRuntime(options) {
       return getDeploymentChecklist({
         diagnostics,
         adapterDiagnostics,
+        notificationDiagnostics,
         sourceDiagnostics,
         readiness,
         now: safeRequest.now
+      });
+    },
+
+    async getNotificationDiagnostics(request) {
+      const safeRequest = request || {};
+      return inspectNotificationChannelResources({
+        channel: safeRequest.channel,
+        webhookUrl: safeRequest.webhookUrl || runtimeConfig.notifications.webhookUrl,
+        storeDir: resolveStoreDir(defaults, safeRequest.storeDir)
       });
     },
 
