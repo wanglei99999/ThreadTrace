@@ -2,12 +2,12 @@
 
 const { setTrackedSourceEnabled } = require('./setTrackedSourceEnabled');
 
-async function disableTrackedSource(options) {
+async function enableTrackedSource(options) {
   return setTrackedSourceEnabled(Object.assign({}, options || {}, {
-    enabled: false
+    enabled: true
   }));
 }
 
 module.exports = {
-  disableTrackedSource
+  enableTrackedSource
 };

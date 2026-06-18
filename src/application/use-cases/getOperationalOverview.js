@@ -41,7 +41,7 @@ async function getOperationalOverview(options) {
     workers: summarizeWorkers(workerRuns, workerLeases, now, safeOptions.workerStaleAfterMs),
     rawPages: summarizeRawPages(rawPages),
     recent: {
-      tasks: recentTasks.slice(0, 10),
+      tasks: recentTasks.slice(0, 10).map(summarizeRecentTask),
       events: unacknowledgedEvents.slice(0, 10),
       rawPages: rawPages.slice(0, 10),
       workerRuns: workerRuns.slice(0, 10),
@@ -88,7 +88,52 @@ function summarizeTasks(tasks) {
     failed: countByStatus(tasks, 'failed'),
     lastFailure: tasks.find(function (task) {
       return task.status === 'failed';
-    })
+    }) ? summarizeRecentTask(tasks.find(function (task) {
+      return task.status === 'failed';
+    })) : undefined
+  };
+}
+
+function summarizeRecentTask(task) {
+  if (!task) return undefined;
+  return {
+    id: task.id,
+    type: task.type,
+    status: task.status,
+    createdAt: task.createdAt,
+    updatedAt: task.updatedAt,
+    startedAt: task.startedAt,
+    finishedAt: task.finishedAt,
+    input: task.input,
+    output: summarizeTaskOutput(task.output),
+    error: task.error ? {
+      message: task.error.message
+    } : undefined
+  };
+}
+
+function summarizeTaskOutput(output) {
+  if (!output || typeof output !== 'object') return output;
+  return {
+    sourceKey: output.sourceKey,
+    sourceThreadId: output.sourceThreadId,
+    title: output.title,
+    parsedPostCount: output.parsedPostCount,
+    reportType: output.reportType,
+    sourceId: output.sourceId,
+    sourceCount: output.sourceCount,
+    completedCount: output.completedCount,
+    failedCount: output.failedCount,
+    skippedCount: output.skippedCount,
+    status: output.status,
+    dryRun: output.dryRun,
+    executed: output.executed,
+    applied: output.applied,
+    changed: output.changed,
+    manifestName: output.manifestName,
+    source: output.source,
+    registration: output.registration,
+    deploymentGate: output.deploymentGate
   };
 }
 

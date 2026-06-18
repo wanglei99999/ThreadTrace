@@ -277,6 +277,20 @@ Request:
 
 Set `execute: true` or `dryRun: false` to persist `enabled=false`.
 
+### `POST /api/sources/{sourceId}/enable`
+
+Safely re-enables a tracked source after rollback or maintenance. The endpoint defaults to dry-run and returns a durable task audit record plus the enable result.
+
+Request:
+
+```json
+{
+  "execute": false
+}
+```
+
+Set `execute: true` or `dryRun: false` to persist `enabled=true`.
+
 ### `POST /api/sources/{sourceId}/tasks/ingest`
 
 按已注册来源触发一次导入任务。当前支持 `saved-html-directory` 来源，后续会扩展到在线主题 URL、批量来源和定时计划。

@@ -65,7 +65,7 @@ async function runRolloutManifestApplyTask(options) {
         status: report.deploymentGate.status,
         gateCount: report.deploymentGate.gateCount
       } : undefined,
-      report
+      report: compactApplyReport(report)
     });
     await taskRepository.saveTask(task);
 
@@ -95,6 +95,29 @@ function summarizeRegistration(registration) {
   return {
     created: registration.created,
     source: summarizeSource(registration.source)
+  };
+}
+
+function compactApplyReport(report) {
+  if (!report) return undefined;
+  return {
+    generatedAt: report.generatedAt,
+    status: report.status,
+    dryRun: report.dryRun,
+    executed: report.executed,
+    applied: report.applied,
+    manifestName: report.manifestName,
+    sourceDraft: summarizeSource(report.sourceDraft),
+    registration: summarizeRegistration(report.registration),
+    steps: report.steps,
+    nextActions: report.nextActions,
+    deploymentGate: report.deploymentGate ? {
+      generatedAt: report.deploymentGate.generatedAt,
+      status: report.deploymentGate.status,
+      gateCount: report.deploymentGate.gateCount,
+      gates: report.deploymentGate.gates,
+      nextActions: report.deploymentGate.nextActions
+    } : undefined
   };
 }
 

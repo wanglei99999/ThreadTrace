@@ -2,14 +2,14 @@
 
 const { runSetTrackedSourceEnabledTask } = require('./runSetTrackedSourceEnabledTask');
 
-function runDisableTrackedSourceTask(options) {
+function runEnableTrackedSourceTask(options) {
   const safeOptions = options || {};
   return runSetTrackedSourceEnabledTask(Object.assign({}, safeOptions, {
-    enabled: false,
-    setTrackedSourceEnabled: safeOptions.disableTrackedSource
+    enabled: true,
+    setTrackedSourceEnabled: safeOptions.enableTrackedSource
   }));
 }
 
 module.exports = {
-  runDisableTrackedSourceTask
+  runEnableTrackedSourceTask
 };

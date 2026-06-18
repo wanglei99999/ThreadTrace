@@ -29,6 +29,8 @@ const { runSemanticEnrichmentTask } = require('../application/use-cases/runSeman
 const { runRolloutManifestApplyTask } = require('../application/use-cases/runRolloutManifestApplyTask');
 const { disableTrackedSource } = require('../application/use-cases/disableTrackedSource');
 const { runDisableTrackedSourceTask } = require('../application/use-cases/runDisableTrackedSourceTask');
+const { enableTrackedSource } = require('../application/use-cases/enableTrackedSource');
+const { runEnableTrackedSourceTask } = require('../application/use-cases/runEnableTrackedSourceTask');
 const { getOperationalOverview } = require('../application/use-cases/getOperationalOverview');
 const { getOperationalReadiness } = require('../application/use-cases/getOperationalReadiness');
 const { getTaskTraceContext } = require('../application/use-cases/getTaskTraceContext');
@@ -894,6 +896,17 @@ function createThreadTraceRuntime(options) {
       });
     },
 
+    async enableSource(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return enableTrackedSource({
+        sourceRepository: repositories.sourceRepository,
+        sourceId: safeRequest.sourceId,
+        execute: safeRequest.execute,
+        now: safeRequest.now
+      });
+    },
+
     async runDisableSourceTask(request) {
       const safeRequest = request || {};
       const repositories = createRepositoriesFor(safeRequest.storeDir);
@@ -902,6 +915,25 @@ function createThreadTraceRuntime(options) {
         taskRepository: repositories.taskRepository,
         disableTrackedSource(requestForDisable) {
           return runtime.disableSource(requestForDisable);
+        },
+        sourceId: safeRequest.sourceId,
+        execute: safeRequest.execute,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir,
+        requestId: safeRequest.requestId,
+        traceId: safeRequest.traceId,
+        idempotencyKey: safeRequest.idempotencyKey
+      });
+    },
+
+    async runEnableSourceTask(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      const runtime = this;
+      return runEnableTrackedSourceTask({
+        taskRepository: repositories.taskRepository,
+        enableTrackedSource(requestForEnable) {
+          return runtime.enableSource(requestForEnable);
         },
         sourceId: safeRequest.sourceId,
         execute: safeRequest.execute,

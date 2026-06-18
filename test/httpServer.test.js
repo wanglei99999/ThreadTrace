@@ -9,8 +9,10 @@ const { createApplicationError } = require('../src/application/errors/applicatio
 const { createThreadTraceServer } = require('../src/presentation/http/createServer');
 
 test('http server exposes health, adapters, and context APIs', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-http-core-'));
   const server = createThreadTraceServer({
-    defaultInputDir: path.resolve(__dirname, '..', 'example')
+    defaultInputDir: path.resolve(__dirname, '..', 'example'),
+    storeDir: path.join(tempDir, 'store')
   });
   await listen(server, 0);
   const address = server.address();
@@ -199,6 +201,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/deployment/gate']);
     assert.ok(openApi.paths['/api/operations/rollout-manifest/apply']);
     assert.ok(openApi.paths['/api/sources/{sourceId}/disable']);
+    assert.ok(openApi.paths['/api/sources/{sourceId}/enable']);
     assert.ok(openApi.paths['/api/sources/onboarding/preflight']);
     assert.ok(openApi.paths['/api/runtime/diagnostics']);
     assert.ok(openApi.paths['/api/sources/validate']);
@@ -905,6 +908,10 @@ test('http server can register sources and run source ingest tasks', async funct
       execute: false,
       now: '2026-06-19T10:00:00.000Z'
     });
+    const enableDryRun = await postJson(baseUrl + '/api/sources/' + encodeURIComponent(registerResult.source.id) + '/enable', {
+      execute: false,
+      now: '2026-06-19T10:00:00.000Z'
+    });
     const sourcesAfterDisableDryRun = await getJson(baseUrl + '/api/sources');
     const dueResult = await postJson(baseUrl + '/api/sources/tasks/ingest-due', {});
     const skippedDueResult = await postJson(baseUrl + '/api/sources/tasks/ingest-due', {});
@@ -927,6 +934,8 @@ test('http server can register sources and run source ingest tasks', async funct
     assert.equal(sourcesResult.sources[0].id, registerResult.source.id);
     assert.equal(disableDryRun.task.type, 'disable-tracked-source');
     assert.equal(disableDryRun.result.dryRun, true);
+    assert.equal(enableDryRun.task.type, 'enable-tracked-source');
+    assert.equal(enableDryRun.result.dryRun, true);
     assert.equal(sourcesAfterDisableDryRun.sources[0].enabled, true);
     assert.equal(dueResult.task.type, 'ingest-due-sources');
     assert.equal(dueResult.dueCount, 1);

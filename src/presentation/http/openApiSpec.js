@@ -1158,6 +1158,38 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/sources/{sourceId}/enable': {
+        post: {
+          summary: 'Dry-run or execute a safe tracked source enable operation with task audit record',
+          parameters: [
+            { name: 'sourceId', in: 'path', required: true, schema: { type: 'string' } }
+          ],
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    execute: { type: 'boolean', example: false },
+                    dryRun: { type: 'boolean', example: true },
+                    now: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+                    storeDir: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Source enable dry-run or execution result with task audit record'
+            },
+            404: {
+              $ref: '#/components/responses/NotFound'
+            }
+          }
+        }
+      },
       '/api/sources/{sourceId}/tasks/ingest': {
         post: {
           summary: 'Run an ingest task from a tracked source',
