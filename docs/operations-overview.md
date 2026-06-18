@@ -22,6 +22,15 @@ Runtime:
 runtime.getOperationalOverview({ limit: 100 })
 ```
 
+Combined worker:
+
+```powershell
+npm run worker:operations-once
+npm run worker:operations-loop
+```
+
+The operations worker runs due-source ingestion, notification event dispatch, and overview logging in one non-overlapping loop. It is useful for local deployments or a single background service process. Larger deployments can still run the due-source and event workers separately.
+
 ## Included Signals
 
 - Sources: total, enabled, disabled, due, running, failed, and due source samples.

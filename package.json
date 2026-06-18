@@ -22,6 +22,8 @@
     "worker:due-loop": "node src/presentation/worker/dueSourceWorkerMain.js --loop",
     "worker:events-once": "node src/presentation/worker/notificationEventWorkerMain.js --once",
     "worker:events-loop": "node src/presentation/worker/notificationEventWorkerMain.js --loop",
+    "worker:operations-once": "node src/presentation/worker/operationsWorkerMain.js --once",
+    "worker:operations-loop": "node src/presentation/worker/operationsWorkerMain.js --loop",
     "test:unit": "node --test test"
   }
 }
