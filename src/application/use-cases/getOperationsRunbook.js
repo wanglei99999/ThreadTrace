@@ -19,6 +19,7 @@ function getOperationsRunbook(options) {
     (checklist.readiness && checklist.readiness.overview && checklist.readiness.overview.recent && checklist.readiness.overview.recent.tasks) ||
     [];
   const actions = checklistActions(checklist)
+    .concat(connectorModuleActions(checklist))
     .concat(idempotencyActions(recentTasks))
     .concat(pipelineRunActions(pipelineRuns.runs || []));
 
@@ -46,6 +47,28 @@ function checklistActions(checklist) {
       evidence: item.evidence
     });
   });
+}
+
+function connectorModuleActions(checklist) {
+  const connectorDiagnostics = checklist && checklist.diagnostics && checklist.diagnostics.configuration
+    ? checklist.diagnostics.configuration.connectors || {}
+    : {};
+  const errors = connectorDiagnostics.errors || [];
+  if (errors.length === 0) return [];
+  return [
+    action({
+      key: 'connectors.modules.loadFailures',
+      severity: 'critical',
+      area: 'connectors',
+      title: 'Fix failed external connector modules.',
+      summary: errors.length + ' configured external connector module(s) failed to load; built-in connectors remain available while external coverage is degraded.',
+      recommendedCommand: 'node src/presentation/cli/threadtrace.js connector-readiness',
+      evidence: {
+        errorCount: errors.length,
+        errors: errors.slice(0, 10)
+      }
+    })
+  ];
 }
 
 function pipelineRunActions(runs) {

@@ -90,6 +90,41 @@ test('operations runbook flags duplicate idempotency task risk', function () {
   assert.match(runbook.actions[0].recommendedCommand, /trace-context --idempotency-key idem-1/);
 });
 
+test('operations runbook flags connector module load failures', function () {
+  const runbook = getOperationsRunbook({
+    now: '2026-06-19T10:00:00.000Z',
+    checklist: {
+      generatedAt: '2026-06-19T10:00:00.000Z',
+      items: [],
+      diagnostics: {
+        configuration: {
+          connectors: {
+            errorCount: 1,
+            errors: [
+              {
+                modulePath: 'D:\\connectors\\broken.cjs',
+                message: 'connector boom'
+              }
+            ]
+          }
+        }
+      }
+    },
+    pipelineRuns: {
+      runs: []
+    }
+  });
+
+  assert.equal(runbook.status, 'fail');
+  assert.equal(runbook.actionCount, 1);
+  assert.equal(runbook.actions[0].key, 'connectors.modules.loadFailures');
+  assert.equal(runbook.actions[0].severity, 'critical');
+  assert.equal(runbook.actions[0].area, 'connectors');
+  assert.match(runbook.actions[0].recommendedCommand, /connector-readiness/);
+  assert.equal(runbook.actions[0].evidence.errorCount, 1);
+  assert.match(runbook.actions[0].evidence.errors[0].message, /connector boom/);
+});
+
 function task(id, status, idempotencyKey) {
   return {
     id,
