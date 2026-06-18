@@ -54,6 +54,15 @@ test('deployment checklist aggregates runtime, source, readiness, notification, 
       status: 'ok',
       adapterCount: 1
     },
+    connectorReadiness: {
+      status: 'warn',
+      connectorCount: 3,
+      sourceCount: 2,
+      modules: {
+        count: 1,
+        errorCount: 0
+      }
+    },
     notificationDiagnostics: {
       channel: 'file',
       checks: [
@@ -81,6 +90,12 @@ test('deployment checklist aggregates runtime, source, readiness, notification, 
   assert.equal(checklist.items.find(function (item) {
     return item.key === 'adapters.contract';
   }).status, 'ok');
+  const connectorItem = checklist.items.find(function (item) {
+    return item.key === 'connectors.readiness';
+  });
+  assert.equal(connectorItem.status, 'warn');
+  assert.equal(connectorItem.evidence.connectorCount, 3);
+  assert.equal(connectorItem.evidence.modules.count, 1);
   const sourceItem = checklist.items.find(function (item) {
     return item.key === 'sources.ingestConfiguration';
   });

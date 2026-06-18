@@ -125,6 +125,34 @@ test('operations runbook flags connector module load failures', function () {
   assert.match(runbook.actions[0].evidence.errors[0].message, /connector boom/);
 });
 
+test('operations runbook recommends connector readiness diagnostics', function () {
+  const runbook = getOperationsRunbook({
+    now: '2026-06-19T10:00:00.000Z',
+    checklist: {
+      generatedAt: '2026-06-19T10:00:00.000Z',
+      items: [
+        {
+          key: 'connectors.readiness',
+          area: 'connectors',
+          status: 'warn',
+          summary: 'Source connector catalog, modules, and adapter coverage are ready.',
+          evidence: {
+            connectorCount: 3
+          }
+        }
+      ]
+    },
+    pipelineRuns: {
+      runs: []
+    }
+  });
+
+  assert.equal(runbook.status, 'warn');
+  assert.equal(runbook.actionCount, 1);
+  assert.equal(runbook.actions[0].key, 'checklist.connectors.readiness');
+  assert.match(runbook.actions[0].recommendedCommand, /connector-readiness/);
+});
+
 function task(id, status, idempotencyKey) {
   return {
     id,

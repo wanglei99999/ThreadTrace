@@ -4,6 +4,7 @@ const COMMANDS_BY_KEY = {
   'runtime.configuration': 'node src/presentation/cli/threadtrace.js runtime-diagnostics',
   'resources.storage': 'node src/presentation/cli/threadtrace.js runtime-diagnostics',
   'adapters.contract': 'node src/presentation/cli/threadtrace.js adapter-diagnostics',
+  'connectors.readiness': 'node src/presentation/cli/threadtrace.js connector-readiness',
   'sources.ingestConfiguration': 'node src/presentation/cli/threadtrace.js source-diagnostics',
   'workers.readiness': 'node src/presentation/cli/threadtrace.js operations-readiness',
   'notifications.channel': 'node src/presentation/cli/threadtrace.js notification-diagnostics',

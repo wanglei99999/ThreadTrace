@@ -4,6 +4,7 @@ function getDeploymentChecklist(options) {
   const safeOptions = options || {};
   const diagnostics = safeOptions.diagnostics || {};
   const adapterDiagnostics = safeOptions.adapterDiagnostics || {};
+  const connectorReadiness = safeOptions.connectorReadiness || {};
   const notificationDiagnostics = safeOptions.notificationDiagnostics || {};
   const sourceDiagnostics = safeOptions.sourceDiagnostics || {};
   const readiness = safeOptions.readiness || {};
@@ -17,6 +18,11 @@ function getDeploymentChecklist(options) {
     }),
     item('adapters.contract', 'adapters', adapterDiagnostics.status || 'fail', 'Forum adapters satisfy the ThreadTrace adapter contract.', {
       adapterCount: adapterDiagnostics.adapterCount
+    }),
+    item('connectors.readiness', 'connectors', connectorReadiness.status || 'fail', 'Source connector catalog, modules, and adapter coverage are ready.', {
+      connectorCount: connectorReadiness.connectorCount,
+      sourceCount: connectorReadiness.sourceCount,
+      modules: connectorReadiness.modules
     }),
     item('sources.ingestConfiguration', 'sources', sourceDiagnostics.status || 'fail', 'Tracked sources have usable locations, handlers, and adapters.', {
       sourceCount: sourceDiagnostics.sourceCount,
@@ -44,6 +50,7 @@ function getDeploymentChecklist(options) {
     items,
     diagnostics,
     adapterDiagnostics,
+    connectorReadiness,
     notificationDiagnostics,
     sourceDiagnostics,
     readiness

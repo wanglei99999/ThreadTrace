@@ -4,6 +4,7 @@ ThreadTrace exposes a deployment checklist as a runnable readiness contract. It 
 
 - runtime configuration and secret redaction
 - forum adapter registry contracts
+- source connector catalog, modules, and adapter coverage
 - storage resource checks
 - notification channel configuration
 - tracked source ingest configuration
@@ -30,6 +31,7 @@ The checklist returns `ok`, `warn`, or `fail`. HTTP returns `503` when the check
 | `runtime.configuration` | runtime | Redacted runtime diagnostics are available. |
 | `resources.storage` | resources | File store paths, PostgreSQL ping checks, and required PostgreSQL tables. |
 | `adapters.contract` | adapters | Forum adapters resolve from the registry and implement parser contracts. |
+| `connectors.readiness` | connectors | Source connector catalog, module load errors, adapter coverage, and configured source counts. |
 | `sources.ingestConfiguration` | sources | Source locations, ingest handlers, and adapters. |
 | `workers.readiness` | workers | Stale/failed worker runs and expired leases. |
 | `notifications.channel` | notifications | File delivery directory or webhook URL configuration. |
@@ -44,4 +46,4 @@ Before production traffic, prepare the resources below and use the checklist as 
 - Workers: run either the combined operations worker or separate due-source and notification workers.
 - LLM: keep `mock` for local smoke tests, then configure provider, model, and API key for real enrichment.
 - Notifications: start with file outbox delivery and run `notification-diagnostics`; then add a webhook or future channel when an external receiver is ready.
-- Sources: run `source-diagnostics` after registering each new forum/source integration.
+- Sources: run `connector-readiness` before registration, then `source-diagnostics` after registering each new forum/source integration.

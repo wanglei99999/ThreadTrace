@@ -472,6 +472,13 @@ function createThreadTraceRuntime(options) {
       const adapterDiagnostics = await this.diagnoseAdapters({
         now: safeRequest.now
       });
+      const connectorReadiness = await this.getConnectorReadiness({
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 100,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir
+      });
       const notificationDiagnostics = await this.getNotificationDiagnostics({
         channel: safeRequest.channel,
         webhookUrl: safeRequest.webhookUrl,
@@ -496,6 +503,7 @@ function createThreadTraceRuntime(options) {
       return getDeploymentChecklist({
         diagnostics,
         adapterDiagnostics,
+        connectorReadiness,
         notificationDiagnostics,
         sourceDiagnostics,
         readiness,
