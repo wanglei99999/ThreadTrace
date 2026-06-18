@@ -96,4 +96,4 @@ The HTTP endpoint returns `503` only for `fail`; `warn` still returns `200` so d
 - `critical`: blocks production traffic or needs immediate investigation.
 - `warning`: deployment can keep serving, but the operator should review the area.
 
-Each action includes an area, title, evidence, and a suggested CLI command such as `source-diagnostics`, `adapter-diagnostics`, `runtime-diagnostics`, `operations-readiness`, or `trace-context --idempotency-key`.
+Each action includes an area, title, evidence, a primary CLI command, and optional related commands. Runbook actions prefer the highest-leverage next step: connector issues point to `connector-rollout-plan`, source ingest configuration issues point to `source-ingest-dry-run`, worker issues point to `worker-topology-plan`, and duplicate idempotency records point to `trace-context --idempotency-key`. Related commands keep lower-level diagnostics such as `connector-readiness`, `source-diagnostics`, `runtime-diagnostics`, and `operations-readiness` close at hand.

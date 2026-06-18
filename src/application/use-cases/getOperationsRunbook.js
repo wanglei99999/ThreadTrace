@@ -4,9 +4,9 @@ const COMMANDS_BY_KEY = {
   'runtime.configuration': 'node src/presentation/cli/threadtrace.js runtime-diagnostics',
   'resources.storage': 'node src/presentation/cli/threadtrace.js runtime-diagnostics',
   'adapters.contract': 'node src/presentation/cli/threadtrace.js adapter-diagnostics',
-  'connectors.readiness': 'node src/presentation/cli/threadtrace.js connector-readiness',
-  'sources.ingestConfiguration': 'node src/presentation/cli/threadtrace.js source-diagnostics',
-  'workers.readiness': 'node src/presentation/cli/threadtrace.js operations-readiness',
+  'connectors.readiness': 'node src/presentation/cli/threadtrace.js connector-rollout-plan --dry-run-ingest true',
+  'sources.ingestConfiguration': 'node src/presentation/cli/threadtrace.js source-ingest-dry-run',
+  'workers.readiness': 'node src/presentation/cli/threadtrace.js worker-topology-plan',
   'notifications.channel': 'node src/presentation/cli/threadtrace.js notification-diagnostics',
   'notifications.outbox': 'node src/presentation/cli/threadtrace.js list-events --delivery-status failed',
   'llm.configuration': 'node src/presentation/cli/threadtrace.js runtime-diagnostics'
@@ -45,6 +45,7 @@ function checklistActions(checklist) {
       title: titleForChecklistItem(item),
       summary: item.summary,
       recommendedCommand: COMMANDS_BY_KEY[item.key],
+      relatedCommands: relatedCommandsForChecklistItem(item),
       evidence: item.evidence
     });
   });
@@ -63,7 +64,11 @@ function connectorModuleActions(checklist) {
       area: 'connectors',
       title: 'Fix failed external connector modules.',
       summary: errors.length + ' configured external connector module(s) failed to load; built-in connectors remain available while external coverage is degraded.',
-      recommendedCommand: 'node src/presentation/cli/threadtrace.js connector-readiness',
+      recommendedCommand: 'node src/presentation/cli/threadtrace.js connector-rollout-plan --module-path <file> --dry-run-ingest true',
+      relatedCommands: [
+        'node src/presentation/cli/threadtrace.js connector-readiness',
+        'node src/presentation/cli/threadtrace.js validate-connector-module --module-path <file>'
+      ],
       evidence: {
         errorCount: errors.length,
         errors: errors.slice(0, 10)
@@ -83,6 +88,9 @@ function pipelineRunActions(runs) {
       title: 'Inspect failed source insight pipeline run.',
       summary: (run.source && run.source.displayName || run.sourceId || 'Unknown source') + ' has a failed or partially failed pipeline run.',
       recommendedCommand: 'node src/presentation/cli/threadtrace.js list-tasks --type source-insight-pipeline',
+      relatedCommands: [
+        'node src/presentation/cli/threadtrace.js source-ingest-dry-run'
+      ],
       evidence: {
         taskId: run.taskId,
         sourceId: run.sourceId,
@@ -103,6 +111,9 @@ function idempotencyActions(tasks) {
       title: 'Inspect duplicate task execution for an idempotency key.',
       summary: 'Idempotency key ' + group.idempotencyKey + ' has ' + group.tasks.length + ' recent task records; verify caller retry behavior and replay coverage.',
       recommendedCommand: 'node src/presentation/cli/threadtrace.js trace-context --idempotency-key ' + quoteCommandValue(group.idempotencyKey),
+      relatedCommands: [
+        'node src/presentation/cli/threadtrace.js operations-readiness'
+      ],
       evidence: {
         idempotencyKey: group.idempotencyKey,
         taskCount: group.tasks.length,
@@ -157,6 +168,24 @@ function quoteCommandValue(value) {
   return '"' + text.replace(/"/g, '\\"') + '"';
 }
 
+function relatedCommandsForChecklistItem(item) {
+  const commands = {
+    'connectors.readiness': [
+      'node src/presentation/cli/threadtrace.js connector-readiness',
+      'node src/presentation/cli/threadtrace.js validate-connector-module --module-path <file>'
+    ],
+    'sources.ingestConfiguration': [
+      'node src/presentation/cli/threadtrace.js source-diagnostics',
+      'node src/presentation/cli/threadtrace.js source-onboarding-preflight'
+    ],
+    'workers.readiness': [
+      'node src/presentation/cli/threadtrace.js operations-readiness',
+      'node src/presentation/worker/operationsWorkerMain.js --once'
+    ]
+  };
+  return commands[item.key] || [];
+}
+
 function action(input) {
   return {
     key: input.key,
@@ -165,6 +194,7 @@ function action(input) {
     title: input.title,
     summary: input.summary,
     recommendedCommand: input.recommendedCommand,
+    relatedCommands: input.relatedCommands || [],
     evidence: input.evidence || {}
   };
 }

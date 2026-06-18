@@ -52,10 +52,12 @@ test('operations runbook turns diagnostics and pipeline failures into actions', 
   assert.equal(runbook.actionCount, 3);
   assert.equal(runbook.actions[0].key, 'checklist.sources.ingestConfiguration');
   assert.equal(runbook.actions[0].severity, 'critical');
-  assert.match(runbook.actions[0].recommendedCommand, /source-diagnostics/);
+  assert.match(runbook.actions[0].recommendedCommand, /source-ingest-dry-run/);
+  assert.match(runbook.actions[0].relatedCommands[0], /source-diagnostics/);
   assert.equal(runbook.actions[1].severity, 'warning');
   assert.equal(runbook.actions[2].key, 'pipeline.task-1');
   assert.match(runbook.actions[2].summary, /NGA archive/);
+  assert.match(runbook.actions[2].relatedCommands[0], /source-ingest-dry-run/);
 });
 
 test('operations runbook flags duplicate idempotency task risk', function () {
@@ -120,7 +122,8 @@ test('operations runbook flags connector module load failures', function () {
   assert.equal(runbook.actions[0].key, 'connectors.modules.loadFailures');
   assert.equal(runbook.actions[0].severity, 'critical');
   assert.equal(runbook.actions[0].area, 'connectors');
-  assert.match(runbook.actions[0].recommendedCommand, /connector-readiness/);
+  assert.match(runbook.actions[0].recommendedCommand, /connector-rollout-plan/);
+  assert.match(runbook.actions[0].relatedCommands[0], /connector-readiness/);
   assert.equal(runbook.actions[0].evidence.errorCount, 1);
   assert.match(runbook.actions[0].evidence.errors[0].message, /connector boom/);
 });
@@ -150,7 +153,38 @@ test('operations runbook recommends connector readiness diagnostics', function (
   assert.equal(runbook.status, 'warn');
   assert.equal(runbook.actionCount, 1);
   assert.equal(runbook.actions[0].key, 'checklist.connectors.readiness');
-  assert.match(runbook.actions[0].recommendedCommand, /connector-readiness/);
+  assert.match(runbook.actions[0].recommendedCommand, /connector-rollout-plan/);
+  assert.match(runbook.actions[0].relatedCommands[0], /connector-readiness/);
+});
+
+test('operations runbook recommends worker topology plan for worker readiness warnings', function () {
+  const runbook = getOperationsRunbook({
+    now: '2026-06-19T10:00:00.000Z',
+    checklist: {
+      generatedAt: '2026-06-19T10:00:00.000Z',
+      items: [
+        {
+          key: 'workers.readiness',
+          area: 'workers',
+          status: 'warn',
+          summary: 'Worker run history and leases need review.',
+          evidence: {
+            stale: 0,
+            failed: 1
+          }
+        }
+      ]
+    },
+    pipelineRuns: {
+      runs: []
+    }
+  });
+
+  assert.equal(runbook.status, 'warn');
+  assert.equal(runbook.actionCount, 1);
+  assert.equal(runbook.actions[0].key, 'checklist.workers.readiness');
+  assert.match(runbook.actions[0].recommendedCommand, /worker-topology-plan/);
+  assert.match(runbook.actions[0].relatedCommands[0], /operations-readiness/);
 });
 
 function task(id, status, idempotencyKey) {

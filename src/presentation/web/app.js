@@ -809,7 +809,10 @@ function renderOperationsRunbook(runbook) {
     return panel('运维 Runbook', '<div class="muted">暂无动作</div>', 'wide');
   }
   return panel('运维 Runbook', actions.slice(0, 10).map(function (action) {
-    const command = action.recommendedCommand ? '<small>' + escapeHtml(action.recommendedCommand) + '</small>' : '';
+    let command = action.recommendedCommand ? '<small>' + escapeHtml(action.recommendedCommand) + '</small>' : '';
+    command += (action.relatedCommands || []).map(function (item) {
+      return '<small>' + escapeHtml(item) + '</small>';
+    }).join('');
     return '<div class="action-row"><span>' + escapeHtml(action.severity + ' · ' + action.area + ' · ' + action.title) + '<small>' + escapeHtml(action.summary) + '</small>' + command + '</span></div>';
   }).join(''), 'wide');
 }

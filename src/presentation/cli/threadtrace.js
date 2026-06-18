@@ -315,6 +315,9 @@ function main(argv) {
         if (action.recommendedCommand) {
           console.log('  command: ' + action.recommendedCommand);
         }
+        (action.relatedCommands || []).forEach(function (command) {
+          console.log('  related: ' + command);
+        });
       });
       if (runbook.status === 'fail') {
         process.exitCode = 2;
