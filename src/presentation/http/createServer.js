@@ -362,6 +362,19 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/operations/rollout-manifest-plan') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const plan = await context.runtime.getRolloutManifestPlan({
+      manifest: body.manifest || body,
+      limit: body.limit,
+      now: body.now,
+      storeDir: body.storeDir || context.storeDir,
+      workerStaleAfterMs: body.workerStaleAfterMs
+    });
+    writeJson(response, plan.status === 'fail' ? 503 : 200, plan);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/runtime/diagnostics') {
     const diagnostics = await context.runtime.getRuntimeDiagnostics({
       now: url.searchParams.get('now') || undefined

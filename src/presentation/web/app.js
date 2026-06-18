@@ -177,6 +177,16 @@ function bindForms() {
     }, renderWorkerTopologyPlan);
   });
 
+  document.getElementById('rolloutManifestForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await renderAsync('rolloutManifestResult', function () {
+      return requestJson('/api/operations/rollout-manifest-plan', parseManifestJson(form.get('manifestJson')), {
+        acceptErrorStatus: true
+      });
+    }, renderRolloutManifestPlan);
+  });
+
   document.getElementById('sourceResult').addEventListener('click', async function (event) {
     const button = event.target.closest('button[data-action="run-source"],button[data-action="run-source-pipeline"]');
     if (!button) return;
@@ -280,6 +290,18 @@ function parseOptionalLocationJson(value) {
   const parsed = JSON.parse(text);
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     throw new Error('Location JSON must be an object.');
+  }
+  return parsed;
+}
+
+function parseManifestJson(value) {
+  const text = String(value || '').trim();
+  if (!text) {
+    throw new Error('Rollout manifest JSON is required.');
+  }
+  const parsed = JSON.parse(text);
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('Rollout manifest JSON must be an object.');
   }
   return parsed;
 }
@@ -730,6 +752,43 @@ function renderWorkerTopologyPlan(result) {
       return check.status + ' 路 ' + check.key + ' 路 ' + check.summary;
     })), 'wide')
   ].join('');
+}
+
+function renderRolloutManifestPlan(result) {
+  const steps = result.steps || [];
+  const actions = result.nextActions || [];
+  const panels = [
+    panel('Rollout manifest plan', [
+      metric('Status', result.status),
+      metric('Manifest', (result.name || 'unnamed') + ' / ' + (result.manifestVersion || '1.0')),
+      metric('Source', (result.sourceKey || 'unknown') + ' / ' + (result.sourceType || 'unknown')),
+      metric('Module', result.modulePath || 'not provided')
+    ].join('')),
+    panel('Manifest steps', evidenceList(steps.map(function (step) {
+      return step.status + ' 路 ' + step.key + ' 路 ' + step.summary;
+    })), 'wide')
+  ];
+  if (result.connectorRolloutPlan) {
+    panels.push(panel('Connector rollout', [
+      metric('Status', result.connectorRolloutPlan.status),
+      metric('Steps', (result.connectorRolloutPlan.steps || []).length),
+      metric('Next actions', (result.connectorRolloutPlan.nextActions || []).length)
+    ].join('')));
+  }
+  if (result.workerTopologyPlan) {
+    panels.push(panel('Worker topology', [
+      metric('Status', result.workerTopologyPlan.status),
+      metric('Topology', result.workerTopologyPlan.topology),
+      metric('Workers', (result.workerTopologyPlan.workers || []).length)
+    ].join('')));
+  }
+  if (actions.length > 0) {
+    panels.push(panel('Manifest actions', evidenceList(actions.map(function (action) {
+      const related = (action.relatedCommands || []).length > 0 ? ' -> ' + action.relatedCommands.join(' | ') : '';
+      return action.severity + ' 路 ' + action.key + ' 路 ' + action.command + related;
+    })), 'wide'));
+  }
+  return panels.join('');
 }
 
 function renderSourceTaskRunResult(result) {

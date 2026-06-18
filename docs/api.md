@@ -329,6 +329,34 @@ now=2026-06-18T10:00:00.000Z
 
 The response includes recommended worker commands, lease keys, polling intervals, current worker health, deployment checklist status, and next diagnostic commands. A failing plan returns HTTP `503`.
 
+### `POST /api/operations/rollout-manifest-plan`
+
+Evaluates one repeatable rollout manifest across source onboarding, connector validation, optional ingest dry-run, deployment checklist, and worker topology.
+
+Request:
+
+```json
+{
+  "version": "1.0",
+  "name": "nga-sample-rollout",
+  "source": {
+    "sourceKey": "nga",
+    "sourceType": "saved-html-directory",
+    "displayName": "NGA sample archive",
+    "inputDir": "example"
+  },
+  "ingest": {
+    "dryRun": true
+  },
+  "workers": {
+    "topology": "operations-worker",
+    "sourceTaskMode": "ingest"
+  }
+}
+```
+
+The response includes `steps`, `nextActions`, the composed `connectorRolloutPlan`, and the composed `workerTopologyPlan`. A failing plan returns HTTP `503`; warnings return `200`.
+
 ### `POST /api/index-directory`
 
 将保存页目录解析为楼层文档并写入本地检索索引。

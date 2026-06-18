@@ -37,6 +37,7 @@ const { getConnectorReadiness } = require('../application/use-cases/getConnector
 const { getSourceOnboardingPreflight } = require('../application/use-cases/getSourceOnboardingPreflight');
 const { getConnectorRolloutPlan } = require('../application/use-cases/getConnectorRolloutPlan');
 const { getWorkerTopologyPlan } = require('../application/use-cases/getWorkerTopologyPlan');
+const { getRolloutManifestPlan } = require('../application/use-cases/getRolloutManifestPlan');
 const { dryRunSourceIngest } = require('../application/use-cases/dryRunSourceIngest');
 const { createDefaultSourceIngestHandlerRegistry } = require('../application/source-ingest/standardSourceIngestHandlers');
 const { migrateStoreRecords } = require('../application/use-cases/migrateStoreRecords');
@@ -363,6 +364,38 @@ function createThreadTraceRuntime(options) {
         sourceType: safeRequest.sourceType || (sourceOnboardingPreflight && sourceOnboardingPreflight.sourceType),
         modulePath,
         now: safeRequest.now
+      });
+    },
+
+    async getRolloutManifestPlan(request) {
+      const safeRequest = request || {};
+      const manifest = safeRequest.manifest || {};
+      const deployment = manifest.deployment || {};
+      const now = safeRequest.now || manifest.now;
+      const connectorRolloutPlan = manifest.source
+        ? await this.getConnectorRolloutPlan(buildManifestConnectorRolloutRequest({
+          manifest,
+          now,
+          storeDir: safeRequest.storeDir || deployment.storeDir,
+          limit: safeRequest.limit || deployment.limit,
+          workerStaleAfterMs: safeRequest.workerStaleAfterMs || deployment.workerStaleAfterMs
+        }))
+        : undefined;
+      const workerTopologyPlan = manifest.workers && manifest.workers.enabled === false
+        ? undefined
+        : await this.getWorkerTopologyPlan(buildManifestWorkerTopologyRequest({
+          manifest,
+          now,
+          storeDir: safeRequest.storeDir || deployment.storeDir,
+          limit: safeRequest.limit || deployment.limit,
+          workerStaleAfterMs: safeRequest.workerStaleAfterMs || deployment.workerStaleAfterMs
+        }));
+
+      return getRolloutManifestPlan({
+        now,
+        manifest,
+        connectorRolloutPlan,
+        workerTopologyPlan
       });
     },
 
@@ -1010,6 +1043,47 @@ function createFileRepositories(storeDir) {
     workerLeaseRepository: createFileWorkerLeaseRepository({
       baseDir: path.join(storeDir, 'worker-leases')
     })
+  };
+}
+
+function buildManifestConnectorRolloutRequest(options) {
+  const safeOptions = options || {};
+  const manifest = safeOptions.manifest || {};
+  const source = manifest.source || {};
+  const connector = manifest.connector || {};
+  const ingest = manifest.ingest || {};
+  const deployment = manifest.deployment || {};
+  return Object.assign({}, source, {
+    forum: source.forum || source.sourceKey,
+    sourceKey: source.sourceKey || source.forum,
+    displayName: source.displayName || source.name,
+    modulePath: connector.modulePath || source.modulePath,
+    allowUnknownSourceType: source.allowUnknownSourceType,
+    allowRemoteFetch: ingest.allowRemoteFetch,
+    dryRunIngest: ingest.dryRun === undefined ? ingest.dryRunIngest : ingest.dryRun,
+    limit: safeOptions.limit || deployment.limit,
+    now: safeOptions.now,
+    storeDir: safeOptions.storeDir || deployment.storeDir,
+    workerStaleAfterMs: safeOptions.workerStaleAfterMs || deployment.workerStaleAfterMs
+  });
+}
+
+function buildManifestWorkerTopologyRequest(options) {
+  const safeOptions = options || {};
+  const manifest = safeOptions.manifest || {};
+  const source = manifest.source || {};
+  const workers = manifest.workers || {};
+  const deployment = manifest.deployment || {};
+  return {
+    forum: source.forum || source.sourceKey,
+    sourceKey: source.sourceKey || source.forum,
+    enabled: source.enabled,
+    topology: workers.topology,
+    sourceTaskMode: workers.sourceTaskMode,
+    limit: safeOptions.limit || deployment.limit,
+    now: safeOptions.now,
+    storeDir: safeOptions.storeDir || deployment.storeDir,
+    workerStaleAfterMs: safeOptions.workerStaleAfterMs || deployment.workerStaleAfterMs
   };
 }
 

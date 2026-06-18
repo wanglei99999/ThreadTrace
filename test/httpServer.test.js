@@ -28,6 +28,24 @@ test('http server exposes health, adapters, and context APIs', async function ()
     const connectorRolloutPlan = await postJson(baseUrl + '/api/connectors/rollout-plan', {
       now: '2026-06-19T10:00:00.000Z'
     });
+    const rolloutManifestPlan = await postJson(baseUrl + '/api/operations/rollout-manifest-plan', {
+      version: '1.0',
+      name: 'http-rollout',
+      source: {
+        sourceKey: 'nga',
+        sourceType: 'saved-html-directory',
+        displayName: 'NGA sample archive',
+        inputDir: path.resolve(__dirname, '..', 'example')
+      },
+      ingest: {
+        dryRun: true
+      },
+      workers: {
+        topology: 'operations-worker',
+        sourceTaskMode: 'ingest'
+      },
+      now: '2026-06-19T10:00:00.000Z'
+    });
     const sourceOnboardingPreflight = await postJson(baseUrl + '/api/sources/onboarding/preflight', {
       forum: 'nga',
       sourceType: 'saved-html-directory',
@@ -53,9 +71,11 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(homeHtml, /sourceDryRunForm/);
     assert.match(homeHtml, /connectorRolloutForm/);
     assert.match(homeHtml, /workerTopologyForm/);
+    assert.match(homeHtml, /rolloutManifestForm/);
     assert.match(homeHtml, /sourceDryRunResult/);
     assert.match(homeHtml, /connectorRolloutResult/);
     assert.match(homeHtml, /workerTopologyResult/);
+    assert.match(homeHtml, /rolloutManifestResult/);
     assert.match(homeHtml, /runbookResult/);
     assert.equal(adapters.adapters[0].sourceKey, 'nga');
     assert.equal(adapterDiagnostics.status, 'ok');
@@ -78,6 +98,10 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(connectorRolloutPlan.steps.some(function (step) {
       return step.key === 'connectorModule.validation';
     }));
+    assert.equal(rolloutManifestPlan.status, 'warn');
+    assert.equal(rolloutManifestPlan.sourceKey, 'nga');
+    assert.equal(rolloutManifestPlan.connectorRolloutPlan.sourceIngestDryRun.status, 'ok');
+    assert.equal(rolloutManifestPlan.workerTopologyPlan.topology, 'operations-worker');
     assert.equal(sourceOnboardingPreflight.status, 'ok');
     assert.equal(sourceOnboardingPreflight.sourceType, 'saved-html-directory');
     assert.ok(sourceOnboardingPreflight.steps.some(function (step) {
@@ -96,6 +120,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/connectors/readiness']);
     assert.ok(openApi.paths['/api/connectors/modules/validate']);
     assert.ok(openApi.paths['/api/connectors/rollout-plan']);
+    assert.ok(openApi.paths['/api/operations/rollout-manifest-plan']);
     assert.ok(openApi.paths['/api/sources/onboarding/preflight']);
     assert.ok(openApi.paths['/api/runtime/diagnostics']);
     assert.ok(openApi.paths['/api/sources/validate']);

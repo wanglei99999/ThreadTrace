@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "name": "nga-sample-rollout",
+  "source": {
+    "sourceKey": "nga",
+    "sourceType": "saved-html-directory",
+    "displayName": "NGA sample archive",
+    "inputDir": "example"
+  },
+  "ingest": {
+    "dryRun": true,
+    "allowRemoteFetch": false
+  },
+  "workers": {
+    "topology": "operations-worker",
+    "sourceTaskMode": "ingest"
+  },
+  "deployment": {
+    "storeDir": "data/store",
+    "limit": 100
+  }
+}

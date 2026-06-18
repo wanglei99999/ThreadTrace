@@ -481,6 +481,77 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/operations/rollout-manifest-plan': {
+        post: {
+          summary: 'Evaluate a repeatable rollout manifest across source onboarding, connector checks, ingest dry-run, and worker topology',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    version: { type: 'string', example: '1.0' },
+                    name: { type: 'string', example: 'nga-sample-rollout' },
+                    source: {
+                      type: 'object',
+                      properties: {
+                        sourceKey: { type: 'string', example: 'nga' },
+                        sourceType: { type: 'string', example: 'saved-html-directory' },
+                        displayName: { type: 'string', example: 'NGA sample archive' },
+                        inputDir: { type: 'string', example: 'example' },
+                        inputFile: { type: 'string' },
+                        url: { type: 'string' },
+                        location: { type: 'object' }
+                      }
+                    },
+                    connector: {
+                      type: 'object',
+                      properties: {
+                        modulePath: { type: 'string', example: 'D:/connectors/custom-forum.cjs' }
+                      }
+                    },
+                    ingest: {
+                      type: 'object',
+                      properties: {
+                        dryRun: { type: 'boolean', example: true },
+                        allowRemoteFetch: { type: 'boolean', example: false }
+                      }
+                    },
+                    workers: {
+                      type: 'object',
+                      properties: {
+                        topology: { type: 'string', enum: ['operations-worker', 'split-workers'] },
+                        sourceTaskMode: { type: 'string', enum: ['ingest', 'insight-pipeline'] }
+                      }
+                    },
+                    deployment: {
+                      type: 'object',
+                      properties: {
+                        storeDir: { type: 'string' },
+                        limit: { type: 'number', example: 100 },
+                        workerStaleAfterMs: { type: 'number' }
+                      }
+                    },
+                    now: { type: 'string', example: '2026-06-18T10:00:00.000Z' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Manifest plan is ok or has warnings'
+            },
+            503: {
+              description: 'Manifest plan has failing checks'
+            },
+            400: {
+              $ref: '#/components/responses/BadRequest'
+            }
+          }
+        }
+      },
       '/api/runtime/diagnostics': {
         get: {
           summary: 'Get redacted runtime configuration diagnostics',

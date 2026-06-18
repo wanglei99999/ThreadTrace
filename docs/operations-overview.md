@@ -17,6 +17,7 @@ GET /api/operations/overview
 GET /api/operations/readiness
 GET /api/operations/trace-context
 GET /api/operations/runbook
+POST /api/operations/rollout-manifest-plan
 GET /api/runtime/diagnostics
 ```
 
@@ -26,6 +27,7 @@ Runtime:
 runtime.getOperationalOverview({ limit: 100 })
 runtime.getOperationalReadiness({ limit: 100 })
 runtime.getOperationsRunbook({ limit: 100 })
+runtime.getRolloutManifestPlan({ manifest })
 ```
 
 Combined worker:
@@ -44,6 +46,14 @@ node src/presentation/cli/threadtrace.js worker-topology-plan
 ```
 
 It reports the recommended worker commands, lease keys, intervals, current worker health, and deployment checklist status.
+
+Use a rollout manifest to evaluate source onboarding, optional connector module validation, source ingest dry-run, and worker topology from one repeatable JSON input:
+
+```powershell
+node src/presentation/cli/threadtrace.js rollout-manifest-plan --manifest-file <file>
+```
+
+See `docs/rollout-manifest-plan.md` for the manifest contract.
 
 ## Included Signals
 
