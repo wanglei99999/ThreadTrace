@@ -25,6 +25,7 @@ const { enrichAnalysisReportWithLlm } = require('../application/use-cases/enrich
 const { runSemanticEnrichmentTask } = require('../application/use-cases/runSemanticEnrichmentTask');
 const { getOperationalOverview } = require('../application/use-cases/getOperationalOverview');
 const { getOperationalReadiness } = require('../application/use-cases/getOperationalReadiness');
+const { getTaskTraceContext } = require('../application/use-cases/getTaskTraceContext');
 const { getRuntimeDiagnostics } = require('../application/use-cases/getRuntimeDiagnostics');
 const { getDeploymentChecklist } = require('../application/use-cases/getDeploymentChecklist');
 const { getOperationsRunbook } = require('../application/use-cases/getOperationsRunbook');
@@ -296,6 +297,21 @@ function createThreadTraceRuntime(options) {
         limit: safeRequest.limit || 100,
         storeDir: safeRequest.storeDir,
         workerStaleAfterMs: safeRequest.workerStaleAfterMs
+      });
+    },
+
+    async getTaskTraceContext(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return getTaskTraceContext({
+        taskRepository: repositories.taskRepository,
+        requestId: safeRequest.requestId,
+        traceId: safeRequest.traceId,
+        idempotencyKey: safeRequest.idempotencyKey,
+        status: safeRequest.status,
+        type: safeRequest.type,
+        limit: safeRequest.limit || 50,
+        now: safeRequest.now
       });
     },
 

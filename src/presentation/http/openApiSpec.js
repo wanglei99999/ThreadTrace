@@ -292,6 +292,29 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/operations/trace-context': {
+        get: {
+          summary: 'Get tasks correlated by request, trace, or idempotency key',
+          parameters: [
+            { name: 'requestId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'traceId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'idempotencyKey', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'status', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'type', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Trace-correlated task context'
+            },
+            400: {
+              $ref: '#/components/responses/BadRequest'
+            }
+          }
+        }
+      },
       '/api/operations/runbook': {
         get: {
           summary: 'Get actionable operations runbook items from diagnostics and recent pipeline runs',

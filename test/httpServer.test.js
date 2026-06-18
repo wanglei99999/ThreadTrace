@@ -49,6 +49,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/connectors/catalog']);
     assert.ok(openApi.paths['/api/runtime/diagnostics']);
     assert.ok(openApi.paths['/api/sources/validate']);
+    assert.ok(openApi.paths['/api/operations/trace-context']);
     assert.equal(openApi.components.schemas.ErrorResponse.properties.error.properties.code.example, 'source_run_already_running');
     assert.equal(openApi.components.schemas.ErrorResponse.properties.error.properties.requestId.type, 'string');
     assert.equal(openApi.components.responses.BadRequest.content['application/json'].schema.$ref, '#/components/schemas/ErrorResponse');
@@ -509,6 +510,9 @@ test('http server can run and list ingest tasks', async function () {
     const tasksResult = await getJson(baseUrl + '/api/tasks');
     const tasksByRequestId = await getJson(baseUrl + '/api/tasks?requestId=http-task-request-1');
     const tasksByIdempotencyKey = await getJson(baseUrl + '/api/tasks?idempotencyKey=http-task-idem-1');
+    const traceContext = await getJson(baseUrl + '/api/operations/trace-context?requestId=http-task-request-1');
+    const missingTraceQuery = await fetch(baseUrl + '/api/operations/trace-context');
+    const missingTraceQueryBody = await missingTraceQuery.json();
 
     assert.equal(taskResult.task.status, 'completed');
     assert.equal(taskResult.task.output.sourceThreadId, '45974302');
@@ -521,6 +525,11 @@ test('http server can run and list ingest tasks', async function () {
     assert.equal(tasksByRequestId.tasks[0].id, taskResult.task.id);
     assert.equal(tasksByIdempotencyKey.tasks.length, 1);
     assert.equal(tasksByIdempotencyKey.tasks[0].id, taskResult.task.id);
+    assert.equal(traceContext.taskCount, 1);
+    assert.equal(traceContext.summary.byStatus.completed, 1);
+    assert.equal(traceContext.tasks[0].id, taskResult.task.id);
+    assert.equal(missingTraceQuery.status, 400);
+    assert.equal(missingTraceQueryBody.error.code, 'trace_context_query_required');
   } finally {
     await close(server);
   }

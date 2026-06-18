@@ -15,6 +15,7 @@ HTTP:
 ```text
 GET /api/operations/overview
 GET /api/operations/readiness
+GET /api/operations/trace-context
 GET /api/operations/runbook
 GET /api/runtime/diagnostics
 ```

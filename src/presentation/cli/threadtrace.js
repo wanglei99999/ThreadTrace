@@ -271,6 +271,30 @@ function main(argv) {
     return;
   }
 
+  if (command === 'trace-context') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.getTaskTraceContext({
+      requestId: options.requestId,
+      traceId: options.traceId,
+      idempotencyKey: options.idempotencyKey,
+      status: options.status,
+      type: options.type,
+      limit: options.limit ? Number(options.limit) : 50,
+      now: options.now,
+      storeDir
+    }).then(function (result) {
+      console.log('Trace context: tasks=' + result.taskCount);
+      console.log('Query: requestId=' + (result.query.requestId || '') + ', traceId=' + (result.query.traceId || '') + ', idempotencyKey=' + (result.query.idempotencyKey || ''));
+      result.tasks.forEach(function (task) {
+        console.log(task.status + '\t' + task.type + '\t' + task.id + '\t' + task.createdAt);
+      });
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'operations-runbook') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.getOperationsRunbook({
@@ -1111,6 +1135,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js run-semantic-enrichment-task --source-thread-id id [--source-key nga] [--provider mock] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js operations-overview [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-readiness [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js trace-context [--request-id id | --trace-id id | --idempotency-key key] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-runbook [--forum nga] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js runtime-diagnostics [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js adapter-diagnostics [--now iso]');

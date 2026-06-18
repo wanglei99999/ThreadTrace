@@ -50,3 +50,19 @@ node src/presentation/cli/threadtrace.js list-tasks --request-id http-request-1
 node src/presentation/cli/threadtrace.js list-tasks --trace-id semantic-trace-1
 node src/presentation/cli/threadtrace.js list-tasks --idempotency-key client-retry-key-1
 ```
+
+For an operator-friendly summary of the correlated tasks, use:
+
+```http
+GET /api/operations/trace-context?requestId=http-request-1
+GET /api/operations/trace-context?traceId=semantic-trace-1
+GET /api/operations/trace-context?idempotencyKey=client-retry-key-1
+```
+
+CLI:
+
+```powershell
+node src/presentation/cli/threadtrace.js trace-context --request-id http-request-1
+node src/presentation/cli/threadtrace.js trace-context --trace-id semantic-trace-1
+node src/presentation/cli/threadtrace.js trace-context --idempotency-key client-retry-key-1
+```

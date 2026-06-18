@@ -244,6 +244,21 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/operations/trace-context') {
+    const result = await context.runtime.getTaskTraceContext({
+      requestId: url.searchParams.get('requestId') || undefined,
+      traceId: url.searchParams.get('traceId') || undefined,
+      idempotencyKey: url.searchParams.get('idempotencyKey') || undefined,
+      status: url.searchParams.get('status') || undefined,
+      type: url.searchParams.get('type') || undefined,
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 50,
+      now: url.searchParams.get('now') || undefined,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, 200, result);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/operations/runbook') {
     const enabledParam = url.searchParams.get('enabled');
     const runbook = await context.runtime.getOperationsRunbook({
