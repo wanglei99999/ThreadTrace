@@ -25,6 +25,12 @@ test('http server exposes health, adapters, and context APIs', async function ()
     const connectorCatalog = await getJson(baseUrl + '/api/connectors/catalog?now=2026-06-19T10:00:00.000Z');
     const connectorReadiness = await getJson(baseUrl + '/api/connectors/readiness?now=2026-06-19T10:00:00.000Z');
     const openApi = await getJson(baseUrl + '/openapi.json');
+    const sourceOnboardingPreflight = await postJson(baseUrl + '/api/sources/onboarding/preflight', {
+      forum: 'nga',
+      sourceType: 'saved-html-directory',
+      inputDir: path.resolve(__dirname, '..', 'example'),
+      now: '2026-06-19T10:00:00.000Z'
+    });
     const context = await postJson(baseUrl + '/api/interpret-text', {
       text: '科技后面看量确认',
       authorId: '150058',
@@ -50,6 +56,11 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(connectorReadiness.connectors.some(function (connector) {
       return connector.sourceType === 'saved-html-directory';
     }));
+    assert.equal(sourceOnboardingPreflight.status, 'ok');
+    assert.equal(sourceOnboardingPreflight.sourceType, 'saved-html-directory');
+    assert.ok(sourceOnboardingPreflight.steps.some(function (step) {
+      return step.key === 'source.registrationDraft';
+    }));
     assert.equal(threadSnapshotContract.version, '1.0.0');
     assert.deepEqual(threadSnapshotContract.schema.required, ['sourceKey', 'sourceThreadId', 'title', 'posts']);
     assert.equal(openApi.openapi, '3.0.3');
@@ -58,6 +69,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/contracts/thread-snapshot-json']);
     assert.ok(openApi.paths['/api/connectors/catalog']);
     assert.ok(openApi.paths['/api/connectors/readiness']);
+    assert.ok(openApi.paths['/api/sources/onboarding/preflight']);
     assert.ok(openApi.paths['/api/runtime/diagnostics']);
     assert.ok(openApi.paths['/api/sources/validate']);
     assert.ok(openApi.paths['/api/operations/trace-context']);

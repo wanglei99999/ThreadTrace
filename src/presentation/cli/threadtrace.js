@@ -635,6 +635,44 @@ function main(argv) {
     return;
   }
 
+  if (command === 'source-onboarding-preflight') {
+    const sourceType = options.sourceType || (options.inputFile ? 'normalized-thread-json' : 'saved-html-directory');
+    const inputDir = options.input || (sourceType === 'saved-html-directory' ? defaultInputDir : undefined);
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.getSourceOnboardingPreflight({
+      id: options.sourceId,
+      forum: options.forum,
+      sourceKey: options.sourceKey,
+      sourceType,
+      displayName: options.name,
+      inputDir,
+      inputFile: options.inputFile,
+      url: options.url,
+      enabled: options.enabled === undefined ? undefined : options.enabled !== 'false',
+      allowUnknownSourceType: options.allowUnknownSourceType === 'true',
+      intervalMinutes: options.intervalMinutes,
+      nextRunAt: options.nextRunAt,
+      scheduleEnabled: options.scheduleEnabled === undefined ? undefined : options.scheduleEnabled !== 'false',
+      limit: options.limit ? Number(options.limit) : 100,
+      now: options.now,
+      storeDir
+    }).then(function (preflight) {
+      console.log('Source onboarding preflight: ' + preflight.status);
+      console.log('Source: ' + (preflight.sourceKey || 'unknown') + '\t' + (preflight.sourceType || 'unknown'));
+      console.log('Steps: ' + preflight.steps.length);
+      preflight.steps.forEach(function (step) {
+        console.log(step.status + '\t' + step.key + '\t' + step.summary);
+      });
+      if (preflight.status === 'fail') {
+        process.exitCode = 2;
+      }
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'list-sources') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.listSources({
@@ -1213,6 +1251,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js ack-event --event-id id [--by user] [--note text] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js validate-source [--forum nga] [--source-type type] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js validate-thread-json --input-file file [--forum sourceKey] [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js source-onboarding-preflight [--forum nga] [--source-type type] [--input dir] [--input-file file] [--url url] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--source-type type] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-diagnostics [--forum nga] [--enabled true] [--store-dir dir]');

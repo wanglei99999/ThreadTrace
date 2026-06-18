@@ -33,6 +33,7 @@ const { getDeploymentChecklist } = require('../application/use-cases/getDeployme
 const { getOperationsRunbook } = require('../application/use-cases/getOperationsRunbook');
 const { getSourceConnectorCatalog } = require('../application/use-cases/getSourceConnectorCatalog');
 const { getConnectorReadiness } = require('../application/use-cases/getConnectorReadiness');
+const { getSourceOnboardingPreflight } = require('../application/use-cases/getSourceOnboardingPreflight');
 const { createDefaultSourceIngestHandlerRegistry } = require('../application/source-ingest/standardSourceIngestHandlers');
 const { migrateStoreRecords } = require('../application/use-cases/migrateStoreRecords');
 const { runIngestRawThreadPageTask } = require('../application/use-cases/runIngestRawThreadPageTask');
@@ -173,6 +174,51 @@ function createThreadTraceRuntime(options) {
         enabled: safeRequest.enabled,
         limit: safeRequest.limit || 100,
         now: safeRequest.now
+      });
+    },
+
+    async getSourceOnboardingPreflight(request) {
+      const safeRequest = request || {};
+      const sourceType = safeRequest.sourceType || 'saved-html-directory';
+      const sourceInput = Object.assign(buildSourceRegistrationInput(safeRequest), {
+        sourceType
+      });
+      const catalog = this.getSourceConnectorCatalog({
+        now: safeRequest.now
+      });
+      const connectorReadiness = await this.getConnectorReadiness({
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 100,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir
+      });
+      const sourceValidation = validateTrackedSourceRegistration({
+        sourceIngestHandlerRegistry,
+        getAdapter: forumAdapterRegistry.get,
+        allowUnknownSourceType: safeRequest.allowUnknownSourceType,
+        now: safeRequest.now,
+        source: sourceInput
+      });
+      const threadJsonInputFile = sourceInput.inputFile || (sourceInput.location && sourceInput.location.inputFile);
+      const threadJsonValidation = sourceType === 'normalized-thread-json' && threadJsonInputFile
+        ? await validateNormalizedThreadJsonFile({
+          forum: sourceInput.sourceKey,
+          sourceKey: sourceInput.sourceKey,
+          inputFile: threadJsonInputFile,
+          now: safeRequest.now
+        })
+        : undefined;
+
+      return getSourceOnboardingPreflight({
+        now: safeRequest.now,
+        sourceKey: sourceInput.sourceKey || safeRequest.forum,
+        sourceType,
+        catalog,
+        connectorReadiness,
+        sourceValidation,
+        threadJsonValidation,
+        threadSnapshotContract: getThreadSnapshotJsonContract()
       });
     },
 

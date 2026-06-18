@@ -2,6 +2,29 @@
 
 ThreadTrace supports a source registration preflight so UI, CLI, or external automation can validate a source draft before saving it.
 
+For a broader onboarding check, use the source onboarding preflight. It is read-only and combines connector catalog support, connector readiness, source draft validation, the ThreadSnapshot contract summary, and optional normalized JSON file validation.
+
+```http
+POST /api/sources/onboarding/preflight
+content-type: application/json
+```
+
+```json
+{
+  "forum": "external",
+  "sourceType": "normalized-thread-json",
+  "displayName": "External normalized feed",
+  "inputFile": "D:/feeds/threadtrace/thread.json",
+  "now": "2026-06-19T10:00:00.000Z"
+}
+```
+
+CLI equivalent:
+
+```powershell
+node src/presentation/cli/threadtrace.js source-onboarding-preflight --forum external --source-type normalized-thread-json --input-file D:/feeds/threadtrace/thread.json
+```
+
 ## HTTP Entry
 
 ```http
@@ -66,7 +89,7 @@ For connector bridges that already produce canonical ThreadTrace snapshots, use 
 ## Onboarding Flow
 
 1. Add or select a source ingest handler from `GET /api/connectors/catalog`.
-2. Call `POST /api/sources/validate` with the draft location and schedule.
-3. Fix any `error.code` or failed `checks`.
+2. Call `POST /api/sources/onboarding/preflight` with the draft location and optional ThreadSnapshot JSON file.
+3. Fix any failed `steps`; use `POST /api/sources/validate` when you only need source draft validation.
 4. Call `POST /api/sources` only after the draft is acceptable for the intended rollout stage.
 5. Use `GET /api/sources/diagnostics` after saving to verify stored source readiness across the fleet.

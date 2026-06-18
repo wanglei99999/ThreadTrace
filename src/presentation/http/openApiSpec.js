@@ -703,6 +703,51 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/sources/onboarding/preflight': {
+        post: {
+          summary: 'Run source onboarding preflight across catalog, readiness, source draft, and optional ThreadSnapshot JSON',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string' },
+                    forum: { type: 'string', example: 'nga' },
+                    sourceKey: { type: 'string', example: 'nga' },
+                    sourceType: { type: 'string', example: 'normalized-thread-json' },
+                    displayName: { type: 'string', example: 'External ThreadSnapshot feed' },
+                    inputDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/example' },
+                    inputFile: { type: 'string', example: 'D:/feeds/threadtrace/thread.json' },
+                    url: { type: 'string' },
+                    location: { type: 'object' },
+                    intervalMinutes: { type: 'number', example: 60 },
+                    nextRunAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+                    scheduleEnabled: { type: 'boolean' },
+                    enabled: { type: 'boolean' },
+                    allowUnknownSourceType: { type: 'boolean', example: false },
+                    limit: { type: 'number', example: 100 },
+                    now: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+                    storeDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/data/store' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Preflight is ok or warn'
+            },
+            503: {
+              description: 'Preflight failed'
+            },
+            400: {
+              $ref: '#/components/responses/BadRequest'
+            }
+          }
+        }
+      },
       '/api/sources/diagnostics': {
         get: {
           summary: 'Diagnose tracked source ingest configuration',

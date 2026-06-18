@@ -493,6 +493,33 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/sources/onboarding/preflight') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.getSourceOnboardingPreflight({
+      id: body.id,
+      forum: body.forum,
+      sourceKey: body.sourceKey,
+      sourceType: body.sourceType,
+      displayName: body.displayName || body.name,
+      inputDir: body.inputDir,
+      inputFile: body.inputFile,
+      url: body.url,
+      location: body.location,
+      enabled: body.enabled,
+      tags: body.tags,
+      allowUnknownSourceType: body.allowUnknownSourceType,
+      schedule: body.schedule,
+      intervalMinutes: body.intervalMinutes,
+      nextRunAt: body.nextRunAt,
+      scheduleEnabled: body.scheduleEnabled,
+      limit: body.limit,
+      now: body.now,
+      storeDir: body.storeDir || context.storeDir
+    });
+    writeJson(response, result.status === 'fail' ? 503 : 200, result);
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/sources') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     const result = await context.runtime.registerSource({
