@@ -32,6 +32,13 @@ test('runtime registers tracked sources and runs ingest from a source', async fu
   });
   const sourcesAfterRepeatedTask = await runtime.listSources({});
   const events = await runtime.listNotificationEvents({});
+  const ackResult = await runtime.acknowledgeNotificationEvent({
+    eventId: events[0].id,
+    acknowledgedBy: 'test'
+  });
+  const openEvents = await runtime.listNotificationEvents({
+    acknowledged: false
+  });
   const updateResult = await runtime.registerSource({
     forum: 'nga',
     displayName: 'Renamed sample archive',
@@ -63,6 +70,9 @@ test('runtime registers tracked sources and runs ingest from a source', async fu
   assert.equal(events[0].type, 'source-changed');
   assert.equal(events[0].payload.cursor.postCount, 20);
   assert.equal(events[0].payload.cursorDiff.newPostCount, 20);
+  assert.equal(ackResult.event.acknowledgedBy, 'test');
+  assert.ok(ackResult.event.acknowledgedAt);
+  assert.equal(openEvents.length, 0);
   assert.equal(updateResult.created, false);
   assert.equal(updateResult.source.displayName, 'Renamed sample archive');
   assert.equal(updateResult.source.runState.lastTaskId, repeatedTaskResult.task.id);

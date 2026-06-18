@@ -98,6 +98,21 @@ http://127.0.0.1:3017
 - `acknowledged`: 可选，`true` 或 `false`。
 - `limit`: 可选，默认 50。
 
+### `POST /api/events/{eventId}/ack`
+
+确认一个通知事件。确认后事件仍会保留在本地 outbox 中，但 `acknowledgedAt` 会被写入，后续查询可用 `acknowledged=false` 只看未处理事件。
+
+请求：
+
+```json
+{
+  "acknowledgedBy": "web",
+  "note": "已处理"
+}
+```
+
+返回：确认后的事件记录。
+
 ### `POST /api/sources`
 
 注册或更新一个可跟踪来源。当前可直接落地的是 `saved-html-directory`，后续 `thread-url` 会接入在线采集器。

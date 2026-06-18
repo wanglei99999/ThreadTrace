@@ -146,6 +146,10 @@ test('http server can register sources and run source ingest tasks', async funct
     const dueResult = await postJson(baseUrl + '/api/sources/tasks/ingest-due', {});
     const skippedDueResult = await postJson(baseUrl + '/api/sources/tasks/ingest-due', {});
     const eventsResult = await getJson(baseUrl + '/api/events');
+    const ackResult = await postJson(baseUrl + '/api/events/' + encodeURIComponent(eventsResult.events[0].id) + '/ack', {
+      acknowledgedBy: 'test'
+    });
+    const openEventsResult = await getJson(baseUrl + '/api/events?acknowledged=false');
     const taskResult = await postJson(baseUrl + '/api/sources/' + encodeURIComponent(registerResult.source.id) + '/tasks/ingest', {});
     const batchResult = await postJson(baseUrl + '/api/sources/tasks/ingest', {});
 
@@ -158,6 +162,8 @@ test('http server can register sources and run source ingest tasks', async funct
     assert.equal(skippedDueResult.skippedCount, 1);
     assert.equal(eventsResult.events.length, 1);
     assert.equal(eventsResult.events[0].type, 'source-changed');
+    assert.equal(ackResult.event.acknowledgedBy, 'test');
+    assert.equal(openEventsResult.events.length, 0);
     assert.equal(taskResult.sourceId, registerResult.source.id);
     assert.equal(taskResult.task.status, 'completed');
     assert.equal(batchResult.task.status, 'completed');

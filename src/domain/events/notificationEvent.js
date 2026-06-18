@@ -28,6 +28,16 @@ function createSourceChangedEvent(input) {
   };
 }
 
+function acknowledgeNotificationEvent(event, input) {
+  const safeInput = input || {};
+  const now = safeInput.acknowledgedAt || new Date().toISOString();
+  return Object.assign({}, event, {
+    acknowledgedAt: event.acknowledgedAt || now,
+    acknowledgedBy: event.acknowledgedBy || safeInput.acknowledgedBy || 'system',
+    acknowledgementNote: event.acknowledgementNote || safeInput.note
+  });
+}
+
 function buildSummary(source, cursorDiff, cursor) {
   const name = source.displayName || source.id || 'source';
   if (!cursorDiff.previousPostCount) {
@@ -40,5 +50,6 @@ function buildSummary(source, cursorDiff, cursor) {
 }
 
 module.exports = {
-  createSourceChangedEvent
+  createSourceChangedEvent,
+  acknowledgeNotificationEvent
 };

@@ -14,6 +14,16 @@ function createFileNotificationEventRepository(options) {
       await fs.writeFile(filePath, JSON.stringify(event, null, 2) + '\n', 'utf8');
     },
 
+    async findEvent(id) {
+      try {
+        const text = await fs.readFile(eventPath(baseDir, id), 'utf8');
+        return JSON.parse(text);
+      } catch (error) {
+        if (error && error.code === 'ENOENT') return undefined;
+        throw error;
+      }
+    },
+
     async listEvents(query) {
       const safeQuery = query || {};
       const files = await listEventFiles(baseDir);

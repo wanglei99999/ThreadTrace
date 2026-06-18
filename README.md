@@ -50,6 +50,7 @@ node src/presentation/cli/threadtrace.js ingest-html-dir --forum nga --input exa
 node src/presentation/cli/threadtrace.js register-source --forum nga --input example --name "NGA sample archive" --interval-minutes 60
 node src/presentation/cli/threadtrace.js list-sources
 node src/presentation/cli/threadtrace.js list-events
+node src/presentation/cli/threadtrace.js ack-event --event-id <id>
 node src/presentation/cli/threadtrace.js run-sources-task
 node src/presentation/cli/threadtrace.js run-due-sources-task
 node src/presentation/cli/threadtrace.js interpret-text-dir --forum nga --input example --text 科技后面看量确认
@@ -65,6 +66,7 @@ node src/presentation/cli/threadtrace.js interpret-text-dir --forum nga --input 
 - `POST /api/tasks/ingest-directory`
 - `GET /api/tasks`
 - `GET /api/events`
+- `POST /api/events/{eventId}/ack`
 - `POST /api/sources`
 - `GET /api/sources`
 - `POST /api/sources/tasks/ingest`

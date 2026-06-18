@@ -11,6 +11,7 @@ const { listTrackedSources } = require('../application/use-cases/listTrackedSour
 const { runTrackedSourceIngestTask } = require('../application/use-cases/runTrackedSourceIngestTask');
 const { runEnabledSourcesIngestTasks } = require('../application/use-cases/runEnabledSourcesIngestTasks');
 const { runDueSourcesIngestTasks } = require('../application/use-cases/runDueSourcesIngestTasks');
+const { acknowledgeNotificationEvent } = require('../application/use-cases/acknowledgeNotificationEvent');
 const { indexSavedThreadDirectory } = require('../application/use-cases/indexSavedThreadDirectory');
 const { searchEvidence } = require('../application/use-cases/searchEvidence');
 const { createFileThreadRepository } = require('../infrastructure/storage/fileThreadRepository');
@@ -215,6 +216,17 @@ function createThreadTraceRuntime(options) {
         sourceId: safeRequest.sourceId,
         acknowledged: safeRequest.acknowledged,
         limit: safeRequest.limit || 50
+      });
+    },
+
+    async acknowledgeNotificationEvent(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositories(resolveStoreDir(defaults, safeRequest.storeDir));
+      return acknowledgeNotificationEvent({
+        notificationEventRepository: repositories.notificationEventRepository,
+        eventId: safeRequest.eventId,
+        acknowledgedBy: safeRequest.acknowledgedBy,
+        note: safeRequest.note
       });
     }
   };

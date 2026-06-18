@@ -142,6 +142,34 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/events/{eventId}/ack': {
+        post: {
+          summary: 'Acknowledge a notification event',
+          parameters: [
+            { name: 'eventId', in: 'path', required: true, schema: { type: 'string' } }
+          ],
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    acknowledgedBy: { type: 'string', example: 'web' },
+                    note: { type: 'string' },
+                    storeDir: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Acknowledged notification event'
+            }
+          }
+        }
+      },
       '/api/sources': {
         get: {
           summary: 'List tracked forum sources',

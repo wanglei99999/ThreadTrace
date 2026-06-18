@@ -145,6 +145,19 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  const eventAckMatch = url.pathname.match(/^\/api\/events\/([^/]+)\/ack$/);
+  if (request.method === 'POST' && eventAckMatch) {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.acknowledgeNotificationEvent({
+      eventId: decodeURIComponent(eventAckMatch[1]),
+      acknowledgedBy: body.acknowledgedBy,
+      note: body.note,
+      storeDir: body.storeDir || context.storeDir
+    });
+    writeJson(response, 200, result);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/sources') {
     const enabledParam = url.searchParams.get('enabled');
     const sources = await context.runtime.listSources({

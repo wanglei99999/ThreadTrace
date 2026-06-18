@@ -109,6 +109,18 @@ function bindForms() {
     await loadEvents();
   });
 
+  document.getElementById('eventResult').addEventListener('click', async function (event) {
+    const button = event.target.closest('button[data-action="ack-event"]');
+    if (!button) return;
+    await renderAsync('eventResult', function () {
+      return requestJson('/api/events/' + encodeURIComponent(button.dataset.eventId) + '/ack', {
+        acknowledgedBy: 'web'
+      });
+    }, renderEventAckResult);
+    await loadSystemStatus();
+    await loadEvents();
+  });
+
   document.getElementById('indexForm').addEventListener('submit', async function (event) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -362,9 +374,19 @@ function renderTaskList(result) {
 function renderEventList(result) {
   const events = result.events || [];
   if (events.length === 0) return panel('通知事件', '<div class="muted">暂无</div>', 'wide');
-  return panel('通知事件', evidenceList(events.map(function (event) {
-    return event.createdAt + ' · ' + event.type + ' · ' + event.summary;
-  })), 'wide');
+  return panel('通知事件', events.map(function (event) {
+    const ackLabel = event.acknowledgedAt ? '已确认' : '确认';
+    const disabled = event.acknowledgedAt ? ' disabled' : '';
+    return '<div class="action-row"><span>' + escapeHtml(event.createdAt + ' · ' + event.type + ' · ' + event.summary) + '</span><button class="inline-button" type="button" data-action="ack-event" data-event-id="' + escapeHtml(event.id) + '"' + disabled + '>' + ackLabel + '</button></div>';
+  }).join(''), 'wide');
+}
+
+function renderEventAckResult(result) {
+  return panel('事件已确认', [
+    metric('事件 ID', result.event.id),
+    metric('确认时间', result.event.acknowledgedAt),
+    metric('确认人', result.event.acknowledgedBy)
+  ].join(''), 'wide');
 }
 
 function renderSourceList(result) {
