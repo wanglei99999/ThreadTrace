@@ -368,6 +368,36 @@
           </label>
           <button type="submit">Deployment gate</button>
         </form>
+        <form id="rolloutApplyForm" class="control-strip">
+          <label class="full">
+            <span>Apply manifest JSON</span>
+            <textarea name="manifestJson" rows="9" spellcheck="false">{
+  "version": "1.0",
+  "name": "nga-sample-rollout",
+  "source": {
+    "sourceKey": "nga",
+    "sourceType": "saved-html-directory",
+    "displayName": "NGA sample archive",
+    "inputDir": "example"
+  },
+  "ingest": {
+    "dryRun": true
+  },
+  "workers": {
+    "topology": "operations-worker",
+    "sourceTaskMode": "ingest"
+  }
+}</textarea>
+          </label>
+          <label class="compact">
+            <span>Execute</span>
+            <select name="execute">
+              <option value="false">false</option>
+              <option value="true">true</option>
+            </select>
+          </label>
+          <button type="submit">Apply manifest</button>
+        </form>
         <div class="result-grid task-grid" id="onboardingResult"></div>
         <div class="result-grid task-grid" id="connectorModuleResult"></div>
         <div class="result-grid task-grid" id="sourceDryRunResult"></div>
@@ -376,6 +406,7 @@
         <div class="result-grid task-grid" id="rolloutManifestResult"></div>
         <div class="result-grid task-grid" id="resourceProvisioningResult"></div>
         <div class="result-grid task-grid" id="deploymentGateResult"></div>
+        <div class="result-grid task-grid" id="rolloutApplyResult"></div>
         <div class="result-grid task-grid" id="sourceResult"></div>
         <div class="result-grid task-grid" id="rawPageResult"></div>
         <div class="result-grid task-grid" id="eventResult"></div>

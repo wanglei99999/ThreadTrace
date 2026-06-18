@@ -931,6 +931,50 @@ function main(argv) {
     return;
   }
 
+  if (command === 'rollout-manifest-apply') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.applyRolloutManifest({
+      manifest: parseManifestOption(options),
+      execute: options.execute === 'true' || options.dryRun === 'false',
+      forum: options.forum,
+      sourceKey: options.sourceKey,
+      sourceId: options.sourceId,
+      enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
+      limit: options.limit ? Number(options.limit) : 100,
+      pipelineLimit: options.pipelineLimit ? Number(options.pipelineLimit) : 20,
+      now: options.now,
+      storeDir,
+      workerStaleAfterMs: options.workerStaleAfterMs ? Number(options.workerStaleAfterMs) : undefined
+    }).then(function (report) {
+      console.log('Rollout manifest apply: ' + report.status);
+      console.log('Mode: ' + (report.dryRun ? 'dry-run' : 'execute'));
+      console.log('Applied: ' + report.applied);
+      if (report.sourceDraft) {
+        console.log('Source: ' + (report.sourceDraft.sourceKey || 'unknown') + '\t' + (report.sourceDraft.sourceType || 'unknown') + '\t' + (report.sourceDraft.displayName || 'unnamed'));
+      }
+      if (report.registration && report.registration.source) {
+        console.log((report.registration.created ? 'Created' : 'Updated') + ' source: ' + report.registration.source.id);
+      }
+      report.steps.forEach(function (step) {
+        console.log(step.status + '\t' + step.key + '\t' + step.summary);
+      });
+      console.log('Next actions: ' + report.nextActions.length);
+      report.nextActions.forEach(function (action) {
+        console.log(action.severity + '\t' + action.key + '\t' + action.summary);
+        (action.commands || []).forEach(function (command) {
+          console.log('  command: ' + command);
+        });
+      });
+      if (report.status === 'fail') {
+        process.exitCode = 2;
+      }
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'list-sources') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.listSources({
@@ -1350,6 +1394,9 @@ function parseArgs(args) {
     } else if (item === '--dry-run') {
       options.dryRun = args[index + 1];
       index += 1;
+    } else if (item === '--execute') {
+      options.execute = args[index + 1];
+      index += 1;
     } else if (item === '--text') {
       options.text = args[index + 1];
       index += 1;
@@ -1608,6 +1655,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js rollout-manifest-plan --manifest-file file [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js resource-provisioning-plan [--manifest-file file] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js deployment-gate [--manifest-file file] [--store-dir dir] [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js rollout-manifest-apply --manifest-file file [--execute true] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--source-type type] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-diagnostics [--forum nga] [--enabled true] [--store-dir dir]');

@@ -207,6 +207,19 @@ function bindForms() {
     }, renderDeploymentGateReport);
   });
 
+  document.getElementById('rolloutApplyForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const request = parseManifestJson(form.get('manifestJson'));
+    request.execute = form.get('execute') === 'true';
+    await renderAsync('rolloutApplyResult', function () {
+      return requestJson('/api/operations/rollout-manifest/apply', request, {
+        acceptErrorStatus: true
+      });
+    }, renderRolloutManifestApply);
+    await loadSources();
+  });
+
   document.getElementById('sourceResult').addEventListener('click', async function (event) {
     const button = event.target.closest('button[data-action="run-source"],button[data-action="run-source-pipeline"]');
     if (!button) return;
@@ -849,6 +862,35 @@ function renderDeploymentGateReport(result) {
   ];
   if (actions.length > 0) {
     panels.push(panel('Gate actions', evidenceList(actions.map(function (action) {
+      return action.severity + ' 路 ' + action.key + ' 路 ' + action.summary + ' 路 ' + (action.commands || []).join(' | ');
+    })), 'wide'));
+  }
+  return panels.join('');
+}
+
+function renderRolloutManifestApply(result) {
+  const steps = result.steps || [];
+  const actions = result.nextActions || [];
+  const panels = [
+    panel('Rollout manifest apply', [
+      metric('Status', result.status),
+      metric('Mode', result.dryRun ? 'dry-run' : 'execute'),
+      metric('Applied', result.applied ? 'yes' : 'no'),
+      metric('Source', result.sourceDraft ? (result.sourceDraft.sourceKey || 'unknown') + ' / ' + (result.sourceDraft.sourceType || 'unknown') : 'missing')
+    ].join('')),
+    panel('Apply steps', evidenceList(steps.map(function (step) {
+      return step.status + ' 路 ' + step.key + ' 路 ' + step.summary;
+    })), 'wide')
+  ];
+  if (result.registration && result.registration.source) {
+    panels.push(panel('Registered source', [
+      metric('Source ID', result.registration.source.id),
+      metric('Created', result.registration.created ? 'yes' : 'no'),
+      metric('Name', result.registration.source.displayName)
+    ].join('')));
+  }
+  if (actions.length > 0) {
+    panels.push(panel('Apply actions', evidenceList(actions.map(function (action) {
       return action.severity + ' 路 ' + action.key + ' 路 ' + action.summary + ' 路 ' + (action.commands || []).join(' | ');
     })), 'wide'));
   }

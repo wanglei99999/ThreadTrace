@@ -417,6 +417,37 @@ Request:
 
 The response includes `gates`, `nextActions`, and the composed lower-level reports. A failing gate returns HTTP `503`; warnings return `200`.
 
+### `POST /api/operations/rollout-manifest/apply`
+
+Dry-runs or executes source registration from a rollout manifest after evaluating the deployment gate.
+
+Request:
+
+```json
+{
+  "manifest": {
+    "version": "1.0",
+    "name": "nga-sample-rollout",
+    "source": {
+      "sourceKey": "nga",
+      "sourceType": "saved-html-directory",
+      "displayName": "NGA sample archive",
+      "inputDir": "example"
+    },
+    "ingest": {
+      "dryRun": true
+    },
+    "workers": {
+      "topology": "operations-worker",
+      "sourceTaskMode": "ingest"
+    }
+  },
+  "execute": false
+}
+```
+
+The endpoint defaults to dry-run. Set `execute: true` or `dryRun: false` to register the source. A failing deployment gate or registration error returns HTTP `503`; gate warnings return `200` with follow-up actions.
+
 ### `POST /api/index-directory`
 
 将保存页目录解析为楼层文档并写入本地检索索引。

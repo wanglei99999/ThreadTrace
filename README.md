@@ -52,6 +52,7 @@ node src/presentation/cli/threadtrace.js source-ingest-dry-run --forum nga --sou
 node src/presentation/cli/threadtrace.js rollout-manifest-plan --manifest-file <file>
 node src/presentation/cli/threadtrace.js resource-provisioning-plan --manifest-file <file>
 node src/presentation/cli/threadtrace.js deployment-gate --manifest-file <file>
+node src/presentation/cli/threadtrace.js rollout-manifest-apply --manifest-file <file>
 node src/presentation/cli/threadtrace.js list-sources
 node src/presentation/cli/threadtrace.js list-events
 node src/presentation/cli/threadtrace.js dispatch-events
@@ -74,6 +75,7 @@ npm run operations:worker-topology-plan
 npm run operations:runbook
 npm run operations:resource-provisioning-plan
 npm run deployment:gate
+npm run operations:rollout-manifest-apply
 ```
 
 These commands use the same runtime composition as the HTTP API and Web console. `deployment:checklist` aggregates runtime resources, PostgreSQL schema readiness, adapter contracts, tracked source configuration, workers, notifications, and LLM configuration. `operations:runbook` turns failed or warning checks into actionable next commands.
@@ -88,6 +90,7 @@ These commands use the same runtime composition as the HTTP API and Web console.
 - `GET /api/deployment/checklist`
 - `POST /api/deployment/gate`
 - `GET /api/notifications/diagnostics`
+- `POST /api/operations/rollout-manifest/apply`
 - `GET /api/operations/overview`
 - `GET /api/operations/readiness`
 - `GET /api/operations/runbook`

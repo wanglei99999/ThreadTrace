@@ -40,6 +40,7 @@ const { getWorkerTopologyPlan } = require('../application/use-cases/getWorkerTop
 const { getRolloutManifestPlan } = require('../application/use-cases/getRolloutManifestPlan');
 const { getResourceProvisioningPlan } = require('../application/use-cases/getResourceProvisioningPlan');
 const { getDeploymentGateReport } = require('../application/use-cases/getDeploymentGateReport');
+const { getRolloutManifestApplyReport } = require('../application/use-cases/getRolloutManifestApplyReport');
 const { dryRunSourceIngest } = require('../application/use-cases/dryRunSourceIngest');
 const { createDefaultSourceIngestHandlerRegistry } = require('../application/source-ingest/standardSourceIngestHandlers');
 const { migrateStoreRecords } = require('../application/use-cases/migrateStoreRecords');
@@ -482,6 +483,47 @@ function createThreadTraceRuntime(options) {
         resourceProvisioningPlan,
         deploymentChecklist,
         operationsRunbook,
+        now: safeRequest.now
+      });
+    },
+
+    async applyRolloutManifest(request) {
+      const safeRequest = request || {};
+      const manifest = safeRequest.manifest || {};
+      const execute = safeRequest.execute === true;
+      const sourceDraft = manifest.source ? buildManifestSourceRegistrationRequest(manifest) : undefined;
+      const deploymentGate = await this.getDeploymentGateReport({
+        manifest,
+        forum: safeRequest.forum,
+        sourceKey: safeRequest.sourceKey || (sourceDraft && sourceDraft.sourceKey),
+        sourceId: safeRequest.sourceId,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 100,
+        pipelineLimit: safeRequest.pipelineLimit || 20,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir,
+        workerStaleAfterMs: safeRequest.workerStaleAfterMs
+      });
+      let registration;
+      let registrationError;
+      if (execute && sourceDraft && deploymentGate.status !== 'fail') {
+        try {
+          registration = await this.registerSource(Object.assign({}, sourceDraft, {
+            storeDir: safeRequest.storeDir,
+            allowUnknownSourceType: sourceDraft.allowUnknownSourceType
+          }));
+        } catch (error) {
+          registrationError = error;
+        }
+      }
+
+      return getRolloutManifestApplyReport({
+        manifest,
+        execute,
+        deploymentGate,
+        sourceDraft,
+        registration,
+        registrationError,
         now: safeRequest.now
       });
     },
@@ -1172,6 +1214,18 @@ function buildManifestWorkerTopologyRequest(options) {
     storeDir: safeOptions.storeDir || deployment.storeDir,
     workerStaleAfterMs: safeOptions.workerStaleAfterMs || deployment.workerStaleAfterMs
   };
+}
+
+function buildManifestSourceRegistrationRequest(manifest) {
+  const safeManifest = manifest || {};
+  const source = safeManifest.source || {};
+  return Object.assign({}, source, {
+    forum: source.forum || source.sourceKey,
+    sourceKey: source.sourceKey || source.forum,
+    displayName: source.displayName || source.name,
+    enabled: source.enabled,
+    schedule: source.schedule
+  });
 }
 
 function sourceNotFoundError(sourceId) {

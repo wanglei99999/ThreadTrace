@@ -20,6 +20,7 @@ GET /api/operations/runbook
 POST /api/operations/rollout-manifest-plan
 POST /api/operations/resource-provisioning-plan
 POST /api/deployment/gate
+POST /api/operations/rollout-manifest/apply
 GET /api/runtime/diagnostics
 ```
 
@@ -32,6 +33,7 @@ runtime.getOperationsRunbook({ limit: 100 })
 runtime.getRolloutManifestPlan({ manifest })
 runtime.getResourceProvisioningPlan({ manifest })
 runtime.getDeploymentGateReport({ manifest })
+runtime.applyRolloutManifest({ manifest, execute: false })
 ```
 
 Combined worker:
@@ -74,6 +76,14 @@ node src/presentation/cli/threadtrace.js deployment-gate --manifest-file docs/ex
 ```
 
 See `docs/deployment-gate.md` for the gate contract and CI/CD behavior.
+
+Use rollout manifest apply to safely move from planning to source registration. It defaults to dry-run and only writes when `--execute true` is provided:
+
+```powershell
+node src/presentation/cli/threadtrace.js rollout-manifest-apply --manifest-file docs/examples/rollout-manifest.sample.json
+```
+
+See `docs/rollout-manifest-apply.md` for the apply contract.
 
 ## Included Signals
 

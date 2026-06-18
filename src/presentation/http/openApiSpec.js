@@ -595,6 +595,49 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/operations/rollout-manifest/apply': {
+        post: {
+          summary: 'Dry-run or execute rollout manifest source registration after deployment gate evaluation',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    manifest: {
+                      type: 'object',
+                      description: 'Rollout manifest to apply'
+                    },
+                    source: {
+                      type: 'object',
+                      description: 'A rollout manifest can also be supplied directly as the request body'
+                    },
+                    execute: { type: 'boolean', example: false },
+                    dryRun: { type: 'boolean', example: true },
+                    limit: { type: 'number', example: 100 },
+                    pipelineLimit: { type: 'number', example: 20 },
+                    now: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+                    storeDir: { type: 'string' },
+                    workerStaleAfterMs: { type: 'number' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Manifest apply dry-run or execution completed without failing steps'
+            },
+            503: {
+              description: 'Manifest apply was blocked by missing source data, gate failure, or registration failure'
+            },
+            400: {
+              $ref: '#/components/responses/BadRequest'
+            }
+          }
+        }
+      },
       '/api/runtime/diagnostics': {
         get: {
           summary: 'Get redacted runtime configuration diagnostics',
