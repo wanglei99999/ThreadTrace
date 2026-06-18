@@ -32,6 +32,7 @@ PostgreSQL deployments should apply `docs/postgresql-schema.sql`; it includes ex
 
 - HTTP task-triggering endpoints propagate `x-request-id` and `idempotency-key`.
 - Source batch and pipeline tasks propagate trace metadata to child source ingest and semantic enrichment tasks.
+- Due-source and operations workers use the `workerRun.id` as the default `traceId` for source tasks, unless the caller supplied an explicit trace id.
 - CLI source task commands accept `--trace-id` for operator-driven runs.
 - New task-producing use cases should call `createTaskRecord(type, input, options)` with the original request options.
 

@@ -59,7 +59,7 @@ function createDueSourceWorker(options) {
       workerRun = await tracker.start(Object.assign({}, safeRequest, { sourceTaskMode }));
       workerRun = await tracker.heartbeat(workerRun, { step: stepForSourceTaskMode(sourceTaskMode) });
       await leaseGuard.renew();
-      const result = await runDueSourceTasks(runtime, sourceTaskMode, safeRequest);
+      const result = await runDueSourceTasks(runtime, sourceTaskMode, withWorkerTrace(safeRequest, workerRun));
       await tracker.complete(workerRun, summarizeDueSourceResult(result, sourceTaskMode));
       logger.log('[worker] due-source run completed: mode=' + sourceTaskMode + ', due=' + result.dueCount + ', completed=' + result.completedCount + ', failed=' + result.failedCount);
       return result;
@@ -118,6 +118,14 @@ function runDueSourceTasks(runtime, sourceTaskMode, request) {
   return runtime.runDueSourcesIngestTasks(request);
 }
 
+function withWorkerTrace(request, workerRun) {
+  const safeRequest = request || {};
+  if (safeRequest.traceId || !workerRun || !workerRun.id) return safeRequest;
+  return Object.assign({}, safeRequest, {
+    traceId: workerRun.id
+  });
+}
+
 function stepForSourceTaskMode(sourceTaskMode) {
   if (sourceTaskMode === 'insight-pipeline') return 'insight-pipeline-due-sources';
   return 'ingest-due-sources';
@@ -134,5 +142,6 @@ function summarizeDueSourceResult(result, sourceTaskMode) {
 }
 
 module.exports = {
-  createDueSourceWorker
+  createDueSourceWorker,
+  withWorkerTrace
 };

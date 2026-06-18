@@ -21,7 +21,7 @@ test('operations worker runs due sources, event dispatch, and overview in order'
     },
     runtime: {
       async runDueSourcesIngestTasks(request) {
-        calls.push(['sources', request.limit]);
+        calls.push(['sources', request.limit, request.traceId]);
         return {
           dueCount: 1,
           completedCount: 1,
@@ -54,7 +54,7 @@ test('operations worker runs due sources, event dispatch, and overview in order'
   });
 
   assert.deepEqual(calls, [
-    ['sources', 3],
+    ['sources', 3, workerRuns[0].id],
     ['events', 4],
     ['overview', 5]
   ]);
@@ -165,6 +165,47 @@ test('operations worker can run due source insight pipeline mode', async functio
     ['overview']
   ]);
   assert.equal(result.dueSources.completedCount, 1);
+});
+
+test('operations worker preserves explicit source trace id', async function () {
+  const calls = [];
+  const worker = createOperationsWorker({
+    logger: silentLogger(),
+    runtime: {
+      async runDueSourcesIngestTasks(request) {
+        calls.push(['sources', request.traceId]);
+        return {
+          dueCount: 0,
+          completedCount: 0,
+          failedCount: 0
+        };
+      },
+      async dispatchNotificationEvents() {
+        return {
+          dispatchedCount: 0,
+          failedCount: 0,
+          skippedCount: 0
+        };
+      },
+      async getOperationalOverview() {
+        return {
+          events: {
+            unacknowledged: 0
+          }
+        };
+      }
+    }
+  });
+
+  await worker.runOnce({
+    sources: {
+      traceId: 'manual-source-trace'
+    }
+  });
+
+  assert.deepEqual(calls, [
+    ['sources', 'manual-source-trace']
+  ]);
 });
 
 test('operations worker skips execution when another process holds the lease', async function () {

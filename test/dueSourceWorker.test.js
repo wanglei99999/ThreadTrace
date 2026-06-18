@@ -39,9 +39,19 @@ test('due source worker skips overlapping runs', async function () {
 
 test('due source worker can run due source insight pipeline mode', async function () {
   const calls = [];
+  const workerRuns = [];
   const worker = createDueSourceWorker({
     logger: silentLogger(),
     sourceTaskMode: 'insight-pipeline',
+    workerRunRepository: {
+      async saveWorkerRun(run) {
+        workerRuns.push(Object.assign({}, run));
+      },
+      async findWorkerRun() {},
+      async listWorkerRuns() {
+        return workerRuns;
+      }
+    },
     runtime: {
       async runDueSourceInsightPipelineTasks(request) {
         calls.push(request);
@@ -62,6 +72,7 @@ test('due source worker can run due source insight pipeline mode', async functio
   assert.equal(result.completedCount, 1);
   assert.equal(calls.length, 1);
   assert.equal(calls[0].provider, 'mock');
+  assert.equal(calls[0].traceId, workerRuns[0].id);
 });
 
 function silentLogger() {

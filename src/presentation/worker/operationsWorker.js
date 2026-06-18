@@ -66,7 +66,7 @@ function createOperationsWorker(options) {
       workerRun = await tracker.start(Object.assign({}, safeRequest, { sourceTaskMode }));
       workerRun = await tracker.heartbeat(workerRun, { step: stepForSourceTaskMode(sourceTaskMode) });
       await leaseGuard.renew();
-      const dueSources = await runDueSourceTasks(runtime, sourceTaskMode, sourcesRequest);
+      const dueSources = await runDueSourceTasks(runtime, sourceTaskMode, withWorkerTrace(sourcesRequest, workerRun));
       workerRun = await tracker.heartbeat(workerRun, { step: 'dispatch-events' });
       await leaseGuard.renew();
       const events = await runtime.dispatchNotificationEvents(safeRequest.events || {});
@@ -135,6 +135,14 @@ function runDueSourceTasks(runtime, sourceTaskMode, request) {
   return runtime.runDueSourcesIngestTasks(request);
 }
 
+function withWorkerTrace(request, workerRun) {
+  const safeRequest = request || {};
+  if (safeRequest.traceId || !workerRun || !workerRun.id) return safeRequest;
+  return Object.assign({}, safeRequest, {
+    traceId: workerRun.id
+  });
+}
+
 function stepForSourceTaskMode(sourceTaskMode) {
   if (sourceTaskMode === 'insight-pipeline') return 'insight-pipeline-due-sources';
   return 'ingest-due-sources';
@@ -164,5 +172,6 @@ function summarizeOperationsResult(dueSources, events, overview) {
 }
 
 module.exports = {
-  createOperationsWorker
+  createOperationsWorker,
+  withWorkerTrace
 };
