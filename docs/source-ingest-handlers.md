@@ -57,6 +57,7 @@ Tracked source diagnostics verify that each registered source has:
 ```text
 runtime.diagnoseSources()
 GET /api/sources/diagnostics
+node src/presentation/cli/threadtrace.js source-diagnostics
 ```
 
 Forum-HTML handlers should use `requiresAdapter: true` and consume `context.adapter`. API-native, queue-native, or already-normalized sources can use `requiresAdapter: false` and return a canonical `ThreadSnapshot` directly.

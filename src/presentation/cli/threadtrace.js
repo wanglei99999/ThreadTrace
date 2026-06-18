@@ -483,6 +483,36 @@ function main(argv) {
     return;
   }
 
+  if (command === 'source-diagnostics') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.diagnoseSources({
+      forum: options.forum,
+      sourceKey: options.sourceKey,
+      enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
+      limit: options.limit ? Number(options.limit) : 100,
+      now: options.now,
+      storeDir
+    }).then(function (diagnostics) {
+      console.log('Source diagnostics: ' + diagnostics.status);
+      console.log('Sources: ' + diagnostics.sourceCount);
+      diagnostics.sources.forEach(function (source) {
+        const nonOkChecks = source.checks.filter(function (check) {
+          return check.status !== 'ok';
+        }).map(function (check) {
+          return check.key + '=' + check.status;
+        }).join(',');
+        console.log(source.status + '\t' + source.sourceId + '\t' + source.sourceKey + '\t' + source.sourceType + '\t' + source.displayName + (nonOkChecks ? '\t' + nonOkChecks : ''));
+      });
+      if (diagnostics.status === 'fail') {
+        process.exitCode = 2;
+      }
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'run-source-task') {
     if (!options.sourceId) {
       throw new Error('run-source-task requires --source-id.');
@@ -904,6 +934,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js ack-event --event-id id [--by user] [--note text] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--input dir] [--name name] [--interval-minutes n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js source-diagnostics [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-source-task --source-id id [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-source-insight-pipeline --source-id id [--provider mock] [--semantic-enrichment-enabled true|false] [--semantic-skip-if-unchanged true|false] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-sources-task [--forum nga] [--limit n] [--store-dir dir]');
