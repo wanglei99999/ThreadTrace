@@ -41,6 +41,19 @@ The response is a report, not a persisted source:
 }
 ```
 
+For connector bridges that already produce canonical ThreadTrace snapshots, use `normalized-thread-json`:
+
+```json
+{
+  "forum": "external",
+  "sourceType": "normalized-thread-json",
+  "displayName": "External normalized feed",
+  "location": {
+    "inputFile": "D:/feeds/threadtrace/thread.json"
+  }
+}
+```
+
 ## Result Semantics
 
 - `valid` means the draft can be accepted by source registration rules.

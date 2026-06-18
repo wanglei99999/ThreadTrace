@@ -9,11 +9,13 @@ const { assertThreadRepository } = require('../ports/threadRepository');
 const { createSourceIngestHandlerRegistry } = require('./sourceIngestHandlerRegistry');
 const { runIngestSavedThreadDirectoryTask } = require('../use-cases/runIngestSavedThreadDirectoryTask');
 const { runIngestThreadUrlTask } = require('../use-cases/runIngestThreadUrlTask');
+const { runIngestNormalizedThreadJsonTask } = require('../use-cases/runIngestNormalizedThreadJsonTask');
 
 function createDefaultSourceIngestHandlerRegistry() {
   return createSourceIngestHandlerRegistry([
     createSavedHtmlDirectoryIngestHandler(),
-    createThreadUrlIngestHandler()
+    createThreadUrlIngestHandler(),
+    createNormalizedThreadJsonIngestHandler()
   ]);
 }
 
@@ -93,8 +95,47 @@ function createThreadUrlIngestHandler() {
   };
 }
 
+function createNormalizedThreadJsonIngestHandler() {
+  return {
+    sourceType: SOURCE_TYPES.NORMALIZED_THREAD_JSON,
+    requiresAdapter: false,
+    description: 'Ingest a canonical ThreadTrace ThreadSnapshot JSON file.',
+    locationSchema: {
+      required: ['inputFile'],
+      properties: {
+        inputFile: {
+          type: 'string',
+          format: 'path',
+          description: 'JSON file containing a canonical ThreadSnapshot.'
+        }
+      }
+    },
+    capabilities: {
+      readsLocalFiles: true,
+      fetchesRemote: false,
+      storesRawPages: false,
+      acceptsCanonicalSnapshot: true
+    },
+    async run(context) {
+      const source = context.source;
+      return runIngestNormalizedThreadJsonTask({
+        sourceKey: source.sourceKey,
+        source,
+        inputFile: source.location.inputFile,
+        threadRepository: assertThreadRepository(context.threadRepository),
+        reportRepository: assertAnalysisReportRepository(context.reportRepository),
+        taskRepository: assertTaskRepository(context.taskRepository),
+        requestId: context.requestId,
+        traceId: context.traceId,
+        idempotencyKey: context.idempotencyKey
+      });
+    }
+  };
+}
+
 module.exports = {
   createDefaultSourceIngestHandlerRegistry,
   createSavedHtmlDirectoryIngestHandler,
-  createThreadUrlIngestHandler
+  createThreadUrlIngestHandler,
+  createNormalizedThreadJsonIngestHandler
 };

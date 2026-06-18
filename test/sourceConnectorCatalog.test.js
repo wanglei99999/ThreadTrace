@@ -20,4 +20,7 @@ test('runtime exposes source connector catalog', function () {
   assert.deepEqual(byType['saved-html-directory'].locationSchema.required, ['inputDir']);
   assert.deepEqual(byType['thread-url'].locationSchema.required, ['url']);
   assert.ok(byType['thread-url'].compatibleSourceKeys.includes('nga'));
+  assert.deepEqual(byType['normalized-thread-json'].locationSchema.required, ['inputFile']);
+  assert.equal(byType['normalized-thread-json'].requiresAdapter, false);
+  assert.deepEqual(byType['normalized-thread-json'].compatibleSourceKeys, []);
 });

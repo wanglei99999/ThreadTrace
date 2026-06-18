@@ -4,7 +4,8 @@ const crypto = require('crypto');
 
 const SOURCE_TYPES = {
   SAVED_HTML_DIRECTORY: 'saved-html-directory',
-  THREAD_URL: 'thread-url'
+  THREAD_URL: 'thread-url',
+  NORMALIZED_THREAD_JSON: 'normalized-thread-json'
 };
 
 const DEFAULT_SOURCE_RUN_STALE_AFTER_MS = 10 * 60 * 1000;
@@ -15,6 +16,7 @@ function createTrackedSource(input) {
   const sourceType = safeInput.sourceType || SOURCE_TYPES.SAVED_HTML_DIRECTORY;
   const location = normalizeLocation(sourceType, safeInput.location || {
     inputDir: safeInput.inputDir,
+    inputFile: safeInput.inputFile,
     url: safeInput.url
   });
   const now = safeInput.updatedAt || new Date().toISOString();

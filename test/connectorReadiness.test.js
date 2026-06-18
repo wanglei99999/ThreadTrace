@@ -33,7 +33,7 @@ test('connector readiness summarizes handlers, adapter coverage, and configured 
   });
 
   assert.equal(readiness.status, 'ok');
-  assert.equal(readiness.connectorCount, 2);
+  assert.equal(readiness.connectorCount, 3);
   assert.equal(readiness.sourceCount, 1);
   assert.equal(savedHtml.status, 'ok');
   assert.equal(savedHtml.sourceCount, 1);

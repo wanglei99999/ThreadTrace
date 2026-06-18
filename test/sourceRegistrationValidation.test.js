@@ -77,3 +77,35 @@ test('source registration validation reports invalid source drafts without throw
     return check.key === 'source.handler';
   }).status, 'fail');
 });
+
+test('source registration validation supports normalized thread json sources', function () {
+  const ready = validateTrackedSourceRegistration({
+    sourceIngestHandlerRegistry: createDefaultSourceIngestHandlerRegistry(),
+    source: {
+      forum: 'external',
+      sourceType: 'normalized-thread-json',
+      displayName: 'External normalized feed',
+      inputFile: 'D:/feeds/threadtrace/thread.json'
+    }
+  });
+  const missingInputFile = validateTrackedSourceRegistration({
+    sourceIngestHandlerRegistry: createDefaultSourceIngestHandlerRegistry(),
+    source: {
+      forum: 'external',
+      sourceType: 'normalized-thread-json',
+      location: {
+        inputDir: 'D:/feeds/threadtrace'
+      }
+    }
+  });
+
+  assert.equal(ready.valid, true);
+  assert.equal(ready.status, 'ok');
+  assert.equal(ready.source.location.inputFile, 'D:/feeds/threadtrace/thread.json');
+  assert.equal(ready.checks.some(function (check) {
+    return check.key === 'source.adapter';
+  }), false);
+  assert.equal(missingInputFile.valid, false);
+  assert.equal(missingInputFile.error.code, 'source_location_invalid');
+  assert.deepEqual(missingInputFile.error.details.missingFields, ['inputFile']);
+});

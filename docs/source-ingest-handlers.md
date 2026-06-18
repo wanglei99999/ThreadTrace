@@ -33,6 +33,7 @@ Built-in handlers:
 
 - `saved-html-directory`: reads saved forum HTML from local disk.
 - `thread-url`: fetches a thread URL, stores raw HTML, parses it, and writes reports.
+- `normalized-thread-json`: reads a canonical `ThreadSnapshot` JSON file and writes the same durable snapshot/report records without requiring a forum adapter.
 
 Future handlers can be injected through:
 
@@ -103,6 +104,8 @@ node src/presentation/cli/threadtrace.js source-diagnostics
 Forum-HTML handlers should use `requiresAdapter: true` and consume `context.adapter`. API-native, queue-native, or already-normalized sources can use `requiresAdapter: false` and return a canonical `ThreadSnapshot` directly.
 
 This keeps future integrations such as other forums, RSS-like sources, webhook submissions, or database-backed sources out of the tracked-source lifecycle code.
+
+For early integrations, `normalized-thread-json` is the lowest-friction bridge: external collectors can normalize their data into ThreadTrace's canonical snapshot shape first, then let ThreadTrace handle persistence, analysis, scheduling, trace metadata, and operations visibility.
 
 ## Source Run Guard
 

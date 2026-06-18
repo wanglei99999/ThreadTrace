@@ -778,6 +778,7 @@ function buildSourceRegistrationInput(request) {
     sourceType: safeRequest.sourceType,
     displayName: safeRequest.displayName || safeRequest.name,
     inputDir: safeRequest.inputDir,
+    inputFile: safeRequest.inputFile,
     url: safeRequest.url,
     location: safeRequest.location,
     enabled: safeRequest.enabled,
