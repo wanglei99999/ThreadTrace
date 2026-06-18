@@ -44,6 +44,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(homeHtml, /sourceOnboardingForm/);
     assert.match(homeHtml, /onboardingResult/);
     assert.match(homeHtml, /modulePath/);
+    assert.match(homeHtml, /locationJson/);
     assert.match(homeHtml, /connectorModuleValidationForm/);
     assert.match(homeHtml, /connectorModuleResult/);
     assert.match(homeHtml, /runbookResult/);

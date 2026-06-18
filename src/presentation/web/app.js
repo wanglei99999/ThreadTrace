@@ -219,13 +219,16 @@ async function enrichHistoryDirectory() {
 function buildSourceOnboardingRequest(form) {
   const sourceType = form.get('sourceType') || 'saved-html-directory';
   const locationValue = String(form.get('locationValue') || '').trim();
+  const location = parseOptionalLocationJson(form.get('locationJson'));
   const request = {
     forum: form.get('forum'),
     sourceType,
     displayName: form.get('displayName'),
     modulePath: String(form.get('modulePath') || '').trim() || undefined
   };
-  if (sourceType === 'thread-url') {
+  if (location) {
+    request.location = location;
+  } else if (sourceType === 'thread-url') {
     request.url = locationValue;
   } else if (sourceType === 'normalized-thread-json') {
     request.inputFile = locationValue;
@@ -233,6 +236,16 @@ function buildSourceOnboardingRequest(form) {
     request.inputDir = form.get('inputDir');
   }
   return request;
+}
+
+function parseOptionalLocationJson(value) {
+  const text = String(value || '').trim();
+  if (!text) return undefined;
+  const parsed = JSON.parse(text);
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('Location JSON must be an object.');
+  }
+  return parsed;
 }
 
 function setView(viewName) {

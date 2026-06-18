@@ -558,6 +558,7 @@ function main(argv) {
       inputDir,
       inputFile: options.inputFile,
       url: options.url,
+      location: parseLocationOption(options),
       enabled: options.enabled !== 'false',
       allowUnknownSourceType: options.allowUnknownSourceType === 'true',
       intervalMinutes: options.intervalMinutes,
@@ -585,6 +586,7 @@ function main(argv) {
       inputDir,
       inputFile: options.inputFile,
       url: options.url,
+      location: parseLocationOption(options),
       enabled: options.enabled === undefined ? undefined : options.enabled !== 'false',
       allowUnknownSourceType: options.allowUnknownSourceType === 'true',
       intervalMinutes: options.intervalMinutes,
@@ -649,6 +651,7 @@ function main(argv) {
       inputDir,
       inputFile: options.inputFile,
       url: options.url,
+      location: parseLocationOption(options),
       enabled: options.enabled === undefined ? undefined : options.enabled !== 'false',
       allowUnknownSourceType: options.allowUnknownSourceType === 'true',
       intervalMinutes: options.intervalMinutes,
@@ -1126,6 +1129,12 @@ function parseArgs(args) {
     } else if (item === '--url') {
       options.url = args[index + 1];
       index += 1;
+    } else if (item === '--location-json') {
+      options.locationJson = args[index + 1];
+      index += 1;
+    } else if (item === '--location-file') {
+      options.locationFile = args[index + 1];
+      index += 1;
     } else if (item === '--input-file') {
       options.inputFile = args[index + 1];
       index += 1;
@@ -1198,6 +1207,28 @@ function parseArgs(args) {
 function parseOptionalBoolean(value) {
   if (value === undefined) return undefined;
   return value !== 'false';
+}
+
+function parseLocationOption(options) {
+  const safeOptions = options || {};
+  if (safeOptions.locationFile) {
+    return parseLocationJson(fs.readFileSync(path.resolve(process.cwd(), safeOptions.locationFile), 'utf8'), '--location-file');
+  }
+  return parseLocationJson(safeOptions.locationJson, '--location-json');
+}
+
+function parseLocationJson(value, label) {
+  if (!value) return undefined;
+  let parsed;
+  try {
+    parsed = JSON.parse(String(value).replace(/^\uFEFF/, ''));
+  } catch (error) {
+    throw new Error('Invalid ' + label + ': ' + (error && error.message ? error.message : String(error)));
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error(label + ' must be a JSON object.');
+  }
+  return parsed;
 }
 
 function findDefaultExampleHtml(inputDir) {
@@ -1275,10 +1306,10 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js ingest-raw-page [--forum nga] --content-sha1 sha1 [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js dispatch-events [--channel file|webhook] [--webhook-url url] [--limit n] [--max-attempts n] [--retry-backoff-ms ms] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js ack-event --event-id id [--by user] [--note text] [--store-dir dir]');
-  console.log('  node src/presentation/cli/threadtrace.js validate-source [--forum nga] [--source-type type] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js validate-source [--forum nga] [--source-type type] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js validate-thread-json --input-file file [--forum sourceKey] [--now iso]');
-  console.log('  node src/presentation/cli/threadtrace.js source-onboarding-preflight [--forum nga] [--source-type type] [--module-path file] [--input dir] [--input-file file] [--url url] [--store-dir dir] [--now iso]');
-  console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--source-type type] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js source-onboarding-preflight [--forum nga] [--source-type type] [--module-path file] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--store-dir dir] [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--source-type type] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-diagnostics [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js connector-catalog [--now iso]');

@@ -28,6 +28,14 @@ node src/presentation/cli/threadtrace.js source-onboarding-preflight --forum ext
 
 `modulePath` is optional. When provided, ThreadTrace loads that connector module into temporary registries for the preflight only, so teams can validate a future `sourceType` before adding it to `THREADTRACE_CONNECTOR_MODULES`.
 
+For custom connector fields, pass a generic location object:
+
+```powershell
+node src/presentation/cli/threadtrace.js source-onboarding-preflight --forum external --source-type external-feed --module-path D:/connectors/custom-forum.cjs --location-file D:/feeds/threadtrace/location.json
+```
+
+`--location-json` is also available for shells where inline JSON quoting is comfortable.
+
 ## HTTP Entry
 
 ```http

@@ -107,7 +107,7 @@ Use the same flow for built-in forums and future connectors:
 
 1. Add or inject a `SourceIngestHandler`.
 2. For external modules, run `validate-connector-module` before setting `THREADTRACE_CONNECTOR_MODULES`.
-3. Use `source-onboarding-preflight --module-path ...` to simulate catalog, readiness, and source validation before changing runtime configuration.
+3. Use `source-onboarding-preflight --module-path ... --location-file ...` to simulate catalog, readiness, and source validation before changing runtime configuration.
 4. Confirm it appears in `GET /api/connectors/catalog`.
 5. Check connector readiness with `GET /api/connectors/readiness`.
 6. Validate a draft source with `POST /api/sources/validate` or `node src/presentation/cli/threadtrace.js validate-source`.
