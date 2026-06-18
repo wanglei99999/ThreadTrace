@@ -16,6 +16,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
   try {
     const health = await getJson(baseUrl + '/health');
     const adapters = await getJson(baseUrl + '/adapters');
+    const openApi = await getJson(baseUrl + '/openapi.json');
     const context = await postJson(baseUrl + '/api/interpret-text', {
       text: '科技后面看量确认',
       authorId: '150058',
@@ -24,8 +25,40 @@ test('http server exposes health, adapters, and context APIs', async function ()
 
     assert.equal(health.ok, true);
     assert.equal(adapters.adapters[0].sourceKey, 'nga');
+    assert.equal(openApi.openapi, '3.0.3');
+    assert.ok(openApi.paths['/api/interpret-text']);
     assert.equal(context.reportType, 'new-post-context');
     assert.ok(context.relatedEvidence.length >= 1);
+  } finally {
+    await close(server);
+  }
+});
+
+test('http server handles CORS preflight and validates interpret text input', async function () {
+  const server = createThreadTraceServer({
+    defaultInputDir: path.resolve(__dirname, '..', 'example')
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const preflight = await fetch(baseUrl + '/api/interpret-text', {
+      method: 'OPTIONS'
+    });
+    const invalid = await fetch(baseUrl + '/api/interpret-text', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({})
+    });
+    const invalidBody = await invalid.json();
+
+    assert.equal(preflight.status, 204);
+    assert.equal(preflight.headers.get('access-control-allow-origin'), '*');
+    assert.equal(invalid.status, 400);
+    assert.match(invalidBody.error.message, /requires text/);
   } finally {
     await close(server);
   }

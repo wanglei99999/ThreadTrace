@@ -41,8 +41,11 @@ node src/presentation/cli/threadtrace.js interpret-text-dir --forum nga --input 
 
 - `GET /health`
 - `GET /adapters`
+- `GET /openapi.json`
 - `POST /api/analyze-directory`
 - `POST /api/interpret-text`
+
+详细说明见 `docs/api.md`。
 
 ## 项目分层
 

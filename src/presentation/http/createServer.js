@@ -5,6 +5,7 @@ const path = require('path');
 const { getForumAdapter, listForumAdapters } = require('../../infrastructure/forum-adapters/registry');
 const { analyzeSavedThreadDirectory } = require('../../application/use-cases/analyzeSavedThreadDirectory');
 const { interpretNewPostFromSavedThreadDirectory } = require('../../application/use-cases/interpretNewPostFromSavedThreadDirectory');
+const { createOpenApiSpec } = require('./openApiSpec');
 
 function createThreadTraceServer(options) {
   const safeOptions = options || {};
@@ -12,8 +13,16 @@ function createThreadTraceServer(options) {
 
   return http.createServer(async function (request, response) {
     try {
+      applyCors(response);
+      if (request.method === 'OPTIONS') {
+        response.writeHead(204);
+        response.end();
+        return;
+      }
+
       await routeRequest(request, response, {
-        defaultInputDir
+        defaultInputDir,
+        maxBodyBytes: safeOptions.maxBodyBytes || 1024 * 1024
       });
     } catch (error) {
       writeJson(response, 500, {
@@ -44,8 +53,13 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/openapi.json') {
+    writeJson(response, 200, createOpenApiSpec());
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/analyze-directory') {
-    const body = await readJsonBody(request);
+    const body = await readJsonBody(request, context.maxBodyBytes);
     const adapter = getForumAdapter(body.forum || 'nga');
     const result = analyzeSavedThreadDirectory({
       adapter,
@@ -56,7 +70,7 @@ async function routeRequest(request, response, context) {
   }
 
   if (request.method === 'POST' && url.pathname === '/api/interpret-text') {
-    const body = await readJsonBody(request);
+    const body = await readJsonBody(request, context.maxBodyBytes);
     if (!body.text) {
       writeJson(response, 400, {
         error: {
@@ -86,10 +100,17 @@ async function routeRequest(request, response, context) {
   });
 }
 
-function readJsonBody(request) {
+function readJsonBody(request, maxBodyBytes) {
   return new Promise(function (resolve, reject) {
     const chunks = [];
+    let totalBytes = 0;
     request.on('data', function (chunk) {
+      totalBytes += chunk.length;
+      if (totalBytes > maxBodyBytes) {
+        reject(new Error('Request body is too large.'));
+        request.destroy();
+        return;
+      }
       chunks.push(chunk);
     });
     request.on('error', reject);
@@ -115,6 +136,12 @@ function writeJson(response, statusCode, body) {
     'content-length': Buffer.byteLength(text)
   });
   response.end(text);
+}
+
+function applyCors(response) {
+  response.setHeader('access-control-allow-origin', '*');
+  response.setHeader('access-control-allow-methods', 'GET,POST,OPTIONS');
+  response.setHeader('access-control-allow-headers', 'content-type');
 }
 
 module.exports = {
