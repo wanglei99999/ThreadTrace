@@ -25,6 +25,10 @@ test('deployment checklist aggregates runtime, source, readiness, notification, 
       status: 'ok',
       sourceCount: 1
     },
+    adapterDiagnostics: {
+      status: 'ok',
+      adapterCount: 1
+    },
     readiness: {
       status: 'fail',
       checks: [
@@ -42,6 +46,9 @@ test('deployment checklist aggregates runtime, source, readiness, notification, 
   assert.equal(checklist.items.find(function (item) {
     return item.key === 'workers.readiness';
   }).status, 'fail');
+  assert.equal(checklist.items.find(function (item) {
+    return item.key === 'adapters.contract';
+  }).status, 'ok');
   assert.equal(checklist.items.find(function (item) {
     return item.key === 'notifications.outbox';
   }).status, 'warn');

@@ -290,6 +290,30 @@ function main(argv) {
     return;
   }
 
+  if (command === 'adapter-diagnostics') {
+    runtime.diagnoseAdapters({
+      now: options.now
+    }).then(function (diagnostics) {
+      console.log('Adapter diagnostics: ' + diagnostics.status);
+      console.log('Adapters: ' + diagnostics.adapterCount);
+      diagnostics.adapters.forEach(function (adapter) {
+        const nonOkChecks = adapter.checks.filter(function (check) {
+          return check.status !== 'ok';
+        }).map(function (check) {
+          return check.key + '=' + check.status;
+        }).join(',');
+        console.log(adapter.status + '\t' + adapter.sourceKey + '\t' + adapter.displayName + (nonOkChecks ? '\t' + nonOkChecks : ''));
+      });
+      if (diagnostics.status === 'fail') {
+        process.exitCode = 2;
+      }
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'deployment-checklist') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.getDeploymentChecklist({
@@ -949,6 +973,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js operations-overview [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-readiness [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js runtime-diagnostics [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js adapter-diagnostics [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js deployment-checklist [--forum nga] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js migrate-store --from-store-dir dir [--to-store-dir dir] [--dry-run true|false] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js list-events [--source-id id] [--type type] [--store-dir dir]');

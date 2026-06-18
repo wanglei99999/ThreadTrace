@@ -66,6 +66,14 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/adapters/diagnostics') {
+    const diagnostics = await context.runtime.diagnoseAdapters({
+      now: url.searchParams.get('now') || undefined
+    });
+    writeJson(response, diagnostics.status === 'fail' ? 503 : 200, diagnostics);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/source-ingest-handlers') {
     writeJson(response, 200, {
       handlers: context.runtime.listSourceIngestHandlers()

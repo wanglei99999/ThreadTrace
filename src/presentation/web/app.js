@@ -243,6 +243,9 @@ async function loadSystemStatus() {
     const adapters = await fetchJson('/adapters');
     const openApi = await fetchJson('/openapi.json');
     const overview = await fetchJson('/api/operations/overview?limit=100');
+    const adapterDiagnostics = await fetchJson('/api/adapters/diagnostics', {
+      acceptErrorStatus: true
+    });
     const diagnostics = await fetchJson('/api/runtime/diagnostics', {
       acceptErrorStatus: true
     });
@@ -263,6 +266,7 @@ async function loadSystemStatus() {
       statusRow('诊断', diagnostics.status),
       statusRow('Deploy', deploymentChecklist.status),
       statusRow('存储', overview.storageMode),
+      statusRow('Adapters', adapterDiagnostics.status + ' · ' + adapterDiagnostics.adapterCount),
       statusRow('Source config', sourceDiagnostics.status + ' · ' + sourceDiagnostics.sourceCount),
       statusRow('Source mode', diagnostics.configuration.workers.sourceTaskMode),
       statusRow('LLM', diagnostics.configuration.llm.provider),

@@ -3,6 +3,7 @@
 ThreadTrace exposes a deployment checklist as a runnable readiness contract. It aggregates existing diagnostics instead of inventing a separate deployment state:
 
 - runtime configuration and secret redaction
+- forum adapter registry contracts
 - storage resource checks
 - tracked source ingest configuration
 - worker readiness and lease health
@@ -27,6 +28,7 @@ The checklist returns `ok`, `warn`, or `fail`. HTTP returns `503` when the check
 | --- | --- | --- |
 | `runtime.configuration` | runtime | Redacted runtime diagnostics are available. |
 | `resources.storage` | resources | File store paths, PostgreSQL ping checks, and required PostgreSQL tables. |
+| `adapters.contract` | adapters | Forum adapters resolve from the registry and implement parser contracts. |
 | `sources.ingestConfiguration` | sources | Source locations, ingest handlers, and adapters. |
 | `workers.readiness` | workers | Stale/failed worker runs and expired leases. |
 | `notifications.outbox` | notifications | Recent notification delivery failures. |

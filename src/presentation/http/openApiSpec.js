@@ -29,6 +29,22 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/adapters/diagnostics': {
+        get: {
+          summary: 'Diagnose forum adapter registry contracts',
+          parameters: [
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } }
+          ],
+          responses: {
+            200: {
+              description: 'Adapter diagnostics are ok or warn'
+            },
+            503: {
+              description: 'Adapter diagnostics failed'
+            }
+          }
+        }
+      },
       '/api/source-ingest-handlers': {
         get: {
           summary: 'List source ingest handlers',

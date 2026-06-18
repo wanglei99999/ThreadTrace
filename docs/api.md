@@ -24,6 +24,12 @@ http://127.0.0.1:3017
 
 返回当前已注册论坛适配器。
 
+### `GET /api/adapters/diagnostics`
+
+诊断论坛适配器注册表是否满足解析契约。它会检查 adapter 是否可通过 registry 解析、`sourceKey` 是否一致、是否实现 `parseSavedHtml`，以及可选样例解析 smoke。
+
+返回：整体 `status`、每个 adapter 的状态和检查项。存在失败检查时 HTTP 状态码为 503，响应体仍包含完整诊断。
+
 ### `GET /openapi.json`
 
 返回 OpenAPI 3.0 契约，便于前端、测试工具或后续 SDK 生成器消费。

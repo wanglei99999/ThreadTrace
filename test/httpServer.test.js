@@ -19,6 +19,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     const health = await getJson(baseUrl + '/health');
     const home = await fetch(baseUrl + '/');
     const adapters = await getJson(baseUrl + '/adapters');
+    const adapterDiagnostics = await getJson(baseUrl + '/api/adapters/diagnostics?now=2026-06-19T10:00:00.000Z');
     const handlers = await getJson(baseUrl + '/api/source-ingest-handlers');
     const openApi = await getJson(baseUrl + '/openapi.json');
     const context = await postJson(baseUrl + '/api/interpret-text', {
@@ -31,9 +32,12 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(home.status, 200);
     assert.match(await home.text(), /ThreadTrace/);
     assert.equal(adapters.adapters[0].sourceKey, 'nga');
+    assert.equal(adapterDiagnostics.status, 'ok');
+    assert.equal(adapterDiagnostics.adapterCount, 1);
     assert.equal(handlers.handlers[0].sourceType, 'saved-html-directory');
     assert.equal(openApi.openapi, '3.0.3');
     assert.ok(openApi.paths['/api/interpret-text']);
+    assert.ok(openApi.paths['/api/adapters/diagnostics']);
     assert.ok(openApi.paths['/api/runtime/diagnostics']);
     assert.equal(context.reportType, 'new-post-context');
     assert.ok(context.relatedEvidence.length >= 1);

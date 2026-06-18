@@ -3,6 +3,7 @@
 function getDeploymentChecklist(options) {
   const safeOptions = options || {};
   const diagnostics = safeOptions.diagnostics || {};
+  const adapterDiagnostics = safeOptions.adapterDiagnostics || {};
   const sourceDiagnostics = safeOptions.sourceDiagnostics || {};
   const readiness = safeOptions.readiness || {};
   const items = [
@@ -12,6 +13,9 @@ function getDeploymentChecklist(options) {
     }),
     item('resources.storage', 'resources', aggregateChecks(diagnostics.checks, /^resources\./), 'Primary storage resources are reachable.', {
       checks: selectCheckKeys(diagnostics.checks, /^resources\./)
+    }),
+    item('adapters.contract', 'adapters', adapterDiagnostics.status || 'fail', 'Forum adapters satisfy the ThreadTrace adapter contract.', {
+      adapterCount: adapterDiagnostics.adapterCount
     }),
     item('sources.ingestConfiguration', 'sources', sourceDiagnostics.status || 'fail', 'Tracked sources have usable locations, handlers, and adapters.', {
       sourceCount: sourceDiagnostics.sourceCount
@@ -33,6 +37,7 @@ function getDeploymentChecklist(options) {
     status: aggregateStatuses(items.map(function (check) { return check.status; })),
     items,
     diagnostics,
+    adapterDiagnostics,
     sourceDiagnostics,
     readiness
   };

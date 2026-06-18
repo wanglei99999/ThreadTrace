@@ -6,6 +6,7 @@ const { createDefaultForumAdapterRegistry } = require('../infrastructure/forum-a
 const { analyzeSavedThreadDirectory } = require('../application/use-cases/analyzeSavedThreadDirectory');
 const { interpretNewPostFromSavedThreadDirectory } = require('../application/use-cases/interpretNewPostFromSavedThreadDirectory');
 const { ingestSavedThreadDirectory } = require('../application/use-cases/ingestSavedThreadDirectory');
+const { diagnoseForumAdapters } = require('../application/use-cases/diagnoseForumAdapters');
 const { runIngestSavedThreadDirectoryTask } = require('../application/use-cases/runIngestSavedThreadDirectoryTask');
 const { registerTrackedSource } = require('../application/use-cases/registerTrackedSource');
 const { listTrackedSources } = require('../application/use-cases/listTrackedSources');
@@ -108,6 +109,15 @@ function createThreadTraceRuntime(options) {
 
     listAdapters() {
       return forumAdapterRegistry.list();
+    },
+
+    diagnoseAdapters(request) {
+      const safeRequest = request || {};
+      return diagnoseForumAdapters({
+        forumAdapterRegistry,
+        samples: safeRequest.samples,
+        now: safeRequest.now
+      });
     },
 
     listSourceIngestHandlers() {
@@ -283,6 +293,9 @@ function createThreadTraceRuntime(options) {
       const diagnostics = await this.getRuntimeDiagnostics({
         now: safeRequest.now
       });
+      const adapterDiagnostics = await this.diagnoseAdapters({
+        now: safeRequest.now
+      });
       const sourceDiagnostics = await this.diagnoseSources({
         forum: safeRequest.forum,
         sourceKey: safeRequest.sourceKey,
@@ -301,6 +314,7 @@ function createThreadTraceRuntime(options) {
       });
       return getDeploymentChecklist({
         diagnostics,
+        adapterDiagnostics,
         sourceDiagnostics,
         readiness,
         now: safeRequest.now
