@@ -107,6 +107,7 @@ http://127.0.0.1:3017
 
 ```json
 {
+  "channel": "file",
   "limit": 50,
   "maxAttempts": 3,
   "includeFailed": true
@@ -114,6 +115,10 @@ http://127.0.0.1:3017
 ```
 
 返回：投递通道、成功数量、失败数量和跳过数量。成功投递后事件的 `deliveryStatus` 会变为 `delivered`。
+
+通知通道：
+- `file`: 默认通道，把事件写入 `data/store/deliveries`。
+- `webhook`: 向 `webhookUrl` 发起 `POST application/json`，也可用环境变量 `THREADTRACE_WEBHOOK_URL` 提供地址。
 
 ### `POST /api/events/{eventId}/ack`
 

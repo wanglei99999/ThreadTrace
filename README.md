@@ -51,6 +51,7 @@ node src/presentation/cli/threadtrace.js register-source --forum nga --input exa
 node src/presentation/cli/threadtrace.js list-sources
 node src/presentation/cli/threadtrace.js list-events
 node src/presentation/cli/threadtrace.js dispatch-events
+node src/presentation/cli/threadtrace.js dispatch-events --channel webhook --webhook-url http://127.0.0.1:9000/threadtrace-events
 node src/presentation/cli/threadtrace.js ack-event --event-id <id>
 node src/presentation/cli/threadtrace.js run-sources-task
 node src/presentation/cli/threadtrace.js run-due-sources-task
@@ -101,7 +102,7 @@ node src/presentation/cli/threadtrace.js interpret-text-dir --forum nga --input 
 - 提供本地文件仓库实现，可作为 PostgreSQL 前的开发替身。
 - 支持导入目录、分析并持久化主题快照和报告。
 - 支持任务记录，为后续定时采集、增量分析和提醒队列打基础。
-- 支持可跟踪来源注册、运行状态记录、增量水位线、变化事件、事件投递 outbox、调度到期判断、按来源触发导入和批量导入，为多论坛、多主题和定时采集打基础。
+- 支持可跟踪来源注册、运行状态记录、增量水位线、变化事件、事件投递 outbox、文件/Webhook 通知通道、调度到期判断、按来源触发导入和批量导入，为多论坛、多主题和定时采集打基础。
 - 支持本地历史证据检索索引，为后续 RAG 和语境召回打基础。
 - 支持新发言语境还原 MVP，按实体、观点关键词和作者线索召回历史证据。
 - 提供无依赖 HTTP API，供后续前端工作台和定时任务调用。

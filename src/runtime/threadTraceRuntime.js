@@ -21,6 +21,7 @@ const { createFileTaskRepository } = require('../infrastructure/storage/fileTask
 const { createFileSourceRepository } = require('../infrastructure/storage/fileSourceRepository');
 const { createFileNotificationEventRepository } = require('../infrastructure/storage/fileNotificationEventRepository');
 const { createFileNotificationChannel } = require('../infrastructure/notifications/fileNotificationChannel');
+const { createWebhookNotificationChannel } = require('../infrastructure/notifications/webhookNotificationChannel');
 const { createFileTextRetrievalIndex } = require('../infrastructure/retrieval/fileTextRetrievalIndex');
 
 function createThreadTraceRuntime(options) {
@@ -239,9 +240,7 @@ function createThreadTraceRuntime(options) {
       const repositories = createRepositories(storeDir);
       return dispatchPendingNotificationEvents({
         notificationEventRepository: repositories.notificationEventRepository,
-        notificationChannel: createFileNotificationChannel({
-          baseDir: path.join(storeDir, 'deliveries')
-        }),
+        notificationChannel: createNotificationChannel(safeRequest, storeDir),
         limit: safeRequest.limit || 50,
         maxAttempts: safeRequest.maxAttempts || 3,
         includeFailed: safeRequest.includeFailed
@@ -281,6 +280,22 @@ function buildSchedule(request) {
     intervalMinutes: request.intervalMinutes ? Number(request.intervalMinutes) : undefined,
     nextRunAt: request.nextRunAt
   };
+}
+
+function createNotificationChannel(request, storeDir) {
+  const channel = request.channel || (request.webhookUrl ? 'webhook' : 'file');
+  if (channel === 'webhook') {
+    return createWebhookNotificationChannel({
+      url: request.webhookUrl || process.env.THREADTRACE_WEBHOOK_URL,
+      timeoutMs: request.timeoutMs ? Number(request.timeoutMs) : undefined
+    });
+  }
+  if (channel === 'file') {
+    return createFileNotificationChannel({
+      baseDir: path.join(storeDir, 'deliveries')
+    });
+  }
+  throw new Error('Unknown notification channel: ' + channel);
 }
 
 module.exports = {

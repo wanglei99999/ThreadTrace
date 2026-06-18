@@ -153,6 +153,9 @@ function createOpenApiSpec() {
                 schema: {
                   type: 'object',
                   properties: {
+                    channel: { type: 'string', example: 'webhook' },
+                    webhookUrl: { type: 'string', example: 'https://example.com/threadtrace-events' },
+                    timeoutMs: { type: 'number', example: 10000 },
                     limit: { type: 'number', example: 50 },
                     maxAttempts: { type: 'number', example: 3 },
                     includeFailed: { type: 'boolean' },

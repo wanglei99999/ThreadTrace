@@ -149,6 +149,9 @@ async function routeRequest(request, response, context) {
   if (request.method === 'POST' && url.pathname === '/api/events/dispatch') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     const result = await context.runtime.dispatchNotificationEvents({
+      channel: body.channel,
+      webhookUrl: body.webhookUrl,
+      timeoutMs: body.timeoutMs,
       limit: body.limit,
       maxAttempts: body.maxAttempts,
       includeFailed: body.includeFailed,

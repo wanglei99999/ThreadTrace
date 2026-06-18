@@ -169,6 +169,9 @@ function main(argv) {
   if (command === 'dispatch-events') {
     const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
     runtime.dispatchNotificationEvents({
+      channel: options.channel,
+      webhookUrl: options.webhookUrl,
+      timeoutMs: options.timeoutMs ? Number(options.timeoutMs) : undefined,
       limit: options.limit ? Number(options.limit) : 50,
       maxAttempts: options.maxAttempts ? Number(options.maxAttempts) : 3,
       includeFailed: options.includeFailed === undefined ? undefined : options.includeFailed !== 'false',
@@ -459,6 +462,15 @@ function parseArgs(args) {
     } else if (item === '--include-failed') {
       options.includeFailed = args[index + 1];
       index += 1;
+    } else if (item === '--channel') {
+      options.channel = args[index + 1];
+      index += 1;
+    } else if (item === '--webhook-url') {
+      options.webhookUrl = args[index + 1];
+      index += 1;
+    } else if (item === '--timeout-ms') {
+      options.timeoutMs = args[index + 1];
+      index += 1;
     } else if (item === '--event-id') {
       options.eventId = args[index + 1];
       index += 1;
@@ -532,7 +544,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js run-ingest-task [--forum nga] [--input dir] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-tasks [--store-dir dir] [--status status] [--type type] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js list-events [--source-id id] [--type type] [--store-dir dir]');
-  console.log('  node src/presentation/cli/threadtrace.js dispatch-events [--limit n] [--max-attempts n] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js dispatch-events [--channel file|webhook] [--webhook-url url] [--limit n] [--max-attempts n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js ack-event --event-id id [--by user] [--note text] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--input dir] [--name name] [--interval-minutes n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');
