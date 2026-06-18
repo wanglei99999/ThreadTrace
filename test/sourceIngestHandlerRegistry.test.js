@@ -152,7 +152,13 @@ test('runtime can explicitly pre-register an unknown source type', async functio
     return runtime.runSourceIngestTask({
       sourceId: registered.source.id
     });
-  }, /not ingestible yet: custom-feed/);
+  }, function (error) {
+    assert.equal(error.code, 'source_type_not_ingestible');
+    assert.equal(error.statusCode, 400);
+    assert.equal(error.details.sourceType, 'custom-feed');
+    assert.match(error.message, /not ingestible yet: custom-feed/);
+    return true;
+  });
 });
 
 test('runtime validates custom source locations through handler schema', async function () {

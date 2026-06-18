@@ -35,10 +35,69 @@ test('tracked source ingest rejects active duplicate runs', async function () {
       now: '2026-06-19T10:01:00.000Z',
       sourceRunStaleAfterMs: 10 * 60 * 1000
     });
-  }, /already running/);
+  }, function (error) {
+    assert.equal(error.code, 'source_run_already_running');
+    assert.equal(error.statusCode, 409);
+    assert.equal(error.details.sourceId, source.id);
+    assert.match(error.message, /already running/);
+    return true;
+  });
 
   assert.equal(handlerCalls, 0);
   assert.equal(savedSources, 0);
+});
+
+test('tracked source ingest classifies source state failures', async function () {
+  const disabledSource = createSource({
+    enabled: false
+  });
+  const noHandlerSource = createSource({
+    sourceType: 'custom-feed'
+  });
+
+  await assert.rejects(function () {
+    return runTrackedSourceIngestTask({
+      sourceId: 'missing-source',
+      sourceRepository: createSourceRepository([]),
+      sourceIngestHandlerRegistry: createHandlerRegistry(createHandlerResult)
+    });
+  }, function (error) {
+    assert.equal(error.code, 'source_not_found');
+    assert.equal(error.statusCode, 404);
+    assert.equal(error.details.sourceId, 'missing-source');
+    return true;
+  });
+
+  await assert.rejects(function () {
+    return runTrackedSourceIngestTask({
+      sourceId: disabledSource.id,
+      sourceRepository: createSourceRepository([disabledSource]),
+      sourceIngestHandlerRegistry: createHandlerRegistry(createHandlerResult)
+    });
+  }, function (error) {
+    assert.equal(error.code, 'source_disabled');
+    assert.equal(error.statusCode, 409);
+    assert.equal(error.details.sourceId, disabledSource.id);
+    return true;
+  });
+
+  await assert.rejects(function () {
+    return runTrackedSourceIngestTask({
+      sourceId: noHandlerSource.id,
+      sourceRepository: createSourceRepository([noHandlerSource]),
+      sourceIngestHandlerRegistry: {
+        findHandler() {
+          return undefined;
+        }
+      }
+    });
+  }, function (error) {
+    assert.equal(error.code, 'source_type_not_ingestible');
+    assert.equal(error.statusCode, 400);
+    assert.equal(error.details.sourceId, noHandlerSource.id);
+    assert.equal(error.details.sourceType, 'custom-feed');
+    return true;
+  });
 });
 
 test('tracked source ingest recovers stale running source state', async function () {
@@ -237,6 +296,18 @@ function createHandlerResult() {
       thread: {
         sourceThreadId: 'thread-1'
       }
+    }
+  };
+}
+
+function createSourceRepository(sources) {
+  return {
+    async saveSource() {},
+    async findSource(id) {
+      return sources.find(function (source) { return source.id === id; });
+    },
+    async listSources() {
+      return sources;
     }
   };
 }

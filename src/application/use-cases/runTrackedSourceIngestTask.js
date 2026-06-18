@@ -22,14 +22,14 @@ async function runTrackedSourceIngestTask(options) {
   const source = await sourceRepository.findSource(safeOptions.sourceId);
 
   if (!source) {
-    throw new Error('Unknown tracked source: ' + safeOptions.sourceId);
+    throw sourceNotFoundError(safeOptions.sourceId);
   }
   if (source.enabled === false) {
-    throw new Error('Tracked source is disabled: ' + source.id);
+    throw sourceDisabledError(source);
   }
   const handler = handlerRegistry.findHandler(source);
   if (!handler) {
-    throw new Error('Tracked source type is not ingestible yet: ' + source.sourceType);
+    throw sourceTypeNotIngestibleError(source);
   }
   const adapter = safeOptions.adapter || resolveAdapter(handler, source, safeOptions.getAdapter);
 
@@ -93,12 +93,7 @@ async function acquireSourceRun(sourceRepository, source, options) {
 
 function sourceAcquireFailureError(source, result) {
   if (result && result.reason === 'unknown-source') {
-    return createApplicationError('source_not_found', 'Unknown tracked source: ' + source.id, {
-      statusCode: 404,
-      details: {
-        sourceId: source.id
-      }
-    });
+    return sourceNotFoundError(source.id);
   }
   if (result && result.reason === 'transition-lock-held') {
     return createApplicationError('source_run_transition_locked', 'Tracked source run transition is locked: ' + source.id, {
@@ -112,6 +107,34 @@ function sourceAcquireFailureError(source, result) {
     statusCode: 409,
     details: {
       sourceId: source.id
+    }
+  });
+}
+
+function sourceNotFoundError(sourceId) {
+  return createApplicationError('source_not_found', 'Unknown tracked source: ' + sourceId, {
+    statusCode: 404,
+    details: {
+      sourceId
+    }
+  });
+}
+
+function sourceDisabledError(source) {
+  return createApplicationError('source_disabled', 'Tracked source is disabled: ' + source.id, {
+    statusCode: 409,
+    details: {
+      sourceId: source.id
+    }
+  });
+}
+
+function sourceTypeNotIngestibleError(source) {
+  return createApplicationError('source_type_not_ingestible', 'Tracked source type is not ingestible yet: ' + source.sourceType, {
+    statusCode: 400,
+    details: {
+      sourceId: source.id,
+      sourceType: source.sourceType
     }
   });
 }
