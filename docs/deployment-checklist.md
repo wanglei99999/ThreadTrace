@@ -26,7 +26,7 @@ The checklist returns `ok`, `warn`, or `fail`. HTTP returns `503` when the check
 | Key | Area | Evidence |
 | --- | --- | --- |
 | `runtime.configuration` | runtime | Redacted runtime diagnostics are available. |
-| `resources.storage` | resources | File store paths or PostgreSQL ping checks. |
+| `resources.storage` | resources | File store paths, PostgreSQL ping checks, and required PostgreSQL tables. |
 | `sources.ingestConfiguration` | sources | Source locations, ingest handlers, and adapters. |
 | `workers.readiness` | workers | Stale/failed worker runs and expired leases. |
 | `notifications.outbox` | notifications | Recent notification delivery failures. |
@@ -36,7 +36,7 @@ The checklist returns `ok`, `warn`, or `fail`. HTTP returns `503` when the check
 
 Before production traffic, prepare the resources below and use the checklist as the common validation point:
 
-- PostgreSQL: set `THREADTRACE_STORAGE=postgres` and provide `THREADTRACE_DATABASE_URL` or host-based variables.
+- PostgreSQL: set `THREADTRACE_STORAGE=postgres`, provide `THREADTRACE_DATABASE_URL` or host-based variables, and apply `docs/postgresql-schema.sql`.
 - Workers: run either the combined operations worker or separate due-source and notification workers.
 - LLM: keep `mock` for local smoke tests, then configure provider, model, and API key for real enrichment.
 - Notifications: start with file outbox delivery, then add a webhook or future channel when an external receiver is ready.

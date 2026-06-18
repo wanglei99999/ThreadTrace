@@ -5,6 +5,7 @@ const test = require('node:test');
 const { getRuntimeDiagnostics } = require('../src/application/use-cases/getRuntimeDiagnostics');
 const { createThreadTraceConfig } = require('../src/runtime/threadTraceConfig');
 const { createThreadTraceRuntime } = require('../src/runtime/threadTraceRuntime');
+const { REQUIRED_TABLES } = require('../src/infrastructure/diagnostics/postgresResourceDiagnostics');
 
 test('runtime diagnostics redacts sensitive LLM configuration', async function () {
   const config = createThreadTraceConfig({
@@ -87,6 +88,13 @@ test('runtime diagnostics pings injected PostgreSQL client', async function () {
     postgresClient: {
       async query(sql) {
         queries.push(sql);
+        if (/information_schema\.tables/.test(sql)) {
+          return {
+            rows: REQUIRED_TABLES.map(function (tableName) {
+              return { table_name: tableName };
+            })
+          };
+        }
         return { rows: [{ ok: 1 }] };
       }
     }
@@ -98,8 +106,14 @@ test('runtime diagnostics pings injected PostgreSQL client', async function () {
 
   assert.equal(diagnostics.status, 'ok');
   assert.equal(diagnostics.resources.storageMode, 'postgres');
-  assert.deepEqual(queries, ['select 1 as ok']);
+  assert.deepEqual(queries, [
+    'select 1 as ok',
+    'select table_name from information_schema.tables where table_schema = $1 and table_name = any($2)'
+  ]);
   assert.equal(diagnostics.checks.find(function (item) {
     return item.key === 'resources.postgres';
+  }).status, 'ok');
+  assert.equal(diagnostics.checks.find(function (item) {
+    return item.key === 'resources.postgresSchema';
   }).status, 'ok');
 });
