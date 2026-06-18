@@ -2,6 +2,8 @@ node_modules/
 .env
 .env.*
 !.env.example
+*.log
+npm-debug.log*
 
 example/*_files/
 
@@ -9,6 +11,13 @@ data/parsed/*.json
 data/reports/*.md
 data/reports/*.json
 data/store/
+data/store-*/
+data/store-copy/
+data/tmp/
 
+coverage/
+dist/
+build/
+.tmp/
 .DS_Store
 Thumbs.db
