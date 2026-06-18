@@ -151,6 +151,8 @@ async function routeRequest(request, response, context) {
       enabled: body.enabled,
       tags: body.tags,
       allowUnknownSourceType: body.allowUnknownSourceType,
+      allowRemoteFetch: body.allowRemoteFetch,
+      dryRunIngest: body.dryRunIngest || body.includeIngestDryRun,
       schedule: body.schedule,
       intervalMinutes: body.intervalMinutes,
       nextRunAt: body.nextRunAt,

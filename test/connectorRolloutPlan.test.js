@@ -39,6 +39,20 @@ test('connector rollout plan aggregates rollout steps and next actions', functio
         }
       ]
     },
+    sourceIngestDryRun: {
+      status: 'ok',
+      dryRun: true,
+      thread: {
+        sourceThreadId: 'external-thread-1',
+        postCount: 1
+      },
+      repositoryWrites: {
+        threadSnapshots: 1,
+        reports: 1,
+        tasks: 3,
+        rawThreadPages: 0
+      }
+    },
     connectorReadiness: {
       status: 'ok',
       connectorCount: 1,
@@ -58,7 +72,7 @@ test('connector rollout plan aggregates rollout steps and next actions', functio
   assert.equal(plan.sourceKey, 'external');
   assert.equal(plan.sourceType, 'external-feed');
   assert.equal(plan.modulePath, 'D:/connectors/external.cjs');
-  assert.equal(plan.steps.length, 5);
+  assert.equal(plan.steps.length, 6);
   assert.equal(plan.steps.find(function (step) {
     return step.key === 'source.onboardingPreflight';
   }).status, 'fail');
@@ -103,13 +117,43 @@ test('runtime connector rollout plan can simulate an external connector module',
     now: '2026-06-19T10:00:00.000Z'
   });
 
-  assert.equal(plan.status, 'ok');
+  assert.equal(plan.status, 'warn');
   assert.equal(plan.connectorModuleValidation.valid, true);
   assert.equal(plan.sourceOnboardingPreflight.status, 'ok');
   assert.equal(plan.sourceOnboardingPreflight.catalog.sourceType.sourceType, 'rollout-feed');
-  assert.equal(plan.nextActions.length, 0);
+  assert.equal(plan.nextActions.find(function (action) {
+    return action.key === 'source.ingestDryRun';
+  }).severity, 'warning');
   assert.equal(runtime.listSourceIngestHandlers().some(function (handler) {
     return handler.sourceType === 'rollout-feed';
   }), false);
 });
 
+test('runtime connector rollout plan can include source ingest dry-run', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-connector-rollout-dry-run-'));
+  const inputFile = path.join(tempDir, 'thread.json');
+  await fs.writeFile(inputFile, JSON.stringify({
+    sourceKey: 'external',
+    sourceThreadId: 'rollout-dry-run-thread',
+    title: 'Rollout dry-run thread',
+    posts: []
+  }, null, 2) + '\n', 'utf8');
+
+  const runtime = createThreadTraceRuntime({
+    storeDir: path.join(tempDir, 'store')
+  });
+  const plan = await runtime.getConnectorRolloutPlan({
+    sourceKey: 'external',
+    sourceType: 'normalized-thread-json',
+    inputFile,
+    dryRunIngest: true,
+    now: '2026-06-19T10:00:00.000Z'
+  });
+
+  assert.equal(plan.status, 'warn');
+  assert.equal(plan.sourceIngestDryRun.status, 'ok');
+  assert.equal(plan.sourceIngestDryRun.thread.sourceThreadId, 'rollout-dry-run-thread');
+  assert.equal(plan.steps.find(function (step) {
+    return step.key === 'source.ingestDryRun';
+  }).status, 'ok');
+});

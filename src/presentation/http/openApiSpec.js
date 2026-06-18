@@ -355,6 +355,8 @@ function createOpenApiSpec() {
                     scheduleEnabled: { type: 'boolean' },
                     enabled: { type: 'boolean' },
                     allowUnknownSourceType: { type: 'boolean', example: false },
+                    allowRemoteFetch: { type: 'boolean', example: false },
+                    dryRunIngest: { type: 'boolean', example: true },
                     limit: { type: 'number', example: 100 },
                     now: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
                     storeDir: { type: 'string' }

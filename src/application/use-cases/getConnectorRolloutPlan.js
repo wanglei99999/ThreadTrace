@@ -5,6 +5,7 @@ function getConnectorRolloutPlan(options) {
   const generatedAt = safeOptions.now || new Date().toISOString();
   const moduleValidation = safeOptions.connectorModuleValidation;
   const onboarding = safeOptions.sourceOnboardingPreflight;
+  const dryRun = safeOptions.sourceIngestDryRun;
   const readiness = safeOptions.connectorReadiness || {};
   const checklist = safeOptions.deploymentChecklist || {};
   const sourceKey = safeOptions.sourceKey || safeOptions.forum || (onboarding && onboarding.sourceKey);
@@ -16,6 +17,7 @@ function getConnectorRolloutPlan(options) {
     }),
     step('connectorModule.validation', optionalReportStatus(moduleValidation), moduleValidation ? 'Connector module file validates.' : 'Connector module validation is not requested.', moduleValidationSummary(moduleValidation)),
     step('source.onboardingPreflight', optionalReportStatus(onboarding), onboarding ? 'Source onboarding preflight validates the source draft.' : 'Source onboarding preflight is not requested.', onboardingSummary(onboarding)),
+    step('source.ingestDryRun', optionalReportStatus(dryRun), dryRun ? 'Source ingest dry-run executes the handler with isolated repositories.' : 'Source ingest dry-run is not requested.', dryRunSummary(dryRun)),
     step('connectors.readiness', readiness.status || 'warn', 'Current connector readiness is visible.', {
       connectorCount: readiness.connectorCount,
       sourceCount: readiness.sourceCount,
@@ -37,6 +39,7 @@ function getConnectorRolloutPlan(options) {
     nextActions: nextActions(steps),
     connectorModuleValidation: moduleValidation,
     sourceOnboardingPreflight: onboarding,
+    sourceIngestDryRun: dryRun,
     connectorReadiness: readiness,
     deploymentChecklist: checklist
   };
@@ -77,6 +80,17 @@ function onboardingSummary(report) {
   };
 }
 
+function dryRunSummary(report) {
+  if (!report) return {};
+  return {
+    status: report.status,
+    dryRun: report.dryRun,
+    thread: report.thread,
+    repositoryWrites: report.repositoryWrites,
+    error: report.error
+  };
+}
+
 function nextActions(steps) {
   return steps.filter(function (item) {
     return item.status !== 'ok';
@@ -95,6 +109,7 @@ function commandForStep(key) {
     'contract.connectorModule': 'node src/presentation/cli/threadtrace.js connector-module-contract',
     'connectorModule.validation': 'node src/presentation/cli/threadtrace.js validate-connector-module --module-path <file>',
     'source.onboardingPreflight': 'node src/presentation/cli/threadtrace.js source-onboarding-preflight --module-path <file> --location-file <file>',
+    'source.ingestDryRun': 'node src/presentation/cli/threadtrace.js source-ingest-dry-run --module-path <file> --location-file <file>',
     'connectors.readiness': 'node src/presentation/cli/threadtrace.js connector-readiness',
     'deployment.checklist': 'node src/presentation/cli/threadtrace.js deployment-checklist'
   };

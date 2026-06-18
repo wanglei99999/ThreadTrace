@@ -330,6 +330,11 @@ function createThreadTraceRuntime(options) {
           modulePath
         }))
         : undefined;
+      const sourceIngestDryRun = shouldRunSourceIngestDryRun(safeRequest)
+        ? await this.dryRunSourceIngest(Object.assign({}, safeRequest, {
+          modulePath
+        }))
+        : undefined;
       const connectorReadiness = await this.getConnectorReadiness({
         sourceKey,
         enabled: safeRequest.enabled,
@@ -351,6 +356,7 @@ function createThreadTraceRuntime(options) {
         connectorModuleContract: getConnectorModuleContract(),
         connectorModuleValidation,
         sourceOnboardingPreflight,
+        sourceIngestDryRun,
         connectorReadiness,
         deploymentChecklist,
         sourceKey,
@@ -1051,6 +1057,11 @@ function shouldRunSourceOnboardingPreflight(request) {
     request.url ||
     request.location
   );
+}
+
+function shouldRunSourceIngestDryRun(request) {
+  if (!request) return false;
+  return request.dryRunIngest === true || request.includeIngestDryRun === true;
 }
 
 function connectorModulePaths(options, config) {

@@ -7,6 +7,7 @@ It aggregates the checks an operator would otherwise run one by one:
 - connector module contract
 - optional connector module validation
 - optional source onboarding preflight
+- optional source ingest dry-run
 - current connector readiness
 - current deployment checklist
 
@@ -19,12 +20,13 @@ node src/presentation/cli/threadtrace.js connector-rollout-plan `
   --forum external `
   --source-type external-feed `
   --module-path D:\connectors\custom-forum.cjs `
-  --location-file D:\connectors\external-feed-location.json
+  --location-file D:\connectors\external-feed-location.json `
+  --dry-run-ingest true
 ```
 
 The command exits with code `2` when any rollout step has `status=fail`, which makes it suitable for release gates and scripted operator checklists.
 
-If no `--module-path` is supplied, module validation is marked as `warn` and the plan still reports the contract, runtime readiness, and deployment checklist. If no source draft fields are supplied, source onboarding preflight is marked as `warn`.
+If no `--module-path` is supplied, module validation is marked as `warn` and the plan still reports the contract, runtime readiness, and deployment checklist. If no source draft fields are supplied, source onboarding preflight is marked as `warn`. If `dryRunIngest` is not requested, source ingest dry-run is marked as `warn`.
 
 ## HTTP
 
@@ -36,6 +38,7 @@ content-type: application/json
   "sourceKey": "external",
   "sourceType": "external-feed",
   "modulePath": "D:/connectors/custom-forum.cjs",
+  "dryRunIngest": true,
   "location": {
     "feedUrl": "https://example.test/feed"
   }
@@ -64,4 +67,3 @@ The endpoint returns HTTP `200` for `ok` and `warn` plans, and HTTP `503` for a 
 ```
 
 `nextActions` is generated from non-ok steps and includes the CLI command an operator can run to inspect that area in more detail.
-

@@ -628,6 +628,8 @@ function main(argv) {
       location: parseLocationOption(options),
       enabled: options.enabled === undefined ? undefined : options.enabled !== 'false',
       allowUnknownSourceType: options.allowUnknownSourceType === 'true',
+      allowRemoteFetch: options.allowRemoteFetch === 'true',
+      dryRunIngest: options.dryRunIngest === 'true',
       intervalMinutes: options.intervalMinutes,
       nextRunAt: options.nextRunAt,
       scheduleEnabled: options.scheduleEnabled === undefined ? undefined : options.scheduleEnabled !== 'false',
@@ -693,6 +695,8 @@ function main(argv) {
       location: parseLocationOption(options),
       enabled: options.enabled === undefined ? undefined : options.enabled !== 'false',
       allowUnknownSourceType: options.allowUnknownSourceType === 'true',
+      allowRemoteFetch: options.allowRemoteFetch === 'true',
+      dryRunIngest: options.dryRunIngest === 'true',
       intervalMinutes: options.intervalMinutes,
       nextRunAt: options.nextRunAt,
       scheduleEnabled: options.scheduleEnabled === undefined ? undefined : options.scheduleEnabled !== 'false',
@@ -780,6 +784,8 @@ function main(argv) {
       location: parseLocationOption(options),
       enabled: options.enabled === undefined ? undefined : options.enabled !== 'false',
       allowUnknownSourceType: options.allowUnknownSourceType === 'true',
+      allowRemoteFetch: options.allowRemoteFetch === 'true',
+      dryRunIngest: options.dryRunIngest === 'true',
       intervalMinutes: options.intervalMinutes,
       nextRunAt: options.nextRunAt,
       scheduleEnabled: options.scheduleEnabled === undefined ? undefined : options.scheduleEnabled !== 'false',
@@ -1298,6 +1304,13 @@ function parseArgs(args) {
       } else {
         options.allowRemoteFetch = 'true';
       }
+    } else if (item === '--dry-run-ingest') {
+      if (args[index + 1] && !String(args[index + 1]).startsWith('--')) {
+        options.dryRunIngest = args[index + 1];
+        index += 1;
+      } else {
+        options.dryRunIngest = 'true';
+      }
     } else if (item === '--interval-minutes') {
       options.intervalMinutes = args[index + 1];
       index += 1;
@@ -1458,7 +1471,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js validate-thread-json --input-file file [--forum sourceKey] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js source-onboarding-preflight [--forum nga] [--source-type type] [--module-path file] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js source-ingest-dry-run [--forum nga] [--source-type type] [--module-path file] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--allow-remote-fetch true] [--now iso]');
-  console.log('  node src/presentation/cli/threadtrace.js connector-rollout-plan [--forum nga] [--source-type type] [--module-path file] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--store-dir dir] [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js connector-rollout-plan [--forum nga] [--source-type type] [--module-path file] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--dry-run-ingest true] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--source-type type] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-diagnostics [--forum nga] [--enabled true] [--store-dir dir]');
