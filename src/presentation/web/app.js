@@ -237,19 +237,18 @@ async function loadSystemStatus() {
     const health = await fetchJson('/health');
     const adapters = await fetchJson('/adapters');
     const openApi = await fetchJson('/openapi.json');
-    const tasks = await fetchJson('/api/tasks?limit=5');
-    const sources = await fetchJson('/api/sources?limit=5');
-    const events = await fetchJson('/api/events?limit=5');
-    const rawPages = await fetchJson('/api/raw-pages?limit=5');
+    const overview = await fetchJson('/api/operations/overview?limit=100');
     target.innerHTML = [
       statusRow('服务', health.ok ? '运行中' : '异常'),
+      statusRow('存储', overview.storageMode),
       statusRow('适配器', String((adapters.adapters || []).length)),
       statusRow('API 契约', openApi.openapi),
       statusRow('端点', String(Object.keys(openApi.paths || {}).length)),
-      statusRow('来源', String((sources.sources || []).length)),
-      statusRow('原始页', String((rawPages.pages || []).length)),
-      statusRow('事件', String((events.events || []).length)),
-      statusRow('最近任务', String((tasks.tasks || []).length))
+      statusRow('来源', overview.sources.enabled + '/' + overview.sources.total + ' · due ' + overview.sources.due),
+      statusRow('任务', 'running ' + overview.tasks.running + ' · failed ' + overview.tasks.failed),
+      statusRow('事件', 'pending ' + overview.events.pending + ' · failed ' + overview.events.failed + ' · open ' + overview.events.unacknowledged),
+      statusRow('原始页', String(overview.rawPages.total)),
+      statusRow('生成时间', overview.generatedAt)
     ].join('');
   } catch (error) {
     target.innerHTML = '<div class="error">' + escapeHtml(error.message) + '</div>';

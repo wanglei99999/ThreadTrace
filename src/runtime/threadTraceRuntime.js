@@ -15,6 +15,7 @@ const { acknowledgeNotificationEvent } = require('../application/use-cases/ackno
 const { dispatchPendingNotificationEvents } = require('../application/use-cases/dispatchPendingNotificationEvents');
 const { fetchAndStoreThreadPage } = require('../application/use-cases/fetchAndStoreThreadPage');
 const { enrichAnalysisReportWithLlm } = require('../application/use-cases/enrichAnalysisReportWithLlm');
+const { getOperationalOverview } = require('../application/use-cases/getOperationalOverview');
 const { runIngestRawThreadPageTask } = require('../application/use-cases/runIngestRawThreadPageTask');
 const { indexSavedThreadDirectory } = require('../application/use-cases/indexSavedThreadDirectory');
 const { searchEvidence } = require('../application/use-cases/searchEvidence');
@@ -159,6 +160,22 @@ function createThreadTraceRuntime(options) {
         type: safeRequest.type,
         limit: safeRequest.limit || 20
       });
+    },
+
+    async getOperationalOverview(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      const overview = await getOperationalOverview({
+        sourceRepository: repositories.sourceRepository,
+        taskRepository: repositories.taskRepository,
+        notificationEventRepository: repositories.notificationEventRepository,
+        rawThreadPageRepository: repositories.rawThreadPageRepository,
+        now: safeRequest.now,
+        limit: safeRequest.limit || 100
+      });
+      return Object.assign({
+        storageMode: defaults.storageMode
+      }, overview);
     },
 
     async registerSource(request) {

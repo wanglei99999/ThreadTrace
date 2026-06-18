@@ -142,6 +142,16 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/operations/overview') {
+    const overview = await context.runtime.getOperationalOverview({
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,
+      now: url.searchParams.get('now') || undefined,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, 200, overview);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/events') {
     const acknowledgedParam = url.searchParams.get('acknowledged');
     const events = await context.runtime.listNotificationEvents({

@@ -164,6 +164,25 @@ function main(argv) {
     return;
   }
 
+  if (command === 'operations-overview') {
+    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    runtime.getOperationalOverview({
+      limit: options.limit ? Number(options.limit) : 100,
+      now: options.now,
+      storeDir
+    }).then(function (overview) {
+      console.log('Storage: ' + overview.storageMode);
+      console.log('Sources: total=' + overview.sources.total + ', enabled=' + overview.sources.enabled + ', due=' + overview.sources.due + ', failed=' + overview.sources.failed);
+      console.log('Tasks: total=' + overview.tasks.total + ', running=' + overview.tasks.running + ', failed=' + overview.tasks.failed);
+      console.log('Events: pending=' + overview.events.pending + ', failed=' + overview.events.failed + ', unacknowledged=' + overview.events.unacknowledged + ', due=' + overview.events.dueForDelivery);
+      console.log('Raw pages: total=' + overview.rawPages.total + ', latest=' + (overview.rawPages.latestFetchedAt || 'none'));
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'list-events') {
     const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
     runtime.listNotificationEvents({
@@ -645,6 +664,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js ingest-html-dir [--forum nga] [--input dir] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-ingest-task [--forum nga] [--input dir] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-tasks [--store-dir dir] [--status status] [--type type] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js operations-overview [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js list-events [--source-id id] [--type type] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js fetch-thread-page [--forum nga] [--url url | --source-id id] [--source-thread-id id] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-raw-pages [--forum nga] [--source-thread-id id] [--limit n] [--store-dir dir]');

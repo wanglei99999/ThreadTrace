@@ -63,6 +63,41 @@ test('http server exposes semantic enrichment API', async function () {
   }
 });
 
+test('http server exposes operational overview API', async function () {
+  const server = createThreadTraceServer({
+    runtime: {
+      listAdapters() {
+        return [{ sourceKey: 'nga', displayName: 'NGA' }];
+      },
+      async getOperationalOverview(request) {
+        return {
+          generatedAt: request.now || '2026-06-18T10:00:00.000Z',
+          storageMode: 'file',
+          sources: { total: 1, enabled: 1, disabled: 0, due: 1, running: 0, failed: 0, dueSources: [] },
+          tasks: { total: 2, queued: 0, running: 0, completed: 1, failed: 1 },
+          events: { pending: 1, failed: 0, unacknowledged: 1, dueForDelivery: 1 },
+          rawPages: { total: 1 },
+          recent: { tasks: [], events: [], rawPages: [] }
+        };
+      }
+    }
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const overview = await getJson(baseUrl + '/api/operations/overview?limit=10');
+
+    assert.equal(overview.storageMode, 'file');
+    assert.equal(overview.sources.due, 1);
+    assert.equal(overview.tasks.failed, 1);
+    assert.equal(overview.events.dueForDelivery, 1);
+  } finally {
+    await close(server);
+  }
+});
+
 test('http server handles CORS preflight and validates interpret text input', async function () {
   const server = createThreadTraceServer({
     defaultInputDir: path.resolve(__dirname, '..', 'example')
