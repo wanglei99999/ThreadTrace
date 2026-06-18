@@ -19,6 +19,18 @@ infrastructure
   llm providers: OpenAI-compatible, local model, mock
 ```
 
+## 应用端口
+
+外部资源通过应用层端口接入，避免业务用例直接依赖具体实现。
+
+- `ThreadRepository`: 保存和读取主题快照。
+- `AnalysisReportRepository`: 保存和读取分析报告。
+- `LlmProvider`: 结构化语义抽取和新发言解读。
+- `RetrievalIndex`: 全文、向量或混合检索。
+- `ForumCrawler`: 在线获取论坛原始页面。
+
+具体契约见 `docs/resource-interfaces.md`。
+
 ## 可扩展论坛适配器
 
 每个论坛只需要实现统一适配器接口：
