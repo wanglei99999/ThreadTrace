@@ -5,7 +5,10 @@ const test = require('node:test');
 const { getRuntimeDiagnostics } = require('../src/application/use-cases/getRuntimeDiagnostics');
 const { createThreadTraceConfig } = require('../src/runtime/threadTraceConfig');
 const { createThreadTraceRuntime } = require('../src/runtime/threadTraceRuntime');
-const { REQUIRED_TABLES } = require('../src/infrastructure/diagnostics/postgresResourceDiagnostics');
+const {
+  REQUIRED_INDEXES,
+  REQUIRED_TABLES
+} = require('../src/infrastructure/diagnostics/postgresResourceDiagnostics');
 
 test('runtime diagnostics redacts sensitive LLM configuration', async function () {
   const config = createThreadTraceConfig({
@@ -95,6 +98,13 @@ test('runtime diagnostics pings injected PostgreSQL client', async function () {
             })
           };
         }
+        if (/pg_indexes/.test(sql)) {
+          return {
+            rows: REQUIRED_INDEXES.map(function (indexName) {
+              return { indexname: indexName };
+            })
+          };
+        }
         return { rows: [{ ok: 1 }] };
       }
     }
@@ -108,12 +118,16 @@ test('runtime diagnostics pings injected PostgreSQL client', async function () {
   assert.equal(diagnostics.resources.storageMode, 'postgres');
   assert.deepEqual(queries, [
     'select 1 as ok',
-    'select table_name from information_schema.tables where table_schema = $1 and table_name = any($2)'
+    'select table_name from information_schema.tables where table_schema = $1 and table_name = any($2)',
+    'select indexname from pg_indexes where schemaname = $1 and indexname = any($2)'
   ]);
   assert.equal(diagnostics.checks.find(function (item) {
     return item.key === 'resources.postgres';
   }).status, 'ok');
   assert.equal(diagnostics.checks.find(function (item) {
     return item.key === 'resources.postgresSchema';
+  }).status, 'ok');
+  assert.equal(diagnostics.checks.find(function (item) {
+    return item.key === 'resources.postgresIndexes';
   }).status, 'ok');
 });

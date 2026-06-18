@@ -26,6 +26,8 @@ Task records may include:
 
 The metadata is observational. It does not yet deduplicate task execution. That is intentional: persisted `_trace.idempotencyKey` gives us a compatible migration path toward real idempotent command handling without changing the PostgreSQL task schema.
 
+PostgreSQL deployments should apply `docs/postgresql-schema.sql`; it includes expression indexes for `requestId`, `traceId`, and `idempotencyKey` task lookups. Runtime diagnostics report missing baseline indexes as `resources.postgresIndexes`.
+
 ## Propagation Rules
 
 - HTTP task-triggering endpoints propagate `x-request-id` and `idempotency-key`.

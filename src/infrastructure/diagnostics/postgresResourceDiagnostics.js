@@ -11,6 +11,36 @@ const REQUIRED_TABLES = [
   'worker_leases'
 ];
 
+const REQUIRED_INDEXES = [
+  'idx_tracked_sources_source_key',
+  'idx_tracked_sources_enabled',
+  'idx_tracked_sources_run_state_status',
+  'idx_tracked_sources_cursor_thread',
+  'idx_thread_snapshots_captured_at',
+  'idx_thread_snapshots_title_trgm',
+  'idx_analysis_reports_thread',
+  'idx_analysis_reports_type_time',
+  'idx_task_records_status',
+  'idx_task_records_type_created',
+  'idx_task_records_trace_request',
+  'idx_task_records_trace_id',
+  'idx_task_records_trace_idempotency',
+  'idx_notification_events_created',
+  'idx_notification_events_delivery_status',
+  'idx_notification_events_due',
+  'idx_notification_events_ack',
+  'idx_notification_events_source',
+  'idx_retrieval_documents_thread',
+  'idx_retrieval_documents_author',
+  'idx_retrieval_documents_text_trgm',
+  'idx_raw_thread_pages_hash',
+  'idx_raw_thread_pages_thread',
+  'idx_worker_runs_type_started',
+  'idx_worker_runs_status_heartbeat',
+  'idx_worker_leases_type',
+  'idx_worker_leases_expires'
+];
+
 async function inspectPostgresResources(options) {
   const safeOptions = options || {};
   const client = safeOptions.client;
@@ -36,11 +66,13 @@ async function inspectPostgresResources(options) {
   try {
     await client.query('select 1 as ok');
     const schemaCheck = await inspectSchema(client);
+    const indexCheck = await inspectIndexes(client);
     return {
       storageMode: 'postgres',
       checks: [
         check('resources.postgres', 'ok', 'reachable', 'PostgreSQL responded to a lightweight ping.'),
-        schemaCheck
+        schemaCheck,
+        indexCheck
       ]
     };
   } catch (error) {
@@ -50,6 +82,27 @@ async function inspectPostgresResources(options) {
         check('resources.postgres', 'fail', errorMessage(error), 'PostgreSQL ping failed.')
       ]
     };
+  }
+}
+
+async function inspectIndexes(client) {
+  try {
+    const result = await client.query(
+      'select indexname from pg_indexes where schemaname = $1 and indexname = any($2)',
+      ['public', REQUIRED_INDEXES]
+    );
+    const existing = new Set((result.rows || []).map(function (row) {
+      return row.indexname;
+    }));
+    const missing = REQUIRED_INDEXES.filter(function (indexName) {
+      return !existing.has(indexName);
+    });
+    if (missing.length > 0) {
+      return check('resources.postgresIndexes', 'fail', missing.join(','), 'PostgreSQL schema is missing required ThreadTrace indexes.');
+    }
+    return check('resources.postgresIndexes', 'ok', REQUIRED_INDEXES.length, 'PostgreSQL schema contains required ThreadTrace indexes.');
+  } catch (error) {
+    return check('resources.postgresIndexes', 'fail', errorMessage(error), 'PostgreSQL index check failed.');
   }
 }
 
@@ -89,5 +142,6 @@ function errorMessage(error) {
 
 module.exports = {
   inspectPostgresResources,
-  REQUIRED_TABLES
+  REQUIRED_TABLES,
+  REQUIRED_INDEXES
 };

@@ -67,6 +67,9 @@ create table if not exists task_records (
 
 create index if not exists idx_task_records_status on task_records(status);
 create index if not exists idx_task_records_type_created on task_records(type, created_at desc);
+create index if not exists idx_task_records_trace_request on task_records((input -> '_trace' ->> 'requestId'));
+create index if not exists idx_task_records_trace_id on task_records((input -> '_trace' ->> 'traceId'));
+create index if not exists idx_task_records_trace_idempotency on task_records((input -> '_trace' ->> 'idempotencyKey'));
 
 create table if not exists notification_events (
   id uuid primary key,
