@@ -8,6 +8,7 @@ example/*_files/
 data/parsed/*.json
 data/reports/*.md
 data/reports/*.json
+data/store/
 
 .DS_Store
 Thumbs.db
