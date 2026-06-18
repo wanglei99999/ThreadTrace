@@ -31,6 +31,35 @@ test('task trace context summarizes correlated tasks', async function () {
   assert.equal(context.tasks[0].trace.requestId, 'request-1');
 });
 
+test('task trace context reports idempotency duplicate risk', async function () {
+  const tasks = [
+    task('task-2', 'ingest-saved-thread-directory', 'completed', '2026-06-19T10:02:00.000Z', {
+      idempotencyKey: 'idem-1'
+    }),
+    task('task-1', 'ingest-saved-thread-directory', 'failed', '2026-06-19T10:01:00.000Z', {
+      idempotencyKey: 'idem-1'
+    })
+  ];
+  const context = await getTaskTraceContext({
+    idempotencyKey: 'idem-1',
+    taskRepository: {
+      async saveTask() {},
+      async findTask() {},
+      async listTasks(query) {
+        assert.equal(query.idempotencyKey, 'idem-1');
+        return tasks;
+      }
+    }
+  });
+
+  assert.equal(context.summary.idempotency.idempotencyKey, 'idem-1');
+  assert.equal(context.summary.idempotency.taskCount, 2);
+  assert.equal(context.summary.idempotency.completedCount, 1);
+  assert.equal(context.summary.idempotency.duplicateExecutionRisk, true);
+  assert.equal(context.summary.idempotency.reusableTaskId, 'task-2');
+  assert.deepEqual(context.summary.idempotency.taskIds, ['task-2', 'task-1']);
+});
+
 test('task trace context requires a trace query key', async function () {
   await assert.rejects(function () {
     return getTaskTraceContext({
@@ -47,14 +76,15 @@ test('task trace context requires a trace query key', async function () {
   });
 });
 
-function task(id, type, status, createdAt) {
+function task(id, type, status, createdAt, traceOverrides) {
   return {
     id,
     type,
     status,
     input: {
       _trace: {
-        requestId: 'request-1'
+        requestId: 'request-1',
+        ...(traceOverrides || {})
       }
     },
     output: {},

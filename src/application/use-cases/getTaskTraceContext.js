@@ -23,7 +23,7 @@ async function getTaskTraceContext(options) {
     generatedAt: safeOptions.now || new Date().toISOString(),
     query,
     taskCount: tasks.length,
-    summary: summarizeTasks(tasks),
+    summary: summarizeTasks(tasks, query),
     tasks: tasks.map(toTraceTask)
   };
 }
@@ -37,11 +37,12 @@ function traceQuery(options) {
   };
 }
 
-function summarizeTasks(tasks) {
+function summarizeTasks(tasks, query) {
   return {
     byStatus: countBy(tasks, 'status'),
     byType: countBy(tasks, 'type'),
-    latestTask: tasks[0] ? toTraceTask(tasks[0]) : undefined
+    latestTask: tasks[0] ? toTraceTask(tasks[0]) : undefined,
+    idempotency: summarizeIdempotency(tasks, query)
   };
 }
 
@@ -68,7 +69,24 @@ function toTraceTask(task) {
   };
 }
 
+function summarizeIdempotency(tasks, query) {
+  const idempotencyKey = query && query.idempotencyKey;
+  if (!idempotencyKey) return undefined;
+  const completedTasks = tasks.filter(function (task) {
+    return task.status === 'completed';
+  });
+  return {
+    idempotencyKey,
+    taskCount: tasks.length,
+    completedCount: completedTasks.length,
+    duplicateExecutionRisk: tasks.length > 1,
+    taskIds: tasks.map(function (task) { return task.id; }),
+    reusableTaskId: completedTasks[0] && completedTasks[0].id
+  };
+}
+
 module.exports = {
   getTaskTraceContext,
-  summarizeTasks
+  summarizeTasks,
+  summarizeIdempotency
 };

@@ -68,3 +68,5 @@ node src/presentation/cli/threadtrace.js trace-context --request-id http-request
 node src/presentation/cli/threadtrace.js trace-context --trace-id semantic-trace-1
 node src/presentation/cli/threadtrace.js trace-context --idempotency-key client-retry-key-1
 ```
+
+When querying by `idempotencyKey`, the response includes `summary.idempotency`. If `duplicateExecutionRisk=true`, more than one task was recorded for the same key and an operator should inspect the caller retry behavior before enabling automatic idempotent replay.
