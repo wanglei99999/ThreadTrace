@@ -17,6 +17,12 @@ npm run interpret:sample
 npm run test:unit
 ```
 
+启动本地 HTTP API：
+
+```powershell
+npm run serve
+```
+
 默认会读取 `example` 目录中的第一个 `.html` 文件，并把解析结果写入 `data/parsed/nga-thread-45974302.json`。基础分析会同时生成 JSON 报告和 Markdown 报告，Markdown 默认输出到 `data/reports/nga-thread-45974302.basic-report.md`。
 
 ## CLI
@@ -30,6 +36,13 @@ node src/presentation/cli/threadtrace.js analyze-html-dir --forum nga --input ex
 node src/presentation/cli/threadtrace.js ingest-html-dir --forum nga --input example --store-dir data/store
 node src/presentation/cli/threadtrace.js interpret-text-dir --forum nga --input example --text 科技后面看量确认
 ```
+
+## HTTP API
+
+- `GET /health`
+- `GET /adapters`
+- `POST /api/analyze-directory`
+- `POST /api/interpret-text`
 
 ## 项目分层
 
@@ -52,6 +65,7 @@ node src/presentation/cli/threadtrace.js interpret-text-dir --forum nga --input 
 - 提供本地文件仓库实现，可作为 PostgreSQL 前的开发替身。
 - 支持导入目录、分析并持久化主题快照和报告。
 - 支持新发言语境还原 MVP，按实体、观点关键词和作者线索召回历史证据。
+- 提供无依赖 HTTP API，供后续前端工作台和定时任务调用。
 - 输出统一 `ThreadSnapshot`。
 - 支持目录内多个保存页合并，面向长帖多页归档。
 - 规则型抽取市场实体与线索候选，包括股票代码、主题关键词和论坛主题链接。
