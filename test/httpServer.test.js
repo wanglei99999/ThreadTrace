@@ -404,6 +404,24 @@ test('http server maps expected application and request errors', async function 
       body: JSON.stringify({})
     });
     const invalidSearchBody = await invalidSearch.json();
+    const unknownSourceRun = await fetch(baseUrl + '/api/sources/missing-source/tasks/ingest', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({})
+    });
+    const unknownSourceRunBody = await unknownSourceRun.json();
+    const unknownSourceCrawl = await fetch(baseUrl + '/api/crawl-page', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        sourceId: 'missing-source'
+      })
+    });
+    const unknownSourceCrawlBody = await unknownSourceCrawl.json();
 
     assert.equal(invalidJson.status, 400);
     assert.equal(invalidJsonBody.error.code, 'invalid_json_body');
@@ -412,6 +430,12 @@ test('http server maps expected application and request errors', async function 
     assert.equal(invalidSourceBody.error.details.sourceType, 'unknown-feed');
     assert.equal(invalidSearch.status, 400);
     assert.equal(invalidSearchBody.error.code, 'search_missing_text');
+    assert.equal(unknownSourceRun.status, 404);
+    assert.equal(unknownSourceRunBody.error.code, 'source_not_found');
+    assert.equal(unknownSourceRunBody.error.details.sourceId, 'missing-source');
+    assert.equal(unknownSourceCrawl.status, 404);
+    assert.equal(unknownSourceCrawlBody.error.code, 'source_not_found');
+    assert.equal(unknownSourceCrawlBody.error.details.sourceId, 'missing-source');
   } finally {
     await close(server);
   }

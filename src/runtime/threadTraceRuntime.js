@@ -33,6 +33,7 @@ const { migrateStoreRecords } = require('../application/use-cases/migrateStoreRe
 const { runIngestRawThreadPageTask } = require('../application/use-cases/runIngestRawThreadPageTask');
 const { indexSavedThreadDirectory } = require('../application/use-cases/indexSavedThreadDirectory');
 const { searchEvidence } = require('../application/use-cases/searchEvidence');
+const { createApplicationError } = require('../application/errors/applicationError');
 const { createFileThreadRepository } = require('../infrastructure/storage/fileThreadRepository');
 const { createFileAnalysisReportRepository } = require('../infrastructure/storage/fileAnalysisReportRepository');
 const { createFileTaskRepository } = require('../infrastructure/storage/fileTaskRepository');
@@ -438,7 +439,7 @@ function createThreadTraceRuntime(options) {
       const repositories = createRepositoriesFor(safeRequest.storeDir);
       const source = await repositories.sourceRepository.findSource(safeRequest.sourceId);
       if (!source) {
-        throw new Error('Unknown tracked source: ' + safeRequest.sourceId);
+        throw sourceNotFoundError(safeRequest.sourceId);
       }
 
       return runTrackedSourceIngestTask({
@@ -462,7 +463,7 @@ function createThreadTraceRuntime(options) {
       const repositories = createRepositoriesFor(safeRequest.storeDir);
       const source = await repositories.sourceRepository.findSource(safeRequest.sourceId);
       if (!source) {
-        throw new Error('Unknown tracked source: ' + safeRequest.sourceId);
+        throw sourceNotFoundError(safeRequest.sourceId);
       }
 
       return runSourceInsightPipelineTask({
@@ -581,7 +582,7 @@ function createThreadTraceRuntime(options) {
         ? await repositories.sourceRepository.findSource(safeRequest.sourceId)
         : undefined;
       if (safeRequest.sourceId && !source) {
-        throw new Error('Unknown tracked source: ' + safeRequest.sourceId);
+        throw sourceNotFoundError(safeRequest.sourceId);
       }
       return fetchAndStoreThreadPage({
         crawler: safeOptions.crawler || createHttpForumCrawler(safeOptions.crawlerOptions),
@@ -690,6 +691,15 @@ function createFileRepositories(storeDir) {
       baseDir: path.join(storeDir, 'worker-leases')
     })
   };
+}
+
+function sourceNotFoundError(sourceId) {
+  return createApplicationError('source_not_found', 'Unknown tracked source: ' + sourceId, {
+    statusCode: 404,
+    details: {
+      sourceId
+    }
+  });
 }
 
 function resolveStoreDir(defaults, storeDir) {
