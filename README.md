@@ -17,6 +17,7 @@ npm run task:ingest:sample
 npm run index:sample-dir
 npm run search:sample
 npm run interpret:sample
+npm run worker:due-once
 npm run test:unit
 ```
 
@@ -25,6 +26,15 @@ npm run test:unit
 ```powershell
 npm run serve
 ```
+
+运行到期来源 Worker：
+
+```powershell
+npm run worker:due-once
+npm run worker:due-loop
+```
+
+Worker 会读取已注册来源的调度配置，默认使用 `data/store`；可通过 `THREADTRACE_STORE_DIR` 和 `THREADTRACE_WORKER_INTERVAL_MS` 调整存储目录与轮询间隔。
 
 默认会读取 `example` 目录中的第一个 `.html` 文件，并把解析结果写入 `data/parsed/nga-thread-45974302.json`。基础分析会同时生成 JSON 报告和 Markdown 报告，Markdown 默认输出到 `data/reports/nga-thread-45974302.basic-report.md`。
 

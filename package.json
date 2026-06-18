@@ -18,6 +18,8 @@
     "interpret:sample": "node src/presentation/cli/threadtrace.js interpret-text-dir --text 科技后面看量确认",
     "serve": "node src/presentation/http/server.js",
     "serve:web": "node src/presentation/http/server.js",
+    "worker:due-once": "node src/presentation/worker/dueSourceWorkerMain.js --once",
+    "worker:due-loop": "node src/presentation/worker/dueSourceWorkerMain.js --loop",
     "test:unit": "node --test test"
   }
 }
