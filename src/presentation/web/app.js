@@ -129,6 +129,18 @@ function bindForms() {
     }, renderSourceOnboardingPreflight);
   });
 
+  document.getElementById('connectorModuleValidationForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await renderAsync('connectorModuleResult', function () {
+      return requestJson('/api/connectors/modules/validate', {
+        modulePath: form.get('modulePath')
+      }, {
+        acceptErrorStatus: true
+      });
+    }, renderConnectorModuleValidation);
+  });
+
   document.getElementById('sourceResult').addEventListener('click', async function (event) {
     const button = event.target.closest('button[data-action="run-source"],button[data-action="run-source-pipeline"]');
     if (!button) return;
@@ -547,6 +559,37 @@ function renderSourceOnboardingPreflight(result) {
       metric('主题', result.threadJsonValidation.thread ? result.threadJsonValidation.thread.sourceThreadId : ''),
       metric('楼层', result.threadJsonValidation.thread ? result.threadJsonValidation.thread.postCount : '')
     ].join('')));
+  }
+  return panels.join('');
+}
+
+function renderConnectorModuleValidation(result) {
+  const modules = result.modules || [];
+  const errors = result.errors || [];
+  const registrationCount = modules.reduce(function (total, item) {
+    return total + (item.forumAdapters || []).length + (item.sourceIngestHandlers || []).length;
+  }, 0);
+  const panels = [
+    panel('Connector 模块验证', [
+      metric('状态', result.status),
+      metric('可加载', result.valid ? 'yes' : 'no'),
+      metric('模块', result.modulePath || 'missing'),
+      metric('注册项', registrationCount),
+      metric('错误', errors.length)
+    ].join('')),
+    panel('验证检查', evidenceList((result.checks || []).map(function (check) {
+      return check.status + ' · ' + check.key + ' · ' + check.summary + ' · ' + check.value;
+    })), 'wide')
+  ];
+  if (modules.length > 0) {
+    panels.push(panel('注册结果', evidenceList(modules.map(function (item) {
+      return item.modulePath + ' · adapters=' + (item.forumAdapters || []).join(',') + ' · handlers=' + (item.sourceIngestHandlers || []).join(',');
+    })), 'wide'));
+  }
+  if (errors.length > 0) {
+    panels.push(panel('加载错误', evidenceList(errors.map(function (error) {
+      return error.modulePath + ' · ' + error.message;
+    })), 'wide'));
   }
   return panels.join('');
 }

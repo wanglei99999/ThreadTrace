@@ -189,7 +189,15 @@
           <button type="submit">接入预检</button>
         </form>
         <div class="status-list" id="systemStatus"></div>
+        <form id="connectorModuleValidationForm" class="control-strip">
+          <label class="grow">
+            <span>Connector 模块路径</span>
+            <input name="modulePath" placeholder="D:/connectors/custom-forum.cjs" autocomplete="off">
+          </label>
+          <button type="submit">验证模块</button>
+        </form>
         <div class="result-grid task-grid" id="onboardingResult"></div>
+        <div class="result-grid task-grid" id="connectorModuleResult"></div>
         <div class="result-grid task-grid" id="sourceResult"></div>
         <div class="result-grid task-grid" id="rawPageResult"></div>
         <div class="result-grid task-grid" id="eventResult"></div>
