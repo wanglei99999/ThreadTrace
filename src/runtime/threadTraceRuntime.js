@@ -11,6 +11,7 @@ const { registerTrackedSource } = require('../application/use-cases/registerTrac
 const { listTrackedSources } = require('../application/use-cases/listTrackedSources');
 const { runTrackedSourceIngestTask } = require('../application/use-cases/runTrackedSourceIngestTask');
 const { runSourceInsightPipelineTask } = require('../application/use-cases/runSourceInsightPipelineTask');
+const { listSourceInsightPipelineRuns } = require('../application/use-cases/listSourceInsightPipelineRuns');
 const { runEnabledSourcesIngestTasks } = require('../application/use-cases/runEnabledSourcesIngestTasks');
 const { runDueSourcesIngestTasks } = require('../application/use-cases/runDueSourcesIngestTasks');
 const { runDueSourceInsightPipelineTasks } = require('../application/use-cases/runDueSourceInsightPipelineTasks');
@@ -188,6 +189,19 @@ function createThreadTraceRuntime(options) {
         status: safeRequest.status,
         type: safeRequest.type,
         limit: safeRequest.limit || 20
+      });
+    },
+
+    async listSourceInsightPipelineRuns(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return listSourceInsightPipelineRuns({
+        sourceId: safeRequest.sourceId,
+        status: safeRequest.status,
+        limit: safeRequest.limit || 20,
+        scanLimit: safeRequest.scanLimit,
+        taskRepository: repositories.taskRepository,
+        sourceRepository: repositories.sourceRepository
       });
     },
 

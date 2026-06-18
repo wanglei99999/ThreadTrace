@@ -275,7 +275,15 @@ function diagnosticStatus(diagnostics, key) {
 
 async function loadTasks() {
   await renderAsync('taskResult', function () {
-    return fetchJson('/api/tasks?limit=10');
+    return Promise.all([
+      fetchJson('/api/tasks?limit=10'),
+      fetchJson('/api/sources/tasks/insight-pipeline-runs?limit=10')
+    ]).then(function (results) {
+      return {
+        tasks: results[0].tasks || [],
+        pipelineRuns: results[1].runs || []
+      };
+    });
   }, renderTaskList);
 }
 
@@ -502,10 +510,25 @@ function renderDueSourcePipelineBatchRunResult(result) {
 
 function renderTaskList(result) {
   const tasks = result.tasks || [];
-  return panel('最近任务', evidenceList(tasks.map(function (task) {
-    const output = task.output || {};
-    return task.status + ' · ' + task.type + ' · ' + (output.title || task.id);
-  })), 'wide');
+  const pipelineRuns = result.pipelineRuns || [];
+  return [
+    panel('最近洞察流水线', evidenceList(pipelineRuns.map(renderPipelineRunSummary)), 'wide'),
+    panel('最近任务', evidenceList(tasks.map(function (task) {
+      const output = task.output || {};
+      return task.status + ' · ' + task.type + ' · ' + (output.title || task.id);
+    })), 'wide')
+  ].join('');
+}
+
+function renderPipelineRunSummary(run) {
+  const sourceName = run.source && run.source.displayName ? run.source.displayName : run.sourceId || 'unknown-source';
+  const cursorDiff = run.cursorDiff || {};
+  const semantic = run.semantic || {};
+  const changed = cursorDiff.changed === undefined ? 'unknown' : (cursorDiff.changed ? 'changed' : 'unchanged');
+  const newPosts = cursorDiff.newPostCount === undefined ? '' : ' · +' + cursorDiff.newPostCount;
+  const semanticLabel = semantic.status ? ' · semantic ' + semantic.status + (semantic.reason ? '/' + semantic.reason : '') : '';
+  const timestamp = run.finishedAt || run.updatedAt || run.createdAt || '';
+  return run.status + ' · ' + sourceName + ' · ' + changed + newPosts + semanticLabel + ' · ' + timestamp;
 }
 
 function renderEventList(result) {

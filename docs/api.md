@@ -87,6 +87,19 @@ http://127.0.0.1:3017
 - `type`: 可选，如 `ingest-saved-thread-directory`。
 - `limit`: 可选，默认 20。
 
+### `GET /api/sources/tasks/insight-pipeline-runs`
+
+List recent source insight pipeline run summaries derived from durable task records.
+
+Query parameters:
+
+- `sourceId`: optional tracked source id filter.
+- `status`: optional task status filter, such as `completed` or `failed`.
+- `limit`: optional, defaults to 20.
+- `scanLimit`: optional internal task scan window when filtering by source.
+
+Returns: stable run summaries with task id, source metadata, cursor diff, semantic status, and timestamps.
+
 ### `GET /api/events`
 
 查询通知事件。当前本地实现会在来源导入后发现 cursor 变化时写入 `source-changed` 事件，后续可以接邮件、Webhook、企业微信或消息队列。

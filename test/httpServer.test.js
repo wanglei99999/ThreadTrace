@@ -389,6 +389,7 @@ test('http server runs source insight pipeline tasks', async function () {
       provider: 'mock',
       traceId: 'http-source-pipeline'
     });
+    const runs = await getJson(baseUrl + '/api/sources/tasks/insight-pipeline-runs?sourceId=' + encodeURIComponent(registerResult.source.id));
     const openApi = await getJson(baseUrl + '/openapi.json');
 
     assert.equal(result.sourceId, registerResult.source.id);
@@ -398,7 +399,12 @@ test('http server runs source insight pipeline tasks', async function () {
     assert.equal(result.ingest.cursor.sourceThreadId, '45974302');
     assert.equal(result.semantic.status, 'completed');
     assert.equal(result.semantic.traceId, 'http-source-pipeline');
+    assert.equal(runs.runs.length, 1);
+    assert.equal(runs.runs[0].taskId, result.task.id);
+    assert.equal(runs.runs[0].source.displayName, 'NGA sample archive');
+    assert.equal(runs.runs[0].semantic.traceId, 'http-source-pipeline');
     assert.ok(openApi.paths['/api/sources/{sourceId}/tasks/insight-pipeline']);
+    assert.ok(openApi.paths['/api/sources/tasks/insight-pipeline-runs']);
   } finally {
     await close(server);
   }

@@ -25,6 +25,9 @@ test('runtime runs source insight pipeline and persists semantic report', async 
   const tasks = await runtime.listTasks({
     type: 'source-insight-pipeline'
   });
+  const runHistory = await runtime.listSourceInsightPipelineRuns({
+    sourceId: registerResult.source.id
+  });
 
   assert.equal(result.task.status, 'completed');
   assert.equal(result.task.type, 'source-insight-pipeline');
@@ -39,6 +42,11 @@ test('runtime runs source insight pipeline and persists semantic report', async 
   assert.equal(tasks.length, 1);
   assert.equal(tasks[0].output.ingestTaskId, result.ingest.task.id);
   assert.equal(tasks[0].output.semantic.status, 'completed');
+  assert.equal(runHistory.runs.length, 1);
+  assert.equal(runHistory.runs[0].taskId, result.task.id);
+  assert.equal(runHistory.runs[0].source.displayName, 'NGA sample archive');
+  assert.equal(runHistory.runs[0].cursorDiff.newPostCount, 20);
+  assert.equal(runHistory.runs[0].semantic.traceId, 'pipeline-first-run');
 });
 
 test('runtime skips pipeline semantic enrichment when source cursor is unchanged', async function () {

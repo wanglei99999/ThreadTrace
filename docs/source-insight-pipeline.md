@@ -67,6 +67,7 @@ Useful options:
 ```text
 POST /api/sources/{sourceId}/tasks/insight-pipeline
 POST /api/sources/tasks/insight-pipeline-due
+GET /api/sources/tasks/insight-pipeline-runs
 ```
 
 Example body:
@@ -80,6 +81,8 @@ Example body:
   "semanticSkipIfUnchanged": true
 }
 ```
+
+Run history can be filtered with `sourceId`, `status`, and `limit`. It returns stable summaries derived from durable task records, including the source display name, cursor diff, semantic status, and run timestamps.
 
 ## Runtime
 
@@ -96,6 +99,11 @@ await runtime.runDueSourceInsightPipelineTasks({
   forum: 'nga',
   provider: 'mock',
   semanticSkipIfUnchanged: true
+});
+
+const history = await runtime.listSourceInsightPipelineRuns({
+  sourceId,
+  limit: 20
 });
 ```
 

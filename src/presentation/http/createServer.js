@@ -149,6 +149,18 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/sources/tasks/insight-pipeline-runs') {
+    const result = await context.runtime.listSourceInsightPipelineRuns({
+      sourceId: url.searchParams.get('sourceId') || undefined,
+      status: url.searchParams.get('status') || undefined,
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 20,
+      scanLimit: url.searchParams.get('scanLimit') ? Number(url.searchParams.get('scanLimit')) : undefined,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, 200, result);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/reports') {
     const reports = await context.runtime.listAnalysisReports({
       sourceKey: url.searchParams.get('sourceKey') || url.searchParams.get('forum') || undefined,

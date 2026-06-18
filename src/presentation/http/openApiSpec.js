@@ -161,6 +161,23 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/sources/tasks/insight-pipeline-runs': {
+        get: {
+          summary: 'List recent source insight pipeline runs',
+          parameters: [
+            { name: 'sourceId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'status', in: 'query', required: false, schema: { type: 'string', example: 'completed' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'scanLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Source insight pipeline run summaries'
+            }
+          }
+        }
+      },
       '/api/reports': {
         get: {
           summary: 'List analysis reports',
