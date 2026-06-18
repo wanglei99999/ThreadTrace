@@ -8,10 +8,12 @@ const { analyzeSavedThread } = require('../../application/use-cases/analyzeSaved
 const { parseSavedThreadDirectory } = require('../../application/use-cases/parseSavedThreadDirectory');
 const { analyzeSavedThreadDirectory } = require('../../application/use-cases/analyzeSavedThreadDirectory');
 const { ingestSavedThreadDirectory } = require('../../application/use-cases/ingestSavedThreadDirectory');
+const { interpretNewPostFromSavedThreadDirectory } = require('../../application/use-cases/interpretNewPostFromSavedThreadDirectory');
 const { writeJsonFile } = require('../../infrastructure/storage/jsonFileStorage');
 const { writeTextFile } = require('../../infrastructure/storage/textFileWriter');
 const { getForumAdapter, listForumAdapters } = require('../../infrastructure/forum-adapters/registry');
 const { renderBasicHistoryMarkdown } = require('../../domain/analysis/markdownReportRenderer');
+const { renderNewPostContextMarkdown } = require('../../domain/analysis/contextMarkdownRenderer');
 const { createFileThreadRepository } = require('../../infrastructure/storage/fileThreadRepository');
 const { createFileAnalysisReportRepository } = require('../../infrastructure/storage/fileAnalysisReportRepository');
 
@@ -111,6 +113,32 @@ function main(argv) {
     return;
   }
 
+  if (command === 'interpret-text-dir') {
+    const inputDir = options.input || path.resolve(process.cwd(), 'example');
+    const text = options.text;
+    if (!text) {
+      throw new Error('interpret-text-dir requires --text.');
+    }
+
+    const adapter = getForumAdapter(options.forum || 'nga');
+    const report = interpretNewPostFromSavedThreadDirectory({
+      adapter,
+      inputDir,
+      authorId: options.authorId,
+      author: options.author,
+      contentText: text
+    });
+    const outputPath = options.output || path.resolve(process.cwd(), 'data', 'parsed', 'new-post-context.json');
+    const markdownPath = options.markdownOutput || path.resolve(process.cwd(), 'data', 'reports', 'new-post-context.md');
+    const writtenPath = writeJsonFile(outputPath, report);
+    const writtenMarkdownPath = writeTextFile(markdownPath, renderNewPostContextMarkdown(report));
+
+    console.log('Context report written to: ' + writtenPath);
+    console.log('Context markdown written to: ' + writtenMarkdownPath);
+    console.log('Related evidence count: ' + report.relatedEvidence.length);
+    return;
+  }
+
   if (command === 'list-adapters') {
     listForumAdapters().forEach(function (adapter) {
       console.log(adapter.sourceKey + '\t' + adapter.displayName);
@@ -139,6 +167,15 @@ function parseArgs(args) {
       index += 1;
     } else if (item === '--store-dir') {
       options.storeDir = args[index + 1];
+      index += 1;
+    } else if (item === '--text') {
+      options.text = args[index + 1];
+      index += 1;
+    } else if (item === '--author-id') {
+      options.authorId = args[index + 1];
+      index += 1;
+    } else if (item === '--author') {
+      options.author = args[index + 1];
       index += 1;
     }
   }
@@ -201,6 +238,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js analyze-html [--forum nga] [--input file] [--output file] [--markdown-output file]');
   console.log('  node src/presentation/cli/threadtrace.js analyze-html-dir [--forum nga] [--input dir] [--output file] [--markdown-output file]');
   console.log('  node src/presentation/cli/threadtrace.js ingest-html-dir [--forum nga] [--input dir] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js interpret-text-dir [--forum nga] [--input dir] --text text [--author-id id] [--output file] [--markdown-output file]');
 }
 
 main(process.argv);

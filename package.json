@@ -12,6 +12,7 @@
     "analyze:sample": "node src/presentation/cli/threadtrace.js analyze-html",
     "analyze:sample-dir": "node src/presentation/cli/threadtrace.js analyze-html-dir",
     "ingest:sample-dir": "node src/presentation/cli/threadtrace.js ingest-html-dir",
+    "interpret:sample": "node src/presentation/cli/threadtrace.js interpret-text-dir --text 科技后面看量确认",
     "test:unit": "node --test test"
   }
 }
