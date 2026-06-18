@@ -31,7 +31,7 @@ function diagnoseSource(source, context) {
   const handler = findHandler(context.handlerRegistry, source);
   const checks = [
     check('source.enabled', source.enabled === false ? 'warn' : 'ok', source.enabled !== false, 'Tracked source is enabled.'),
-    check('source.location', hasUsableLocation(source) ? 'ok' : 'fail', locationValue(source), 'Tracked source has a usable location.'),
+    check('source.location', hasUsableLocation(source, handler) ? 'ok' : 'fail', locationValue(source, handler), 'Tracked source has a usable location.'),
     check('source.handler', handler ? 'ok' : 'fail', source.sourceType || 'missing', 'Tracked source type has an ingest handler.')
   ];
 
@@ -67,16 +67,30 @@ function resolveAdapterCheck(getAdapter, source) {
   }
 }
 
-function hasUsableLocation(source) {
+function hasUsableLocation(source, handler) {
   const location = source.location || {};
-  if (source.sourceType === 'saved-html-directory') return Boolean(location.inputDir);
-  if (source.sourceType === 'thread-url') return Boolean(location.url);
+  const required = locationRequiredFields(handler);
+  if (required.length > 0) {
+    return required.every(function (field) {
+      return location[field] !== undefined && location[field] !== null && location[field] !== '';
+    });
+  }
   return Object.keys(location).length > 0;
 }
 
-function locationValue(source) {
+function locationValue(source, handler) {
   const location = source.location || {};
+  const required = locationRequiredFields(handler);
+  const missing = required.filter(function (field) {
+    return location[field] === undefined || location[field] === null || location[field] === '';
+  });
+  if (missing.length > 0) return 'missing: ' + missing.join(',');
   return location.inputDir || location.url || JSON.stringify(location);
+}
+
+function locationRequiredFields(handler) {
+  const schema = handler && handler.locationSchema;
+  return schema && Array.isArray(schema.required) ? schema.required : [];
 }
 
 function check(key, status, value, summary) {

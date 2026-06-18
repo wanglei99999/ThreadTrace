@@ -23,7 +23,13 @@ function createSourceIngestHandlerRegistry(handlers) {
       return Array.from(byType.values()).map(function (handler) {
         return {
           sourceType: handler.sourceType,
-          description: handler.description
+          description: handler.description,
+          requiresAdapter: handler.requiresAdapter !== false,
+          locationSchema: handler.locationSchema || {
+            required: [],
+            properties: {}
+          },
+          capabilities: handler.capabilities || {}
         };
       });
     }
@@ -36,6 +42,9 @@ function assertSourceIngestHandler(handler) {
   }
   if (typeof handler.run !== 'function') {
     throw new Error('SourceIngestHandler must implement run(context).');
+  }
+  if (handler.locationSchema && !Array.isArray(handler.locationSchema.required)) {
+    throw new Error('SourceIngestHandler locationSchema.required must be an array.');
   }
   return handler;
 }

@@ -13,6 +13,16 @@ test('source ingest handler registry registers and lists handlers', function () 
   registry.register({
     sourceType: 'custom-feed',
     description: 'Custom feed ingest',
+    requiresAdapter: false,
+    locationSchema: {
+      required: ['url'],
+      properties: {
+        url: { type: 'string', format: 'uri' }
+      }
+    },
+    capabilities: {
+      fetchesRemote: true
+    },
     async run() {}
   });
 
@@ -21,7 +31,20 @@ test('source ingest handler registry registers and lists handlers', function () 
 
   assert.equal(handler.sourceType, 'custom-feed');
   assert.deepEqual(handlers, [
-    { sourceType: 'custom-feed', description: 'Custom feed ingest' }
+    {
+      sourceType: 'custom-feed',
+      description: 'Custom feed ingest',
+      requiresAdapter: false,
+      locationSchema: {
+        required: ['url'],
+        properties: {
+          url: { type: 'string', format: 'uri' }
+        }
+      },
+      capabilities: {
+        fetchesRemote: true
+      }
+    }
   ]);
 });
 

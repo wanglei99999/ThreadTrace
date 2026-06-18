@@ -24,6 +24,8 @@ SourceIngestHandler
   sourceType: string
   description?: string
   requiresAdapter?: boolean
+  locationSchema?: { required: string[], properties: object }
+  capabilities?: object
   run(context) -> { task, threadSnapshot, report, ... }
 ```
 
@@ -46,6 +48,8 @@ Runtime and HTTP discovery:
 runtime.listSourceIngestHandlers()
 GET /api/source-ingest-handlers
 ```
+
+Discovery returns each handler's adapter requirement, location schema, and capability flags. UI, API clients, and future connector tooling should use this catalog instead of hard-coding required fields for each `sourceType`.
 
 ## Diagnostics
 

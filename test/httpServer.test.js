@@ -35,6 +35,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(adapterDiagnostics.status, 'ok');
     assert.equal(adapterDiagnostics.adapterCount, 1);
     assert.equal(handlers.handlers[0].sourceType, 'saved-html-directory');
+    assert.equal(handlers.handlers[0].requiresAdapter, true);
+    assert.deepEqual(handlers.handlers[0].locationSchema.required, ['inputDir']);
     assert.equal(openApi.openapi, '3.0.3');
     assert.ok(openApi.paths['/api/interpret-text']);
     assert.ok(openApi.paths['/api/adapters/diagnostics']);

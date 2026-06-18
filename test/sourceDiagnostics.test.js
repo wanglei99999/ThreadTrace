@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 const { diagnoseTrackedSources } = require('../src/application/use-cases/diagnoseTrackedSources');
 const { createDefaultSourceIngestHandlerRegistry } = require('../src/application/source-ingest/standardSourceIngestHandlers');
+const { createSourceIngestHandlerRegistry } = require('../src/application/source-ingest/sourceIngestHandlerRegistry');
 
 test('source diagnostics reports handler, adapter, and location health', async function () {
   const diagnostics = await diagnoseTrackedSources({
@@ -65,4 +66,46 @@ test('source diagnostics reports handler, adapter, and location health', async f
   assert.equal(byId['source-missing-handler'].checks.find(function (check) {
     return check.key === 'source.location';
   }).status, 'fail');
+});
+
+test('source diagnostics uses handler location schema for custom source types', async function () {
+  const registry = createSourceIngestHandlerRegistry([
+    {
+      sourceType: 'external-feed',
+      requiresAdapter: false,
+      locationSchema: {
+        required: ['endpoint'],
+        properties: {
+          endpoint: { type: 'string', format: 'uri' }
+        }
+      },
+      async run() {}
+    }
+  ]);
+  const diagnostics = await diagnoseTrackedSources({
+    sourceRepository: {
+      async saveSource() {},
+      async findSource() {},
+      async listSources() {
+        return [
+          {
+            id: 'source-missing-endpoint',
+            sourceKey: 'external',
+            sourceType: 'external-feed',
+            displayName: 'Missing endpoint',
+            enabled: true,
+            location: { url: 'https://example.test/feed' }
+          }
+        ];
+      }
+    },
+    sourceIngestHandlerRegistry: registry
+  });
+  const locationCheck = diagnostics.sources[0].checks.find(function (check) {
+    return check.key === 'source.location';
+  });
+
+  assert.equal(diagnostics.status, 'fail');
+  assert.equal(locationCheck.status, 'fail');
+  assert.equal(locationCheck.value, 'missing: endpoint');
 });
