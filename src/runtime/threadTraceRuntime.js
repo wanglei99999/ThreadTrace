@@ -31,6 +31,7 @@ const { disableTrackedSource } = require('../application/use-cases/disableTracke
 const { runDisableTrackedSourceTask } = require('../application/use-cases/runDisableTrackedSourceTask');
 const { enableTrackedSource } = require('../application/use-cases/enableTrackedSource');
 const { runEnableTrackedSourceTask } = require('../application/use-cases/runEnableTrackedSourceTask');
+const { getSourceLifecycleReport } = require('../application/use-cases/getSourceLifecycleReport');
 const { getOperationalOverview } = require('../application/use-cases/getOperationalOverview');
 const { getOperationalReadiness } = require('../application/use-cases/getOperationalReadiness');
 const { getTaskTraceContext } = require('../application/use-cases/getTaskTraceContext');
@@ -704,6 +705,21 @@ function createThreadTraceRuntime(options) {
       return Object.assign({
         storageMode: defaults.storageMode
       }, overview);
+    },
+
+    async getSourceLifecycleReport(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return getSourceLifecycleReport({
+        sourceRepository: repositories.sourceRepository,
+        taskRepository: repositories.taskRepository,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 100,
+        taskLimit: safeRequest.taskLimit || safeRequest.limit || 100,
+        sourceRunStaleAfterMs: safeRequest.sourceRunStaleAfterMs,
+        now: safeRequest.now
+      });
     },
 
     async getOperationalReadiness(request) {

@@ -272,6 +272,36 @@ function main(argv) {
     return;
   }
 
+  if (command === 'source-lifecycle-report') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.getSourceLifecycleReport({
+      forum: options.forum,
+      sourceKey: options.sourceKey,
+      enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
+      limit: options.limit ? Number(options.limit) : 100,
+      taskLimit: options.taskLimit ? Number(options.taskLimit) : undefined,
+      sourceRunStaleAfterMs: options.sourceRunStaleAfterMs,
+      now: options.now,
+      storeDir
+    }).then(function (report) {
+      console.log('Source lifecycle: ' + report.status);
+      console.log('Sources: total=' + report.summary.total + ', enabled=' + report.summary.enabled + ', disabled=' + report.summary.disabled + ', running=' + report.summary.running + ', disableBlocked=' + report.summary.disableBlocked);
+      report.blockedDisables.forEach(function (source) {
+        console.log('blocked\t' + source.sourceId + '\t' + source.displayName + '\tlastStarted=' + (source.lastStartedAt || 'unknown') + '\t' + source.nextAction);
+      });
+      report.sources.forEach(function (source) {
+        console.log(source.id + '\t' + source.sourceKey + '\t' + source.sourceType + '\tenabled=' + source.enabled + '\trun=' + source.runState.status + '\tcanDisable=' + source.disableGuard.canDisable + '\tnext=' + source.nextAction);
+      });
+      if (report.status === 'warn') {
+        process.exitCode = 2;
+      }
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'trace-context') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.getTaskTraceContext({
@@ -1488,6 +1518,9 @@ function parseArgs(args) {
     } else if (item === '--limit') {
       options.limit = args[index + 1];
       index += 1;
+    } else if (item === '--task-limit') {
+      options.taskLimit = args[index + 1];
+      index += 1;
     } else if (item === '--pipeline-limit') {
       options.pipelineLimit = args[index + 1];
       index += 1;
@@ -1707,6 +1740,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js run-semantic-enrichment-task --source-thread-id id [--source-key nga] [--provider mock] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js operations-overview [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-readiness [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js source-lifecycle-report [--forum nga] [--enabled true] [--source-run-stale-after-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js trace-context [--request-id id | --trace-id id | --idempotency-key key] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-runbook [--forum nga] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js worker-topology-plan [--topology operations-worker|split-workers] [--source-task-mode ingest|insight-pipeline] [--store-dir dir] [--limit n]');

@@ -1126,6 +1126,26 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/sources/lifecycle': {
+        get: {
+          summary: 'Report tracked source lifecycle state, disable guards, and recent enable/disable tasks',
+          parameters: [
+            { name: 'forum', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'enabled', in: 'query', required: false, schema: { type: 'boolean' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'taskLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'sourceRunStaleAfterMs', in: 'query', required: false, schema: { type: 'number', example: 600000 } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Lifecycle report with disable guard state and recent lifecycle task audit records'
+            }
+          }
+        }
+      },
       '/api/sources/{sourceId}/disable': {
         post: {
           summary: 'Dry-run or execute a safe tracked source disable operation with task audit record',

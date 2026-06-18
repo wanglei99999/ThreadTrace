@@ -593,6 +593,22 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/sources/lifecycle') {
+    const enabledParam = url.searchParams.get('enabled');
+    const report = await context.runtime.getSourceLifecycleReport({
+      forum: url.searchParams.get('forum') || undefined,
+      sourceKey: url.searchParams.get('sourceKey') || undefined,
+      enabled: enabledParam === null ? undefined : enabledParam === 'true',
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,
+      taskLimit: url.searchParams.get('taskLimit') ? Number(url.searchParams.get('taskLimit')) : undefined,
+      sourceRunStaleAfterMs: url.searchParams.get('sourceRunStaleAfterMs') ? Number(url.searchParams.get('sourceRunStaleAfterMs')) : undefined,
+      now: url.searchParams.get('now') || undefined,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, 200, report);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/sources') {
     const enabledParam = url.searchParams.get('enabled');
     const sources = await context.runtime.listSources({

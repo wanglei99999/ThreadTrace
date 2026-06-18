@@ -207,6 +207,21 @@ Returns: stable run summaries with task id, source metadata, cursor diff, semant
 
 返回：整体 `status`、每个来源的 `status` 和检查项。存在失败检查时 HTTP 状态码为 503，响应体仍包含完整诊断。
 
+### `GET /api/sources/lifecycle`
+
+Reports tracked source lifecycle state, safe disable guard results, and recent enable/disable task audit records.
+
+Query parameters:
+
+- `forum` / `sourceKey`: optional source key filter.
+- `enabled`: optional `true` or `false`.
+- `limit`: optional source window, defaults to 100.
+- `taskLimit`: optional lifecycle task audit scan window.
+- `sourceRunStaleAfterMs`: optional running-source stale window, defaults to 10 minutes.
+- `now`: optional fixed time for repeatable checks.
+
+Returns `summary`, `blockedDisables`, per-source `disableGuard`, `latestLifecycleTask`, and `recentLifecycleTasks`.
+
 ### `GET /api/deployment/checklist`
 
 查询部署前验收清单。它聚合 runtime diagnostics、source diagnostics 和 operations readiness，用于部署脚本或控制台判断当前实例是否具备上线条件。
