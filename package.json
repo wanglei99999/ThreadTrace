@@ -24,6 +24,11 @@
     "worker:events-loop": "node src/presentation/worker/notificationEventWorkerMain.js --loop",
     "worker:operations-once": "node src/presentation/worker/operationsWorkerMain.js --once",
     "worker:operations-loop": "node src/presentation/worker/operationsWorkerMain.js --loop",
+    "diagnostics:runtime": "node src/presentation/cli/threadtrace.js runtime-diagnostics",
+    "diagnostics:adapters": "node src/presentation/cli/threadtrace.js adapter-diagnostics",
+    "diagnostics:sources": "node src/presentation/cli/threadtrace.js source-diagnostics",
+    "deployment:checklist": "node src/presentation/cli/threadtrace.js deployment-checklist",
+    "operations:runbook": "node src/presentation/cli/threadtrace.js operations-runbook",
     "test:unit": "node --test test"
   }
 }

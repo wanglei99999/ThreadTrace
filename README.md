@@ -58,11 +58,29 @@ node src/presentation/cli/threadtrace.js run-due-sources-task
 node src/presentation/cli/threadtrace.js interpret-text-dir --forum nga --input example --text 科技后面看量确认
 ```
 
+## Operations Commands
+
+```powershell
+npm run diagnostics:runtime
+npm run diagnostics:adapters
+npm run diagnostics:sources
+npm run deployment:checklist
+npm run operations:runbook
+```
+
+These commands use the same runtime composition as the HTTP API and Web console. `deployment:checklist` aggregates runtime resources, PostgreSQL schema readiness, adapter contracts, tracked source configuration, workers, notifications, and LLM configuration. `operations:runbook` turns failed or warning checks into actionable next commands.
+
 ## HTTP API
 
 - `GET /health`
 - `GET /adapters`
+- `GET /api/adapters/diagnostics`
 - `GET /openapi.json`
+- `GET /api/runtime/diagnostics`
+- `GET /api/deployment/checklist`
+- `GET /api/operations/overview`
+- `GET /api/operations/readiness`
+- `GET /api/operations/runbook`
 - `POST /api/analyze-directory`
 - `POST /api/interpret-text`
 - `POST /api/tasks/ingest-directory`
@@ -72,9 +90,13 @@ node src/presentation/cli/threadtrace.js interpret-text-dir --forum nga --input 
 - `POST /api/events/{eventId}/ack`
 - `POST /api/sources`
 - `GET /api/sources`
+- `GET /api/sources/diagnostics`
 - `POST /api/sources/tasks/ingest`
 - `POST /api/sources/tasks/ingest-due`
+- `POST /api/sources/tasks/insight-pipeline-due`
+- `GET /api/sources/tasks/insight-pipeline-runs`
 - `POST /api/sources/{sourceId}/tasks/ingest`
+- `POST /api/sources/{sourceId}/tasks/insight-pipeline`
 - `POST /api/index-directory`
 - `POST /api/search`
 
