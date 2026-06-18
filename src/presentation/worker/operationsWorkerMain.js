@@ -1,11 +1,15 @@
 #!/usr/bin/env node
 'use strict';
 
+const { loadEnvFile } = require('../../runtime/envFileLoader');
 const { createThreadTraceRuntime } = require('../../runtime/threadTraceRuntime');
 const { createThreadTraceConfig } = require('../../runtime/threadTraceConfig');
 const { createOperationsWorker } = require('./operationsWorker');
 
 async function main(argv) {
+  loadEnvFile({
+    cwd: process.cwd()
+  });
   const options = parseArgs(argv.slice(2));
   const config = createThreadTraceConfig({
     env: process.env,

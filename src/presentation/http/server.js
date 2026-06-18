@@ -1,8 +1,13 @@
 #!/usr/bin/env node
 'use strict';
 
+const { loadEnvFile } = require('../../runtime/envFileLoader');
 const { createThreadTraceConfig } = require('../../runtime/threadTraceConfig');
 const { createThreadTraceServer } = require('./createServer');
+
+loadEnvFile({
+  cwd: process.cwd()
+});
 
 const config = createThreadTraceConfig({
   env: process.env,

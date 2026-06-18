@@ -13,10 +13,14 @@ const { writeTextFile } = require('../../infrastructure/storage/textFileWriter')
 const { getForumAdapter } = require('../../infrastructure/forum-adapters/registry');
 const { renderBasicHistoryMarkdown } = require('../../domain/analysis/markdownReportRenderer');
 const { renderNewPostContextMarkdown } = require('../../domain/analysis/contextMarkdownRenderer');
+const { loadEnvFile } = require('../../runtime/envFileLoader');
 const { createThreadTraceConfig } = require('../../runtime/threadTraceConfig');
 const { createThreadTraceRuntime } = require('../../runtime/threadTraceRuntime');
 
 function main(argv) {
+  loadEnvFile({
+    cwd: process.cwd()
+  });
   const command = argv[2] || 'help';
   const options = parseArgs(argv.slice(3));
   const config = createThreadTraceConfig({

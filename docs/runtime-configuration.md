@@ -4,6 +4,8 @@ ThreadTrace centralizes process configuration in `src/runtime/threadTraceConfig.
 
 The goal is to keep deployment choices out of business use cases. CLI, HTTP, workers, and the runtime composition root should all consume the same normalized config object.
 
+Process entry points load a local `.env` file from the current working directory before creating the runtime config. Existing process environment values win by default, so production deployment variables are not overwritten by a checked-out local file.
+
 ## Core Values
 
 | Variable | Default | Purpose |
