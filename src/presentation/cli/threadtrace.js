@@ -7,24 +7,22 @@ const { parseSavedThread } = require('../../application/use-cases/parseSavedThre
 const { analyzeSavedThread } = require('../../application/use-cases/analyzeSavedThread');
 const { parseSavedThreadDirectory } = require('../../application/use-cases/parseSavedThreadDirectory');
 const { analyzeSavedThreadDirectory } = require('../../application/use-cases/analyzeSavedThreadDirectory');
-const { ingestSavedThreadDirectory } = require('../../application/use-cases/ingestSavedThreadDirectory');
-const { runIngestSavedThreadDirectoryTask } = require('../../application/use-cases/runIngestSavedThreadDirectoryTask');
 const { interpretNewPostFromSavedThreadDirectory } = require('../../application/use-cases/interpretNewPostFromSavedThreadDirectory');
-const { indexSavedThreadDirectory } = require('../../application/use-cases/indexSavedThreadDirectory');
-const { searchEvidence } = require('../../application/use-cases/searchEvidence');
 const { writeJsonFile } = require('../../infrastructure/storage/jsonFileStorage');
 const { writeTextFile } = require('../../infrastructure/storage/textFileWriter');
-const { getForumAdapter, listForumAdapters } = require('../../infrastructure/forum-adapters/registry');
+const { getForumAdapter } = require('../../infrastructure/forum-adapters/registry');
 const { renderBasicHistoryMarkdown } = require('../../domain/analysis/markdownReportRenderer');
 const { renderNewPostContextMarkdown } = require('../../domain/analysis/contextMarkdownRenderer');
-const { createFileThreadRepository } = require('../../infrastructure/storage/fileThreadRepository');
-const { createFileAnalysisReportRepository } = require('../../infrastructure/storage/fileAnalysisReportRepository');
-const { createFileTaskRepository } = require('../../infrastructure/storage/fileTaskRepository');
-const { createFileTextRetrievalIndex } = require('../../infrastructure/retrieval/fileTextRetrievalIndex');
+const { createThreadTraceRuntime } = require('../../runtime/threadTraceRuntime');
 
 function main(argv) {
   const command = argv[2] || 'help';
   const options = parseArgs(argv.slice(3));
+  const runtime = createThreadTraceRuntime({
+    defaultForum: options.forum || 'nga',
+    defaultInputDir: options.input || path.resolve(process.cwd(), 'example'),
+    storeDir: options.storeDir || path.resolve(process.cwd(), 'data', 'store')
+  });
 
   if (command === 'parse-html') {
     const inputPath = options.input || findDefaultExampleHtml();
@@ -96,17 +94,11 @@ function main(argv) {
 
   if (command === 'ingest-html-dir') {
     const inputDir = options.input || path.resolve(process.cwd(), 'example');
-    const adapter = getForumAdapter(options.forum || 'nga');
     const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
-    ingestSavedThreadDirectory({
-      adapter,
+    runtime.ingestDirectory({
+      forum: options.forum,
       inputDir,
-      threadRepository: createFileThreadRepository({
-        baseDir: path.join(storeDir, 'threads')
-      }),
-      reportRepository: createFileAnalysisReportRepository({
-        baseDir: path.join(storeDir, 'reports')
-      })
+      storeDir
     }).then(function (result) {
       printThreadSummary(result.threadSnapshot);
       printReportSummary(result.report);
@@ -120,21 +112,11 @@ function main(argv) {
 
   if (command === 'run-ingest-task') {
     const inputDir = options.input || path.resolve(process.cwd(), 'example');
-    const adapter = getForumAdapter(options.forum || 'nga');
     const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
-    runIngestSavedThreadDirectoryTask({
-      forum: options.forum || 'nga',
-      adapter,
+    runtime.runIngestDirectoryTask({
+      forum: options.forum,
       inputDir,
-      threadRepository: createFileThreadRepository({
-        baseDir: path.join(storeDir, 'threads')
-      }),
-      reportRepository: createFileAnalysisReportRepository({
-        baseDir: path.join(storeDir, 'reports')
-      }),
-      taskRepository: createFileTaskRepository({
-        baseDir: path.join(storeDir, 'tasks')
-      })
+      storeDir
     }).then(function (result) {
       console.log('Task completed: ' + result.task.id);
       console.log('Snapshot and report stored under: ' + storeDir);
@@ -148,9 +130,8 @@ function main(argv) {
 
   if (command === 'list-tasks') {
     const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
-    createFileTaskRepository({
-      baseDir: path.join(storeDir, 'tasks')
-    }).listTasks({
+    runtime.listTasks({
+      storeDir,
       status: options.status,
       type: options.type,
       limit: options.limit ? Number(options.limit) : 20
@@ -193,14 +174,11 @@ function main(argv) {
 
   if (command === 'index-html-dir') {
     const inputDir = options.input || path.resolve(process.cwd(), 'example');
-    const adapter = getForumAdapter(options.forum || 'nga');
     const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
-    indexSavedThreadDirectory({
-      adapter,
+    runtime.indexDirectory({
+      forum: options.forum,
       inputDir,
-      retrievalIndex: createFileTextRetrievalIndex({
-        indexFile: path.join(storeDir, 'retrieval', 'documents.json')
-      })
+      storeDir
     }).then(function (result) {
       console.log('Indexed documents: ' + result.indexedDocumentCount);
       printThreadSummary(result.threadSnapshot);
@@ -216,12 +194,10 @@ function main(argv) {
       throw new Error('search-index requires --text.');
     }
     const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
-    searchEvidence({
+    runtime.search({
       text: options.text,
       limit: options.limit ? Number(options.limit) : 10,
-      retrievalIndex: createFileTextRetrievalIndex({
-        indexFile: path.join(storeDir, 'retrieval', 'documents.json')
-      })
+      storeDir
     }).then(function (results) {
       results.forEach(function (result) {
         console.log(result.score + '\t#' + result.metadata.floor + '\t' + result.metadata.author + '\t' + result.text);
@@ -234,7 +210,7 @@ function main(argv) {
   }
 
   if (command === 'list-adapters') {
-    listForumAdapters().forEach(function (adapter) {
+    runtime.listAdapters().forEach(function (adapter) {
       console.log(adapter.sourceKey + '\t' + adapter.displayName);
     });
     return;

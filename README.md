@@ -59,6 +59,7 @@ node src/presentation/cli/threadtrace.js interpret-text-dir --forum nga --input 
 - `src/domain`: 领域模型与核心分析逻辑，不依赖具体论坛、数据库或前端。
 - `src/application`: 应用用例，负责编排适配器、分析器和存储。
 - `src/infrastructure`: 基础设施实现，比如论坛适配器、后续数据库和采集器。
+- `src/runtime`: 运行时组合根，统一装配适配器、仓库、检索索引和应用入口依赖。
 - `src/presentation`: 应用入口，比如 CLI、HTTP API、Web UI。
 - `docs`: 产品、架构、开发计划文档。
 - `example`: 用户提供的真实样例页面。

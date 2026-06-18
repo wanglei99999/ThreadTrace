@@ -1,0 +1,143 @@
+'use strict';
+
+const path = require('path');
+const { getForumAdapter, listForumAdapters } = require('../infrastructure/forum-adapters/registry');
+const { analyzeSavedThreadDirectory } = require('../application/use-cases/analyzeSavedThreadDirectory');
+const { interpretNewPostFromSavedThreadDirectory } = require('../application/use-cases/interpretNewPostFromSavedThreadDirectory');
+const { ingestSavedThreadDirectory } = require('../application/use-cases/ingestSavedThreadDirectory');
+const { runIngestSavedThreadDirectoryTask } = require('../application/use-cases/runIngestSavedThreadDirectoryTask');
+const { indexSavedThreadDirectory } = require('../application/use-cases/indexSavedThreadDirectory');
+const { searchEvidence } = require('../application/use-cases/searchEvidence');
+const { createFileThreadRepository } = require('../infrastructure/storage/fileThreadRepository');
+const { createFileAnalysisReportRepository } = require('../infrastructure/storage/fileAnalysisReportRepository');
+const { createFileTaskRepository } = require('../infrastructure/storage/fileTaskRepository');
+const { createFileTextRetrievalIndex } = require('../infrastructure/retrieval/fileTextRetrievalIndex');
+
+function createThreadTraceRuntime(options) {
+  const safeOptions = options || {};
+  const defaults = {
+    defaultForum: safeOptions.defaultForum || 'nga',
+    defaultInputDir: safeOptions.defaultInputDir || path.resolve(process.cwd(), 'example'),
+    storeDir: safeOptions.storeDir || path.resolve(process.cwd(), 'data', 'store')
+  };
+  const createRetrievalIndexFor = function (storeDir) {
+    return createFileTextRetrievalIndex({
+      indexFile: path.join(resolveStoreDir(defaults, storeDir), 'retrieval', 'documents.json')
+    });
+  };
+
+  return {
+    defaults,
+
+    getAdapter(forum) {
+      return getForumAdapter(forum || defaults.defaultForum);
+    },
+
+    listAdapters() {
+      return listForumAdapters();
+    },
+
+    createRepositories(storeDir) {
+      return createRepositories(resolveStoreDir(defaults, storeDir));
+    },
+
+    createRetrievalIndex(storeDir) {
+      return createRetrievalIndexFor(storeDir);
+    },
+
+    analyzeDirectory(request) {
+      const safeRequest = request || {};
+      return analyzeSavedThreadDirectory({
+        adapter: getForumAdapter(safeRequest.forum || defaults.defaultForum),
+        inputDir: safeRequest.inputDir || defaults.defaultInputDir
+      });
+    },
+
+    interpretText(request) {
+      const safeRequest = request || {};
+      return interpretNewPostFromSavedThreadDirectory({
+        adapter: getForumAdapter(safeRequest.forum || defaults.defaultForum),
+        inputDir: safeRequest.inputDir || defaults.defaultInputDir,
+        authorId: safeRequest.authorId,
+        author: safeRequest.author,
+        contentText: safeRequest.text || safeRequest.contentText,
+        publishedAt: safeRequest.publishedAt
+      });
+    },
+
+    async ingestDirectory(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositories(resolveStoreDir(defaults, safeRequest.storeDir));
+      return ingestSavedThreadDirectory({
+        adapter: getForumAdapter(safeRequest.forum || defaults.defaultForum),
+        inputDir: safeRequest.inputDir || defaults.defaultInputDir,
+        threadRepository: repositories.threadRepository,
+        reportRepository: repositories.reportRepository
+      });
+    },
+
+    async runIngestDirectoryTask(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositories(resolveStoreDir(defaults, safeRequest.storeDir));
+      return runIngestSavedThreadDirectoryTask({
+        forum: safeRequest.forum || defaults.defaultForum,
+        adapter: getForumAdapter(safeRequest.forum || defaults.defaultForum),
+        inputDir: safeRequest.inputDir || defaults.defaultInputDir,
+        threadRepository: repositories.threadRepository,
+        reportRepository: repositories.reportRepository,
+        taskRepository: repositories.taskRepository
+      });
+    },
+
+    async listTasks(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositories(resolveStoreDir(defaults, safeRequest.storeDir));
+      return repositories.taskRepository.listTasks({
+        status: safeRequest.status,
+        type: safeRequest.type,
+        limit: safeRequest.limit || 20
+      });
+    },
+
+    async indexDirectory(request) {
+      const safeRequest = request || {};
+      return indexSavedThreadDirectory({
+        adapter: getForumAdapter(safeRequest.forum || defaults.defaultForum),
+        inputDir: safeRequest.inputDir || defaults.defaultInputDir,
+        retrievalIndex: createRetrievalIndexFor(safeRequest.storeDir)
+      });
+    },
+
+    async search(request) {
+      const safeRequest = request || {};
+      return searchEvidence({
+        text: safeRequest.text,
+        filter: safeRequest.filter,
+        limit: safeRequest.limit || 10,
+        retrievalIndex: createRetrievalIndexFor(safeRequest.storeDir)
+      });
+    }
+  };
+}
+
+function createRepositories(storeDir) {
+  return {
+    threadRepository: createFileThreadRepository({
+      baseDir: path.join(storeDir, 'threads')
+    }),
+    reportRepository: createFileAnalysisReportRepository({
+      baseDir: path.join(storeDir, 'reports')
+    }),
+    taskRepository: createFileTaskRepository({
+      baseDir: path.join(storeDir, 'tasks')
+    })
+  };
+}
+
+function resolveStoreDir(defaults, storeDir) {
+  return storeDir || defaults.storeDir;
+}
+
+module.exports = {
+  createThreadTraceRuntime
+};

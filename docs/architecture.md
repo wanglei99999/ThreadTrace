@@ -31,6 +31,15 @@ infrastructure
 
 具体契约见 `docs/resource-interfaces.md`。
 
+## 运行时组合根
+
+`src/runtime/threadTraceRuntime.js` 是当前应用的组合根，负责把论坛适配器、文件仓库、检索索引和应用用例装配成统一运行时。CLI、HTTP API、未来 Worker 或 Scheduler 都应优先依赖 runtime，而不是各自创建仓库、索引或外部服务实例。
+
+这样做的目的：
+- 换 PostgreSQL、对象存储、向量库或任务队列时，只需要替换 runtime 的装配逻辑。
+- 多论坛接入时，入口层只传入 `forum` / source key，领域层继续消费统一模型。
+- 测试可以对 runtime 做端到端组合验证，同时保持 use case 和 domain 的单元测试轻量。
+
 ## 可扩展论坛适配器
 
 每个论坛只需要实现统一适配器接口：

@@ -3,16 +3,7 @@
 const http = require('http');
 const fs = require('fs/promises');
 const path = require('path');
-const { getForumAdapter, listForumAdapters } = require('../../infrastructure/forum-adapters/registry');
-const { analyzeSavedThreadDirectory } = require('../../application/use-cases/analyzeSavedThreadDirectory');
-const { interpretNewPostFromSavedThreadDirectory } = require('../../application/use-cases/interpretNewPostFromSavedThreadDirectory');
-const { runIngestSavedThreadDirectoryTask } = require('../../application/use-cases/runIngestSavedThreadDirectoryTask');
-const { indexSavedThreadDirectory } = require('../../application/use-cases/indexSavedThreadDirectory');
-const { searchEvidence } = require('../../application/use-cases/searchEvidence');
-const { createFileThreadRepository } = require('../../infrastructure/storage/fileThreadRepository');
-const { createFileAnalysisReportRepository } = require('../../infrastructure/storage/fileAnalysisReportRepository');
-const { createFileTaskRepository } = require('../../infrastructure/storage/fileTaskRepository');
-const { createFileTextRetrievalIndex } = require('../../infrastructure/retrieval/fileTextRetrievalIndex');
+const { createThreadTraceRuntime } = require('../../runtime/threadTraceRuntime');
 const { createOpenApiSpec } = require('./openApiSpec');
 
 function createThreadTraceServer(options) {
@@ -20,6 +11,10 @@ function createThreadTraceServer(options) {
   const defaultInputDir = safeOptions.defaultInputDir || path.resolve(process.cwd(), 'example');
   const webDir = safeOptions.webDir || path.resolve(__dirname, '..', 'web');
   const storeDir = safeOptions.storeDir || path.resolve(process.cwd(), 'data', 'store');
+  const runtime = safeOptions.runtime || createThreadTraceRuntime({
+    defaultInputDir,
+    storeDir
+  });
 
   return http.createServer(async function (request, response) {
     try {
@@ -34,6 +29,7 @@ function createThreadTraceServer(options) {
         defaultInputDir,
         webDir,
         storeDir,
+        runtime,
         maxBodyBytes: safeOptions.maxBodyBytes || 1024 * 1024
       });
     } catch (error) {
@@ -65,7 +61,7 @@ async function routeRequest(request, response, context) {
 
   if (request.method === 'GET' && url.pathname === '/adapters') {
     writeJson(response, 200, {
-      adapters: listForumAdapters()
+      adapters: context.runtime.listAdapters()
     });
     return;
   }
@@ -77,9 +73,8 @@ async function routeRequest(request, response, context) {
 
   if (request.method === 'POST' && url.pathname === '/api/analyze-directory') {
     const body = await readJsonBody(request, context.maxBodyBytes);
-    const adapter = getForumAdapter(body.forum || 'nga');
-    const result = analyzeSavedThreadDirectory({
-      adapter,
+    const result = context.runtime.analyzeDirectory({
+      forum: body.forum,
       inputDir: body.inputDir || context.defaultInputDir
     });
     writeJson(response, 200, result.report);
@@ -97,13 +92,12 @@ async function routeRequest(request, response, context) {
       return;
     }
 
-    const adapter = getForumAdapter(body.forum || 'nga');
-    const report = interpretNewPostFromSavedThreadDirectory({
-      adapter,
+    const report = context.runtime.interpretText({
+      forum: body.forum,
       inputDir: body.inputDir || context.defaultInputDir,
       authorId: body.authorId,
       author: body.author,
-      contentText: body.text,
+      text: body.text,
       publishedAt: body.publishedAt
     });
     writeJson(response, 200, report);
@@ -112,21 +106,10 @@ async function routeRequest(request, response, context) {
 
   if (request.method === 'POST' && url.pathname === '/api/tasks/ingest-directory') {
     const body = await readJsonBody(request, context.maxBodyBytes);
-    const adapter = getForumAdapter(body.forum || 'nga');
-    const storeDir = body.storeDir || context.storeDir;
-    const result = await runIngestSavedThreadDirectoryTask({
-      forum: body.forum || 'nga',
-      adapter,
+    const result = await context.runtime.runIngestDirectoryTask({
+      forum: body.forum,
       inputDir: body.inputDir || context.defaultInputDir,
-      threadRepository: createFileThreadRepository({
-        baseDir: path.join(storeDir, 'threads')
-      }),
-      reportRepository: createFileAnalysisReportRepository({
-        baseDir: path.join(storeDir, 'reports')
-      }),
-      taskRepository: createFileTaskRepository({
-        baseDir: path.join(storeDir, 'tasks')
-      })
+      storeDir: body.storeDir || context.storeDir
     });
     writeJson(response, 200, {
       task: result.task,
@@ -136,10 +119,7 @@ async function routeRequest(request, response, context) {
   }
 
   if (request.method === 'GET' && url.pathname === '/api/tasks') {
-    const taskRepository = createFileTaskRepository({
-      baseDir: path.join(context.storeDir, 'tasks')
-    });
-    const tasks = await taskRepository.listTasks({
+    const tasks = await context.runtime.listTasks({
       status: url.searchParams.get('status') || undefined,
       type: url.searchParams.get('type') || undefined,
       limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 20
@@ -152,14 +132,10 @@ async function routeRequest(request, response, context) {
 
   if (request.method === 'POST' && url.pathname === '/api/index-directory') {
     const body = await readJsonBody(request, context.maxBodyBytes);
-    const adapter = getForumAdapter(body.forum || 'nga');
-    const storeDir = body.storeDir || context.storeDir;
-    const result = await indexSavedThreadDirectory({
-      adapter,
+    const result = await context.runtime.indexDirectory({
+      forum: body.forum,
       inputDir: body.inputDir || context.defaultInputDir,
-      retrievalIndex: createFileTextRetrievalIndex({
-        indexFile: path.join(storeDir, 'retrieval', 'documents.json')
-      })
+      storeDir: body.storeDir || context.storeDir
     });
     writeJson(response, 200, {
       sourceKey: result.threadSnapshot.sourceKey,
@@ -180,14 +156,11 @@ async function routeRequest(request, response, context) {
       });
       return;
     }
-    const storeDir = body.storeDir || context.storeDir;
-    const results = await searchEvidence({
+    const results = await context.runtime.search({
       text: body.text,
       filter: body.filter,
       limit: body.limit || 10,
-      retrievalIndex: createFileTextRetrievalIndex({
-        indexFile: path.join(storeDir, 'retrieval', 'documents.json')
-      })
+      storeDir: body.storeDir || context.storeDir
     });
     writeJson(response, 200, {
       results
