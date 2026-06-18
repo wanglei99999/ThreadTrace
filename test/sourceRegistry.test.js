@@ -27,6 +27,10 @@ test('runtime registers tracked sources and runs ingest from a source', async fu
     sourceId: registerResult.source.id
   });
   const sourcesAfterTask = await runtime.listSources({});
+  const repeatedTaskResult = await runtime.runSourceIngestTask({
+    sourceId: registerResult.source.id
+  });
+  const sourcesAfterRepeatedTask = await runtime.listSources({});
   const updateResult = await runtime.registerSource({
     forum: 'nga',
     displayName: 'Renamed sample archive',
@@ -45,12 +49,18 @@ test('runtime registers tracked sources and runs ingest from a source', async fu
   assert.equal(skippedDueResult.skippedCount, 1);
   assert.equal(taskResult.task.status, 'completed');
   assert.equal(taskResult.threadSnapshot.sourceThreadId, '45974302');
+  assert.equal(taskResult.cursor.postCount, 20);
+  assert.equal(taskResult.cursor.lastFloor, 19);
   assert.equal(sourcesAfterTask[0].runState.status, 'completed');
   assert.equal(sourcesAfterTask[0].runState.lastTaskId, taskResult.task.id);
   assert.equal(sourcesAfterTask[0].runState.failureCount, 0);
+  assert.equal(sourcesAfterTask[0].cursor.postCount, 20);
+  assert.equal(sourcesAfterTask[0].cursor.lastFloor, 19);
+  assert.equal(repeatedTaskResult.cursorDiff.newPostCount, 0);
+  assert.equal(sourcesAfterRepeatedTask[0].runState.lastCursorDiff.newPostCount, 0);
   assert.equal(updateResult.created, false);
   assert.equal(updateResult.source.displayName, 'Renamed sample archive');
-  assert.equal(updateResult.source.runState.lastTaskId, taskResult.task.id);
+  assert.equal(updateResult.source.runState.lastTaskId, repeatedTaskResult.task.id);
   assert.equal(batchResult.task.status, 'completed');
   assert.equal(batchResult.task.type, 'ingest-enabled-sources');
   assert.equal(batchResult.sourceCount, 1);

@@ -80,6 +80,8 @@ async function runEnabledSourcesIngestTasks(options) {
           sourceKey: result.source.sourceKey,
           status: result.status,
           taskId: result.task && result.task.id,
+          changed: result.cursorDiff && result.cursorDiff.changed,
+          newPostCount: result.cursorDiff && result.cursorDiff.newPostCount,
           error: result.error
         };
       })

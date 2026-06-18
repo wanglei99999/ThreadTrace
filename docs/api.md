@@ -110,6 +110,13 @@ http://127.0.0.1:3017
 - `lastStartedAt` / `lastFinishedAt`: 最近一次开始和结束时间。
 - `lastTaskId`: 最近一次成功关联的任务 ID。
 - `failureCount`: 连续失败次数。
+- `lastCursorDiff`: 最近一次导入相对上次水位线的变化，包括 `changed`、`newPostCount` 和前后最后楼层。
+
+来源记录还包含 `cursor`，用于后续增量采集和去重：
+- `sourceThreadId` / `title`: 最近一次归档的主题。
+- `postCount`: 最近一次看到的楼层数量。
+- `lastFloor` / `lastPostId` / `lastPublishedAt`: 最近一次看到的末尾楼层。
+- `fingerprint`: 基于主题、帖子数和末尾楼层内容生成的变化指纹。
 
 ### `GET /api/sources`
 

@@ -352,10 +352,14 @@ function renderSourceList(result) {
   return panel('跟踪来源', sources.map(function (source) {
     const runState = source.runState || {};
     const schedule = source.schedule || {};
+    const cursor = source.cursor || {};
+    const cursorDiff = runState.lastCursorDiff || {};
     const runLabel = runState.status || 'never-run';
     const scheduleLabel = schedule.intervalMinutes ? ' · every ' + schedule.intervalMinutes + 'm' : '';
+    const cursorLabel = cursor.postCount !== undefined ? ' · posts ' + cursor.postCount + ' / #' + cursor.lastFloor : '';
+    const diffLabel = cursorDiff.newPostCount !== undefined ? ' · +' + cursorDiff.newPostCount : '';
     const lastTask = runState.lastTaskId ? ' · ' + runState.lastTaskId : '';
-    return '<div class="action-row"><span>' + escapeHtml(source.displayName) + '<small>' + escapeHtml(source.id + ' · ' + source.sourceType + ' · ' + runLabel + scheduleLabel + lastTask) + '</small></span><button class="inline-button" type="button" data-action="run-source" data-source-id="' + escapeHtml(source.id) + '">运行</button></div>';
+    return '<div class="action-row"><span>' + escapeHtml(source.displayName) + '<small>' + escapeHtml(source.id + ' · ' + source.sourceType + ' · ' + runLabel + scheduleLabel + cursorLabel + diffLabel + lastTask) + '</small></span><button class="inline-button" type="button" data-action="run-source" data-source-id="' + escapeHtml(source.id) + '">运行</button></div>';
   }).join(''), 'wide');
 }
 

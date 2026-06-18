@@ -106,6 +106,8 @@ async function runDueSourcesIngestTasks(options) {
           status: result.status,
           scheduleReason: result.scheduleReason,
           taskId: result.task && result.task.id,
+          changed: result.cursorDiff && result.cursorDiff.changed,
+          newPostCount: result.cursorDiff && result.cursorDiff.newPostCount,
           error: result.error
         };
       }),

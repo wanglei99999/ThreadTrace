@@ -2,6 +2,7 @@
 
 const { assertTaskRepository } = require('../ports/taskRepository');
 const { ingestSavedThreadDirectory } = require('./ingestSavedThreadDirectory');
+const { buildThreadSnapshotCursor } = require('../../domain/sources/threadSnapshotCursor');
 const {
   createTaskRecord,
   markTaskCompleted,
@@ -27,12 +28,14 @@ async function runIngestSavedThreadDirectoryTask(options) {
       threadRepository: options.threadRepository,
       reportRepository: options.reportRepository
     });
+    const cursor = buildThreadSnapshotCursor(result.threadSnapshot);
 
     task = markTaskCompleted(task, {
       sourceKey: result.threadSnapshot.sourceKey,
       sourceThreadId: result.threadSnapshot.sourceThreadId,
       title: result.threadSnapshot.title,
       parsedPostCount: result.threadSnapshot.posts.length,
+      cursor,
       reportType: result.report.reportType
     });
     await taskRepository.saveTask(task);

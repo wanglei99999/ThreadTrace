@@ -26,6 +26,7 @@ function createTrackedSource(input) {
     enabled: safeInput.enabled !== false,
     tags: Array.isArray(safeInput.tags) ? safeInput.tags : [],
     schedule: safeInput.schedule || undefined,
+    cursor: safeInput.cursor,
     runState: safeInput.runState || {
       status: 'never-run',
       failureCount: 0
@@ -46,14 +47,16 @@ function markTrackedSourceRunStarted(source, timestamp) {
   });
 }
 
-function markTrackedSourceRunCompleted(source, task, timestamp) {
+function markTrackedSourceRunCompleted(source, task, cursor, cursorDiff, timestamp) {
   const now = timestamp || new Date().toISOString();
   return Object.assign({}, source, {
+    cursor: cursor || source.cursor,
     runState: Object.assign({}, source.runState || {}, {
       status: 'completed',
       lastStartedAt: source.runState && source.runState.lastStartedAt,
       lastFinishedAt: now,
       lastTaskId: task && task.id,
+      lastCursorDiff: cursorDiff,
       lastError: undefined,
       failureCount: 0
     }),

@@ -6,6 +6,10 @@ const {
   markTrackedSourceRunFailed,
   markTrackedSourceRunStarted
 } = require('../../domain/models/trackedSource');
+const {
+  buildThreadSnapshotCursor,
+  compareThreadSnapshotCursor
+} = require('../../domain/sources/threadSnapshotCursor');
 const { assertForumAdapter } = require('../../infrastructure/forum-adapters/forumAdapter');
 const { assertSourceRepository } = require('../ports/sourceRepository');
 const { assertThreadRepository } = require('../ports/threadRepository');
@@ -41,10 +45,14 @@ async function runTrackedSourceIngestTask(options) {
       reportRepository: assertAnalysisReportRepository(safeOptions.reportRepository),
       taskRepository: assertTaskRepository(safeOptions.taskRepository)
     });
-    runningSource = markTrackedSourceRunCompleted(runningSource, result.task);
+    const cursor = buildThreadSnapshotCursor(result.threadSnapshot);
+    const cursorDiff = compareThreadSnapshotCursor(source.cursor, cursor);
+    runningSource = markTrackedSourceRunCompleted(runningSource, result.task, cursor, cursorDiff);
     await sourceRepository.saveSource(runningSource);
     return Object.assign({}, result, {
-      source: runningSource
+      source: runningSource,
+      cursor,
+      cursorDiff
     });
   } catch (error) {
     runningSource = markTrackedSourceRunFailed(runningSource, error);
