@@ -158,7 +158,10 @@ function createOpenApiSpec() {
                     timeoutMs: { type: 'number', example: 10000 },
                     limit: { type: 'number', example: 50 },
                     maxAttempts: { type: 'number', example: 3 },
+                    retryBackoffMs: { type: 'number', example: 60000 },
+                    maxRetryBackoffMs: { type: 'number', example: 3600000 },
                     includeFailed: { type: 'boolean' },
+                    now: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
                     storeDir: { type: 'string' }
                   }
                 }

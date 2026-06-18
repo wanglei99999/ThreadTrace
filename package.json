@@ -20,6 +20,8 @@
     "serve:web": "node src/presentation/http/server.js",
     "worker:due-once": "node src/presentation/worker/dueSourceWorkerMain.js --once",
     "worker:due-loop": "node src/presentation/worker/dueSourceWorkerMain.js --loop",
+    "worker:events-once": "node src/presentation/worker/notificationEventWorkerMain.js --once",
+    "worker:events-loop": "node src/presentation/worker/notificationEventWorkerMain.js --loop",
     "test:unit": "node --test test"
   }
 }

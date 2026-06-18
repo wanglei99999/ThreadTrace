@@ -243,7 +243,10 @@ function createThreadTraceRuntime(options) {
         notificationChannel: createNotificationChannel(safeRequest, storeDir),
         limit: safeRequest.limit || 50,
         maxAttempts: safeRequest.maxAttempts || 3,
-        includeFailed: safeRequest.includeFailed
+        includeFailed: safeRequest.includeFailed,
+        now: safeRequest.now,
+        retryBackoffMs: safeRequest.retryBackoffMs,
+        maxRetryBackoffMs: safeRequest.maxRetryBackoffMs
       });
     }
   };

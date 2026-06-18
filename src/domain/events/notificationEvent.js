@@ -26,6 +26,7 @@ function createSourceChangedEvent(input) {
     },
     deliveryStatus: safeInput.deliveryStatus || 'pending',
     deliveryAttempts: safeInput.deliveryAttempts || 0,
+    nextDeliveryAt: safeInput.nextDeliveryAt || now,
     lastDeliveryError: safeInput.lastDeliveryError,
     lastDeliveredAt: safeInput.lastDeliveredAt,
     acknowledgedAt: safeInput.acknowledgedAt
@@ -49,20 +50,32 @@ function markNotificationEventDelivered(event, deliveryResult, timestamp) {
     deliveryAttempts: (event.deliveryAttempts || 0) + 1,
     lastDeliveredAt: now,
     lastDeliveryError: undefined,
+    nextDeliveryAt: undefined,
     deliveryResult: deliveryResult || {}
   });
 }
 
-function markNotificationEventDeliveryFailed(event, error, timestamp) {
-  const now = timestamp || new Date().toISOString();
+function markNotificationEventDeliveryFailed(event, error, options) {
+  const safeOptions = normalizeDeliveryFailureOptions(options);
+  const now = safeOptions.attemptedAt || new Date().toISOString();
   return Object.assign({}, event, {
     deliveryStatus: 'failed',
     deliveryAttempts: (event.deliveryAttempts || 0) + 1,
     lastDeliveryAttemptAt: now,
+    nextDeliveryAt: safeOptions.nextDeliveryAt,
     lastDeliveryError: {
       message: error && error.message ? error.message : String(error)
     }
   });
+}
+
+function normalizeDeliveryFailureOptions(options) {
+  if (!options || typeof options === 'string') {
+    return {
+      attemptedAt: options
+    };
+  }
+  return options;
 }
 
 function buildSummary(source, cursorDiff, cursor) {

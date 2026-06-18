@@ -38,6 +38,7 @@ function createFileNotificationEventRepository(options) {
           if (acknowledged !== safeQuery.acknowledged) continue;
         }
         if (safeQuery.deliveryStatus && (event.deliveryStatus || 'pending') !== safeQuery.deliveryStatus) continue;
+        if (safeQuery.dueBefore && !isEventDue(event, safeQuery.dueBefore)) continue;
         events.push(event);
       }
 
@@ -74,6 +75,15 @@ async function listEventFiles(baseDir) {
     if (error && error.code === 'ENOENT') return [];
     throw error;
   }
+}
+
+function isEventDue(event, dueBefore) {
+  const dueBeforeTime = Date.parse(dueBefore);
+  if (Number.isNaN(dueBeforeTime)) return true;
+  if (!event.nextDeliveryAt) return true;
+  const nextDeliveryTime = Date.parse(event.nextDeliveryAt);
+  if (Number.isNaN(nextDeliveryTime)) return true;
+  return nextDeliveryTime <= dueBeforeTime;
 }
 
 module.exports = {

@@ -13,19 +13,24 @@ async function dispatchPendingNotificationEvents(options) {
   const notificationChannel = assertNotificationChannel(safeOptions.notificationChannel);
   const limit = safeOptions.limit || 50;
   const maxAttempts = safeOptions.maxAttempts || 3;
+  const now = safeOptions.now || new Date().toISOString();
+  const retryBackoffMs = safeOptions.retryBackoffMs || 60 * 1000;
+  const maxRetryBackoffMs = safeOptions.maxRetryBackoffMs || 60 * 60 * 1000;
   const pendingEvents = await notificationEventRepository.listEvents({
     deliveryStatus: 'pending',
+    dueBefore: now,
     limit
   });
   const failedEvents = safeOptions.includeFailed === false
     ? []
     : await notificationEventRepository.listEvents({
       deliveryStatus: 'failed',
+      dueBefore: now,
       limit
     });
   const events = pendingEvents.concat(failedEvents)
     .filter(function (event) {
-      return (event.deliveryAttempts || 0) < maxAttempts;
+      return (event.deliveryAttempts || 0) < maxAttempts && isEventDue(event, now);
     })
     .slice(0, limit);
   const results = [];
@@ -41,7 +46,15 @@ async function dispatchPendingNotificationEvents(options) {
         deliveryResult
       });
     } catch (error) {
-      const failedEvent = markNotificationEventDeliveryFailed(event, error);
+      const failedEvent = markNotificationEventDeliveryFailed(event, error, {
+        attemptedAt: now,
+        nextDeliveryAt: nextRetryAt(event, {
+          maxAttempts,
+          now,
+          retryBackoffMs,
+          maxRetryBackoffMs
+        })
+      });
       await notificationEventRepository.saveEvent(failedEvent);
       results.push({
         event: failedEvent,
@@ -64,6 +77,21 @@ async function dispatchPendingNotificationEvents(options) {
     skippedCount: pendingEvents.length + failedEvents.length - events.length,
     results
   };
+}
+
+function isEventDue(event, now) {
+  if (!event.nextDeliveryAt) return true;
+  const nextDeliveryTime = Date.parse(event.nextDeliveryAt);
+  if (Number.isNaN(nextDeliveryTime)) return true;
+  return nextDeliveryTime <= Date.parse(now);
+}
+
+function nextRetryAt(event, options) {
+  const attemptsAfterFailure = (event.deliveryAttempts || 0) + 1;
+  if (attemptsAfterFailure >= options.maxAttempts) return undefined;
+  const exponent = Math.max(0, attemptsAfterFailure - 1);
+  const delayMs = Math.min(options.retryBackoffMs * Math.pow(2, exponent), options.maxRetryBackoffMs);
+  return new Date(Date.parse(options.now) + delayMs).toISOString();
 }
 
 module.exports = {

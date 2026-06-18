@@ -154,7 +154,10 @@ async function routeRequest(request, response, context) {
       timeoutMs: body.timeoutMs,
       limit: body.limit,
       maxAttempts: body.maxAttempts,
+      retryBackoffMs: body.retryBackoffMs,
+      maxRetryBackoffMs: body.maxRetryBackoffMs,
       includeFailed: body.includeFailed,
+      now: body.now,
       storeDir: body.storeDir || context.storeDir
     });
     writeJson(response, 200, result);
