@@ -1141,6 +1141,8 @@ function createOpenApiSpec() {
                   properties: {
                     execute: { type: 'boolean', example: false },
                     dryRun: { type: 'boolean', example: true },
+                    force: { type: 'boolean', example: false },
+                    sourceRunStaleAfterMs: { type: 'number', example: 600000 },
                     now: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
                     storeDir: { type: 'string' }
                   }
@@ -1154,6 +1156,9 @@ function createOpenApiSpec() {
             },
             404: {
               $ref: '#/components/responses/NotFound'
+            },
+            409: {
+              $ref: '#/components/responses/Conflict'
             }
           }
         }

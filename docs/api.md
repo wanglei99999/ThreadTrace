@@ -271,11 +271,14 @@ Request:
 
 ```json
 {
-  "execute": false
+  "execute": false,
+  "force": false,
+  "sourceRunStaleAfterMs": 600000
 }
 ```
 
 Set `execute: true` or `dryRun: false` to persist `enabled=false`.
+When the source has a non-stale `runState.status=running`, disable returns HTTP `409` with `source_disable_running`. Use `force: true` only for an operator-approved intervention, or lower `sourceRunStaleAfterMs` when recovering a stale run.
 
 ### `POST /api/sources/{sourceId}/enable`
 

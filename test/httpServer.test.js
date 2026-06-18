@@ -211,6 +211,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.components.schemas.ErrorResponse.properties.error.properties.requestId.type, 'string');
     assert.equal(openApi.components.responses.BadRequest.content['application/json'].schema.$ref, '#/components/schemas/ErrorResponse');
     assert.equal(openApi.paths['/api/search'].post.responses[400].$ref, '#/components/responses/BadRequest');
+    assert.equal(openApi.paths['/api/sources/{sourceId}/disable'].post.responses[409].$ref, '#/components/responses/Conflict');
     assert.equal(openApi.paths['/api/sources/{sourceId}/tasks/ingest'].post.responses[404].$ref, '#/components/responses/NotFound');
     assert.equal(openApi.paths['/api/sources/{sourceId}/tasks/ingest'].post.responses[409].$ref, '#/components/responses/Conflict');
     assert.equal(context.reportType, 'new-post-context');
@@ -779,6 +780,54 @@ test('http server maps source run conflicts to 409', async function () {
     assert.equal(response.status, 409);
     assert.equal(body.error.code, 'source_run_already_running');
     assert.equal(body.error.details.sourceId, 'source-1');
+  } finally {
+    await close(server);
+  }
+});
+
+test('http server maps source disable conflicts to 409', async function () {
+  const calls = [];
+  const server = createThreadTraceServer({
+    runtime: {
+      async runDisableSourceTask(request) {
+        calls.push(request);
+        throw createApplicationError('source_disable_running', 'Tracked source is currently running: source-1', {
+          statusCode: 409,
+          details: {
+            sourceId: 'source-1',
+            staleAfterMs: request.sourceRunStaleAfterMs,
+            forced: request.force
+          }
+        });
+      }
+    }
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const response = await fetch(baseUrl + '/api/sources/source-1/disable', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        execute: true,
+        force: false,
+        sourceRunStaleAfterMs: 1234
+      })
+    });
+    const body = await response.json();
+
+    assert.equal(response.status, 409);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].execute, true);
+    assert.equal(calls[0].force, false);
+    assert.equal(calls[0].sourceRunStaleAfterMs, 1234);
+    assert.equal(body.error.code, 'source_disable_running');
+    assert.equal(body.error.details.sourceId, 'source-1');
+    assert.equal(body.error.details.staleAfterMs, 1234);
   } finally {
     await close(server);
   }

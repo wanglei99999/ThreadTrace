@@ -18,6 +18,20 @@ Disable execute:
 node src/presentation/cli/threadtrace.js disable-source --source-id <id> --execute true
 ```
 
+Disable is guarded when the source is already running. A non-stale `runState.status=running` source returns `source_disable_running` with HTTP `409` and is not saved. The default stale window is 10 minutes.
+
+Force disable for an operator-approved intervention:
+
+```powershell
+node src/presentation/cli/threadtrace.js disable-source --source-id <id> --execute true --force true
+```
+
+Tune stale recovery:
+
+```powershell
+node src/presentation/cli/threadtrace.js disable-source --source-id <id> --source-run-stale-after-ms 600000
+```
+
 Enable dry-run:
 
 ```powershell
@@ -41,7 +55,9 @@ Request:
 
 ```json
 {
-  "execute": false
+  "execute": false,
+  "force": false,
+  "sourceRunStaleAfterMs": 600000
 }
 ```
 

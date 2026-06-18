@@ -717,6 +717,8 @@ async function routeRequest(request, response, context) {
     const result = await context.runtime.runDisableSourceTask({
       sourceId: decodeURIComponent(disableSourceMatch[1]),
       execute: body.execute === true || body.dryRun === false,
+      force: body.force === true,
+      sourceRunStaleAfterMs: body.sourceRunStaleAfterMs === undefined ? body.staleAfterMs : body.sourceRunStaleAfterMs,
       now: body.now,
       storeDir: body.storeDir || context.storeDir,
       requestId: context.requestId,

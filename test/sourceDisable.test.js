@@ -61,6 +61,112 @@ test('disable tracked source execute persists disabled source', async function (
   assert.equal(saved[0].enabled, false);
 });
 
+test('disable tracked source rejects active non-stale running source', async function () {
+  const saved = [];
+  const source = sampleSource({
+    runState: {
+      status: 'running',
+      lastStartedAt: '2026-06-19T09:59:00.000Z'
+    }
+  });
+
+  await assert.rejects(function () {
+    return disableTrackedSource({
+      sourceId: source.id,
+      execute: true,
+      sourceRunStaleAfterMs: 10 * 60 * 1000,
+      sourceRepository: {
+        async saveSource(item) {
+          saved.push(item);
+        },
+        async findSource() {
+          return source;
+        },
+        async listSources() {
+          return [source];
+        }
+      },
+      now: '2026-06-19T10:00:00.000Z'
+    });
+  }, function (error) {
+    assert.equal(error.code, 'source_disable_running');
+    assert.equal(error.statusCode, 409);
+    assert.equal(error.details.sourceId, source.id);
+    assert.equal(error.details.staleAfterMs, 10 * 60 * 1000);
+    return true;
+  });
+
+  assert.equal(saved.length, 0);
+});
+
+test('disable tracked source force bypasses active running guard', async function () {
+  const saved = [];
+  const source = sampleSource({
+    runState: {
+      status: 'running',
+      lastStartedAt: '2026-06-19T09:59:00.000Z'
+    }
+  });
+  const result = await disableTrackedSource({
+    sourceId: source.id,
+    execute: true,
+    force: true,
+    sourceRunStaleAfterMs: 10 * 60 * 1000,
+    sourceRepository: {
+      async saveSource(item) {
+        saved.push(item);
+      },
+      async findSource() {
+        return source;
+      },
+      async listSources() {
+        return [source];
+      }
+    },
+    now: '2026-06-19T10:00:00.000Z'
+  });
+
+  assert.equal(result.status, 'ok');
+  assert.equal(result.guard.running, true);
+  assert.equal(result.guard.blocked, false);
+  assert.equal(result.guard.forced, true);
+  assert.equal(saved.length, 1);
+  assert.equal(saved[0].enabled, false);
+});
+
+test('disable tracked source allows stale running source', async function () {
+  const saved = [];
+  const source = sampleSource({
+    runState: {
+      status: 'running',
+      lastStartedAt: '2026-06-19T09:00:00.000Z'
+    }
+  });
+  const result = await disableTrackedSource({
+    sourceId: source.id,
+    execute: true,
+    sourceRunStaleAfterMs: 10 * 60 * 1000,
+    sourceRepository: {
+      async saveSource(item) {
+        saved.push(item);
+      },
+      async findSource() {
+        return source;
+      },
+      async listSources() {
+        return [source];
+      }
+    },
+    now: '2026-06-19T10:00:00.000Z'
+  });
+
+  assert.equal(result.status, 'ok');
+  assert.equal(result.guard.running, true);
+  assert.equal(result.guard.stale, true);
+  assert.equal(saved.length, 1);
+  assert.equal(saved[0].enabled, false);
+});
+
 test('runtime disable source task records audit trail and replays idempotency', async function () {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-source-disable-'));
   const storeDir = path.join(tempDir, 'store');
@@ -168,8 +274,8 @@ test('runtime enable source task records audit trail and enables source', async 
   assert.equal(replay.idempotency.reused, true);
 });
 
-function sampleSource() {
-  return {
+function sampleSource(overrides) {
+  return Object.assign({
     id: 'source-1',
     sourceKey: 'nga',
     sourceType: 'saved-html-directory',
@@ -180,5 +286,5 @@ function sampleSource() {
     enabled: true,
     createdAt: '2026-06-19T09:00:00.000Z',
     updatedAt: '2026-06-19T09:00:00.000Z'
-  };
+  }, overrides);
 }

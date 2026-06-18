@@ -625,6 +625,8 @@ function main(argv) {
     runtime.runDisableSourceTask({
       sourceId: options.sourceId,
       execute: options.execute === 'true' || options.dryRun === 'false',
+      force: options.force === 'true',
+      sourceRunStaleAfterMs: options.sourceRunStaleAfterMs,
       now: options.now,
       storeDir,
       requestId: options.requestId,
@@ -1450,6 +1452,9 @@ function parseArgs(args) {
     } else if (item === '--source-run-stale-after-ms') {
       options.sourceRunStaleAfterMs = args[index + 1];
       index += 1;
+    } else if (item === '--force') {
+      options.force = args[index + 1];
+      index += 1;
     } else if (item === '--store-dir') {
       options.storeDir = args[index + 1];
       index += 1;
@@ -1725,7 +1730,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js deployment-gate [--manifest-file file] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js rollout-manifest-apply --manifest-file file [--execute true] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--source-type type] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--store-dir dir]');
-  console.log('  node src/presentation/cli/threadtrace.js disable-source --source-id id [--execute true] [--store-dir dir] [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js disable-source --source-id id [--execute true] [--force true] [--source-run-stale-after-ms ms] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js enable-source --source-id id [--execute true] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-diagnostics [--forum nga] [--enabled true] [--store-dir dir]');

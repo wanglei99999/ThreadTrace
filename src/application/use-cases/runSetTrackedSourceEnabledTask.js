@@ -27,6 +27,8 @@ async function runSetTrackedSourceEnabledTask(options) {
     enabled: safeOptions.enabled,
     execute: safeOptions.execute === true,
     dryRun: safeOptions.execute !== true,
+    force: safeOptions.force === true,
+    sourceRunStaleAfterMs: safeOptions.sourceRunStaleAfterMs,
     storeDir: safeOptions.storeDir,
     now: safeOptions.now
   }, safeOptions);
@@ -48,6 +50,8 @@ async function runSetTrackedSourceEnabledTask(options) {
       sourceId: safeOptions.sourceId,
       enabled: safeOptions.enabled,
       execute: safeOptions.execute,
+      force: safeOptions.force === true,
+      sourceRunStaleAfterMs: safeOptions.sourceRunStaleAfterMs,
       now: safeOptions.now,
       storeDir: safeOptions.storeDir
     });
@@ -56,6 +60,7 @@ async function runSetTrackedSourceEnabledTask(options) {
       dryRun: result.dryRun,
       executed: result.executed,
       changed: result.changed,
+      guard: result.guard,
       sourceBefore: result.sourceBefore,
       sourceAfter: result.sourceAfter,
       result

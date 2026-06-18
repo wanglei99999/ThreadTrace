@@ -892,6 +892,8 @@ function createThreadTraceRuntime(options) {
         sourceRepository: repositories.sourceRepository,
         sourceId: safeRequest.sourceId,
         execute: safeRequest.execute,
+        force: safeRequest.force,
+        sourceRunStaleAfterMs: safeRequest.sourceRunStaleAfterMs,
         now: safeRequest.now
       });
     },
@@ -918,6 +920,8 @@ function createThreadTraceRuntime(options) {
         },
         sourceId: safeRequest.sourceId,
         execute: safeRequest.execute,
+        force: safeRequest.force,
+        sourceRunStaleAfterMs: safeRequest.sourceRunStaleAfterMs,
         now: safeRequest.now,
         storeDir: safeRequest.storeDir,
         requestId: safeRequest.requestId,

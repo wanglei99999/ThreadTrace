@@ -54,6 +54,7 @@ node src/presentation/cli/threadtrace.js resource-provisioning-plan --manifest-f
 node src/presentation/cli/threadtrace.js deployment-gate --manifest-file <file>
 node src/presentation/cli/threadtrace.js rollout-manifest-apply --manifest-file <file>
 node src/presentation/cli/threadtrace.js disable-source --source-id <id>
+node src/presentation/cli/threadtrace.js disable-source --source-id <id> --execute true --force true
 node src/presentation/cli/threadtrace.js enable-source --source-id <id>
 node src/presentation/cli/threadtrace.js list-sources
 node src/presentation/cli/threadtrace.js list-events
