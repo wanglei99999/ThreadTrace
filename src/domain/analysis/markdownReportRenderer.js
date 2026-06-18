@@ -36,6 +36,11 @@ function renderBasicHistoryMarkdown(report) {
   appendRelationCandidates(lines, report.relationCandidates || []);
 
   lines.push('');
+  lines.push('## 观点候选');
+  lines.push('');
+  appendOpinionCandidates(lines, report.opinionCandidates || []);
+
+  lines.push('');
   lines.push('## 高信号楼层候选');
   lines.push('');
   appendEvidenceList(lines, report.evidenceCandidates.highSignalPosts);
@@ -81,6 +86,33 @@ function appendEntityCandidates(lines, entities) {
     entity.mentions.slice(0, 3).forEach(function (mention) {
       lines.push('  - #' + mention.floor + ' ' + mention.author + '：' + safeInline(mention.excerpt));
     });
+  });
+}
+
+function appendOpinionCandidates(lines, opinions) {
+  if (!opinions || opinions.length === 0) {
+    lines.push('暂无。');
+    return;
+  }
+
+  opinions.slice(0, 20).forEach(function (opinion) {
+    const parts = [
+      '- #' + opinion.floor + ' ' + opinion.author,
+      '范围：' + (opinion.scope || 'unknown'),
+      '态度：' + opinion.attitude,
+      '置信度：' + opinion.confidence
+    ];
+    if (opinion.horizon) {
+      parts.push('周期：' + opinion.horizon);
+    }
+    if (opinion.matchedKeywords && opinion.matchedKeywords.length > 0) {
+      parts.push('关键词：' + opinion.matchedKeywords.join(', '));
+    }
+    lines.push(parts.join('；'));
+    if (opinion.conditionSignals && opinion.conditionSignals.length > 0) {
+      lines.push('  条件：' + opinion.conditionSignals.join(' / '));
+    }
+    lines.push('  证据：' + safeInline(opinion.evidence && opinion.evidence.text));
   });
 }
 

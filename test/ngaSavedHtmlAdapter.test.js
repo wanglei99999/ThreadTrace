@@ -50,6 +50,7 @@ test('basic historical analyzer identifies primary author and evidence candidate
   assert.ok(report.authorStats.length >= 10);
   assert.ok(report.entityCandidates.length >= 1);
   assert.ok(report.relationCandidates.length >= 1);
+  assert.ok(report.opinionCandidates.length >= 1);
   assert.ok(report.evidenceCandidates.highSignalPosts.length >= 1);
   assert.ok(report.evidenceCandidates.lowSignalPosts.length >= 1);
 });

@@ -43,6 +43,7 @@ node src/presentation/cli/threadtrace.js analyze-html-dir --forum nga --input ex
 - 自动识别 GBK / GB18030 / UTF-8 HTML 编码。
 - 抽取主题 ID、标题、分页、楼层、作者、uid、发布时间、正文、链接和推荐值。
 - 抽取引用与回复关系候选，为后续上下文还原提供结构骨架。
+- 规则型抽取观点候选，包括态度、周期、条件信号、证据片段和置信度。
 - 输出统一 `ThreadSnapshot`。
 - 支持目录内多个保存页合并，面向长帖多页归档。
 - 规则型抽取市场实体与线索候选，包括股票代码、主题关键词和论坛主题链接。

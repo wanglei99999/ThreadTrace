@@ -1,12 +1,14 @@
 'use strict';
 
 const { extractMarketEntities } = require('./ruleBasedMarketEntityExtractor');
+const { extractOpinionCandidates } = require('./ruleBasedOpinionExtractor');
 
 function analyzeThreadHistory(threadSnapshot) {
   const posts = threadSnapshot.posts || [];
   const authorStats = summarizeAuthors(posts);
   const primaryAuthor = posts[0] ? posts[0].author : undefined;
   const entityCandidates = extractMarketEntities(posts);
+  const opinionCandidates = extractOpinionCandidates(posts);
 
   return {
     reportType: 'basic-history',
@@ -24,6 +26,7 @@ function analyzeThreadHistory(threadSnapshot) {
     authorStats,
     entityCandidates,
     relationCandidates: collectRelations(posts),
+    opinionCandidates,
     evidenceCandidates: {
       highSignalPosts: pickHighSignalPosts(posts),
       externalLinks: collectExternalLinks(posts),
@@ -31,7 +34,6 @@ function analyzeThreadHistory(threadSnapshot) {
     },
     nextAnalysisSlots: [
       'entity-extraction',
-      'opinion-extraction',
       'evidence-linking',
       'implicit-reference-resolution',
       'opinion-chain-tracking'
