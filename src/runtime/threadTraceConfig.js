@@ -48,6 +48,7 @@ function createThreadTraceConfig(options) {
       provider: firstValue(safeOptions.llmProvider, env.THREADTRACE_LLM_PROVIDER, 'mock'),
       baseUrl: firstValue(safeOptions.llmBaseUrl, env.THREADTRACE_LLM_BASE_URL, undefined),
       model: firstValue(safeOptions.llmModel, env.THREADTRACE_LLM_MODEL, undefined),
+      apiKeyConfigured: Boolean(firstValue(safeOptions.llmApiKey, env.THREADTRACE_LLM_API_KEY, env.OPENAI_API_KEY, undefined)),
       timeoutMs: numberOrUndefined(firstValue(safeOptions.llmTimeoutMs, env.THREADTRACE_LLM_TIMEOUT_MS, undefined))
     },
     workers: {

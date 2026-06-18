@@ -264,6 +264,24 @@ function main(argv) {
     return;
   }
 
+  if (command === 'runtime-diagnostics') {
+    const diagnostics = runtime.getRuntimeDiagnostics({
+      now: options.now
+    });
+    console.log('Diagnostics: ' + diagnostics.status);
+    console.log('Storage: ' + diagnostics.configuration.storageMode);
+    console.log('Store dir: ' + diagnostics.configuration.storeDir);
+    console.log('LLM provider: ' + diagnostics.configuration.llm.provider);
+    console.log('Source task mode: ' + diagnostics.configuration.workers.sourceTaskMode);
+    diagnostics.checks.forEach(function (check) {
+      console.log(check.status + '\t' + check.key + '\t' + check.summary);
+    });
+    if (diagnostics.status === 'fail') {
+      process.exitCode = 2;
+    }
+    return;
+  }
+
   if (command === 'migrate-store') {
     const fromStoreDir = options.fromStoreDir || options.storeDir || defaultStoreDir;
     runtime.migrateStore({
@@ -868,6 +886,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js run-semantic-enrichment-task --source-thread-id id [--source-key nga] [--provider mock] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js operations-overview [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-readiness [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js runtime-diagnostics [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js migrate-store --from-store-dir dir [--to-store-dir dir] [--dry-run true|false] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js list-events [--source-id id] [--type type] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js fetch-thread-page [--forum nga] [--url url | --source-id id] [--source-thread-id id] [--store-dir dir]');

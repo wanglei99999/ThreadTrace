@@ -21,6 +21,7 @@ const { enrichAnalysisReportWithLlm } = require('../application/use-cases/enrich
 const { runSemanticEnrichmentTask } = require('../application/use-cases/runSemanticEnrichmentTask');
 const { getOperationalOverview } = require('../application/use-cases/getOperationalOverview');
 const { getOperationalReadiness } = require('../application/use-cases/getOperationalReadiness');
+const { getRuntimeDiagnostics } = require('../application/use-cases/getRuntimeDiagnostics');
 const { createDefaultSourceIngestHandlerRegistry } = require('../application/source-ingest/standardSourceIngestHandlers');
 const { migrateStoreRecords } = require('../application/use-cases/migrateStoreRecords');
 const { runIngestRawThreadPageTask } = require('../application/use-cases/runIngestRawThreadPageTask');
@@ -238,10 +239,21 @@ function createThreadTraceRuntime(options) {
       const safeRequest = request || {};
       return getOperationalReadiness({
         getOperationalOverview: this.getOperationalOverview,
+        diagnostics: this.getRuntimeDiagnostics({
+          now: safeRequest.now
+        }),
         now: safeRequest.now,
         limit: safeRequest.limit || 100,
         storeDir: safeRequest.storeDir,
         workerStaleAfterMs: safeRequest.workerStaleAfterMs
+      });
+    },
+
+    getRuntimeDiagnostics(request) {
+      const safeRequest = request || {};
+      return getRuntimeDiagnostics({
+        config: runtimeConfig,
+        now: safeRequest.now
       });
     },
 

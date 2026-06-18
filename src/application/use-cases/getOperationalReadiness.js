@@ -9,10 +9,16 @@ async function getOperationalReadiness(options) {
     workerStaleAfterMs: safeOptions.workerStaleAfterMs
   });
   const checks = buildReadinessChecks(overview);
+  const diagnostics = safeOptions.diagnostics;
+  const diagnosticChecks = diagnostics && Array.isArray(diagnostics.checks)
+    ? diagnostics.checks.map(toReadinessCheck)
+    : [];
+  const allChecks = checks.concat(diagnosticChecks);
   return {
     generatedAt: overview.generatedAt,
-    status: aggregateStatus(checks),
-    checks,
+    status: aggregateStatus(allChecks),
+    checks: allChecks,
+    diagnostics,
     overview
   };
 }
@@ -40,6 +46,16 @@ function check(key, status, count, summary) {
     status,
     count,
     summary
+  };
+}
+
+function toReadinessCheck(item) {
+  return {
+    key: item.key,
+    status: item.status,
+    count: typeof item.value === 'number' ? item.value : undefined,
+    value: item.value,
+    summary: item.summary
   };
 }
 

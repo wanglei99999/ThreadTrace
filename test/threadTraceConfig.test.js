@@ -22,6 +22,7 @@ test('threadtrace config resolves defaults and environment overrides', function 
       THREADTRACE_HTTP_PORT: '4100',
       THREADTRACE_HTTP_HOST: '0.0.0.0',
       THREADTRACE_LLM_PROVIDER: 'openai-compatible',
+      THREADTRACE_LLM_API_KEY: 'test-key',
       THREADTRACE_LLM_MODEL: 'model-a',
       THREADTRACE_SOURCE_TASK_MODE: 'insight-pipeline',
       THREADTRACE_WORKER_INTERVAL_MS: '1000',
@@ -40,6 +41,7 @@ test('threadtrace config resolves defaults and environment overrides', function 
   assert.equal(config.http.host, '0.0.0.0');
   assert.equal(config.llm.provider, 'openai-compatible');
   assert.equal(config.llm.model, 'model-a');
+  assert.equal(config.llm.apiKeyConfigured, true);
   assert.equal(config.workers.sourceTaskMode, 'insight-pipeline');
   assert.equal(config.workers.dueSourceIntervalMs, 1000);
   assert.equal(config.workers.operationsIntervalMs, 2000);

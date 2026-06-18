@@ -208,6 +208,14 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/runtime/diagnostics') {
+    const diagnostics = context.runtime.getRuntimeDiagnostics({
+      now: url.searchParams.get('now') || undefined
+    });
+    writeJson(response, diagnostics.status === 'fail' ? 503 : 200, diagnostics);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/events') {
     const acknowledgedParam = url.searchParams.get('acknowledged');
     const events = await context.runtime.listNotificationEvents({

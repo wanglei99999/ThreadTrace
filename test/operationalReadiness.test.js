@@ -52,3 +52,38 @@ test('operational readiness reports ok when overview has no signals', async func
     return item.status === 'ok';
   }), true);
 });
+
+test('operational readiness includes runtime diagnostic checks', async function () {
+  const readiness = await getOperationalReadiness({
+    overview: {
+      generatedAt: '2026-06-18T10:00:00.000Z',
+      sources: { failed: 0 },
+      tasks: { failed: 0 },
+      events: { failed: 0 },
+      workers: {
+        stale: 0,
+        failed: 0,
+        leases: {
+          expired: 0
+        }
+      }
+    },
+    diagnostics: {
+      status: 'warn',
+      checks: [
+        {
+          key: 'config.llm.apiKey',
+          status: 'warn',
+          value: 0,
+          summary: 'Remote LLM provider has an API key configured.'
+        }
+      ]
+    }
+  });
+
+  assert.equal(readiness.status, 'warn');
+  assert.equal(readiness.diagnostics.status, 'warn');
+  assert.equal(readiness.checks.find(function (item) {
+    return item.key === 'config.llm.apiKey';
+  }).status, 'warn');
+});

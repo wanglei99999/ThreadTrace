@@ -34,6 +34,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(handlers.handlers[0].sourceType, 'saved-html-directory');
     assert.equal(openApi.openapi, '3.0.3');
     assert.ok(openApi.paths['/api/interpret-text']);
+    assert.ok(openApi.paths['/api/runtime/diagnostics']);
     assert.equal(context.reportType, 'new-post-context');
     assert.ok(context.relatedEvidence.length >= 1);
   } finally {
@@ -195,6 +196,29 @@ test('http server exposes operational readiness API', async function () {
     assert.equal(readiness.status, 'fail');
     assert.equal(readiness.checks[0].key, 'workers.stale');
     assert.ok(openApi.paths['/api/operations/readiness']);
+  } finally {
+    await close(server);
+  }
+});
+
+test('http server exposes runtime diagnostics API', async function () {
+  const server = createThreadTraceServer({
+    defaultInputDir: path.resolve(__dirname, '..', 'example')
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const diagnostics = await getJson(baseUrl + '/api/runtime/diagnostics?now=2026-06-18T10:00:00.000Z');
+
+    assert.equal(diagnostics.status, 'ok');
+    assert.equal(diagnostics.generatedAt, '2026-06-18T10:00:00.000Z');
+    assert.equal(diagnostics.configuration.llm.provider, 'mock');
+    assert.equal(diagnostics.configuration.llm.apiKeyConfigured, false);
+    assert.ok(diagnostics.checks.find(function (item) {
+      return item.key === 'config.storageMode';
+    }));
   } finally {
     await close(server);
   }

@@ -243,6 +243,22 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/runtime/diagnostics': {
+        get: {
+          summary: 'Get redacted runtime configuration diagnostics',
+          parameters: [
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } }
+          ],
+          responses: {
+            200: {
+              description: 'Runtime diagnostics are ok or warn'
+            },
+            503: {
+              description: 'Runtime diagnostics failed'
+            }
+          }
+        }
+      },
       '/api/events': {
         get: {
           summary: 'List notification events',

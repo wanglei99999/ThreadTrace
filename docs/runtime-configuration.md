@@ -68,3 +68,17 @@ These entry points now consume the normalized runtime config:
 - `src/presentation/worker/notificationEventWorkerMain.js`
 
 Application use cases continue to receive explicit ports and options; they do not read environment variables directly.
+
+## Diagnostics
+
+Runtime diagnostics expose a redacted configuration summary and configuration checks:
+
+```powershell
+node src/presentation/cli/threadtrace.js runtime-diagnostics
+```
+
+```text
+GET /api/runtime/diagnostics
+```
+
+Diagnostics intentionally expose booleans such as `apiKeyConfigured`; they do not return secret values.
