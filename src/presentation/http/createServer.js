@@ -81,6 +81,18 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/enrich-directory') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.enrichDirectory({
+      forum: body.forum,
+      inputDir: body.inputDir || context.defaultInputDir,
+      provider: body.provider || 'mock',
+      traceId: body.traceId
+    });
+    writeJson(response, 200, result.report);
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/interpret-text') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     if (!body.text) {

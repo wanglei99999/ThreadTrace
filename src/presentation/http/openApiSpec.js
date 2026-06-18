@@ -53,6 +53,32 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/enrich-directory': {
+        post: {
+          summary: 'Analyze and semantically enrich a saved HTML directory',
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    forum: { type: 'string', example: 'nga' },
+                    inputDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/example' },
+                    provider: { type: 'string', example: 'mock' },
+                    traceId: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Analysis report with semanticInsights'
+            }
+          }
+        }
+      },
       '/api/interpret-text': {
         post: {
           summary: 'Restore context for a new post text',

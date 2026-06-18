@@ -14,6 +14,7 @@ const { runDueSourcesIngestTasks } = require('../application/use-cases/runDueSou
 const { acknowledgeNotificationEvent } = require('../application/use-cases/acknowledgeNotificationEvent');
 const { dispatchPendingNotificationEvents } = require('../application/use-cases/dispatchPendingNotificationEvents');
 const { fetchAndStoreThreadPage } = require('../application/use-cases/fetchAndStoreThreadPage');
+const { enrichAnalysisReportWithLlm } = require('../application/use-cases/enrichAnalysisReportWithLlm');
 const { runIngestRawThreadPageTask } = require('../application/use-cases/runIngestRawThreadPageTask');
 const { indexSavedThreadDirectory } = require('../application/use-cases/indexSavedThreadDirectory');
 const { searchEvidence } = require('../application/use-cases/searchEvidence');
@@ -26,6 +27,7 @@ const { createFileRawThreadPageRepository } = require('../infrastructure/storage
 const { createFileNotificationChannel } = require('../infrastructure/notifications/fileNotificationChannel');
 const { createWebhookNotificationChannel } = require('../infrastructure/notifications/webhookNotificationChannel');
 const { createHttpForumCrawler } = require('../infrastructure/crawlers/httpForumCrawler');
+const { createMockLlmProvider } = require('../infrastructure/llm/mockLlmProvider');
 const { createFileTextRetrievalIndex } = require('../infrastructure/retrieval/fileTextRetrievalIndex');
 const { createPostgresPool } = require('../infrastructure/postgres/postgresConnection');
 const { createPostgresRepositories } = require('../infrastructure/postgres/postgresRepositories');
@@ -87,6 +89,24 @@ function createThreadTraceRuntime(options) {
         adapter: getForumAdapter(safeRequest.forum || defaults.defaultForum),
         inputDir: safeRequest.inputDir || defaults.defaultInputDir
       });
+    },
+
+    async enrichDirectory(request) {
+      const safeRequest = request || {};
+      const result = analyzeSavedThreadDirectory({
+        adapter: getForumAdapter(safeRequest.forum || defaults.defaultForum),
+        inputDir: safeRequest.inputDir || defaults.defaultInputDir
+      });
+      const enrichedReport = await enrichAnalysisReportWithLlm({
+        report: result.report,
+        llmProvider: safeOptions.llmProvider || createMockLlmProvider(),
+        providerKey: safeRequest.provider || 'mock',
+        traceId: safeRequest.traceId
+      });
+      return {
+        threadSnapshot: result.threadSnapshot,
+        report: enrichedReport
+      };
     },
 
     interpretText(request) {

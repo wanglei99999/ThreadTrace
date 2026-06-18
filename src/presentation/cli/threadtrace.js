@@ -92,6 +92,24 @@ function main(argv) {
     return;
   }
 
+  if (command === 'enrich-html-dir') {
+    const inputDir = options.input || path.resolve(process.cwd(), 'example');
+    runtime.enrichDirectory({
+      forum: options.forum,
+      inputDir,
+      provider: options.provider || 'mock'
+    }).then(function (result) {
+      printThreadSummary(result.threadSnapshot);
+      printReportSummary(result.report);
+      console.log('Semantic provider: ' + result.report.semanticInsights.provider);
+      console.log('Semantic summary: ' + result.report.semanticInsights.summary);
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'ingest-html-dir') {
     const inputDir = options.input || path.resolve(process.cwd(), 'example');
     const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
@@ -467,6 +485,9 @@ function parseArgs(args) {
     } else if (item === '--forum') {
       options.forum = args[index + 1];
       index += 1;
+    } else if (item === '--provider') {
+      options.provider = args[index + 1];
+      index += 1;
     } else if (item === '--store-dir') {
       options.storeDir = args[index + 1];
       index += 1;
@@ -620,6 +641,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js parse-html-dir [--forum nga] [--input dir] [--output file]');
   console.log('  node src/presentation/cli/threadtrace.js analyze-html [--forum nga] [--input file] [--output file] [--markdown-output file]');
   console.log('  node src/presentation/cli/threadtrace.js analyze-html-dir [--forum nga] [--input dir] [--output file] [--markdown-output file]');
+  console.log('  node src/presentation/cli/threadtrace.js enrich-html-dir [--forum nga] [--input dir] [--provider mock]');
   console.log('  node src/presentation/cli/threadtrace.js ingest-html-dir [--forum nga] [--input dir] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-ingest-task [--forum nga] [--input dir] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-tasks [--store-dir dir] [--status status] [--type type] [--limit n]');

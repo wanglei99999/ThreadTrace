@@ -39,6 +39,30 @@ test('http server exposes health, adapters, and context APIs', async function ()
   }
 });
 
+test('http server exposes semantic enrichment API', async function () {
+  const server = createThreadTraceServer({
+    defaultInputDir: path.resolve(__dirname, '..', 'example')
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const enriched = await postJson(baseUrl + '/api/enrich-directory', {
+      forum: 'nga',
+      provider: 'mock',
+      traceId: 'http-trace'
+    });
+
+    assert.equal(enriched.reportType, 'basic-history');
+    assert.equal(enriched.semanticInsights.provider, 'mock');
+    assert.equal(enriched.semanticInsights.traceId, 'http-trace');
+    assert.ok(enriched.semanticInsights.entityInsights.length >= 1);
+  } finally {
+    await close(server);
+  }
+});
+
 test('http server handles CORS preflight and validates interpret text input', async function () {
   const server = createThreadTraceServer({
     defaultInputDir: path.resolve(__dirname, '..', 'example')

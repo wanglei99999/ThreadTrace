@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', function () {
   bindNavigation();
   bindForms();
   document.getElementById('refreshAdaptersButton').addEventListener('click', loadAdapters);
+  document.getElementById('enrichHistoryButton').addEventListener('click', enrichHistoryDirectory);
   document.getElementById('refreshTasksButton').addEventListener('click', loadTasks);
   document.getElementById('refreshSourcesButton').addEventListener('click', loadSources);
   document.getElementById('refreshEventsButton').addEventListener('click', loadEvents);
@@ -177,6 +178,17 @@ function bindForms() {
   });
 }
 
+async function enrichHistoryDirectory() {
+  const form = new FormData(document.getElementById('analyzeForm'));
+  await renderAsync('historyResult', function () {
+    return requestJson('/api/enrich-directory', {
+      forum: form.get('forum'),
+      inputDir: form.get('inputDir'),
+      provider: 'mock'
+    });
+  }, renderHistoryReport);
+}
+
 function setView(viewName) {
   state.currentView = viewName;
   document.querySelectorAll('.nav-item').forEach(function (button) {
@@ -322,7 +334,7 @@ async function renderAsync(targetId, task, renderer) {
 }
 
 function renderHistoryReport(report) {
-  return [
+  const panels = [
     panel('主题概览', [
       metric('标题', report.thread.title),
       metric('楼层', report.thread.parsedPostCount),
@@ -341,7 +353,11 @@ function renderHistoryReport(report) {
     panel('高信号楼层', evidenceList((report.evidenceCandidates.highSignalPosts || []).slice(0, 8).map(function (item) {
       return '#' + item.floor + ' ' + item.author + '：' + item.excerpt;
     })), 'wide')
-  ].join('');
+  ];
+  if (report.semanticInsights) {
+    panels.push(renderSemanticInsights(report.semanticInsights));
+  }
+  return panels.join('');
 }
 
 function renderContextReport(report) {
@@ -461,6 +477,23 @@ function renderEventAckResult(result) {
     metric('事件 ID', result.event.id),
     metric('确认时间', result.event.acknowledgedAt),
     metric('确认人', result.event.acknowledgedBy)
+  ].join(''), 'wide');
+}
+
+function renderSemanticInsights(insights) {
+  return panel('语义增强', [
+    metric('Provider', insights.provider),
+    metric('摘要', insights.summary),
+    evidenceList((insights.entityInsights || []).slice(0, 5).map(function (item) {
+      const refs = (item.evidenceRefs || []).map(function (ref) { return '#' + ref.floor; }).join(', ');
+      return '实体 ' + item.name + ' · ' + item.confidence + ' · ' + refs;
+    })),
+    evidenceList((insights.opinionInsights || []).slice(0, 5).map(function (item) {
+      return '观点 #' + item.floor + ' · ' + item.attitude + ' · ' + item.confidence;
+    })),
+    evidenceList((insights.limitations || []).map(function (item) {
+      return '限制：' + item;
+    }))
   ].join(''), 'wide');
 }
 
