@@ -141,6 +141,42 @@ function bindForms() {
     }, renderConnectorModuleValidation);
   });
 
+  document.getElementById('sourceDryRunForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await renderAsync('sourceDryRunResult', function () {
+      return requestJson('/api/sources/ingest/dry-run', buildSourceOnboardingRequest(form), {
+        acceptErrorStatus: true
+      });
+    }, renderSourceIngestDryRun);
+  });
+
+  document.getElementById('connectorRolloutForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const request = buildSourceOnboardingRequest(form);
+    request.dryRunIngest = form.get('dryRunIngest') === 'true';
+    await renderAsync('connectorRolloutResult', function () {
+      return requestJson('/api/connectors/rollout-plan', request, {
+        acceptErrorStatus: true
+      });
+    }, renderConnectorRolloutPlan);
+  });
+
+  document.getElementById('workerTopologyForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const query = new URLSearchParams({
+      topology: form.get('topology'),
+      sourceTaskMode: form.get('sourceTaskMode')
+    });
+    await renderAsync('workerTopologyResult', function () {
+      return fetchJson('/api/operations/worker-topology-plan?' + query.toString(), {
+        acceptErrorStatus: true
+      });
+    }, renderWorkerTopologyPlan);
+  });
+
   document.getElementById('sourceResult').addEventListener('click', async function (event) {
     const button = event.target.closest('button[data-action="run-source"],button[data-action="run-source-pipeline"]');
     if (!button) return;
@@ -275,6 +311,8 @@ async function loadAdapters() {
     fillAdapterSelect('sourceForum');
     fillAdapterSelect('threadUrlForum');
     fillAdapterSelect('onboardingForum');
+    fillAdapterSelect('dryRunForum');
+    fillAdapterSelect('rolloutForum');
   } catch (error) {
     renderError('historyResult', error);
   }
@@ -615,6 +653,83 @@ function renderConnectorModuleValidation(result) {
     })), 'wide'));
   }
   return panels.join('');
+}
+
+function renderSourceIngestDryRun(result) {
+  const checks = result.checks || [];
+  const panels = [
+    panel('Source ingest dry-run', [
+      metric('Status', result.status),
+      metric('Dry run', result.dryRun ? 'yes' : 'no'),
+      metric('Source', result.source ? result.source.sourceKey + ' / ' + result.source.sourceType : 'unknown'),
+      metric('Thread', result.thread ? result.thread.sourceThreadId : 'none'),
+      metric('Posts', result.thread ? result.thread.postCount : 0)
+    ].join('')),
+    panel('Isolated writes', [
+      metric('Snapshots', result.repositoryWrites ? result.repositoryWrites.threadSnapshots : 0),
+      metric('Reports', result.repositoryWrites ? result.repositoryWrites.reports : 0),
+      metric('Tasks', result.repositoryWrites ? result.repositoryWrites.tasks : 0),
+      metric('Raw pages', result.repositoryWrites ? result.repositoryWrites.rawThreadPages : 0)
+    ].join('')),
+    panel('Dry-run checks', evidenceList(checks.map(function (check) {
+      return check.status + ' 路 ' + check.key + ' 路 ' + check.summary;
+    })), 'wide')
+  ];
+  if (result.error) {
+    panels.push(panel('Dry-run error', [
+      metric('Code', result.error.code || 'error'),
+      metric('Message', result.error.message)
+    ].join(''), 'wide'));
+  }
+  return panels.join('');
+}
+
+function renderConnectorRolloutPlan(result) {
+  const steps = result.steps || [];
+  const actions = result.nextActions || [];
+  const panels = [
+    panel('Connector rollout plan', [
+      metric('Status', result.status),
+      metric('Source', (result.sourceKey || 'unknown') + ' / ' + (result.sourceType || 'unknown')),
+      metric('Module', result.modulePath || 'not provided'),
+      metric('Steps', steps.length)
+    ].join('')),
+    panel('Rollout steps', evidenceList(steps.map(function (step) {
+      return step.status + ' 路 ' + step.key + ' 路 ' + step.summary;
+    })), 'wide')
+  ];
+  if (result.sourceIngestDryRun) {
+    panels.push(panel('Ingest dry-run', [
+      metric('Status', result.sourceIngestDryRun.status),
+      metric('Thread', result.sourceIngestDryRun.thread ? result.sourceIngestDryRun.thread.sourceThreadId : 'none'),
+      metric('Posts', result.sourceIngestDryRun.thread ? result.sourceIngestDryRun.thread.postCount : 0)
+    ].join('')));
+  }
+  if (actions.length > 0) {
+    panels.push(panel('Next actions', evidenceList(actions.map(function (action) {
+      return action.severity + ' 路 ' + action.key + ' 路 ' + action.command;
+    })), 'wide'));
+  }
+  return panels.join('');
+}
+
+function renderWorkerTopologyPlan(result) {
+  const workers = result.workers || [];
+  const checks = result.checks || [];
+  return [
+    panel('Worker topology plan', [
+      metric('Status', result.status),
+      metric('Topology', result.topology),
+      metric('Storage', result.storageMode),
+      metric('Source mode', result.sourceTaskMode)
+    ].join('')),
+    panel('Workers', evidenceList(workers.map(function (worker) {
+      return worker.workerType + ' 路 ' + worker.scale + ' 路 ' + worker.leaseKey + ' 路 ' + worker.command;
+    })), 'wide'),
+    panel('Topology checks', evidenceList(checks.map(function (check) {
+      return check.status + ' 路 ' + check.key + ' 路 ' + check.summary;
+    })), 'wide')
+  ].join('');
 }
 
 function renderSourceTaskRunResult(result) {

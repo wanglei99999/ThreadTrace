@@ -205,8 +205,105 @@
           </label>
           <button type="submit">验证模块</button>
         </form>
+        <form id="sourceDryRunForm" class="control-strip">
+          <label>
+            <span>Dry-run forum</span>
+            <select name="forum" id="dryRunForum"></select>
+          </label>
+          <label>
+            <span>Source type</span>
+            <select name="sourceType">
+              <option value="saved-html-directory">saved-html-directory</option>
+              <option value="thread-url">thread-url</option>
+              <option value="normalized-thread-json">normalized-thread-json</option>
+            </select>
+          </label>
+          <label class="grow">
+            <span>Name</span>
+            <input name="displayName" value="Dry-run source" autocomplete="off">
+          </label>
+          <label class="grow">
+            <span>Module path</span>
+            <input name="modulePath" placeholder="D:/connectors/custom-forum.cjs" autocomplete="off">
+          </label>
+          <label class="grow">
+            <span>Input dir</span>
+            <input name="inputDir" value="example" autocomplete="off">
+          </label>
+          <label class="grow">
+            <span>JSON file / URL</span>
+            <input name="locationValue" placeholder="D:/feeds/thread.json or https://..." autocomplete="off">
+          </label>
+          <label class="full">
+            <span>Location JSON</span>
+            <textarea name="locationJson" rows="3" placeholder='{"feedUrl":"https://example.test/feed"}'></textarea>
+          </label>
+          <button type="submit">Source dry-run</button>
+        </form>
+        <form id="connectorRolloutForm" class="control-strip">
+          <label>
+            <span>Rollout forum</span>
+            <select name="forum" id="rolloutForum"></select>
+          </label>
+          <label>
+            <span>Source type</span>
+            <select name="sourceType">
+              <option value="saved-html-directory">saved-html-directory</option>
+              <option value="thread-url">thread-url</option>
+              <option value="normalized-thread-json">normalized-thread-json</option>
+            </select>
+          </label>
+          <label class="grow">
+            <span>Name</span>
+            <input name="displayName" value="Rollout source" autocomplete="off">
+          </label>
+          <label class="grow">
+            <span>Module path</span>
+            <input name="modulePath" placeholder="D:/connectors/custom-forum.cjs" autocomplete="off">
+          </label>
+          <label class="grow">
+            <span>Input dir</span>
+            <input name="inputDir" value="example" autocomplete="off">
+          </label>
+          <label class="grow">
+            <span>JSON file / URL</span>
+            <input name="locationValue" placeholder="D:/feeds/thread.json or https://..." autocomplete="off">
+          </label>
+          <label class="compact">
+            <span>Dry-run</span>
+            <select name="dryRunIngest">
+              <option value="true">true</option>
+              <option value="false">false</option>
+            </select>
+          </label>
+          <label class="full">
+            <span>Location JSON</span>
+            <textarea name="locationJson" rows="3" placeholder='{"feedUrl":"https://example.test/feed"}'></textarea>
+          </label>
+          <button type="submit">Rollout plan</button>
+        </form>
+        <form id="workerTopologyForm" class="control-strip">
+          <label>
+            <span>Topology</span>
+            <select name="topology">
+              <option value="operations-worker">operations-worker</option>
+              <option value="split-workers">split-workers</option>
+            </select>
+          </label>
+          <label>
+            <span>Source mode</span>
+            <select name="sourceTaskMode">
+              <option value="ingest">ingest</option>
+              <option value="insight-pipeline">insight-pipeline</option>
+            </select>
+          </label>
+          <button type="submit">Worker plan</button>
+        </form>
         <div class="result-grid task-grid" id="onboardingResult"></div>
         <div class="result-grid task-grid" id="connectorModuleResult"></div>
+        <div class="result-grid task-grid" id="sourceDryRunResult"></div>
+        <div class="result-grid task-grid" id="connectorRolloutResult"></div>
+        <div class="result-grid task-grid" id="workerTopologyResult"></div>
         <div class="result-grid task-grid" id="sourceResult"></div>
         <div class="result-grid task-grid" id="rawPageResult"></div>
         <div class="result-grid task-grid" id="eventResult"></div>
