@@ -87,6 +87,17 @@ http://127.0.0.1:3017
 - `type`: 可选，如 `ingest-saved-thread-directory`。
 - `limit`: 可选，默认 20。
 
+### `GET /api/events`
+
+查询通知事件。当前本地实现会在来源导入后发现 cursor 变化时写入 `source-changed` 事件，后续可以接邮件、Webhook、企业微信或消息队列。
+
+查询参数：
+
+- `type`: 可选，如 `source-changed`。
+- `sourceId`: 可选，按来源过滤。
+- `acknowledged`: 可选，`true` 或 `false`。
+- `limit`: 可选，默认 50。
+
 ### `POST /api/sources`
 
 注册或更新一个可跟踪来源。当前可直接落地的是 `saved-html-directory`，后续 `thread-url` 会接入在线采集器。

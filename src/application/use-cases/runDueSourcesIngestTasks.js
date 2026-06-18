@@ -70,7 +70,8 @@ async function runDueSourcesIngestTasks(options) {
           adapter: getAdapter(item.source.sourceKey),
           threadRepository,
           reportRepository,
-          taskRepository
+          taskRepository,
+          notificationEventRepository: safeOptions.notificationEventRepository
         });
         results.push({
           source: result.source || item.source,

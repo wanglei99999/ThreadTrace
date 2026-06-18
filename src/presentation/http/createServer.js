@@ -130,6 +130,21 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/events') {
+    const acknowledgedParam = url.searchParams.get('acknowledged');
+    const events = await context.runtime.listNotificationEvents({
+      type: url.searchParams.get('type') || undefined,
+      sourceId: url.searchParams.get('sourceId') || undefined,
+      acknowledged: acknowledgedParam === null ? undefined : acknowledgedParam === 'true',
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 50,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, 200, {
+      events
+    });
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/sources') {
     const enabledParam = url.searchParams.get('enabled');
     const sources = await context.runtime.listSources({

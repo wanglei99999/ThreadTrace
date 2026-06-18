@@ -125,6 +125,23 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/events': {
+        get: {
+          summary: 'List notification events',
+          parameters: [
+            { name: 'type', in: 'query', required: false, schema: { type: 'string', example: 'source-changed' } },
+            { name: 'sourceId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'acknowledged', in: 'query', required: false, schema: { type: 'boolean' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Notification events'
+            }
+          }
+        }
+      },
       '/api/sources': {
         get: {
           summary: 'List tracked forum sources',

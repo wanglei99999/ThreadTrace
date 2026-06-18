@@ -50,7 +50,8 @@ async function runEnabledSourcesIngestTasks(options) {
           adapter: getAdapter(source.sourceKey),
           threadRepository,
           reportRepository,
-          taskRepository
+          taskRepository,
+          notificationEventRepository: safeOptions.notificationEventRepository
         });
         results.push({
           source: result.source || source,

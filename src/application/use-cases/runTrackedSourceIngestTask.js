@@ -10,6 +10,7 @@ const {
   buildThreadSnapshotCursor,
   compareThreadSnapshotCursor
 } = require('../../domain/sources/threadSnapshotCursor');
+const { createSourceChangedEvent } = require('../../domain/events/notificationEvent');
 const { assertForumAdapter } = require('../../infrastructure/forum-adapters/forumAdapter');
 const { assertSourceRepository } = require('../ports/sourceRepository');
 const { assertThreadRepository } = require('../ports/threadRepository');
@@ -49,6 +50,14 @@ async function runTrackedSourceIngestTask(options) {
     const cursorDiff = compareThreadSnapshotCursor(source.cursor, cursor);
     runningSource = markTrackedSourceRunCompleted(runningSource, result.task, cursor, cursorDiff);
     await sourceRepository.saveSource(runningSource);
+    if (safeOptions.notificationEventRepository && cursorDiff.changed) {
+      await safeOptions.notificationEventRepository.saveEvent(createSourceChangedEvent({
+        source: runningSource,
+        task: result.task,
+        cursor,
+        cursorDiff
+      }));
+    }
     return Object.assign({}, result, {
       source: runningSource,
       cursor,

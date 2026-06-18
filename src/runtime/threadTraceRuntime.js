@@ -17,6 +17,7 @@ const { createFileThreadRepository } = require('../infrastructure/storage/fileTh
 const { createFileAnalysisReportRepository } = require('../infrastructure/storage/fileAnalysisReportRepository');
 const { createFileTaskRepository } = require('../infrastructure/storage/fileTaskRepository');
 const { createFileSourceRepository } = require('../infrastructure/storage/fileSourceRepository');
+const { createFileNotificationEventRepository } = require('../infrastructure/storage/fileNotificationEventRepository');
 const { createFileTextRetrievalIndex } = require('../infrastructure/retrieval/fileTextRetrievalIndex');
 
 function createThreadTraceRuntime(options) {
@@ -91,7 +92,8 @@ function createThreadTraceRuntime(options) {
         inputDir: safeRequest.inputDir || defaults.defaultInputDir,
         threadRepository: repositories.threadRepository,
         reportRepository: repositories.reportRepository,
-        taskRepository: repositories.taskRepository
+        taskRepository: repositories.taskRepository,
+        notificationEventRepository: repositories.notificationEventRepository
       });
     },
 
@@ -150,7 +152,8 @@ function createThreadTraceRuntime(options) {
         adapter: getForumAdapter(source.sourceKey),
         threadRepository: repositories.threadRepository,
         reportRepository: repositories.reportRepository,
-        taskRepository: repositories.taskRepository
+        taskRepository: repositories.taskRepository,
+        notificationEventRepository: repositories.notificationEventRepository
       });
     },
 
@@ -162,6 +165,7 @@ function createThreadTraceRuntime(options) {
         threadRepository: repositories.threadRepository,
         reportRepository: repositories.reportRepository,
         taskRepository: repositories.taskRepository,
+        notificationEventRepository: repositories.notificationEventRepository,
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
         limit: safeRequest.limit || 50,
         getAdapter: getForumAdapter
@@ -176,6 +180,7 @@ function createThreadTraceRuntime(options) {
         threadRepository: repositories.threadRepository,
         reportRepository: repositories.reportRepository,
         taskRepository: repositories.taskRepository,
+        notificationEventRepository: repositories.notificationEventRepository,
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
         limit: safeRequest.limit || 50,
         now: safeRequest.now,
@@ -200,6 +205,17 @@ function createThreadTraceRuntime(options) {
         limit: safeRequest.limit || 10,
         retrievalIndex: createRetrievalIndexFor(safeRequest.storeDir)
       });
+    },
+
+    async listNotificationEvents(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositories(resolveStoreDir(defaults, safeRequest.storeDir));
+      return repositories.notificationEventRepository.listEvents({
+        type: safeRequest.type,
+        sourceId: safeRequest.sourceId,
+        acknowledged: safeRequest.acknowledged,
+        limit: safeRequest.limit || 50
+      });
     }
   };
 }
@@ -217,6 +233,9 @@ function createRepositories(storeDir) {
     }),
     sourceRepository: createFileSourceRepository({
       baseDir: path.join(storeDir, 'sources')
+    }),
+    notificationEventRepository: createFileNotificationEventRepository({
+      baseDir: path.join(storeDir, 'events')
     })
   };
 }

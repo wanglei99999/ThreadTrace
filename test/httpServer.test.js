@@ -145,6 +145,7 @@ test('http server can register sources and run source ingest tasks', async funct
     const sourcesResult = await getJson(baseUrl + '/api/sources');
     const dueResult = await postJson(baseUrl + '/api/sources/tasks/ingest-due', {});
     const skippedDueResult = await postJson(baseUrl + '/api/sources/tasks/ingest-due', {});
+    const eventsResult = await getJson(baseUrl + '/api/events');
     const taskResult = await postJson(baseUrl + '/api/sources/' + encodeURIComponent(registerResult.source.id) + '/tasks/ingest', {});
     const batchResult = await postJson(baseUrl + '/api/sources/tasks/ingest', {});
 
@@ -155,6 +156,8 @@ test('http server can register sources and run source ingest tasks', async funct
     assert.equal(dueResult.dueCount, 1);
     assert.equal(skippedDueResult.dueCount, 0);
     assert.equal(skippedDueResult.skippedCount, 1);
+    assert.equal(eventsResult.events.length, 1);
+    assert.equal(eventsResult.events[0].type, 'source-changed');
     assert.equal(taskResult.sourceId, registerResult.source.id);
     assert.equal(taskResult.task.status, 'completed');
     assert.equal(batchResult.task.status, 'completed');

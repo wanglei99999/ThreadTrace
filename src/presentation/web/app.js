@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshAdaptersButton').addEventListener('click', loadAdapters);
   document.getElementById('refreshTasksButton').addEventListener('click', loadTasks);
   document.getElementById('refreshSourcesButton').addEventListener('click', loadSources);
+  document.getElementById('refreshEventsButton').addEventListener('click', loadEvents);
   document.getElementById('runSourcesButton').addEventListener('click', runAllSources);
   document.getElementById('runDueSourcesButton').addEventListener('click', runDueSources);
   loadAdapters();
@@ -105,6 +106,7 @@ function bindForms() {
     }, renderSourceTaskRunResult);
     await loadSystemStatus();
     await loadTasks();
+    await loadEvents();
   });
 
   document.getElementById('indexForm').addEventListener('submit', async function (event) {
@@ -143,6 +145,7 @@ function setView(viewName) {
   document.getElementById('viewSubtitle').textContent = views[viewName].subtitle;
   if (viewName === 'system') loadSystemStatus();
   if (viewName === 'system') loadSources();
+  if (viewName === 'system') loadEvents();
 }
 
 async function loadAdapters() {
@@ -177,12 +180,14 @@ async function loadSystemStatus() {
     const openApi = await fetchJson('/openapi.json');
     const tasks = await fetchJson('/api/tasks?limit=5');
     const sources = await fetchJson('/api/sources?limit=5');
+    const events = await fetchJson('/api/events?limit=5');
     target.innerHTML = [
       statusRow('服务', health.ok ? '运行中' : '异常'),
       statusRow('适配器', String((adapters.adapters || []).length)),
       statusRow('API 契约', openApi.openapi),
       statusRow('端点', String(Object.keys(openApi.paths || {}).length)),
       statusRow('来源', String((sources.sources || []).length)),
+      statusRow('事件', String((events.events || []).length)),
       statusRow('最近任务', String((tasks.tasks || []).length))
     ].join('');
   } catch (error) {
@@ -202,6 +207,12 @@ async function loadSources() {
   }, renderSourceList);
 }
 
+async function loadEvents() {
+  await renderAsync('eventResult', function () {
+    return fetchJson('/api/events?limit=10');
+  }, renderEventList);
+}
+
 async function runAllSources() {
   await renderAsync('taskResult', function () {
     return requestJson('/api/sources/tasks/ingest', {});
@@ -209,6 +220,7 @@ async function runAllSources() {
   await loadSystemStatus();
   await loadTasks();
   await loadSources();
+  await loadEvents();
 }
 
 async function runDueSources() {
@@ -218,6 +230,7 @@ async function runDueSources() {
   await loadSystemStatus();
   await loadTasks();
   await loadSources();
+  await loadEvents();
 }
 
 async function renderAsync(targetId, task, renderer) {
@@ -343,6 +356,14 @@ function renderTaskList(result) {
   return panel('最近任务', evidenceList(tasks.map(function (task) {
     const output = task.output || {};
     return task.status + ' · ' + task.type + ' · ' + (output.title || task.id);
+  })), 'wide');
+}
+
+function renderEventList(result) {
+  const events = result.events || [];
+  if (events.length === 0) return panel('通知事件', '<div class="muted">暂无</div>', 'wide');
+  return panel('通知事件', evidenceList(events.map(function (event) {
+    return event.createdAt + ' · ' + event.type + ' · ' + event.summary;
   })), 'wide');
 }
 

@@ -146,6 +146,25 @@ function main(argv) {
     return;
   }
 
+  if (command === 'list-events') {
+    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    runtime.listNotificationEvents({
+      storeDir,
+      type: options.type,
+      sourceId: options.sourceId,
+      acknowledged: options.acknowledged === undefined ? undefined : options.acknowledged === 'true',
+      limit: options.limit ? Number(options.limit) : 50
+    }).then(function (events) {
+      events.forEach(function (event) {
+        console.log(event.createdAt + '\t' + event.type + '\t' + event.sourceId + '\t' + event.summary);
+      });
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'register-source') {
     const inputDir = options.input || path.resolve(process.cwd(), 'example');
     const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
@@ -388,6 +407,9 @@ function parseArgs(args) {
     } else if (item === '--now') {
       options.now = args[index + 1];
       index += 1;
+    } else if (item === '--acknowledged') {
+      options.acknowledged = args[index + 1];
+      index += 1;
     }
   }
   return options;
@@ -451,6 +473,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js ingest-html-dir [--forum nga] [--input dir] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-ingest-task [--forum nga] [--input dir] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-tasks [--store-dir dir] [--status status] [--type type] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js list-events [--source-id id] [--type type] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--input dir] [--name name] [--interval-minutes n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-source-task --source-id id [--store-dir dir]');
