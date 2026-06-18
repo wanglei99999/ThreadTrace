@@ -31,6 +31,11 @@ function renderBasicHistoryMarkdown(report) {
   appendEntityCandidates(lines, report.entityCandidates || []);
 
   lines.push('');
+  lines.push('## 引用与回复关系候选');
+  lines.push('');
+  appendRelationCandidates(lines, report.relationCandidates || []);
+
+  lines.push('');
   lines.push('## 高信号楼层候选');
   lines.push('');
   appendEvidenceList(lines, report.evidenceCandidates.highSignalPosts);
@@ -76,6 +81,22 @@ function appendEntityCandidates(lines, entities) {
     entity.mentions.slice(0, 3).forEach(function (mention) {
       lines.push('  - #' + mention.floor + ' ' + mention.author + '：' + safeInline(mention.excerpt));
     });
+  });
+}
+
+function appendRelationCandidates(lines, relations) {
+  if (!relations || relations.length === 0) {
+    lines.push('暂无。');
+    return;
+  }
+
+  relations.slice(0, 30).forEach(function (relation) {
+    const target = relation.targetFloor !== undefined
+      ? '目标楼层线索 #' + relation.targetFloor
+      : relation.targetPostId
+        ? '目标帖子 ' + relation.targetPostId
+        : '目标主题 ' + (relation.targetThreadId || 'unknown');
+    lines.push('- #' + relation.sourceFloor + ' ' + relation.sourceAuthor + ' -> ' + target + '（' + relation.type + '）');
   });
 }
 

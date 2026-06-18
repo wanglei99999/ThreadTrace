@@ -31,6 +31,11 @@ test('NGA saved HTML adapter parses the provided sample into canonical posts', f
   assert.equal(first.author.sourceAuthorId, '150058');
   assert.match(first.contentText, /我唯一就在这里开帖子聊/);
   assert.equal(first.links.length, 2);
+
+  const quotedPost = snapshot.posts.find(function (post) {
+    return post.relations.length > 0;
+  });
+  assert.ok(quotedPost);
 });
 
 test('basic historical analyzer identifies primary author and evidence candidates', function () {
@@ -44,6 +49,7 @@ test('basic historical analyzer identifies primary author and evidence candidate
   assert.equal(report.primaryAuthor.displayName, '-阿狼-');
   assert.ok(report.authorStats.length >= 10);
   assert.ok(report.entityCandidates.length >= 1);
+  assert.ok(report.relationCandidates.length >= 1);
   assert.ok(report.evidenceCandidates.highSignalPosts.length >= 1);
   assert.ok(report.evidenceCandidates.lowSignalPosts.length >= 1);
 });

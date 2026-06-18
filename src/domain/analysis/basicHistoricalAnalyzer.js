@@ -23,6 +23,7 @@ function analyzeThreadHistory(threadSnapshot) {
     primaryAuthor,
     authorStats,
     entityCandidates,
+    relationCandidates: collectRelations(posts),
     evidenceCandidates: {
       highSignalPosts: pickHighSignalPosts(posts),
       externalLinks: collectExternalLinks(posts),
@@ -36,6 +37,25 @@ function analyzeThreadHistory(threadSnapshot) {
       'opinion-chain-tracking'
     ]
   };
+}
+
+function collectRelations(posts) {
+  const relations = [];
+  posts.forEach(function (post) {
+    (post.relations || []).forEach(function (relation) {
+      relations.push({
+        sourceFloor: post.floor,
+        sourceAuthor: post.author.displayName,
+        sourceAuthorId: post.author.sourceAuthorId,
+        type: relation.type,
+        targetThreadId: relation.targetThreadId,
+        targetPostId: relation.targetPostId,
+        targetFloor: relation.targetFloor,
+        evidenceText: relation.evidenceText
+      });
+    });
+  });
+  return relations;
 }
 
 function summarizeAuthors(posts) {

@@ -26,6 +26,7 @@
  * @property {string} contentText
  * @property {string=} contentHtml
  * @property {Array<{url: string, text: string}>} links
+ * @property {Array<{type: string, targetThreadId?: string, targetPostId?: string, targetFloor?: number, evidenceText?: string}>} relations
  * @property {number=} score
  * @property {Object<string, unknown>=} metadata
  */

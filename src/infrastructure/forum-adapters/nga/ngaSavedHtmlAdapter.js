@@ -79,12 +79,55 @@ function parsePosts(html) {
       contentText: stripTags(contentHtml),
       contentHtml,
       links: extractLinks(contentHtml),
+      relations: extractRelations(contentHtml),
       score: parseScore(html, floor),
       metadata: {
         platform: parsePlatform(postInfoHtml)
       }
     };
   });
+}
+
+function extractRelations(contentHtml) {
+  const relations = [];
+  const seen = new Set();
+
+  collectFastViewRelations(relations, seen, contentHtml);
+  collectPostLinkRelations(relations, seen, contentHtml);
+
+  return relations;
+}
+
+function collectFastViewRelations(relations, seen, contentHtml) {
+  const pattern = /fastViewPost\(event\s*,\s*(\d+)\s*,\s*(?:undefined|null|\d+)\s*,\s*(\d+)\s*,/gi;
+  let match;
+  while ((match = pattern.exec(contentHtml || '')) !== null) {
+    addRelation(relations, seen, {
+      type: 'quoted_floor_hint',
+      targetThreadId: match[1],
+      targetFloor: parseInt(match[2], 10),
+      evidenceText: match[0]
+    });
+  }
+}
+
+function collectPostLinkRelations(relations, seen, contentHtml) {
+  const pattern = /[?&]pid=(\d+)/gi;
+  let match;
+  while ((match = pattern.exec(contentHtml || '')) !== null) {
+    addRelation(relations, seen, {
+      type: 'referenced_post',
+      targetPostId: match[1],
+      evidenceText: match[0]
+    });
+  }
+}
+
+function addRelation(relations, seen, relation) {
+  const key = relation.type + ':' + (relation.targetThreadId || '') + ':' + (relation.targetPostId || '') + ':' + (relation.targetFloor || '');
+  if (seen.has(key)) return;
+  seen.add(key);
+  relations.push(relation);
 }
 
 function collectPostFloors(html) {
