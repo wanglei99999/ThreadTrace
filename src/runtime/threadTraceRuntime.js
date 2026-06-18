@@ -39,6 +39,7 @@ const { getConnectorRolloutPlan } = require('../application/use-cases/getConnect
 const { getWorkerTopologyPlan } = require('../application/use-cases/getWorkerTopologyPlan');
 const { getRolloutManifestPlan } = require('../application/use-cases/getRolloutManifestPlan');
 const { getResourceProvisioningPlan } = require('../application/use-cases/getResourceProvisioningPlan');
+const { getDeploymentGateReport } = require('../application/use-cases/getDeploymentGateReport');
 const { dryRunSourceIngest } = require('../application/use-cases/dryRunSourceIngest');
 const { createDefaultSourceIngestHandlerRegistry } = require('../application/source-ingest/standardSourceIngestHandlers');
 const { migrateStoreRecords } = require('../application/use-cases/migrateStoreRecords');
@@ -430,6 +431,57 @@ function createThreadTraceRuntime(options) {
         deploymentChecklist,
         rolloutManifestPlan,
         manifest: safeRequest.manifest,
+        now: safeRequest.now
+      });
+    },
+
+    async getDeploymentGateReport(request) {
+      const safeRequest = request || {};
+      const rolloutManifestPlan = safeRequest.manifest
+        ? await this.getRolloutManifestPlan({
+          manifest: safeRequest.manifest,
+          now: safeRequest.now,
+          storeDir: safeRequest.storeDir,
+          limit: safeRequest.limit,
+          workerStaleAfterMs: safeRequest.workerStaleAfterMs
+        })
+        : undefined;
+      const resourceProvisioningPlan = await this.getResourceProvisioningPlan({
+        manifest: safeRequest.manifest,
+        forum: safeRequest.forum,
+        sourceKey: safeRequest.sourceKey,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 100,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir,
+        workerStaleAfterMs: safeRequest.workerStaleAfterMs
+      });
+      const deploymentChecklist = await this.getDeploymentChecklist({
+        forum: safeRequest.forum,
+        sourceKey: safeRequest.sourceKey,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 100,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir,
+        workerStaleAfterMs: safeRequest.workerStaleAfterMs
+      });
+      const operationsRunbook = await this.getOperationsRunbook({
+        forum: safeRequest.forum,
+        sourceKey: safeRequest.sourceKey,
+        sourceId: safeRequest.sourceId,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 100,
+        pipelineLimit: safeRequest.pipelineLimit || 20,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir,
+        workerStaleAfterMs: safeRequest.workerStaleAfterMs
+      });
+
+      return getDeploymentGateReport({
+        rolloutManifestPlan,
+        resourceProvisioningPlan,
+        deploymentChecklist,
+        operationsRunbook,
         now: safeRequest.now
       });
     },

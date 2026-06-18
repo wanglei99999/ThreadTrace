@@ -632,6 +632,51 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/deployment/gate': {
+        post: {
+          summary: 'Evaluate rollout, resource provisioning, deployment checklist, and operations runbook gates before deployment',
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    manifest: {
+                      type: 'object',
+                      description: 'Optional rollout manifest'
+                    },
+                    source: {
+                      type: 'object',
+                      description: 'A rollout manifest can also be supplied directly as the request body'
+                    },
+                    forum: { type: 'string', example: 'nga' },
+                    sourceKey: { type: 'string', example: 'nga' },
+                    sourceId: { type: 'string' },
+                    enabled: { type: 'boolean' },
+                    limit: { type: 'number', example: 100 },
+                    pipelineLimit: { type: 'number', example: 20 },
+                    now: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+                    storeDir: { type: 'string' },
+                    workerStaleAfterMs: { type: 'number' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Deployment gate is ok or has warnings'
+            },
+            503: {
+              description: 'Deployment gate has failing checks'
+            },
+            400: {
+              $ref: '#/components/responses/BadRequest'
+            }
+          }
+        }
+      },
       '/api/notifications/diagnostics': {
         get: {
           summary: 'Diagnose notification delivery channel configuration',

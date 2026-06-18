@@ -32,6 +32,7 @@
     "source:validate:sample": "node src/presentation/cli/threadtrace.js validate-source --forum nga --source-type saved-html-directory --input example",
     "source:dry-run:sample": "node src/presentation/cli/threadtrace.js source-ingest-dry-run --forum nga --source-type saved-html-directory --input example",
     "deployment:checklist": "node src/presentation/cli/threadtrace.js deployment-checklist",
+    "deployment:gate": "node src/presentation/cli/threadtrace.js deployment-gate",
     "operations:trace-context": "node src/presentation/cli/threadtrace.js trace-context",
     "operations:worker-topology-plan": "node src/presentation/cli/threadtrace.js worker-topology-plan",
     "operations:runbook": "node src/presentation/cli/threadtrace.js operations-runbook",

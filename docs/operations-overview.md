@@ -19,6 +19,7 @@ GET /api/operations/trace-context
 GET /api/operations/runbook
 POST /api/operations/rollout-manifest-plan
 POST /api/operations/resource-provisioning-plan
+POST /api/deployment/gate
 GET /api/runtime/diagnostics
 ```
 
@@ -30,6 +31,7 @@ runtime.getOperationalReadiness({ limit: 100 })
 runtime.getOperationsRunbook({ limit: 100 })
 runtime.getRolloutManifestPlan({ manifest })
 runtime.getResourceProvisioningPlan({ manifest })
+runtime.getDeploymentGateReport({ manifest })
 ```
 
 Combined worker:
@@ -64,6 +66,14 @@ node src/presentation/cli/threadtrace.js resource-provisioning-plan --manifest-f
 ```
 
 See `docs/resource-provisioning-plan.md` for database, worker, notification, LLM, and connector module preparation notes.
+
+Use the deployment gate as the highest-level preflight before production rollout:
+
+```powershell
+node src/presentation/cli/threadtrace.js deployment-gate --manifest-file docs/examples/rollout-manifest.sample.json
+```
+
+See `docs/deployment-gate.md` for the gate contract and CI/CD behavior.
 
 ## Included Signals
 

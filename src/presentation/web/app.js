@@ -197,6 +197,16 @@ function bindForms() {
     }, renderResourceProvisioningPlan);
   });
 
+  document.getElementById('deploymentGateForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await renderAsync('deploymentGateResult', function () {
+      return requestJson('/api/deployment/gate', parseManifestJson(form.get('manifestJson')), {
+        acceptErrorStatus: true
+      });
+    }, renderDeploymentGateReport);
+  });
+
   document.getElementById('sourceResult').addEventListener('click', async function (event) {
     const button = event.target.closest('button[data-action="run-source"],button[data-action="run-source-pipeline"]');
     if (!button) return;
@@ -818,6 +828,27 @@ function renderResourceProvisioningPlan(result) {
   ];
   if (actions.length > 0) {
     panels.push(panel('Resource actions', evidenceList(actions.map(function (action) {
+      return action.severity + ' 路 ' + action.key + ' 路 ' + action.summary + ' 路 ' + (action.commands || []).join(' | ');
+    })), 'wide'));
+  }
+  return panels.join('');
+}
+
+function renderDeploymentGateReport(result) {
+  const gates = result.gates || [];
+  const actions = result.nextActions || [];
+  const panels = [
+    panel('Deployment gate', [
+      metric('Status', result.status),
+      metric('Gates', result.gateCount || gates.length),
+      metric('Next actions', actions.length)
+    ].join('')),
+    panel('Gate results', evidenceList(gates.map(function (gate) {
+      return gate.status + ' 路 ' + gate.area + ' 路 ' + gate.key + ' 路 ' + gate.summary;
+    })), 'wide')
+  ];
+  if (actions.length > 0) {
+    panels.push(panel('Gate actions', evidenceList(actions.map(function (action) {
       return action.severity + ' 路 ' + action.key + ' 路 ' + action.summary + ' 路 ' + (action.commands || []).join(' | ');
     })), 'wide'));
   }

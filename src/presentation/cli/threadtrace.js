@@ -895,6 +895,42 @@ function main(argv) {
     return;
   }
 
+  if (command === 'deployment-gate') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.getDeploymentGateReport({
+      manifest: options.manifestFile ? parseManifestOption(options) : undefined,
+      forum: options.forum,
+      sourceKey: options.sourceKey,
+      sourceId: options.sourceId,
+      enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
+      limit: options.limit ? Number(options.limit) : 100,
+      pipelineLimit: options.pipelineLimit ? Number(options.pipelineLimit) : 20,
+      now: options.now,
+      storeDir,
+      workerStaleAfterMs: options.workerStaleAfterMs ? Number(options.workerStaleAfterMs) : undefined
+    }).then(function (report) {
+      console.log('Deployment gate: ' + report.status);
+      console.log('Gates: ' + report.gateCount);
+      report.gates.forEach(function (gate) {
+        console.log(gate.status + '\t' + gate.area + '\t' + gate.key + '\t' + gate.summary);
+      });
+      console.log('Next actions: ' + report.nextActions.length);
+      report.nextActions.forEach(function (action) {
+        console.log(action.severity + '\t' + action.key + '\t' + action.summary);
+        (action.commands || []).forEach(function (command) {
+          console.log('  command: ' + command);
+        });
+      });
+      if (report.status === 'fail') {
+        process.exitCode = 2;
+      }
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'list-sources') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.listSources({
@@ -1571,6 +1607,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js connector-rollout-plan [--forum nga] [--source-type type] [--module-path file] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--dry-run-ingest true] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js rollout-manifest-plan --manifest-file file [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js resource-provisioning-plan [--manifest-file file] [--store-dir dir] [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js deployment-gate [--manifest-file file] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--source-type type] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-diagnostics [--forum nga] [--enabled true] [--store-dir dir]');

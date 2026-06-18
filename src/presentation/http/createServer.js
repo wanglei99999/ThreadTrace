@@ -392,6 +392,25 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/deployment/gate') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const manifest = body.manifest || (body.source ? body : undefined);
+    const report = await context.runtime.getDeploymentGateReport({
+      manifest,
+      forum: body.forum,
+      sourceKey: body.sourceKey,
+      sourceId: body.sourceId,
+      enabled: body.enabled,
+      limit: body.limit,
+      pipelineLimit: body.pipelineLimit,
+      now: body.now,
+      storeDir: body.storeDir || context.storeDir,
+      workerStaleAfterMs: body.workerStaleAfterMs
+    });
+    writeJson(response, report.status === 'fail' ? 503 : 200, report);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/runtime/diagnostics') {
     const diagnostics = await context.runtime.getRuntimeDiagnostics({
       now: url.searchParams.get('now') || undefined

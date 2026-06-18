@@ -387,6 +387,36 @@ Request:
 
 The response includes `resources`, required/optional status, expected environment variables, verification commands, and `nextActions` for missing required resources. A failing required resource returns HTTP `503`; warnings on optional resources return `200`.
 
+### `POST /api/deployment/gate`
+
+Evaluates the highest-level deployment gate by composing rollout manifest planning, resource provisioning, deployment checklist, and operations runbook.
+
+Request:
+
+```json
+{
+  "manifest": {
+    "version": "1.0",
+    "name": "nga-sample-rollout",
+    "source": {
+      "sourceKey": "nga",
+      "sourceType": "saved-html-directory",
+      "displayName": "NGA sample archive",
+      "inputDir": "example"
+    },
+    "ingest": {
+      "dryRun": true
+    },
+    "workers": {
+      "topology": "operations-worker",
+      "sourceTaskMode": "ingest"
+    }
+  }
+}
+```
+
+The response includes `gates`, `nextActions`, and the composed lower-level reports. A failing gate returns HTTP `503`; warnings return `200`.
+
 ### `POST /api/index-directory`
 
 将保存页目录解析为楼层文档并写入本地检索索引。
