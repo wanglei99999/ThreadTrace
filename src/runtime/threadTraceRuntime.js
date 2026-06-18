@@ -9,6 +9,7 @@ const { ingestSavedThreadDirectory } = require('../application/use-cases/ingestS
 const { runIngestSavedThreadDirectoryTask } = require('../application/use-cases/runIngestSavedThreadDirectoryTask');
 const { registerTrackedSource } = require('../application/use-cases/registerTrackedSource');
 const { listTrackedSources } = require('../application/use-cases/listTrackedSources');
+const { diagnoseTrackedSources } = require('../application/use-cases/diagnoseTrackedSources');
 const { runTrackedSourceIngestTask } = require('../application/use-cases/runTrackedSourceIngestTask');
 const { runSourceInsightPipelineTask } = require('../application/use-cases/runSourceInsightPipelineTask');
 const { listSourceInsightPipelineRuns } = require('../application/use-cases/listSourceInsightPipelineRuns');
@@ -319,6 +320,20 @@ function createThreadTraceRuntime(options) {
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
         enabled: safeRequest.enabled,
         limit: safeRequest.limit || 50
+      });
+    },
+
+    async diagnoseSources(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return diagnoseTrackedSources({
+        sourceRepository: repositories.sourceRepository,
+        sourceIngestHandlerRegistry,
+        getAdapter: forumAdapterRegistry.get,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 100,
+        now: safeRequest.now
       });
     },
 

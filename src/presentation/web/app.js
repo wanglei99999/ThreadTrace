@@ -243,7 +243,12 @@ async function loadSystemStatus() {
     const adapters = await fetchJson('/adapters');
     const openApi = await fetchJson('/openapi.json');
     const overview = await fetchJson('/api/operations/overview?limit=100');
-    const diagnostics = await fetchJson('/api/runtime/diagnostics');
+    const diagnostics = await fetchJson('/api/runtime/diagnostics', {
+      acceptErrorStatus: true
+    });
+    const sourceDiagnostics = await fetchJson('/api/sources/diagnostics?limit=100', {
+      acceptErrorStatus: true
+    });
     const resourceStatusRows = diagnostics.configuration.storageMode === 'postgres'
       ? [statusRow('Postgres', diagnosticStatus(diagnostics, 'resources.postgres'))]
       : [
@@ -254,6 +259,7 @@ async function loadSystemStatus() {
       statusRow('服务', health.ok ? '运行中' : '异常'),
       statusRow('诊断', diagnostics.status),
       statusRow('存储', overview.storageMode),
+      statusRow('Source config', sourceDiagnostics.status + ' · ' + sourceDiagnostics.sourceCount),
       statusRow('Source mode', diagnostics.configuration.workers.sourceTaskMode),
       statusRow('LLM', diagnostics.configuration.llm.provider),
     ].concat(resourceStatusRows, [
@@ -295,7 +301,17 @@ async function loadTasks() {
 
 async function loadSources() {
   await renderAsync('sourceResult', function () {
-    return fetchJson('/api/sources?limit=10');
+    return Promise.all([
+      fetchJson('/api/sources?limit=10'),
+      fetchJson('/api/sources/diagnostics?limit=100', {
+        acceptErrorStatus: true
+      })
+    ]).then(function (results) {
+      return {
+        sources: results[0].sources || [],
+        diagnostics: results[1]
+      };
+    });
   }, renderSourceList);
 }
 
@@ -618,19 +634,44 @@ function renderRawPageList(result) {
 
 function renderSourceList(result) {
   const sources = result.sources || [];
-  if (sources.length === 0) return panel('跟踪来源', '<div class="muted">暂无</div>', 'wide');
-  return panel('跟踪来源', sources.map(function (source) {
+  const sourceDiagnostics = result.diagnostics || {};
+  const diagnosticsBySourceId = sourceDiagnosticMap(sourceDiagnostics);
+  const diagnosticsPanel = renderSourceDiagnostics(sourceDiagnostics);
+  if (sources.length === 0) return diagnosticsPanel + panel('跟踪来源', '<div class="muted">暂无</div>', 'wide');
+  return diagnosticsPanel + panel('跟踪来源', sources.map(function (source) {
     const runState = source.runState || {};
     const schedule = source.schedule || {};
     const cursor = source.cursor || {};
     const cursorDiff = runState.lastCursorDiff || {};
+    const diagnostics = diagnosticsBySourceId[source.id];
     const runLabel = runState.status || 'never-run';
     const scheduleLabel = schedule.intervalMinutes ? ' · every ' + schedule.intervalMinutes + 'm' : '';
     const cursorLabel = cursor.postCount !== undefined ? ' · posts ' + cursor.postCount + ' / #' + cursor.lastFloor : '';
     const diffLabel = cursorDiff.newPostCount !== undefined ? ' · +' + cursorDiff.newPostCount : '';
     const lastTask = runState.lastTaskId ? ' · ' + runState.lastTaskId : '';
-    return '<div class="action-row"><span>' + escapeHtml(source.displayName) + '<small>' + escapeHtml(source.id + ' · ' + source.sourceType + ' · ' + runLabel + scheduleLabel + cursorLabel + diffLabel + lastTask) + '</small></span><span class="button-group"><button class="inline-button" type="button" data-action="run-source" data-source-id="' + escapeHtml(source.id) + '">运行</button><button class="inline-button secondary-inline-button" type="button" data-action="run-source-pipeline" data-source-id="' + escapeHtml(source.id) + '">洞察</button></span></div>';
+    const diagnosticLabel = diagnostics ? ' · config ' + diagnostics.status : '';
+    return '<div class="action-row"><span>' + escapeHtml(source.displayName) + '<small>' + escapeHtml(source.id + ' · ' + source.sourceType + ' · ' + runLabel + diagnosticLabel + scheduleLabel + cursorLabel + diffLabel + lastTask) + '</small></span><span class="button-group"><button class="inline-button" type="button" data-action="run-source" data-source-id="' + escapeHtml(source.id) + '">运行</button><button class="inline-button secondary-inline-button" type="button" data-action="run-source-pipeline" data-source-id="' + escapeHtml(source.id) + '">洞察</button></span></div>';
   }).join(''), 'wide');
+}
+
+function renderSourceDiagnostics(diagnostics) {
+  const sources = diagnostics.sources || [];
+  if (sources.length === 0) return panel('来源接入诊断', '<div class="muted">暂无</div>', 'wide');
+  return panel('来源接入诊断', evidenceList(sources.slice(0, 10).map(function (source) {
+    const failed = (source.checks || []).filter(function (check) {
+      return check.status !== 'ok';
+    }).map(function (check) {
+      return check.key + '=' + check.status;
+    }).join(', ');
+    return source.status + ' · ' + source.displayName + (failed ? ' · ' + failed : '');
+  })), 'wide');
+}
+
+function sourceDiagnosticMap(diagnostics) {
+  return (diagnostics.sources || []).reduce(function (map, source) {
+    map[source.sourceId] = source;
+    return map;
+  }, {});
 }
 
 function panel(title, content, className) {
@@ -674,9 +715,10 @@ async function requestJson(url, body) {
   return response.json();
 }
 
-async function fetchJson(url) {
+async function fetchJson(url, options) {
+  const safeOptions = options || {};
   const response = await fetch(url);
-  if (!response.ok) throw new Error(response.statusText);
+  if (!response.ok && !safeOptions.acceptErrorStatus) throw new Error(response.statusText);
   return response.json();
 }
 

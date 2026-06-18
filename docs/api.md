@@ -189,6 +189,18 @@ Returns: stable run summaries with task id, source metadata, cursor diff, semant
 - `enabled`: 可选，`true` 或 `false`。
 - `limit`: 可选，默认 50。
 
+### `GET /api/sources/diagnostics`
+
+诊断已注册来源是否具备可导入的配置。它会检查来源是否启用、`location` 是否满足来源类型、`sourceType` 是否有 ingest handler，以及需要论坛解析时对应 `forum/sourceKey` 是否有 adapter。
+
+查询参数：
+
+- `forum` / `sourceKey`: 可选，按来源论坛过滤。
+- `enabled`: 可选，`true` 或 `false`。
+- `limit`: 可选，默认 100。
+
+返回：整体 `status`、每个来源的 `status` 和检查项。存在失败检查时 HTTP 状态码为 503，响应体仍包含完整诊断。
+
 ### `POST /api/sources/{sourceId}/tasks/ingest`
 
 按已注册来源触发一次导入任务。当前支持 `saved-html-directory` 来源，后续会扩展到在线主题 URL、批量来源和定时计划。

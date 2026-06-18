@@ -369,6 +369,38 @@ test('http server can register sources and run source ingest tasks', async funct
   }
 });
 
+test('http server exposes tracked source diagnostics', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-http-source-diagnostics-'));
+  const server = createThreadTraceServer({
+    defaultInputDir: path.resolve(__dirname, '..', 'example'),
+    storeDir: tempDir
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    await postJsonWithStatus(baseUrl + '/api/sources', {
+      forum: 'missing-forum',
+      displayName: 'Missing forum source',
+      inputDir: path.resolve(__dirname, '..', 'example')
+    }, 201);
+    const response = await fetch(baseUrl + '/api/sources/diagnostics');
+    const diagnostics = await response.json();
+    const openApi = await getJson(baseUrl + '/openapi.json');
+
+    assert.equal(response.status, 503);
+    assert.equal(diagnostics.status, 'fail');
+    assert.equal(diagnostics.sources[0].status, 'fail');
+    assert.equal(diagnostics.sources[0].checks.find(function (check) {
+      return check.key === 'source.adapter';
+    }).status, 'fail');
+    assert.ok(openApi.paths['/api/sources/diagnostics']);
+  } finally {
+    await close(server);
+  }
+});
+
 test('http server runs source insight pipeline tasks', async function () {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-http-source-pipeline-'));
   const server = createThreadTraceServer({

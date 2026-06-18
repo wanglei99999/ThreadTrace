@@ -46,6 +46,19 @@ runtime.listSourceIngestHandlers()
 GET /api/source-ingest-handlers
 ```
 
+## Diagnostics
+
+Tracked source diagnostics verify that each registered source has:
+
+- a usable `location` for its `sourceType`
+- a matching `SourceIngestHandler`
+- a registered forum adapter when the handler requires one
+
+```text
+runtime.diagnoseSources()
+GET /api/sources/diagnostics
+```
+
 Forum-HTML handlers should use `requiresAdapter: true` and consume `context.adapter`. API-native, queue-native, or already-normalized sources can use `requiresAdapter: false` and return a canonical `ThreadSnapshot` directly.
 
 This keeps future integrations such as other forums, RSS-like sources, webhook submissions, or database-backed sources out of the tracked-source lifecycle code.

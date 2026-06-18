@@ -481,6 +481,27 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/sources/diagnostics': {
+        get: {
+          summary: 'Diagnose tracked source ingest configuration',
+          parameters: [
+            { name: 'forum', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'enabled', in: 'query', required: false, schema: { type: 'boolean' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Source diagnostics are ok or warn'
+            },
+            503: {
+              description: 'Source diagnostics failed'
+            }
+          }
+        }
+      },
       '/api/sources/{sourceId}/tasks/ingest': {
         post: {
           summary: 'Run an ingest task from a tracked source',

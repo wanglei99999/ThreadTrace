@@ -335,6 +335,20 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/sources/diagnostics') {
+    const enabledParam = url.searchParams.get('enabled');
+    const diagnostics = await context.runtime.diagnoseSources({
+      forum: url.searchParams.get('forum') || undefined,
+      sourceKey: url.searchParams.get('sourceKey') || undefined,
+      enabled: enabledParam === null ? undefined : enabledParam === 'true',
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,
+      now: url.searchParams.get('now') || undefined,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, diagnostics.status === 'fail' ? 503 : 200, diagnostics);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/sources') {
     const enabledParam = url.searchParams.get('enabled');
     const sources = await context.runtime.listSources({
