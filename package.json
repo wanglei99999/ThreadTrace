@@ -14,6 +14,7 @@
     "ingest:sample-dir": "node src/presentation/cli/threadtrace.js ingest-html-dir",
     "interpret:sample": "node src/presentation/cli/threadtrace.js interpret-text-dir --text 科技后面看量确认",
     "serve": "node src/presentation/http/server.js",
+    "serve:web": "node src/presentation/http/server.js",
     "test:unit": "node --test test"
   }
 }

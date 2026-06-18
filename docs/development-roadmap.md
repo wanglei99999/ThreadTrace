@@ -16,6 +16,7 @@
 - 新发言语境还原 MVP。
 - 无依赖 HTTP API 入口。
 - OpenAPI 契约与 API 文档。
+- 无依赖 Web 工作台原型。
 - Markdown 报告渲染。
 - 论坛适配器注册表。
 - Node 内置单元测试。

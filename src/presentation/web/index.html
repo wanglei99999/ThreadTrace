@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>语脉 ThreadTrace</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">T</div>
+        <div>
+          <h1>语脉</h1>
+          <p>ThreadTrace</p>
+        </div>
+      </div>
+      <nav class="nav-list" aria-label="主导航">
+        <button class="nav-item active" data-view="history">历史分析</button>
+        <button class="nav-item" data-view="context">新发言解读</button>
+        <button class="nav-item" data-view="system">系统状态</button>
+      </nav>
+    </aside>
+
+    <main class="workspace">
+      <section class="toolbar">
+        <div>
+          <h2 id="viewTitle">历史分析</h2>
+          <p id="viewSubtitle">解析保存页目录，生成作者、实体、观点和证据概览。</p>
+        </div>
+        <button id="refreshAdaptersButton" class="icon-button" type="button" title="刷新适配器">↻</button>
+      </section>
+
+      <section class="view-panel" id="historyView">
+        <form id="analyzeForm" class="control-strip">
+          <label>
+            <span>论坛</span>
+            <select name="forum" id="historyForum"></select>
+          </label>
+          <label class="grow">
+            <span>保存页目录</span>
+            <input name="inputDir" value="example" autocomplete="off">
+          </label>
+          <button type="submit">分析目录</button>
+        </form>
+        <div id="historyResult" class="result-grid"></div>
+      </section>
+
+      <section class="view-panel hidden" id="contextView">
+        <form id="contextForm" class="stacked-form">
+          <div class="control-strip">
+            <label>
+              <span>论坛</span>
+              <select name="forum" id="contextForum"></select>
+            </label>
+            <label class="grow">
+              <span>保存页目录</span>
+              <input name="inputDir" value="example" autocomplete="off">
+            </label>
+          </div>
+          <div class="control-strip">
+            <label>
+              <span>作者 ID</span>
+              <input name="authorId" value="150058" autocomplete="off">
+            </label>
+            <label>
+              <span>作者</span>
+              <input name="author" value="-阿狼-" autocomplete="off">
+            </label>
+          </div>
+          <label class="full">
+            <span>新发言</span>
+            <textarea name="text" rows="4">科技后面看量确认</textarea>
+          </label>
+          <button type="submit">还原语境</button>
+        </form>
+        <div id="contextResult" class="result-grid"></div>
+      </section>
+
+      <section class="view-panel hidden" id="systemView">
+        <div class="status-list" id="systemStatus"></div>
+      </section>
+    </main>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>

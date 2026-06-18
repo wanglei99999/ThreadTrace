@@ -15,6 +15,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
 
   try {
     const health = await getJson(baseUrl + '/health');
+    const home = await fetch(baseUrl + '/');
     const adapters = await getJson(baseUrl + '/adapters');
     const openApi = await getJson(baseUrl + '/openapi.json');
     const context = await postJson(baseUrl + '/api/interpret-text', {
@@ -24,6 +25,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     });
 
     assert.equal(health.ok, true);
+    assert.equal(home.status, 200);
+    assert.match(await home.text(), /ThreadTrace/);
     assert.equal(adapters.adapters[0].sourceKey, 'nga');
     assert.equal(openApi.openapi, '3.0.3');
     assert.ok(openApi.paths['/api/interpret-text']);

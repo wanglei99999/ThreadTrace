@@ -1,6 +1,7 @@
 'use strict';
 
 const http = require('http');
+const fs = require('fs/promises');
 const path = require('path');
 const { getForumAdapter, listForumAdapters } = require('../../infrastructure/forum-adapters/registry');
 const { analyzeSavedThreadDirectory } = require('../../application/use-cases/analyzeSavedThreadDirectory');
@@ -10,6 +11,7 @@ const { createOpenApiSpec } = require('./openApiSpec');
 function createThreadTraceServer(options) {
   const safeOptions = options || {};
   const defaultInputDir = safeOptions.defaultInputDir || path.resolve(process.cwd(), 'example');
+  const webDir = safeOptions.webDir || path.resolve(__dirname, '..', 'web');
 
   return http.createServer(async function (request, response) {
     try {
@@ -22,6 +24,7 @@ function createThreadTraceServer(options) {
 
       await routeRequest(request, response, {
         defaultInputDir,
+        webDir,
         maxBodyBytes: safeOptions.maxBodyBytes || 1024 * 1024
       });
     } catch (error) {
@@ -37,6 +40,11 @@ function createThreadTraceServer(options) {
 
 async function routeRequest(request, response, context) {
   const url = new URL(request.url, 'http://localhost');
+
+  if (request.method === 'GET' && (url.pathname === '/' || url.pathname === '/app.js' || url.pathname === '/styles.css')) {
+    await serveStaticAsset(response, context.webDir, url.pathname);
+    return;
+  }
 
   if (request.method === 'GET' && url.pathname === '/health') {
     writeJson(response, 200, {
@@ -98,6 +106,25 @@ async function routeRequest(request, response, context) {
       message: 'Not found.'
     }
   });
+}
+
+async function serveStaticAsset(response, webDir, pathname) {
+  const assetName = pathname === '/' ? 'index.html' : pathname.slice(1);
+  const filePath = path.join(webDir, assetName);
+  const content = await fs.readFile(filePath);
+  response.writeHead(200, {
+    'content-type': contentTypeFor(assetName),
+    'content-length': content.length,
+    'cache-control': 'no-store'
+  });
+  response.end(content);
+}
+
+function contentTypeFor(assetName) {
+  if (/\.html$/i.test(assetName)) return 'text/html; charset=utf-8';
+  if (/\.css$/i.test(assetName)) return 'text/css; charset=utf-8';
+  if (/\.js$/i.test(assetName)) return 'text/javascript; charset=utf-8';
+  return 'application/octet-stream';
 }
 
 function readJsonBody(request, maxBodyBytes) {

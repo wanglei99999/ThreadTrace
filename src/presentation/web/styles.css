@@ -1,0 +1,294 @@
+:root {
+  --bg: #f4f7f6;
+  --panel: #ffffff;
+  --panel-strong: #edf3f0;
+  --text: #17211d;
+  --muted: #5e6f68;
+  --line: #cfdcd6;
+  --accent: #176b5b;
+  --accent-strong: #0e4f43;
+  --warn: #8b5a14;
+  --radius: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+  letter-spacing: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  cursor: pointer;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 248px 1fr;
+}
+
+.sidebar {
+  background: #17211d;
+  color: #f8fbfa;
+  padding: 24px 18px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.brand-mark {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius);
+  background: #f2c14e;
+  color: #17211d;
+  font-weight: 800;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.brand p {
+  margin: 3px 0 0;
+  color: #b8c8c1;
+  font-size: 13px;
+}
+
+.nav-list {
+  display: grid;
+  gap: 8px;
+}
+
+.nav-item {
+  width: 100%;
+  text-align: left;
+  padding: 11px 12px;
+  border-radius: var(--radius);
+  color: #dce7e3;
+  background: transparent;
+}
+
+.nav-item.active,
+.nav-item:hover {
+  color: #ffffff;
+  background: #263630;
+}
+
+.workspace {
+  min-width: 0;
+  padding: 24px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.toolbar h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.toolbar p {
+  margin: 5px 0 0;
+  color: var(--muted);
+}
+
+.icon-button {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--accent);
+  border: 1px solid var(--line);
+  font-size: 20px;
+}
+
+.view-panel {
+  margin-top: 22px;
+}
+
+.hidden {
+  display: none;
+}
+
+.control-strip {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stacked-form {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  min-width: 160px;
+}
+
+label span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.grow {
+  flex: 1;
+}
+
+.full {
+  min-width: 0;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px 11px;
+  background: #ffffff;
+  color: var(--text);
+}
+
+textarea {
+  resize: vertical;
+}
+
+form button[type="submit"] {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+form button[type="submit"]:hover {
+  background: var(--accent-strong);
+}
+
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 14px;
+}
+
+.panel {
+  grid-column: span 6;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.panel.wide {
+  grid-column: span 12;
+}
+
+.panel h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.metric-row,
+.evidence-row,
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 9px 0;
+  border-top: 1px solid #edf2ef;
+}
+
+.metric-row:first-of-type,
+.evidence-row:first-of-type,
+.status-row:first-of-type {
+  border-top: 0;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag {
+  padding: 5px 8px;
+  border-radius: var(--radius);
+  background: var(--panel-strong);
+  color: var(--accent-strong);
+  font-size: 13px;
+}
+
+.empty,
+.error {
+  grid-column: span 12;
+  padding: 18px;
+  border-radius: var(--radius);
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+
+.error {
+  color: var(--warn);
+  border-color: #e4c58f;
+}
+
+@media (max-width: 860px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    padding: 16px;
+  }
+
+  .nav-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .control-strip {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .panel {
+    grid-column: span 12;
+  }
+}
