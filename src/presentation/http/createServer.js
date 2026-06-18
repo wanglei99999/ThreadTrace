@@ -130,6 +130,54 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/sources') {
+    const enabledParam = url.searchParams.get('enabled');
+    const sources = await context.runtime.listSources({
+      forum: url.searchParams.get('forum') || undefined,
+      enabled: enabledParam === null ? undefined : enabledParam === 'true',
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 50
+    });
+    writeJson(response, 200, {
+      sources
+    });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/sources') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.registerSource({
+      id: body.id,
+      forum: body.forum,
+      sourceKey: body.sourceKey,
+      sourceType: body.sourceType,
+      displayName: body.displayName || body.name,
+      inputDir: body.inputDir,
+      url: body.url,
+      location: body.location,
+      enabled: body.enabled,
+      tags: body.tags,
+      schedule: body.schedule,
+      storeDir: body.storeDir || context.storeDir
+    });
+    writeJson(response, result.created ? 201 : 200, result);
+    return;
+  }
+
+  const sourceIngestMatch = url.pathname.match(/^\/api\/sources\/([^/]+)\/tasks\/ingest$/);
+  if (request.method === 'POST' && sourceIngestMatch) {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.runSourceIngestTask({
+      sourceId: decodeURIComponent(sourceIngestMatch[1]),
+      storeDir: body.storeDir || context.storeDir
+    });
+    writeJson(response, 200, {
+      sourceId: decodeURIComponent(sourceIngestMatch[1]),
+      task: result.task,
+      report: result.report
+    });
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/index-directory') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     const result = await context.runtime.indexDirectory({

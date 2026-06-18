@@ -118,6 +118,42 @@ test('http server can index and search historical evidence', async function () {
   }
 });
 
+test('http server can register sources and run source ingest tasks', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-http-source-'));
+  const server = createThreadTraceServer({
+    defaultInputDir: path.resolve(__dirname, '..', 'example'),
+    storeDir: tempDir
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const registerResponse = await fetch(baseUrl + '/api/sources', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        forum: 'nga',
+        displayName: 'NGA sample archive',
+        inputDir: path.resolve(__dirname, '..', 'example')
+      })
+    });
+    const registerResult = await registerResponse.json();
+    const sourcesResult = await getJson(baseUrl + '/api/sources');
+    const taskResult = await postJson(baseUrl + '/api/sources/' + encodeURIComponent(registerResult.source.id) + '/tasks/ingest', {});
+
+    assert.equal(registerResponse.status, 201);
+    assert.equal(sourcesResult.sources.length, 1);
+    assert.equal(sourcesResult.sources[0].id, registerResult.source.id);
+    assert.equal(taskResult.sourceId, registerResult.source.id);
+    assert.equal(taskResult.task.status, 'completed');
+  } finally {
+    await close(server);
+  }
+});
+
 function listen(server, port) {
   return new Promise(function (resolve, reject) {
     server.once('error', reject);

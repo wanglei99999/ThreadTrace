@@ -125,6 +125,78 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/sources': {
+        get: {
+          summary: 'List tracked forum sources',
+          parameters: [
+            { name: 'forum', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'enabled', in: 'query', required: false, schema: { type: 'boolean' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } }
+          ],
+          responses: {
+            200: {
+              description: 'Tracked sources'
+            }
+          }
+        },
+        post: {
+          summary: 'Register or update a tracked forum source',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string' },
+                    forum: { type: 'string', example: 'nga' },
+                    sourceType: { type: 'string', example: 'saved-html-directory' },
+                    displayName: { type: 'string', example: 'NGA sample archive' },
+                    inputDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/example' },
+                    url: { type: 'string' },
+                    enabled: { type: 'boolean' },
+                    storeDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/data/store' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            201: {
+              description: 'Created source'
+            },
+            200: {
+              description: 'Updated source'
+            }
+          }
+        }
+      },
+      '/api/sources/{sourceId}/tasks/ingest': {
+        post: {
+          summary: 'Run an ingest task from a tracked source',
+          parameters: [
+            { name: 'sourceId', in: 'path', required: true, schema: { type: 'string' } }
+          ],
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    storeDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/data/store' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Completed ingest task and report'
+            }
+          }
+        }
+      },
       '/api/index-directory': {
         post: {
           summary: 'Index posts from a saved HTML directory into the retrieval index',

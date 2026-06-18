@@ -6,11 +6,15 @@ const { analyzeSavedThreadDirectory } = require('../application/use-cases/analyz
 const { interpretNewPostFromSavedThreadDirectory } = require('../application/use-cases/interpretNewPostFromSavedThreadDirectory');
 const { ingestSavedThreadDirectory } = require('../application/use-cases/ingestSavedThreadDirectory');
 const { runIngestSavedThreadDirectoryTask } = require('../application/use-cases/runIngestSavedThreadDirectoryTask');
+const { registerTrackedSource } = require('../application/use-cases/registerTrackedSource');
+const { listTrackedSources } = require('../application/use-cases/listTrackedSources');
+const { runTrackedSourceIngestTask } = require('../application/use-cases/runTrackedSourceIngestTask');
 const { indexSavedThreadDirectory } = require('../application/use-cases/indexSavedThreadDirectory');
 const { searchEvidence } = require('../application/use-cases/searchEvidence');
 const { createFileThreadRepository } = require('../infrastructure/storage/fileThreadRepository');
 const { createFileAnalysisReportRepository } = require('../infrastructure/storage/fileAnalysisReportRepository');
 const { createFileTaskRepository } = require('../infrastructure/storage/fileTaskRepository');
+const { createFileSourceRepository } = require('../infrastructure/storage/fileSourceRepository');
 const { createFileTextRetrievalIndex } = require('../infrastructure/retrieval/fileTextRetrievalIndex');
 
 function createThreadTraceRuntime(options) {
@@ -99,6 +103,55 @@ function createThreadTraceRuntime(options) {
       });
     },
 
+    async registerSource(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositories(resolveStoreDir(defaults, safeRequest.storeDir));
+      return registerTrackedSource({
+        sourceRepository: repositories.sourceRepository,
+        source: {
+          id: safeRequest.id,
+          sourceKey: safeRequest.sourceKey || safeRequest.forum,
+          sourceType: safeRequest.sourceType,
+          displayName: safeRequest.displayName || safeRequest.name,
+          inputDir: safeRequest.inputDir,
+          url: safeRequest.url,
+          location: safeRequest.location,
+          enabled: safeRequest.enabled,
+          tags: safeRequest.tags,
+          schedule: safeRequest.schedule
+        }
+      });
+    },
+
+    async listSources(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositories(resolveStoreDir(defaults, safeRequest.storeDir));
+      return listTrackedSources({
+        sourceRepository: repositories.sourceRepository,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 50
+      });
+    },
+
+    async runSourceIngestTask(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositories(resolveStoreDir(defaults, safeRequest.storeDir));
+      const source = await repositories.sourceRepository.findSource(safeRequest.sourceId);
+      if (!source) {
+        throw new Error('Unknown tracked source: ' + safeRequest.sourceId);
+      }
+
+      return runTrackedSourceIngestTask({
+        sourceId: safeRequest.sourceId,
+        sourceRepository: repositories.sourceRepository,
+        adapter: getForumAdapter(source.sourceKey),
+        threadRepository: repositories.threadRepository,
+        reportRepository: repositories.reportRepository,
+        taskRepository: repositories.taskRepository
+      });
+    },
+
     async indexDirectory(request) {
       const safeRequest = request || {};
       return indexSavedThreadDirectory({
@@ -130,6 +183,9 @@ function createRepositories(storeDir) {
     }),
     taskRepository: createFileTaskRepository({
       baseDir: path.join(storeDir, 'tasks')
+    }),
+    sourceRepository: createFileSourceRepository({
+      baseDir: path.join(storeDir, 'sources')
     })
   };
 }
