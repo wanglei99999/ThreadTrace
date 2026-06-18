@@ -150,6 +150,8 @@ test('http server can register sources and run source ingest tasks', async funct
     assert.equal(sourcesResult.sources[0].id, registerResult.source.id);
     assert.equal(taskResult.sourceId, registerResult.source.id);
     assert.equal(taskResult.task.status, 'completed');
+    assert.equal(batchResult.task.status, 'completed');
+    assert.equal(batchResult.task.type, 'ingest-enabled-sources');
     assert.equal(batchResult.sourceCount, 1);
     assert.equal(batchResult.completedCount, 1);
     assert.equal(batchResult.failedCount, 0);

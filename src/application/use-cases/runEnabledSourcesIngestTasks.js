@@ -5,6 +5,12 @@ const { assertThreadRepository } = require('../ports/threadRepository');
 const { assertAnalysisReportRepository } = require('../ports/analysisReportRepository');
 const { assertTaskRepository } = require('../ports/taskRepository');
 const { runTrackedSourceIngestTask } = require('./runTrackedSourceIngestTask');
+const {
+  createTaskRecord,
+  markTaskCompleted,
+  markTaskFailed,
+  markTaskRunning
+} = require('../jobs/taskRecordFactory');
 
 async function runEnabledSourcesIngestTasks(options) {
   const safeOptions = options || {};
@@ -18,41 +24,78 @@ async function runEnabledSourcesIngestTasks(options) {
     throw new Error('runEnabledSourcesIngestTasks requires getAdapter(sourceKey).');
   }
 
-  const startedAt = new Date().toISOString();
-  const sources = await sourceRepository.listSources({
+  let batchTask = createTaskRecord('ingest-enabled-sources', {
     sourceKey: safeOptions.sourceKey,
-    enabled: true,
     limit: safeOptions.limit || 50
   });
-  const results = [];
+  await taskRepository.saveTask(batchTask);
 
-  for (const source of sources) {
-    try {
-      const result = await runTrackedSourceIngestTask({
-        sourceId: source.id,
-        sourceRepository,
-        adapter: getAdapter(source.sourceKey),
-        threadRepository,
-        reportRepository,
-        taskRepository
-      });
-      results.push({
-        source,
-        status: 'completed',
-        task: result.task,
-        report: result.report
-      });
-    } catch (error) {
-      results.push({
-        source,
-        status: 'failed',
-        error: {
-          message: error.message
-        }
-      });
+  batchTask = markTaskRunning(batchTask);
+  await taskRepository.saveTask(batchTask);
+
+  try {
+    const startedAt = batchTask.startedAt;
+    const sources = await sourceRepository.listSources({
+      sourceKey: safeOptions.sourceKey,
+      enabled: true,
+      limit: safeOptions.limit || 50
+    });
+    const results = [];
+
+    for (const source of sources) {
+      try {
+        const result = await runTrackedSourceIngestTask({
+          sourceId: source.id,
+          sourceRepository,
+          adapter: getAdapter(source.sourceKey),
+          threadRepository,
+          reportRepository,
+          taskRepository
+        });
+        results.push({
+          source: result.source || source,
+          status: 'completed',
+          task: result.task,
+          report: result.report
+        });
+      } catch (error) {
+        results.push({
+          source,
+          status: 'failed',
+          error: {
+            message: error.message
+          }
+        });
+      }
     }
-  }
 
+    const output = summarizeBatch(startedAt, sources, results);
+    batchTask = markTaskCompleted(batchTask, {
+      sourceCount: output.sourceCount,
+      completedCount: output.completedCount,
+      failedCount: output.failedCount,
+      results: output.results.map(function (result) {
+        return {
+          sourceId: result.source.id,
+          sourceKey: result.source.sourceKey,
+          status: result.status,
+          taskId: result.task && result.task.id,
+          error: result.error
+        };
+      })
+    });
+    await taskRepository.saveTask(batchTask);
+    return Object.assign({
+      task: batchTask
+    }, output);
+  } catch (error) {
+    batchTask = markTaskFailed(batchTask, error);
+    await taskRepository.saveTask(batchTask);
+    throw error;
+  }
+}
+
+function summarizeBatch(startedAt, sources, results) {
   return {
     startedAt,
     finishedAt: new Date().toISOString(),

@@ -26,9 +26,56 @@ function createTrackedSource(input) {
     enabled: safeInput.enabled !== false,
     tags: Array.isArray(safeInput.tags) ? safeInput.tags : [],
     schedule: safeInput.schedule || undefined,
+    runState: safeInput.runState || {
+      status: 'never-run',
+      failureCount: 0
+    },
     createdAt: safeInput.createdAt || now,
     updatedAt: now
   };
+}
+
+function markTrackedSourceRunStarted(source, timestamp) {
+  const now = timestamp || new Date().toISOString();
+  return Object.assign({}, source, {
+    runState: Object.assign({}, source.runState || {}, {
+      status: 'running',
+      lastStartedAt: now
+    }),
+    updatedAt: now
+  });
+}
+
+function markTrackedSourceRunCompleted(source, task, timestamp) {
+  const now = timestamp || new Date().toISOString();
+  return Object.assign({}, source, {
+    runState: Object.assign({}, source.runState || {}, {
+      status: 'completed',
+      lastStartedAt: source.runState && source.runState.lastStartedAt,
+      lastFinishedAt: now,
+      lastTaskId: task && task.id,
+      lastError: undefined,
+      failureCount: 0
+    }),
+    updatedAt: now
+  });
+}
+
+function markTrackedSourceRunFailed(source, error, timestamp) {
+  const now = timestamp || new Date().toISOString();
+  const currentState = source.runState || {};
+  return Object.assign({}, source, {
+    runState: Object.assign({}, currentState, {
+      status: 'failed',
+      lastStartedAt: currentState.lastStartedAt,
+      lastFinishedAt: now,
+      lastError: {
+        message: error && error.message ? error.message : String(error)
+      },
+      failureCount: (currentState.failureCount || 0) + 1
+    }),
+    updatedAt: now
+  });
 }
 
 function normalizeLocation(sourceType, location) {
@@ -74,5 +121,8 @@ function safeSegment(value) {
 
 module.exports = {
   SOURCE_TYPES,
-  createTrackedSource
+  createTrackedSource,
+  markTrackedSourceRunStarted,
+  markTrackedSourceRunCompleted,
+  markTrackedSourceRunFailed
 };

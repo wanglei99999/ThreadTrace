@@ -326,7 +326,10 @@ function renderSourceList(result) {
   const sources = result.sources || [];
   if (sources.length === 0) return panel('跟踪来源', '<div class="muted">暂无</div>', 'wide');
   return panel('跟踪来源', sources.map(function (source) {
-    return '<div class="action-row"><span>' + escapeHtml(source.displayName) + '<small>' + escapeHtml(source.id + ' · ' + source.sourceType) + '</small></span><button class="inline-button" type="button" data-action="run-source" data-source-id="' + escapeHtml(source.id) + '">运行</button></div>';
+    const runState = source.runState || {};
+    const runLabel = runState.status || 'never-run';
+    const lastTask = runState.lastTaskId ? ' · ' + runState.lastTaskId : '';
+    return '<div class="action-row"><span>' + escapeHtml(source.displayName) + '<small>' + escapeHtml(source.id + ' · ' + source.sourceType + ' · ' + runLabel + lastTask) + '</small></span><button class="inline-button" type="button" data-action="run-source" data-source-id="' + escapeHtml(source.id) + '">运行</button></div>';
   }).join(''), 'wide');
 }
 

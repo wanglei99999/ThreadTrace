@@ -104,6 +104,12 @@ http://127.0.0.1:3017
 
 返回：来源记录、是否新建。
 
+来源记录包含 `runState`，用于观察最近一次运行状态：
+- `status`: `never-run`、`running`、`completed` 或 `failed`。
+- `lastStartedAt` / `lastFinishedAt`: 最近一次开始和结束时间。
+- `lastTaskId`: 最近一次成功关联的任务 ID。
+- `failureCount`: 连续失败次数。
+
 ### `GET /api/sources`
 
 查询已注册来源。
@@ -139,7 +145,7 @@ http://127.0.0.1:3017
 }
 ```
 
-返回：批量执行汇总、成功/失败数量和每个来源的任务结果。
+返回：父任务记录、批量执行汇总、成功/失败数量和每个来源的任务结果。父任务类型为 `ingest-enabled-sources`，每个来源仍会生成自己的导入任务记录。
 
 ### `POST /api/index-directory`
 

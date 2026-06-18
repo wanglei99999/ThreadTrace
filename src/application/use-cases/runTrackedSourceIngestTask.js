@@ -1,6 +1,11 @@
 'use strict';
 
-const { SOURCE_TYPES } = require('../../domain/models/trackedSource');
+const {
+  SOURCE_TYPES,
+  markTrackedSourceRunCompleted,
+  markTrackedSourceRunFailed,
+  markTrackedSourceRunStarted
+} = require('../../domain/models/trackedSource');
 const { assertForumAdapter } = require('../../infrastructure/forum-adapters/forumAdapter');
 const { assertSourceRepository } = require('../ports/sourceRepository');
 const { assertThreadRepository } = require('../ports/threadRepository');
@@ -24,14 +29,28 @@ async function runTrackedSourceIngestTask(options) {
     throw new Error('Tracked source type is not ingestible yet: ' + source.sourceType);
   }
 
-  return runIngestSavedThreadDirectoryTask({
-    forum: source.sourceKey,
-    adapter,
-    inputDir: source.location.inputDir,
-    threadRepository: assertThreadRepository(safeOptions.threadRepository),
-    reportRepository: assertAnalysisReportRepository(safeOptions.reportRepository),
-    taskRepository: assertTaskRepository(safeOptions.taskRepository)
-  });
+  let runningSource = markTrackedSourceRunStarted(source);
+  await sourceRepository.saveSource(runningSource);
+
+  try {
+    const result = await runIngestSavedThreadDirectoryTask({
+      forum: source.sourceKey,
+      adapter,
+      inputDir: source.location.inputDir,
+      threadRepository: assertThreadRepository(safeOptions.threadRepository),
+      reportRepository: assertAnalysisReportRepository(safeOptions.reportRepository),
+      taskRepository: assertTaskRepository(safeOptions.taskRepository)
+    });
+    runningSource = markTrackedSourceRunCompleted(runningSource, result.task);
+    await sourceRepository.saveSource(runningSource);
+    return Object.assign({}, result, {
+      source: runningSource
+    });
+  } catch (error) {
+    runningSource = markTrackedSourceRunFailed(runningSource, error);
+    await sourceRepository.saveSource(runningSource);
+    throw error;
+  }
 }
 
 module.exports = {
