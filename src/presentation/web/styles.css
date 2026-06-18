@@ -199,10 +199,28 @@ form button[type="submit"]:hover {
   background: var(--accent-strong);
 }
 
+.secondary-button {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: var(--radius);
+  color: var(--accent);
+  background: #ffffff;
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.secondary-button:hover {
+  background: var(--panel-strong);
+}
+
 .result-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: 14px;
+}
+
+.task-grid {
+  margin-top: 14px;
 }
 
 .panel {

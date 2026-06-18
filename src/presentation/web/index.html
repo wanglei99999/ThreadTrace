@@ -79,7 +79,16 @@
       </section>
 
       <section class="view-panel hidden" id="systemView">
+        <form id="taskForm" class="control-strip">
+          <label class="grow">
+            <span>保存页目录</span>
+            <input name="inputDir" value="example" autocomplete="off">
+          </label>
+          <button type="submit">运行导入任务</button>
+          <button id="refreshTasksButton" class="secondary-button" type="button">刷新任务</button>
+        </form>
         <div class="status-list" id="systemStatus"></div>
+        <div class="result-grid task-grid" id="taskResult"></div>
       </section>
     </main>
   </div>

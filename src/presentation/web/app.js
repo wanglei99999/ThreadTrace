@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', function () {
   bindNavigation();
   bindForms();
   document.getElementById('refreshAdaptersButton').addEventListener('click', loadAdapters);
+  document.getElementById('refreshTasksButton').addEventListener('click', loadTasks);
   loadAdapters();
   loadSystemStatus();
 });
@@ -60,6 +61,18 @@ function bindForms() {
         text: form.get('text')
       });
     }, renderContextReport);
+  });
+
+  document.getElementById('taskForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await renderAsync('taskResult', function () {
+      return requestJson('/api/tasks/ingest-directory', {
+        inputDir: form.get('inputDir')
+      });
+    }, renderTaskRunResult);
+    await loadSystemStatus();
+    await loadTasks();
   });
 }
 
@@ -105,15 +118,23 @@ async function loadSystemStatus() {
     const health = await fetchJson('/health');
     const adapters = await fetchJson('/adapters');
     const openApi = await fetchJson('/openapi.json');
+    const tasks = await fetchJson('/api/tasks?limit=5');
     target.innerHTML = [
       statusRow('服务', health.ok ? '运行中' : '异常'),
       statusRow('适配器', String((adapters.adapters || []).length)),
       statusRow('API 契约', openApi.openapi),
-      statusRow('端点', String(Object.keys(openApi.paths || {}).length))
+      statusRow('端点', String(Object.keys(openApi.paths || {}).length)),
+      statusRow('最近任务', String((tasks.tasks || []).length))
     ].join('');
   } catch (error) {
     target.innerHTML = '<div class="error">' + escapeHtml(error.message) + '</div>';
   }
+}
+
+async function loadTasks() {
+  await renderAsync('taskResult', function () {
+    return fetchJson('/api/tasks?limit=10');
+  }, renderTaskList);
 }
 
 async function renderAsync(targetId, task, renderer) {
@@ -161,6 +182,23 @@ function renderContextReport(report) {
       return '#' + item.floor + ' ' + item.author + ' · ' + item.confidence + '：' + item.reasons.join(', ');
     })), 'wide')
   ].join('');
+}
+
+function renderTaskRunResult(result) {
+  return panel('任务完成', [
+    metric('任务 ID', result.task.id),
+    metric('状态', result.task.status),
+    metric('主题', result.task.output ? result.task.output.title : ''),
+    metric('楼层', result.task.output ? result.task.output.parsedPostCount : '')
+  ].join(''), 'wide');
+}
+
+function renderTaskList(result) {
+  const tasks = result.tasks || [];
+  return panel('最近任务', evidenceList(tasks.map(function (task) {
+    const output = task.output || {};
+    return task.status + ' · ' + task.type + ' · ' + (output.title || task.id);
+  })), 'wide');
 }
 
 function panel(title, content, className) {
