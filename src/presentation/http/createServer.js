@@ -3,6 +3,7 @@
 const http = require('http');
 const fs = require('fs/promises');
 const path = require('path');
+const crypto = require('crypto');
 const { isApplicationError } = require('../../application/errors/applicationError');
 const { createThreadTraceRuntime } = require('../../runtime/threadTraceRuntime');
 const { createOpenApiSpec } = require('./openApiSpec');
@@ -18,8 +19,10 @@ function createThreadTraceServer(options) {
   });
 
   return http.createServer(async function (request, response) {
+    const requestId = resolveRequestId(request);
     try {
       applyCors(response);
+      response.setHeader('x-request-id', requestId);
       if (request.method === 'OPTIONS') {
         response.writeHead(204);
         response.end();
@@ -39,6 +42,7 @@ function createThreadTraceServer(options) {
           message: error.message,
           code: error.code,
           details: error.details,
+          requestId,
           stack: safeOptions.exposeStack ? error.stack : undefined
         }
       });
@@ -615,9 +619,16 @@ function writeError(response, statusCode, code, message, details) {
     error: {
       message,
       code,
-      details
+      details,
+      requestId: response.getHeader('x-request-id')
     }
   });
+}
+
+function resolveRequestId(request) {
+  const value = request.headers['x-request-id'];
+  if (Array.isArray(value)) return value[0] || crypto.randomUUID();
+  return value || crypto.randomUUID();
 }
 
 function applyCors(response) {

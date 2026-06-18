@@ -49,6 +49,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/connectors/catalog']);
     assert.ok(openApi.paths['/api/runtime/diagnostics']);
     assert.equal(openApi.components.schemas.ErrorResponse.properties.error.properties.code.example, 'source_run_already_running');
+    assert.equal(openApi.components.schemas.ErrorResponse.properties.error.properties.requestId.type, 'string');
     assert.equal(openApi.components.responses.BadRequest.content['application/json'].schema.$ref, '#/components/schemas/ErrorResponse');
     assert.equal(openApi.paths['/api/search'].post.responses[400].$ref, '#/components/responses/BadRequest');
     assert.equal(openApi.paths['/api/sources/{sourceId}/tasks/ingest'].post.responses[404].$ref, '#/components/responses/NotFound');
@@ -337,12 +338,16 @@ test('http server handles CORS preflight and validates interpret text input', as
 
   try {
     const preflight = await fetch(baseUrl + '/api/interpret-text', {
-      method: 'OPTIONS'
+      method: 'OPTIONS',
+      headers: {
+        'x-request-id': 'preflight-request-1'
+      }
     });
     const invalid = await fetch(baseUrl + '/api/interpret-text', {
       method: 'POST',
       headers: {
-        'content-type': 'application/json'
+        'content-type': 'application/json',
+        'x-request-id': 'interpret-request-1'
       },
       body: JSON.stringify({})
     });
@@ -352,8 +357,11 @@ test('http server handles CORS preflight and validates interpret text input', as
 
     assert.equal(preflight.status, 204);
     assert.equal(preflight.headers.get('access-control-allow-origin'), '*');
+    assert.equal(preflight.headers.get('x-request-id'), 'preflight-request-1');
     assert.equal(invalid.status, 400);
+    assert.equal(invalid.headers.get('x-request-id'), 'interpret-request-1');
     assert.equal(invalidBody.error.code, 'interpret_text_missing_text');
+    assert.equal(invalidBody.error.requestId, 'interpret-request-1');
     assert.match(invalidBody.error.message, /requires text/);
     assert.equal(missingRoute.status, 404);
     assert.equal(missingRouteBody.error.code, 'route_not_found');

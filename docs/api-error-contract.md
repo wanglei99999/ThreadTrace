@@ -7,6 +7,7 @@ ThreadTrace HTTP APIs return a stable error envelope for request validation fail
   "error": {
     "message": "Human-readable failure summary.",
     "code": "stable_machine_readable_code",
+    "requestId": "0f5f2fcb-6bdb-4319-8b5b-ff54c2ac48b0",
     "details": {
       "sourceId": "source-1"
     }
@@ -18,6 +19,7 @@ ThreadTrace HTTP APIs return a stable error envelope for request validation fail
 
 - Treat `error.code` as the primary machine-readable value.
 - Treat `error.message` as display or log text only; do not parse it for control flow.
+- Use `error.requestId` and the `x-request-id` response header to correlate frontend, API, and worker logs.
 - Treat `error.details` as optional and code-specific.
 - Retry `409` source run conflicts only after the current run finishes or the configured stale-run window has elapsed.
 - Do not retry `400` validation errors without changing the request.
@@ -46,3 +48,5 @@ ThreadTrace HTTP APIs return a stable error envelope for request validation fail
 ## Integration Notes
 
 The OpenAPI spec at `GET /openapi.json` exposes the reusable `ErrorResponse` schema and common error response references. New API routes should use the same envelope and add a code to this catalog when the code is part of the public contract.
+
+Clients may send an `x-request-id` header. ThreadTrace echoes it on the response and includes the same value in error bodies. When the client does not provide one, ThreadTrace generates a UUID for the response.

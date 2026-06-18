@@ -830,6 +830,10 @@ function createOpenApiSpec() {
                 details: {
                   type: 'object',
                   additionalProperties: true
+                },
+                requestId: {
+                  type: 'string',
+                  example: '0f5f2fcb-6bdb-4319-8b5b-ff54c2ac48b0'
                 }
               }
             }
