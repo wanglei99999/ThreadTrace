@@ -48,6 +48,11 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/adapters/diagnostics']);
     assert.ok(openApi.paths['/api/connectors/catalog']);
     assert.ok(openApi.paths['/api/runtime/diagnostics']);
+    assert.equal(openApi.components.schemas.ErrorResponse.properties.error.properties.code.example, 'source_run_already_running');
+    assert.equal(openApi.components.responses.BadRequest.content['application/json'].schema.$ref, '#/components/schemas/ErrorResponse');
+    assert.equal(openApi.paths['/api/search'].post.responses[400].$ref, '#/components/responses/BadRequest');
+    assert.equal(openApi.paths['/api/sources/{sourceId}/tasks/ingest'].post.responses[404].$ref, '#/components/responses/NotFound');
+    assert.equal(openApi.paths['/api/sources/{sourceId}/tasks/ingest'].post.responses[409].$ref, '#/components/responses/Conflict');
     assert.equal(context.reportType, 'new-post-context');
     assert.ok(context.relatedEvidence.length >= 1);
   } finally {

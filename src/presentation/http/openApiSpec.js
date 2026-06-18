@@ -569,6 +569,9 @@ function createOpenApiSpec() {
             },
             200: {
               description: 'Updated source'
+            },
+            400: {
+              $ref: '#/components/responses/BadRequest'
             }
           }
         }
@@ -618,6 +621,12 @@ function createOpenApiSpec() {
           responses: {
             200: {
               description: 'Completed ingest task and report'
+            },
+            404: {
+              $ref: '#/components/responses/NotFound'
+            },
+            409: {
+              $ref: '#/components/responses/Conflict'
             }
           }
         }
@@ -651,6 +660,12 @@ function createOpenApiSpec() {
           responses: {
             200: {
               description: 'Completed source insight pipeline task'
+            },
+            404: {
+              $ref: '#/components/responses/NotFound'
+            },
+            409: {
+              $ref: '#/components/responses/Conflict'
             }
           }
         }
@@ -789,6 +804,76 @@ function createOpenApiSpec() {
           responses: {
             200: {
               description: 'Search results'
+            },
+            400: {
+              $ref: '#/components/responses/BadRequest'
+            }
+          }
+        }
+      }
+    },
+    components: {
+      schemas: {
+        ErrorResponse: {
+          type: 'object',
+          required: ['error'],
+          properties: {
+            error: {
+              type: 'object',
+              required: ['message'],
+              properties: {
+                message: { type: 'string' },
+                code: {
+                  type: 'string',
+                  example: 'source_run_already_running'
+                },
+                details: {
+                  type: 'object',
+                  additionalProperties: true
+                }
+              }
+            }
+          }
+        }
+      },
+      responses: {
+        BadRequest: {
+          description: 'Invalid request or validation failure',
+          content: {
+            'application/json': {
+              schema: {
+                $ref: '#/components/schemas/ErrorResponse'
+              }
+            }
+          }
+        },
+        NotFound: {
+          description: 'Requested resource was not found',
+          content: {
+            'application/json': {
+              schema: {
+                $ref: '#/components/schemas/ErrorResponse'
+              }
+            }
+          }
+        },
+        Conflict: {
+          description: 'Request conflicts with the current resource state',
+          content: {
+            'application/json': {
+              schema: {
+                $ref: '#/components/schemas/ErrorResponse'
+              }
+            }
+          }
+        },
+        RequestTooLarge: {
+          description: 'Request body exceeds the configured limit',
+          content: {
+            'application/json': {
+              schema: {
+                $ref: '#/components/schemas/ErrorResponse'
+              }
             }
           }
         }
