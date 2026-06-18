@@ -298,6 +298,23 @@ form button[type="submit"]:hover {
   background: var(--accent-strong);
 }
 
+.button-group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.secondary-inline-button {
+  color: var(--accent);
+  background: #ffffff;
+  border: 1px solid var(--line);
+}
+
+.secondary-inline-button:hover {
+  background: var(--panel-strong);
+}
+
 .muted {
   color: var(--muted);
 }

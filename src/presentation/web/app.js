@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('dispatchEventsButton').addEventListener('click', dispatchEvents);
   document.getElementById('runSourcesButton').addEventListener('click', runAllSources);
   document.getElementById('runDueSourcesButton').addEventListener('click', runDueSources);
+  document.getElementById('runDuePipelinesButton').addEventListener('click', runDuePipelines);
   document.getElementById('crawlUrlButton').addEventListener('click', crawlThreadUrl);
   loadAdapters();
   loadSystemStatus();
@@ -119,11 +120,15 @@ function bindForms() {
   });
 
   document.getElementById('sourceResult').addEventListener('click', async function (event) {
-    const button = event.target.closest('button[data-action="run-source"]');
+    const button = event.target.closest('button[data-action="run-source"],button[data-action="run-source-pipeline"]');
     if (!button) return;
+    const isPipeline = button.dataset.action === 'run-source-pipeline';
     await renderAsync('taskResult', function () {
-      return requestJson('/api/sources/' + encodeURIComponent(button.dataset.sourceId) + '/tasks/ingest', {});
-    }, renderSourceTaskRunResult);
+      const taskPath = isPipeline ? '/tasks/insight-pipeline' : '/tasks/ingest';
+      return requestJson('/api/sources/' + encodeURIComponent(button.dataset.sourceId) + taskPath, {
+        provider: 'mock'
+      });
+    }, isPipeline ? renderSourcePipelineRunResult : renderSourceTaskRunResult);
     await loadSystemStatus();
     await loadTasks();
     await loadEvents();
@@ -313,6 +318,19 @@ async function runDueSources() {
   await loadRawPages();
 }
 
+async function runDuePipelines() {
+  await renderAsync('taskResult', function () {
+    return requestJson('/api/sources/tasks/insight-pipeline-due', {
+      provider: 'mock'
+    });
+  }, renderDueSourcePipelineBatchRunResult);
+  await loadSystemStatus();
+  await loadTasks();
+  await loadSources();
+  await loadEvents();
+  await loadRawPages();
+}
+
 async function dispatchEvents() {
   await renderAsync('eventResult', function () {
     return requestJson('/api/events/dispatch', {});
@@ -419,6 +437,18 @@ function renderSourceTaskRunResult(result) {
   ].join(''), 'wide');
 }
 
+function renderSourcePipelineRunResult(result) {
+  return panel('来源洞察流水线完成', [
+    metric('来源 ID', result.sourceId),
+    metric('任务 ID', result.task.id),
+    metric('状态', result.task.status),
+    metric('导入任务', result.ingest.task.id),
+    metric('变化', result.ingest.cursorDiff.changed ? '是' : '否'),
+    metric('新增楼层', result.ingest.cursorDiff.newPostCount),
+    metric('语义状态', result.semantic.status + (result.semantic.reason ? ' / ' + result.semantic.reason : ''))
+  ].join(''), 'wide');
+}
+
 function renderSourceBatchRunResult(result) {
   return panel('来源批量任务完成', [
     metric('来源数', result.sourceCount),
@@ -439,6 +469,20 @@ function renderDueSourceBatchRunResult(result) {
     metric('失败', result.failedCount),
     evidenceList((result.results || []).map(function (item) {
       return item.status + ' · ' + item.scheduleReason + ' · ' + item.source.displayName + ' · ' + (item.task ? item.task.id : item.error.message);
+    }))
+  ].join(''), 'wide');
+}
+
+function renderDueSourcePipelineBatchRunResult(result) {
+  return panel('到期来源洞察流水线完成', [
+    metric('来源数', result.sourceCount),
+    metric('到期', result.dueCount),
+    metric('跳过', result.skippedCount),
+    metric('完成', result.completedCount),
+    metric('失败', result.failedCount),
+    evidenceList((result.results || []).map(function (item) {
+      const semantic = item.semantic ? ' / semantic ' + item.semantic.status : '';
+      return item.status + ' 路 ' + item.scheduleReason + ' 路 ' + item.source.displayName + ' 路 ' + (item.task ? item.task.id : item.error.message) + semantic;
     }))
   ].join(''), 'wide');
 }
@@ -543,7 +587,7 @@ function renderSourceList(result) {
     const cursorLabel = cursor.postCount !== undefined ? ' · posts ' + cursor.postCount + ' / #' + cursor.lastFloor : '';
     const diffLabel = cursorDiff.newPostCount !== undefined ? ' · +' + cursorDiff.newPostCount : '';
     const lastTask = runState.lastTaskId ? ' · ' + runState.lastTaskId : '';
-    return '<div class="action-row"><span>' + escapeHtml(source.displayName) + '<small>' + escapeHtml(source.id + ' · ' + source.sourceType + ' · ' + runLabel + scheduleLabel + cursorLabel + diffLabel + lastTask) + '</small></span><button class="inline-button" type="button" data-action="run-source" data-source-id="' + escapeHtml(source.id) + '">运行</button></div>';
+    return '<div class="action-row"><span>' + escapeHtml(source.displayName) + '<small>' + escapeHtml(source.id + ' · ' + source.sourceType + ' · ' + runLabel + scheduleLabel + cursorLabel + diffLabel + lastTask) + '</small></span><span class="button-group"><button class="inline-button" type="button" data-action="run-source" data-source-id="' + escapeHtml(source.id) + '">运行</button><button class="inline-button secondary-inline-button" type="button" data-action="run-source-pipeline" data-source-id="' + escapeHtml(source.id) + '">洞察</button></span></div>';
   }).join(''), 'wide');
 }
 
