@@ -83,9 +83,9 @@ The HTTP endpoint returns `503` only for `fail`; `warn` still returns `200` so d
 
 ## Runbook
 
-`operations-runbook` turns readiness, deployment checklist items, and recent source insight pipeline failures into operator actions:
+`operations-runbook` turns readiness, deployment checklist items, duplicate idempotency task records, and recent source insight pipeline failures into operator actions:
 
 - `critical`: blocks production traffic or needs immediate investigation.
 - `warning`: deployment can keep serving, but the operator should review the area.
 
-Each action includes an area, title, evidence, and a suggested CLI command such as `source-diagnostics`, `adapter-diagnostics`, `runtime-diagnostics`, or `operations-readiness`.
+Each action includes an area, title, evidence, and a suggested CLI command such as `source-diagnostics`, `adapter-diagnostics`, `runtime-diagnostics`, `operations-readiness`, or `trace-context --idempotency-key`.

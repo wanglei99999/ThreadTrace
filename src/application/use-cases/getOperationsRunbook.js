@@ -15,7 +15,12 @@ function getOperationsRunbook(options) {
   const safeOptions = options || {};
   const checklist = safeOptions.checklist || {};
   const pipelineRuns = safeOptions.pipelineRuns || {};
-  const actions = checklistActions(checklist).concat(pipelineRunActions(pipelineRuns.runs || []));
+  const recentTasks = safeOptions.recentTasks ||
+    (checklist.readiness && checklist.readiness.overview && checklist.readiness.overview.recent && checklist.readiness.overview.recent.tasks) ||
+    [];
+  const actions = checklistActions(checklist)
+    .concat(idempotencyActions(recentTasks))
+    .concat(pipelineRunActions(pipelineRuns.runs || []));
 
   return {
     generatedAt: safeOptions.now || checklist.generatedAt || new Date().toISOString(),
@@ -63,6 +68,69 @@ function pipelineRunActions(runs) {
       }
     });
   });
+}
+
+function idempotencyActions(tasks) {
+  return duplicateIdempotencyGroups(tasks).slice(0, 10).map(function (group) {
+    return action({
+      key: 'idempotency.' + safeActionKey(group.idempotencyKey),
+      severity: 'warning',
+      area: 'tasks',
+      title: 'Inspect duplicate task execution for an idempotency key.',
+      summary: 'Idempotency key ' + group.idempotencyKey + ' has ' + group.tasks.length + ' recent task records; verify caller retry behavior and replay coverage.',
+      recommendedCommand: 'node src/presentation/cli/threadtrace.js trace-context --idempotency-key ' + quoteCommandValue(group.idempotencyKey),
+      evidence: {
+        idempotencyKey: group.idempotencyKey,
+        taskCount: group.tasks.length,
+        reusableTaskId: reusableTaskId(group.tasks),
+        taskIds: group.tasks.map(function (task) { return task.id; }),
+        statuses: group.tasks.map(function (task) { return task.status; })
+      }
+    });
+  });
+}
+
+function duplicateIdempotencyGroups(tasks) {
+  const groups = new Map();
+  (tasks || []).forEach(function (task) {
+    const idempotencyKey = taskTraceValue(task, 'idempotencyKey');
+    if (!idempotencyKey) return;
+    if (!groups.has(idempotencyKey)) groups.set(idempotencyKey, []);
+    groups.get(idempotencyKey).push(task);
+  });
+  return Array.from(groups.entries())
+    .map(function (entry) {
+      return {
+        idempotencyKey: entry[0],
+        tasks: entry[1]
+      };
+    })
+    .filter(function (group) {
+      return group.tasks.length > 1;
+    });
+}
+
+function reusableTaskId(tasks) {
+  const completed = tasks.find(function (task) {
+    return task.status === 'completed';
+  });
+  return completed && completed.id;
+}
+
+function taskTraceValue(task, key) {
+  return task && task.input && task.input._trace
+    ? task.input._trace[key]
+    : undefined;
+}
+
+function safeActionKey(value) {
+  return String(value || 'unknown').replace(/[^a-zA-Z0-9_.-]/g, '_');
+}
+
+function quoteCommandValue(value) {
+  const text = String(value || '');
+  if (/^[a-zA-Z0-9_.:-]+$/.test(text)) return text;
+  return '"' + text.replace(/"/g, '\\"') + '"';
 }
 
 function action(input) {
