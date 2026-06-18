@@ -5,7 +5,7 @@ const test = require('node:test');
 const { getRuntimeDiagnostics } = require('../src/application/use-cases/getRuntimeDiagnostics');
 const { createThreadTraceConfig } = require('../src/runtime/threadTraceConfig');
 
-test('runtime diagnostics redacts sensitive LLM configuration', function () {
+test('runtime diagnostics redacts sensitive LLM configuration', async function () {
   const config = createThreadTraceConfig({
     env: {
       THREADTRACE_LLM_PROVIDER: 'openai-compatible',
@@ -15,7 +15,7 @@ test('runtime diagnostics redacts sensitive LLM configuration', function () {
     cwd: process.cwd()
   });
 
-  const diagnostics = getRuntimeDiagnostics({
+  const diagnostics = await getRuntimeDiagnostics({
     config,
     now: '2026-06-18T10:00:00.000Z'
   });
@@ -30,7 +30,7 @@ test('runtime diagnostics redacts sensitive LLM configuration', function () {
   }).status, 'ok');
 });
 
-test('runtime diagnostics warns when remote LLM provider is incomplete', function () {
+test('runtime diagnostics warns when remote LLM provider is incomplete', async function () {
   const config = createThreadTraceConfig({
     env: {
       THREADTRACE_LLM_PROVIDER: 'openai-compatible'
@@ -38,7 +38,7 @@ test('runtime diagnostics warns when remote LLM provider is incomplete', functio
     cwd: process.cwd()
   });
 
-  const diagnostics = getRuntimeDiagnostics({
+  const diagnostics = await getRuntimeDiagnostics({
     config
   });
 
@@ -49,4 +49,32 @@ test('runtime diagnostics warns when remote LLM provider is incomplete', functio
   assert.equal(diagnostics.checks.find(function (item) {
     return item.key === 'config.llm.model';
   }).status, 'warn');
+});
+
+test('runtime diagnostics includes resource checks', async function () {
+  const config = createThreadTraceConfig({
+    env: {},
+    cwd: process.cwd()
+  });
+  const diagnostics = await getRuntimeDiagnostics({
+    config,
+    inspectResources: async function () {
+      return {
+        storageMode: 'file',
+        checks: [
+          {
+            key: 'resources.storeDir',
+            status: 'ok',
+            value: config.storeDir,
+            summary: 'Store directory is writable.'
+          }
+        ]
+      };
+    }
+  });
+
+  assert.equal(diagnostics.resources.storageMode, 'file');
+  assert.equal(diagnostics.checks.find(function (item) {
+    return item.key === 'resources.storeDir';
+  }).status, 'ok');
 });

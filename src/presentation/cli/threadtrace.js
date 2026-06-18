@@ -269,20 +269,24 @@ function main(argv) {
   }
 
   if (command === 'runtime-diagnostics') {
-    const diagnostics = runtime.getRuntimeDiagnostics({
+    runtime.getRuntimeDiagnostics({
       now: options.now
+    }).then(function (diagnostics) {
+      console.log('Diagnostics: ' + diagnostics.status);
+      console.log('Storage: ' + diagnostics.configuration.storageMode);
+      console.log('Store dir: ' + diagnostics.configuration.storeDir);
+      console.log('LLM provider: ' + diagnostics.configuration.llm.provider);
+      console.log('Source task mode: ' + diagnostics.configuration.workers.sourceTaskMode);
+      diagnostics.checks.forEach(function (check) {
+        console.log(check.status + '\t' + check.key + '\t' + check.summary);
+      });
+      if (diagnostics.status === 'fail') {
+        process.exitCode = 2;
+      }
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
     });
-    console.log('Diagnostics: ' + diagnostics.status);
-    console.log('Storage: ' + diagnostics.configuration.storageMode);
-    console.log('Store dir: ' + diagnostics.configuration.storeDir);
-    console.log('LLM provider: ' + diagnostics.configuration.llm.provider);
-    console.log('Source task mode: ' + diagnostics.configuration.workers.sourceTaskMode);
-    diagnostics.checks.forEach(function (check) {
-      console.log(check.status + '\t' + check.key + '\t' + check.summary);
-    });
-    if (diagnostics.status === 'fail') {
-      process.exitCode = 2;
-    }
     return;
   }
 

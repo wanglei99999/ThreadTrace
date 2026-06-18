@@ -37,6 +37,7 @@ const { createFileWorkerRunRepository } = require('../infrastructure/storage/fil
 const { createFileWorkerLeaseRepository } = require('../infrastructure/storage/fileWorkerLeaseRepository');
 const { createFileNotificationChannel } = require('../infrastructure/notifications/fileNotificationChannel');
 const { createWebhookNotificationChannel } = require('../infrastructure/notifications/webhookNotificationChannel');
+const { inspectFileResources } = require('../infrastructure/diagnostics/fileResourceDiagnostics');
 const { createHttpForumCrawler } = require('../infrastructure/crawlers/httpForumCrawler');
 const { createLlmProvider } = require('../infrastructure/llm/llmProviderFactory');
 const { createFileTextRetrievalIndex } = require('../infrastructure/retrieval/fileTextRetrievalIndex');
@@ -239,7 +240,7 @@ function createThreadTraceRuntime(options) {
       const safeRequest = request || {};
       return getOperationalReadiness({
         getOperationalOverview: this.getOperationalOverview,
-        diagnostics: this.getRuntimeDiagnostics({
+        diagnostics: await this.getRuntimeDiagnostics({
           now: safeRequest.now
         }),
         now: safeRequest.now,
@@ -249,10 +250,11 @@ function createThreadTraceRuntime(options) {
       });
     },
 
-    getRuntimeDiagnostics(request) {
+    async getRuntimeDiagnostics(request) {
       const safeRequest = request || {};
       return getRuntimeDiagnostics({
         config: runtimeConfig,
+        inspectResources: inspectRuntimeResources,
         now: safeRequest.now
       });
     },
@@ -556,6 +558,39 @@ function createFileRepositories(storeDir) {
 
 function resolveStoreDir(defaults, storeDir) {
   return storeDir || defaults.storeDir;
+}
+
+async function inspectRuntimeResources(config) {
+  if (config.storageMode === 'file') {
+    return inspectFileResources({
+      inputDir: config.defaultInputDir,
+      storeDir: config.storeDir
+    });
+  }
+  if (config.storageMode === 'postgres') {
+    return {
+      storageMode: 'postgres',
+      checks: [
+        {
+          key: 'resources.postgres',
+          status: 'warn',
+          value: 'not-pinged',
+          summary: 'PostgreSQL storage is selected. Use database migrations and external health checks before production traffic.'
+        }
+      ]
+    };
+  }
+  return {
+    storageMode: config.storageMode,
+    checks: [
+      {
+        key: 'resources.storageMode',
+        status: 'fail',
+        value: config.storageMode,
+        summary: 'Storage mode has no resource diagnostics implementation.'
+      }
+    ]
+  };
 }
 
 function buildSchedule(request) {

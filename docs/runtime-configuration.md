@@ -73,7 +73,7 @@ Application use cases continue to receive explicit ports and options; they do no
 
 ## Diagnostics
 
-Runtime diagnostics expose a redacted configuration summary and configuration checks:
+Runtime diagnostics expose a redacted configuration summary, configuration checks, and local resource checks:
 
 ```powershell
 node src/presentation/cli/threadtrace.js runtime-diagnostics
@@ -84,3 +84,10 @@ GET /api/runtime/diagnostics
 ```
 
 Diagnostics intentionally expose booleans such as `apiKeyConfigured`; they do not return secret values.
+
+In file storage mode, diagnostics verify:
+
+- default input directory readability
+- store directory writability
+
+In PostgreSQL mode, diagnostics currently report a warning placeholder so deployments remember to run database migrations and external database health checks before production traffic.

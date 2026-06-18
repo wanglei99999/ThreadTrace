@@ -209,7 +209,7 @@ async function routeRequest(request, response, context) {
   }
 
   if (request.method === 'GET' && url.pathname === '/api/runtime/diagnostics') {
-    const diagnostics = context.runtime.getRuntimeDiagnostics({
+    const diagnostics = await context.runtime.getRuntimeDiagnostics({
       now: url.searchParams.get('now') || undefined
     });
     writeJson(response, diagnostics.status === 'fail' ? 503 : 200, diagnostics);

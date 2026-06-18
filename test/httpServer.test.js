@@ -216,8 +216,12 @@ test('http server exposes runtime diagnostics API', async function () {
     assert.equal(diagnostics.generatedAt, '2026-06-18T10:00:00.000Z');
     assert.equal(diagnostics.configuration.llm.provider, 'mock');
     assert.equal(diagnostics.configuration.llm.apiKeyConfigured, false);
+    assert.equal(diagnostics.resources.storageMode, 'file');
     assert.ok(diagnostics.checks.find(function (item) {
       return item.key === 'config.storageMode';
+    }));
+    assert.ok(diagnostics.checks.find(function (item) {
+      return item.key === 'resources.storeDir';
     }));
   } finally {
     await close(server);

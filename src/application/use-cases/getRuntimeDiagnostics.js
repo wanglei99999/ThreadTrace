@@ -1,12 +1,15 @@
 'use strict';
 
-function getRuntimeDiagnostics(options) {
+async function getRuntimeDiagnostics(options) {
   const safeOptions = options || {};
   const config = safeOptions.config || {};
   const llm = config.llm || {};
   const workers = config.workers || {};
   const notifications = config.notifications || {};
-  const checks = buildRuntimeDiagnosticChecks(config);
+  const resources = safeOptions.inspectResources
+    ? await safeOptions.inspectResources(config)
+    : undefined;
+  const checks = buildRuntimeDiagnosticChecks(config).concat(resources && Array.isArray(resources.checks) ? resources.checks : []);
 
   return {
     generatedAt: safeOptions.now || new Date().toISOString(),
@@ -35,6 +38,7 @@ function getRuntimeDiagnostics(options) {
         webhookConfigured: Boolean(notifications.webhookUrl)
       }
     },
+    resources,
     checks
   };
 }
