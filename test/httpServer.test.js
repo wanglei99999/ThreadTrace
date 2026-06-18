@@ -260,6 +260,29 @@ test('http server exposes deployment checklist API', async function () {
   }
 });
 
+test('http server exposes operations runbook API', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-http-operations-runbook-'));
+  const server = createThreadTraceServer({
+    defaultInputDir: path.resolve(__dirname, '..', 'example'),
+    storeDir: tempDir
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const runbook = await getJson(baseUrl + '/api/operations/runbook?now=2026-06-19T10:00:00.000Z');
+    const openApi = await getJson(baseUrl + '/openapi.json');
+
+    assert.equal(runbook.status, 'ok');
+    assert.equal(runbook.generatedAt, '2026-06-19T10:00:00.000Z');
+    assert.equal(runbook.actionCount, 0);
+    assert.ok(openApi.paths['/api/operations/runbook']);
+  } finally {
+    await close(server);
+  }
+});
+
 test('http server handles CORS preflight and validates interpret text input', async function () {
   const server = createThreadTraceServer({
     defaultInputDir: path.resolve(__dirname, '..', 'example')

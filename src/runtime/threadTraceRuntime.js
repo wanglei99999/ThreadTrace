@@ -26,6 +26,7 @@ const { getOperationalOverview } = require('../application/use-cases/getOperatio
 const { getOperationalReadiness } = require('../application/use-cases/getOperationalReadiness');
 const { getRuntimeDiagnostics } = require('../application/use-cases/getRuntimeDiagnostics');
 const { getDeploymentChecklist } = require('../application/use-cases/getDeploymentChecklist');
+const { getOperationsRunbook } = require('../application/use-cases/getOperationsRunbook');
 const { createDefaultSourceIngestHandlerRegistry } = require('../application/source-ingest/standardSourceIngestHandlers');
 const { migrateStoreRecords } = require('../application/use-cases/migrateStoreRecords');
 const { runIngestRawThreadPageTask } = require('../application/use-cases/runIngestRawThreadPageTask');
@@ -317,6 +318,29 @@ function createThreadTraceRuntime(options) {
         adapterDiagnostics,
         sourceDiagnostics,
         readiness,
+        now: safeRequest.now
+      });
+    },
+
+    async getOperationsRunbook(request) {
+      const safeRequest = request || {};
+      const checklist = await this.getDeploymentChecklist({
+        forum: safeRequest.forum,
+        sourceKey: safeRequest.sourceKey,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 100,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir,
+        workerStaleAfterMs: safeRequest.workerStaleAfterMs
+      });
+      const pipelineRuns = await this.listSourceInsightPipelineRuns({
+        sourceId: safeRequest.sourceId,
+        limit: safeRequest.pipelineLimit || 20,
+        storeDir: safeRequest.storeDir
+      });
+      return getOperationsRunbook({
+        checklist,
+        pipelineRuns,
         now: safeRequest.now
       });
     },

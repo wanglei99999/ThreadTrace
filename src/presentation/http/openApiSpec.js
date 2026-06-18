@@ -276,6 +276,29 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/operations/runbook': {
+        get: {
+          summary: 'Get actionable operations runbook items from diagnostics and recent pipeline runs',
+          parameters: [
+            { name: 'forum', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'enabled', in: 'query', required: false, schema: { type: 'boolean' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'pipelineLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Runbook has no critical actions'
+            },
+            503: {
+              description: 'Runbook contains critical actions'
+            }
+          }
+        }
+      },
       '/api/runtime/diagnostics': {
         get: {
           summary: 'Get redacted runtime configuration diagnostics',

@@ -268,6 +268,36 @@ function main(argv) {
     return;
   }
 
+  if (command === 'operations-runbook') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.getOperationsRunbook({
+      forum: options.forum,
+      sourceKey: options.sourceKey,
+      sourceId: options.sourceId,
+      enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
+      limit: options.limit ? Number(options.limit) : 100,
+      pipelineLimit: options.pipelineLimit ? Number(options.pipelineLimit) : 20,
+      now: options.now,
+      storeDir
+    }).then(function (runbook) {
+      console.log('Operations runbook: ' + runbook.status);
+      console.log('Actions: ' + runbook.actionCount);
+      runbook.actions.forEach(function (action) {
+        console.log(action.severity + '\t' + action.area + '\t' + action.key + '\t' + action.title);
+        if (action.recommendedCommand) {
+          console.log('  command: ' + action.recommendedCommand);
+        }
+      });
+      if (runbook.status === 'fail') {
+        process.exitCode = 2;
+      }
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'runtime-diagnostics') {
     runtime.getRuntimeDiagnostics({
       now: options.now
@@ -827,6 +857,9 @@ function parseArgs(args) {
     } else if (item === '--limit') {
       options.limit = args[index + 1];
       index += 1;
+    } else if (item === '--pipeline-limit') {
+      options.pipelineLimit = args[index + 1];
+      index += 1;
     } else if (item === '--source-id') {
       options.sourceId = args[index + 1];
       index += 1;
@@ -972,6 +1005,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js run-semantic-enrichment-task --source-thread-id id [--source-key nga] [--provider mock] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js operations-overview [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-readiness [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js operations-runbook [--forum nga] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js runtime-diagnostics [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js adapter-diagnostics [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js deployment-checklist [--forum nga] [--store-dir dir] [--limit n]');

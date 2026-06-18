@@ -255,6 +255,9 @@ async function loadSystemStatus() {
     const deploymentChecklist = await fetchJson('/api/deployment/checklist?limit=100', {
       acceptErrorStatus: true
     });
+    const operationsRunbook = await fetchJson('/api/operations/runbook?limit=100', {
+      acceptErrorStatus: true
+    });
     const resourceStatusRows = diagnostics.configuration.storageMode === 'postgres'
       ? [statusRow('Postgres', diagnosticStatus(diagnostics, 'resources.postgres'))]
       : [
@@ -265,6 +268,7 @@ async function loadSystemStatus() {
       statusRow('服务', health.ok ? '运行中' : '异常'),
       statusRow('诊断', diagnostics.status),
       statusRow('Deploy', deploymentChecklist.status),
+      statusRow('Runbook', operationsRunbook.status + ' · ' + operationsRunbook.actionCount),
       statusRow('存储', overview.storageMode),
       statusRow('Adapters', adapterDiagnostics.status + ' · ' + adapterDiagnostics.adapterCount),
       statusRow('Source config', sourceDiagnostics.status + ' · ' + sourceDiagnostics.sourceCount),

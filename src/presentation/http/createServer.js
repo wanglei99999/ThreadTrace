@@ -228,6 +228,22 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/operations/runbook') {
+    const enabledParam = url.searchParams.get('enabled');
+    const runbook = await context.runtime.getOperationsRunbook({
+      forum: url.searchParams.get('forum') || undefined,
+      sourceKey: url.searchParams.get('sourceKey') || undefined,
+      sourceId: url.searchParams.get('sourceId') || undefined,
+      enabled: enabledParam === null ? undefined : enabledParam === 'true',
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,
+      pipelineLimit: url.searchParams.get('pipelineLimit') ? Number(url.searchParams.get('pipelineLimit')) : 20,
+      now: url.searchParams.get('now') || undefined,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, runbook.status === 'fail' ? 503 : 200, runbook);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/runtime/diagnostics') {
     const diagnostics = await context.runtime.getRuntimeDiagnostics({
       now: url.searchParams.get('now') || undefined

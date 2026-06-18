@@ -15,6 +15,7 @@ HTTP:
 ```text
 GET /api/operations/overview
 GET /api/operations/readiness
+GET /api/operations/runbook
 GET /api/runtime/diagnostics
 ```
 
@@ -23,6 +24,7 @@ Runtime:
 ```js
 runtime.getOperationalOverview({ limit: 100 })
 runtime.getOperationalReadiness({ limit: 100 })
+runtime.getOperationsRunbook({ limit: 100 })
 ```
 
 Combined worker:
@@ -77,3 +79,12 @@ File storage writes lease JSON under `worker-leases` for local deployments. Post
 - `fail`: stale worker runs indicate a likely stuck background process.
 
 The HTTP endpoint returns `503` only for `fail`; `warn` still returns `200` so dashboards can alert without forcing a service restart loop.
+
+## Runbook
+
+`operations-runbook` turns readiness, deployment checklist items, and recent source insight pipeline failures into operator actions:
+
+- `critical`: blocks production traffic or needs immediate investigation.
+- `warning`: deployment can keep serving, but the operator should review the area.
+
+Each action includes an area, title, evidence, and a suggested CLI command such as `source-diagnostics`, `adapter-diagnostics`, `runtime-diagnostics`, or `operations-readiness`.
