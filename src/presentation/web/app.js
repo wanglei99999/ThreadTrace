@@ -330,6 +330,7 @@ async function loadSystemStatus() {
       statusRow('生成时间', overview.generatedAt)
     ]);
     target.innerHTML = rows.join('');
+    document.getElementById('runbookResult').innerHTML = renderOperationsRunbook(operationsRunbook);
   } catch (error) {
     target.innerHTML = '<div class="error">' + escapeHtml(error.message) + '</div>';
   }
@@ -663,6 +664,17 @@ function renderTaskList(result) {
       return task.status + ' · ' + task.type + ' · ' + (output.title || task.id);
     })), 'wide')
   ].join('');
+}
+
+function renderOperationsRunbook(runbook) {
+  const actions = runbook.actions || [];
+  if (actions.length === 0) {
+    return panel('运维 Runbook', '<div class="muted">暂无动作</div>', 'wide');
+  }
+  return panel('运维 Runbook', actions.slice(0, 10).map(function (action) {
+    const command = action.recommendedCommand ? '<small>' + escapeHtml(action.recommendedCommand) + '</small>' : '';
+    return '<div class="action-row"><span>' + escapeHtml(action.severity + ' · ' + action.area + ' · ' + action.title) + '<small>' + escapeHtml(action.summary) + '</small>' + command + '</span></div>';
+  }).join(''), 'wide');
 }
 
 function renderPipelineRunSummary(run) {
