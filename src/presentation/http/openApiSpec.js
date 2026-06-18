@@ -55,6 +55,16 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/contracts/thread-snapshot-json': {
+        get: {
+          summary: 'Get the canonical ThreadSnapshot JSON contract for normalized-thread-json sources',
+          responses: {
+            200: {
+              description: 'ThreadSnapshot JSON contract and example payload'
+            }
+          }
+        }
+      },
       '/api/connectors/catalog': {
         get: {
           summary: 'List source connector catalog',

@@ -725,6 +725,11 @@ function main(argv) {
     return;
   }
 
+  if (command === 'thread-snapshot-contract') {
+    console.log(JSON.stringify(runtime.getThreadSnapshotJsonContract(), null, 2));
+    return;
+  }
+
   if (command === 'connector-readiness') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.getConnectorReadiness({
@@ -1211,6 +1216,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-diagnostics [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js connector-catalog [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js thread-snapshot-contract');
   console.log('  node src/presentation/cli/threadtrace.js connector-readiness [--forum nga] [--enabled true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js notification-diagnostics [--channel file|webhook] [--webhook-url url] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-source-task --source-id id [--trace-id id] [--source-run-stale-after-ms ms] [--store-dir dir]');

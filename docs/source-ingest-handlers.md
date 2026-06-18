@@ -107,6 +107,16 @@ This keeps future integrations such as other forums, RSS-like sources, webhook s
 
 For early integrations, `normalized-thread-json` is the lowest-friction bridge: external collectors can normalize their data into ThreadTrace's canonical snapshot shape first, then let ThreadTrace handle persistence, analysis, scheduling, trace metadata, and operations visibility.
 
+Fetch the canonical payload contract:
+
+```powershell
+node src/presentation/cli/threadtrace.js thread-snapshot-contract
+```
+
+```http
+GET /api/contracts/thread-snapshot-json
+```
+
 Validate the JSON file before registering the source:
 
 ```powershell
