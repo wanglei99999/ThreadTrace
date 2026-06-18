@@ -455,6 +455,30 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/operations/worker-topology-plan': {
+        get: {
+          summary: 'Plan worker deployment topology for local, single-process, or split-worker operations',
+          parameters: [
+            { name: 'forum', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'enabled', in: 'query', required: false, schema: { type: 'boolean' } },
+            { name: 'topology', in: 'query', required: false, schema: { type: 'string', enum: ['operations-worker', 'split-workers'] } },
+            { name: 'sourceTaskMode', in: 'query', required: false, schema: { type: 'string', enum: ['ingest', 'insight-pipeline'] } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'workerStaleAfterMs', in: 'query', required: false, schema: { type: 'number' } }
+          ],
+          responses: {
+            200: {
+              description: 'Worker topology plan is ok or has warnings'
+            },
+            503: {
+              description: 'Worker topology plan has failing checks'
+            }
+          }
+        }
+      },
       '/api/runtime/diagnostics': {
         get: {
           summary: 'Get redacted runtime configuration diagnostics',

@@ -30,6 +30,15 @@ Process entry points load a local `.env` file from the current working directory
 
 Use `THREADTRACE_SOURCE_TASK_MODE=insight-pipeline` when background workers should run tracked source ingest plus semantic enrichment for due sources.
 
+Before starting workers in a new environment, generate a read-only topology plan:
+
+```powershell
+node src/presentation/cli/threadtrace.js worker-topology-plan --topology operations-worker
+node src/presentation/cli/threadtrace.js worker-topology-plan --topology split-workers --source-task-mode insight-pipeline
+```
+
+The same report is available at `GET /api/operations/worker-topology-plan`. See `docs/worker-topology-plan.md`.
+
 ## LLM
 
 | Variable | Default | Purpose |

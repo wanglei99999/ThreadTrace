@@ -306,6 +306,7 @@ test('http server exposes deployment checklist API', async function () {
 
   try {
     const checklist = await getJson(baseUrl + '/api/deployment/checklist?now=2026-06-19T10:00:00.000Z');
+    const topologyPlan = await getJson(baseUrl + '/api/operations/worker-topology-plan?now=2026-06-19T10:00:00.000Z');
     const openApi = await getJson(baseUrl + '/openapi.json');
 
     assert.equal(checklist.status, 'ok');
@@ -316,7 +317,11 @@ test('http server exposes deployment checklist API', async function () {
     assert.ok(checklist.items.find(function (item) {
       return item.key === 'sources.ingestConfiguration';
     }));
+    assert.equal(topologyPlan.status, 'ok');
+    assert.equal(topologyPlan.topology, 'operations-worker');
+    assert.equal(topologyPlan.workers[0].workerType, 'operations');
     assert.ok(openApi.paths['/api/deployment/checklist']);
+    assert.ok(openApi.paths['/api/operations/worker-topology-plan']);
   } finally {
     await close(server);
   }

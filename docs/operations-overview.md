@@ -37,6 +37,14 @@ npm run worker:operations-loop
 
 The operations worker runs due-source work, notification event dispatch, and overview logging in one non-overlapping loop. By default the source step is ingest-only. Set `--source-task-mode insight-pipeline` or `THREADTRACE_SOURCE_TASK_MODE=insight-pipeline` to run the full source insight pipeline for due sources. Set `THREADTRACE_SOURCE_RUN_STALE_AFTER_MS` or `--source-run-stale-after-ms` to control stuck source-run recovery. This is useful for local deployments or a single background service process. Larger deployments can still run the due-source and event workers separately.
 
+Use the worker topology plan before choosing a deployment shape:
+
+```powershell
+node src/presentation/cli/threadtrace.js worker-topology-plan
+```
+
+It reports the recommended worker commands, lease keys, intervals, current worker health, and deployment checklist status.
+
 ## Included Signals
 
 - Sources: total, enabled, disabled, due, running, failed, and due source samples.

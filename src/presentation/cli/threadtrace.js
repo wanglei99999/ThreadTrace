@@ -30,7 +30,8 @@ function main(argv) {
     defaultInputDir: options.input,
     storeDir: options.storeDir,
     llmProvider: options.provider,
-    sourceTaskMode: options.sourceTaskMode
+    sourceTaskMode: options.sourceTaskMode,
+    workerLeaseTtlMs: options.leaseTtlMs
   });
   const runtime = createThreadTraceRuntime({
     config
@@ -316,6 +317,44 @@ function main(argv) {
         }
       });
       if (runbook.status === 'fail') {
+        process.exitCode = 2;
+      }
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
+  if (command === 'worker-topology-plan') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.getWorkerTopologyPlan({
+      forum: options.forum,
+      sourceKey: options.sourceKey,
+      enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
+      topology: options.topology,
+      sourceTaskMode: options.sourceTaskMode,
+      limit: options.limit ? Number(options.limit) : 100,
+      now: options.now,
+      storeDir,
+      workerStaleAfterMs: options.workerStaleAfterMs ? Number(options.workerStaleAfterMs) : undefined
+    }).then(function (plan) {
+      console.log('Worker topology plan: ' + plan.status);
+      console.log('Topology: ' + plan.topology + '\tstorage=' + plan.storageMode + '\tsourceTaskMode=' + plan.sourceTaskMode);
+      console.log('Workers: ' + plan.workers.length);
+      plan.workers.forEach(function (worker) {
+        console.log(worker.workerType + '\t' + worker.scale + '\tintervalMs=' + worker.intervalMs + '\tlease=' + worker.leaseKey);
+        console.log('  command: ' + worker.command);
+      });
+      console.log('Checks: ' + plan.checks.length);
+      plan.checks.forEach(function (check) {
+        console.log(check.status + '\t' + check.key + '\t' + check.summary);
+      });
+      console.log('Next actions: ' + plan.nextActions.length);
+      plan.nextActions.forEach(function (action) {
+        console.log(action.severity + '\t' + action.key + '\t' + action.command);
+      });
+      if (plan.status === 'fail') {
         process.exitCode = 2;
       }
     }).catch(function (error) {
@@ -1116,6 +1155,15 @@ function parseArgs(args) {
     } else if (item === '--source-task-mode') {
       options.sourceTaskMode = args[index + 1];
       index += 1;
+    } else if (item === '--topology') {
+      options.topology = args[index + 1];
+      index += 1;
+    } else if (item === '--lease-ttl-ms') {
+      options.leaseTtlMs = args[index + 1];
+      index += 1;
+    } else if (item === '--worker-stale-after-ms') {
+      options.workerStaleAfterMs = args[index + 1];
+      index += 1;
     } else if (item === '--source-run-stale-after-ms') {
       options.sourceRunStaleAfterMs = args[index + 1];
       index += 1;
@@ -1340,6 +1388,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js operations-readiness [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js trace-context [--request-id id | --trace-id id | --idempotency-key key] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-runbook [--forum nga] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js worker-topology-plan [--topology operations-worker|split-workers] [--source-task-mode ingest|insight-pipeline] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js runtime-diagnostics [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js adapter-diagnostics [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js deployment-checklist [--forum nga] [--store-dir dir] [--limit n]');

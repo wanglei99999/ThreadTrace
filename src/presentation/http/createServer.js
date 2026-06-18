@@ -343,6 +343,23 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/operations/worker-topology-plan') {
+    const enabledParam = url.searchParams.get('enabled');
+    const plan = await context.runtime.getWorkerTopologyPlan({
+      forum: url.searchParams.get('forum') || undefined,
+      sourceKey: url.searchParams.get('sourceKey') || undefined,
+      enabled: enabledParam === null ? undefined : enabledParam === 'true',
+      topology: url.searchParams.get('topology') || undefined,
+      sourceTaskMode: url.searchParams.get('sourceTaskMode') || undefined,
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,
+      now: url.searchParams.get('now') || undefined,
+      storeDir: url.searchParams.get('storeDir') || undefined,
+      workerStaleAfterMs: url.searchParams.get('workerStaleAfterMs') ? Number(url.searchParams.get('workerStaleAfterMs')) : undefined
+    });
+    writeJson(response, plan.status === 'fail' ? 503 : 200, plan);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/runtime/diagnostics') {
     const diagnostics = await context.runtime.getRuntimeDiagnostics({
       now: url.searchParams.get('now') || undefined

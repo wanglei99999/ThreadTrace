@@ -66,6 +66,7 @@ npm run diagnostics:adapters
 npm run diagnostics:sources
 npm run diagnostics:notifications
 npm run deployment:checklist
+npm run operations:worker-topology-plan
 npm run operations:runbook
 ```
 
@@ -83,6 +84,7 @@ These commands use the same runtime composition as the HTTP API and Web console.
 - `GET /api/operations/overview`
 - `GET /api/operations/readiness`
 - `GET /api/operations/runbook`
+- `GET /api/operations/worker-topology-plan`
 - `POST /api/analyze-directory`
 - `POST /api/interpret-text`
 - `POST /api/tasks/ingest-directory`

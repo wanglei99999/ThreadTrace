@@ -297,6 +297,21 @@ Returns: stable run summaries with task id, source metadata, cursor diff, semant
 
 批量入口会对每个来源应用同一套重复运行保护；单个来源重复运行会记录为该来源失败，不会中断整个父任务。
 
+### `GET /api/operations/worker-topology-plan`
+
+Returns a read-only worker deployment topology plan for choosing between the combined operations worker and split due-source / notification-event workers.
+
+Query parameters:
+
+```text
+topology=operations-worker|split-workers
+sourceTaskMode=ingest|insight-pipeline
+limit=100
+now=2026-06-18T10:00:00.000Z
+```
+
+The response includes recommended worker commands, lease keys, polling intervals, current worker health, deployment checklist status, and next diagnostic commands. A failing plan returns HTTP `503`.
+
 ### `POST /api/index-directory`
 
 将保存页目录解析为楼层文档并写入本地检索索引。

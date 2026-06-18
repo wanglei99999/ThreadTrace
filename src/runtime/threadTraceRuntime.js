@@ -36,6 +36,7 @@ const { getSourceConnectorCatalog } = require('../application/use-cases/getSourc
 const { getConnectorReadiness } = require('../application/use-cases/getConnectorReadiness');
 const { getSourceOnboardingPreflight } = require('../application/use-cases/getSourceOnboardingPreflight');
 const { getConnectorRolloutPlan } = require('../application/use-cases/getConnectorRolloutPlan');
+const { getWorkerTopologyPlan } = require('../application/use-cases/getWorkerTopologyPlan');
 const { createDefaultSourceIngestHandlerRegistry } = require('../application/source-ingest/standardSourceIngestHandlers');
 const { migrateStoreRecords } = require('../application/use-cases/migrateStoreRecords');
 const { runIngestRawThreadPageTask } = require('../application/use-cases/runIngestRawThreadPageTask');
@@ -587,6 +588,39 @@ function createThreadTraceRuntime(options) {
       return getOperationsRunbook({
         checklist,
         pipelineRuns,
+        now: safeRequest.now
+      });
+    },
+
+    async getWorkerTopologyPlan(request) {
+      const safeRequest = request || {};
+      const checklist = safeRequest.includeDeploymentChecklist === false
+        ? undefined
+        : await this.getDeploymentChecklist({
+          forum: safeRequest.forum,
+          sourceKey: safeRequest.sourceKey,
+          enabled: safeRequest.enabled,
+          limit: safeRequest.limit || 100,
+          now: safeRequest.now,
+          storeDir: safeRequest.storeDir,
+          workerStaleAfterMs: safeRequest.workerStaleAfterMs
+        });
+      const overview = safeRequest.includeOperationalOverview === false
+        ? undefined
+        : await this.getOperationalOverview({
+          limit: safeRequest.limit || 100,
+          now: safeRequest.now,
+          storeDir: safeRequest.storeDir,
+          workerStaleAfterMs: safeRequest.workerStaleAfterMs
+        });
+
+      return getWorkerTopologyPlan({
+        config: runtimeConfig,
+        storageMode: safeRequest.storageMode || runtimeConfig.storageMode,
+        sourceTaskMode: safeRequest.sourceTaskMode || runtimeConfig.workers.sourceTaskMode,
+        topology: safeRequest.topology || safeRequest.deploymentTopology,
+        deploymentChecklist: checklist,
+        operationalOverview: overview,
         now: safeRequest.now
       });
     },
