@@ -175,6 +175,55 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/raw-pages': {
+        get: {
+          summary: 'List stored raw forum pages',
+          parameters: [
+            { name: 'forum', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceThreadId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'url', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Raw page evidence records'
+            }
+          }
+        }
+      },
+      '/api/crawl-page': {
+        post: {
+          summary: 'Fetch and store a raw forum page',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    forum: { type: 'string', example: 'nga' },
+                    sourceId: { type: 'string' },
+                    sourceThreadId: { type: 'string', example: '45974302' },
+                    url: { type: 'string', example: 'https://bbs.nga.cn/read.php?tid=45974302' },
+                    page: { type: 'number', example: 1 },
+                    headers: { type: 'object' },
+                    storeDir: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Stored raw page evidence'
+            },
+            400: {
+              description: 'Invalid request'
+            }
+          }
+        }
+      },
       '/api/events/{eventId}/ack': {
         post: {
           summary: 'Acknowledge a notification event',

@@ -146,6 +146,43 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/raw-pages') {
+    const pages = await context.runtime.listRawThreadPages({
+      forum: url.searchParams.get('forum') || undefined,
+      sourceThreadId: url.searchParams.get('sourceThreadId') || undefined,
+      url: url.searchParams.get('url') || undefined,
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 50,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, 200, {
+      pages
+    });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/crawl-page') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    if (!body.url && !body.sourceId) {
+      writeJson(response, 400, {
+        error: {
+          message: 'POST /api/crawl-page requires url or sourceId.'
+        }
+      });
+      return;
+    }
+    const result = await context.runtime.fetchThreadPage({
+      sourceId: body.sourceId,
+      forum: body.forum,
+      sourceThreadId: body.sourceThreadId,
+      url: body.url,
+      page: body.page,
+      headers: body.headers,
+      storeDir: body.storeDir || context.storeDir
+    });
+    writeJson(response, 200, result);
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/events/dispatch') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     const result = await context.runtime.dispatchNotificationEvents({

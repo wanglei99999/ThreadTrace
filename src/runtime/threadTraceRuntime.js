@@ -13,6 +13,7 @@ const { runEnabledSourcesIngestTasks } = require('../application/use-cases/runEn
 const { runDueSourcesIngestTasks } = require('../application/use-cases/runDueSourcesIngestTasks');
 const { acknowledgeNotificationEvent } = require('../application/use-cases/acknowledgeNotificationEvent');
 const { dispatchPendingNotificationEvents } = require('../application/use-cases/dispatchPendingNotificationEvents');
+const { fetchAndStoreThreadPage } = require('../application/use-cases/fetchAndStoreThreadPage');
 const { indexSavedThreadDirectory } = require('../application/use-cases/indexSavedThreadDirectory');
 const { searchEvidence } = require('../application/use-cases/searchEvidence');
 const { createFileThreadRepository } = require('../infrastructure/storage/fileThreadRepository');
@@ -20,8 +21,10 @@ const { createFileAnalysisReportRepository } = require('../infrastructure/storag
 const { createFileTaskRepository } = require('../infrastructure/storage/fileTaskRepository');
 const { createFileSourceRepository } = require('../infrastructure/storage/fileSourceRepository');
 const { createFileNotificationEventRepository } = require('../infrastructure/storage/fileNotificationEventRepository');
+const { createFileRawThreadPageRepository } = require('../infrastructure/storage/fileRawThreadPageRepository');
 const { createFileNotificationChannel } = require('../infrastructure/notifications/fileNotificationChannel');
 const { createWebhookNotificationChannel } = require('../infrastructure/notifications/webhookNotificationChannel');
+const { createHttpForumCrawler } = require('../infrastructure/crawlers/httpForumCrawler');
 const { createFileTextRetrievalIndex } = require('../infrastructure/retrieval/fileTextRetrievalIndex');
 const { createPostgresPool } = require('../infrastructure/postgres/postgresConnection');
 const { createPostgresRepositories } = require('../infrastructure/postgres/postgresRepositories');
@@ -232,6 +235,39 @@ function createThreadTraceRuntime(options) {
       });
     },
 
+    async fetchThreadPage(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      const source = safeRequest.sourceId
+        ? await repositories.sourceRepository.findSource(safeRequest.sourceId)
+        : undefined;
+      if (safeRequest.sourceId && !source) {
+        throw new Error('Unknown tracked source: ' + safeRequest.sourceId);
+      }
+      return fetchAndStoreThreadPage({
+        crawler: safeOptions.crawler || createHttpForumCrawler(safeOptions.crawlerOptions),
+        rawThreadPageRepository: repositories.rawThreadPageRepository,
+        source,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        sourceThreadId: safeRequest.sourceThreadId,
+        url: safeRequest.url,
+        page: safeRequest.page,
+        session: safeRequest.session,
+        headers: safeRequest.headers
+      });
+    },
+
+    async listRawThreadPages(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return repositories.rawThreadPageRepository.listRawThreadPages({
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        sourceThreadId: safeRequest.sourceThreadId,
+        sourceUrl: safeRequest.sourceUrl || safeRequest.url,
+        limit: safeRequest.limit || 50
+      });
+    },
+
     async listNotificationEvents(request) {
       const safeRequest = request || {};
       const repositories = createRepositoriesFor(safeRequest.storeDir);
@@ -289,6 +325,9 @@ function createFileRepositories(storeDir) {
     }),
     notificationEventRepository: createFileNotificationEventRepository({
       baseDir: path.join(storeDir, 'events')
+    }),
+    rawThreadPageRepository: createFileRawThreadPageRepository({
+      baseDir: path.join(storeDir, 'raw-pages')
     })
   };
 }

@@ -2,6 +2,7 @@
 
 const { createPostgresAnalysisReportRepository } = require('./postgresAnalysisReportRepository');
 const { createPostgresNotificationEventRepository } = require('./postgresNotificationEventRepository');
+const { createPostgresRawThreadPageRepository } = require('./postgresRawThreadPageRepository');
 const { createPostgresSourceRepository } = require('./postgresSourceRepository');
 const { createPostgresTaskRepository } = require('./postgresTaskRepository');
 const { createPostgresThreadRepository } = require('./postgresThreadRepository');
@@ -14,7 +15,8 @@ function createPostgresRepositories(options) {
     reportRepository: createPostgresAnalysisReportRepository({ client }),
     taskRepository: createPostgresTaskRepository({ client }),
     sourceRepository: createPostgresSourceRepository({ client }),
-    notificationEventRepository: createPostgresNotificationEventRepository({ client })
+    notificationEventRepository: createPostgresNotificationEventRepository({ client }),
+    rawThreadPageRepository: createPostgresRawThreadPageRepository({ client })
   };
 }
 

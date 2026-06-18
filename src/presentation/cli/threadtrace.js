@@ -166,6 +166,49 @@ function main(argv) {
     return;
   }
 
+  if (command === 'fetch-thread-page') {
+    if (!options.url && !options.sourceId) {
+      throw new Error('fetch-thread-page requires --url or --source-id.');
+    }
+    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    runtime.fetchThreadPage({
+      sourceId: options.sourceId,
+      forum: options.forum,
+      sourceThreadId: options.sourceThreadId,
+      url: options.url,
+      page: options.page ? Number(options.page) : undefined,
+      storeDir
+    }).then(function (result) {
+      console.log('Fetched raw page: ' + result.rawPage.contentSha1);
+      console.log('Source: ' + result.rawPage.sourceKey);
+      console.log('URL: ' + result.rawPage.sourceUrl);
+      console.log('Duplicate: ' + result.duplicate);
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
+  if (command === 'list-raw-pages') {
+    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    runtime.listRawThreadPages({
+      forum: options.forum,
+      sourceThreadId: options.sourceThreadId,
+      url: options.url,
+      limit: options.limit ? Number(options.limit) : 50,
+      storeDir
+    }).then(function (pages) {
+      pages.forEach(function (page) {
+        console.log(page.fetchedAt + '\t' + page.sourceKey + '\t' + page.contentSha1 + '\t' + page.sourceUrl);
+      });
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'dispatch-events') {
     const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
     runtime.dispatchNotificationEvents({
@@ -428,6 +471,12 @@ function parseArgs(args) {
     } else if (item === '--source-id') {
       options.sourceId = args[index + 1];
       index += 1;
+    } else if (item === '--source-thread-id') {
+      options.sourceThreadId = args[index + 1];
+      index += 1;
+    } else if (item === '--page') {
+      options.page = args[index + 1];
+      index += 1;
     } else if (item === '--source-type') {
       options.sourceType = args[index + 1];
       index += 1;
@@ -552,6 +601,8 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js run-ingest-task [--forum nga] [--input dir] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-tasks [--store-dir dir] [--status status] [--type type] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js list-events [--source-id id] [--type type] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js fetch-thread-page [--forum nga] [--url url | --source-id id] [--source-thread-id id] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js list-raw-pages [--forum nga] [--source-thread-id id] [--limit n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js dispatch-events [--channel file|webhook] [--webhook-url url] [--limit n] [--max-attempts n] [--retry-backoff-ms ms] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js ack-event --event-id id [--by user] [--note text] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--input dir] [--name name] [--interval-minutes n] [--store-dir dir]');
