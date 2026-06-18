@@ -32,6 +32,10 @@ test('runtime registers tracked sources and runs ingest from a source', async fu
   });
   const sourcesAfterRepeatedTask = await runtime.listSources({});
   const events = await runtime.listNotificationEvents({});
+  const dispatchResult = await runtime.dispatchNotificationEvents({});
+  const deliveredEvents = await runtime.listNotificationEvents({
+    deliveryStatus: 'delivered'
+  });
   const ackResult = await runtime.acknowledgeNotificationEvent({
     eventId: events[0].id,
     acknowledgedBy: 'test'
@@ -70,6 +74,10 @@ test('runtime registers tracked sources and runs ingest from a source', async fu
   assert.equal(events[0].type, 'source-changed');
   assert.equal(events[0].payload.cursor.postCount, 20);
   assert.equal(events[0].payload.cursorDiff.newPostCount, 20);
+  assert.equal(dispatchResult.dispatchedCount, 1);
+  assert.equal(dispatchResult.failedCount, 0);
+  assert.equal(deliveredEvents.length, 1);
+  assert.equal(deliveredEvents[0].deliveryStatus, 'delivered');
   assert.equal(ackResult.event.acknowledgedBy, 'test');
   assert.ok(ackResult.event.acknowledgedAt);
   assert.equal(openEvents.length, 0);

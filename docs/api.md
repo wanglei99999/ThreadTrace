@@ -96,7 +96,24 @@ http://127.0.0.1:3017
 - `type`: 可选，如 `source-changed`。
 - `sourceId`: 可选，按来源过滤。
 - `acknowledged`: 可选，`true` 或 `false`。
+- `deliveryStatus`: 可选，如 `pending`、`delivered`、`failed`。
 - `limit`: 可选，默认 50。
+
+### `POST /api/events/dispatch`
+
+投递待处理通知事件。当前默认通道是本地文件投递，会把事件写入 `data/store/deliveries`；后续可替换为 Webhook、邮件、企业微信或消息队列。
+
+请求：
+
+```json
+{
+  "limit": 50,
+  "maxAttempts": 3,
+  "includeFailed": true
+}
+```
+
+返回：投递通道、成功数量、失败数量和跳过数量。成功投递后事件的 `deliveryStatus` 会变为 `delivered`。
 
 ### `POST /api/events/{eventId}/ack`
 

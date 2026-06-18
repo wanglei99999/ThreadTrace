@@ -24,6 +24,10 @@ function createSourceChangedEvent(input) {
       cursor,
       cursorDiff
     },
+    deliveryStatus: safeInput.deliveryStatus || 'pending',
+    deliveryAttempts: safeInput.deliveryAttempts || 0,
+    lastDeliveryError: safeInput.lastDeliveryError,
+    lastDeliveredAt: safeInput.lastDeliveredAt,
     acknowledgedAt: safeInput.acknowledgedAt
   };
 }
@@ -35,6 +39,29 @@ function acknowledgeNotificationEvent(event, input) {
     acknowledgedAt: event.acknowledgedAt || now,
     acknowledgedBy: event.acknowledgedBy || safeInput.acknowledgedBy || 'system',
     acknowledgementNote: event.acknowledgementNote || safeInput.note
+  });
+}
+
+function markNotificationEventDelivered(event, deliveryResult, timestamp) {
+  const now = timestamp || new Date().toISOString();
+  return Object.assign({}, event, {
+    deliveryStatus: 'delivered',
+    deliveryAttempts: (event.deliveryAttempts || 0) + 1,
+    lastDeliveredAt: now,
+    lastDeliveryError: undefined,
+    deliveryResult: deliveryResult || {}
+  });
+}
+
+function markNotificationEventDeliveryFailed(event, error, timestamp) {
+  const now = timestamp || new Date().toISOString();
+  return Object.assign({}, event, {
+    deliveryStatus: 'failed',
+    deliveryAttempts: (event.deliveryAttempts || 0) + 1,
+    lastDeliveryAttemptAt: now,
+    lastDeliveryError: {
+      message: error && error.message ? error.message : String(error)
+    }
   });
 }
 
@@ -51,5 +78,7 @@ function buildSummary(source, cursorDiff, cursor) {
 
 module.exports = {
   createSourceChangedEvent,
-  acknowledgeNotificationEvent
+  acknowledgeNotificationEvent,
+  markNotificationEventDelivered,
+  markNotificationEventDeliveryFailed
 };

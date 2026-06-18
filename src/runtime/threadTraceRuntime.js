@@ -12,6 +12,7 @@ const { runTrackedSourceIngestTask } = require('../application/use-cases/runTrac
 const { runEnabledSourcesIngestTasks } = require('../application/use-cases/runEnabledSourcesIngestTasks');
 const { runDueSourcesIngestTasks } = require('../application/use-cases/runDueSourcesIngestTasks');
 const { acknowledgeNotificationEvent } = require('../application/use-cases/acknowledgeNotificationEvent');
+const { dispatchPendingNotificationEvents } = require('../application/use-cases/dispatchPendingNotificationEvents');
 const { indexSavedThreadDirectory } = require('../application/use-cases/indexSavedThreadDirectory');
 const { searchEvidence } = require('../application/use-cases/searchEvidence');
 const { createFileThreadRepository } = require('../infrastructure/storage/fileThreadRepository');
@@ -19,6 +20,7 @@ const { createFileAnalysisReportRepository } = require('../infrastructure/storag
 const { createFileTaskRepository } = require('../infrastructure/storage/fileTaskRepository');
 const { createFileSourceRepository } = require('../infrastructure/storage/fileSourceRepository');
 const { createFileNotificationEventRepository } = require('../infrastructure/storage/fileNotificationEventRepository');
+const { createFileNotificationChannel } = require('../infrastructure/notifications/fileNotificationChannel');
 const { createFileTextRetrievalIndex } = require('../infrastructure/retrieval/fileTextRetrievalIndex');
 
 function createThreadTraceRuntime(options) {
@@ -215,6 +217,7 @@ function createThreadTraceRuntime(options) {
         type: safeRequest.type,
         sourceId: safeRequest.sourceId,
         acknowledged: safeRequest.acknowledged,
+        deliveryStatus: safeRequest.deliveryStatus,
         limit: safeRequest.limit || 50
       });
     },
@@ -227,6 +230,21 @@ function createThreadTraceRuntime(options) {
         eventId: safeRequest.eventId,
         acknowledgedBy: safeRequest.acknowledgedBy,
         note: safeRequest.note
+      });
+    },
+
+    async dispatchNotificationEvents(request) {
+      const safeRequest = request || {};
+      const storeDir = resolveStoreDir(defaults, safeRequest.storeDir);
+      const repositories = createRepositories(storeDir);
+      return dispatchPendingNotificationEvents({
+        notificationEventRepository: repositories.notificationEventRepository,
+        notificationChannel: createFileNotificationChannel({
+          baseDir: path.join(storeDir, 'deliveries')
+        }),
+        limit: safeRequest.limit || 50,
+        maxAttempts: safeRequest.maxAttempts || 3,
+        includeFailed: safeRequest.includeFailed
       });
     }
   };

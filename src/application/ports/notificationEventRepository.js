@@ -7,7 +7,7 @@
  * @typedef {Object} NotificationEventRepository
  * @property {(event: Object) => Promise<void>} saveEvent
  * @property {(id: string) => Promise<Object|undefined>} findEvent
- * @property {(query?: { type?: string, sourceId?: string, acknowledged?: boolean, limit?: number }) => Promise<Object[]>} listEvents
+ * @property {(query?: { type?: string, sourceId?: string, acknowledged?: boolean, deliveryStatus?: string, limit?: number }) => Promise<Object[]>} listEvents
  */
 
 function assertNotificationEventRepository(repository) {

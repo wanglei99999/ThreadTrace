@@ -132,12 +132,39 @@ function createOpenApiSpec() {
             { name: 'type', in: 'query', required: false, schema: { type: 'string', example: 'source-changed' } },
             { name: 'sourceId', in: 'query', required: false, schema: { type: 'string' } },
             { name: 'acknowledged', in: 'query', required: false, schema: { type: 'boolean' } },
+            { name: 'deliveryStatus', in: 'query', required: false, schema: { type: 'string', example: 'pending' } },
             { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
             { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
           ],
           responses: {
             200: {
               description: 'Notification events'
+            }
+          }
+        }
+      },
+      '/api/events/dispatch': {
+        post: {
+          summary: 'Dispatch pending notification events',
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    limit: { type: 'number', example: 50 },
+                    maxAttempts: { type: 'number', example: 3 },
+                    includeFailed: { type: 'boolean' },
+                    storeDir: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Dispatch summary'
             }
           }
         }

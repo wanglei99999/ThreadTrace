@@ -136,12 +136,25 @@ async function routeRequest(request, response, context) {
       type: url.searchParams.get('type') || undefined,
       sourceId: url.searchParams.get('sourceId') || undefined,
       acknowledged: acknowledgedParam === null ? undefined : acknowledgedParam === 'true',
+      deliveryStatus: url.searchParams.get('deliveryStatus') || undefined,
       limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 50,
       storeDir: url.searchParams.get('storeDir') || undefined
     });
     writeJson(response, 200, {
       events
     });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/events/dispatch') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.dispatchNotificationEvents({
+      limit: body.limit,
+      maxAttempts: body.maxAttempts,
+      includeFailed: body.includeFailed,
+      storeDir: body.storeDir || context.storeDir
+    });
+    writeJson(response, 200, result);
     return;
   }
 

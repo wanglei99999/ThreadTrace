@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshTasksButton').addEventListener('click', loadTasks);
   document.getElementById('refreshSourcesButton').addEventListener('click', loadSources);
   document.getElementById('refreshEventsButton').addEventListener('click', loadEvents);
+  document.getElementById('dispatchEventsButton').addEventListener('click', dispatchEvents);
   document.getElementById('runSourcesButton').addEventListener('click', runAllSources);
   document.getElementById('runDueSourcesButton').addEventListener('click', runDueSources);
   loadAdapters();
@@ -245,6 +246,14 @@ async function runDueSources() {
   await loadEvents();
 }
 
+async function dispatchEvents() {
+  await renderAsync('eventResult', function () {
+    return requestJson('/api/events/dispatch', {});
+  }, renderEventDispatchResult);
+  await loadSystemStatus();
+  await loadEvents();
+}
+
 async function renderAsync(targetId, task, renderer) {
   const target = document.getElementById(targetId);
   target.innerHTML = '<div class="empty">分析中...</div>';
@@ -377,8 +386,18 @@ function renderEventList(result) {
   return panel('通知事件', events.map(function (event) {
     const ackLabel = event.acknowledgedAt ? '已确认' : '确认';
     const disabled = event.acknowledgedAt ? ' disabled' : '';
-    return '<div class="action-row"><span>' + escapeHtml(event.createdAt + ' · ' + event.type + ' · ' + event.summary) + '</span><button class="inline-button" type="button" data-action="ack-event" data-event-id="' + escapeHtml(event.id) + '"' + disabled + '>' + ackLabel + '</button></div>';
+    const delivery = event.deliveryStatus || 'pending';
+    return '<div class="action-row"><span>' + escapeHtml(event.createdAt + ' · ' + event.type + ' · ' + delivery + ' · ' + event.summary) + '</span><button class="inline-button" type="button" data-action="ack-event" data-event-id="' + escapeHtml(event.id) + '"' + disabled + '>' + ackLabel + '</button></div>';
   }).join(''), 'wide');
+}
+
+function renderEventDispatchResult(result) {
+  return panel('事件投递完成', [
+    metric('通道', result.channelKey),
+    metric('已投递', result.dispatchedCount),
+    metric('失败', result.failedCount),
+    metric('跳过', result.skippedCount)
+  ].join(''), 'wide');
 }
 
 function renderEventAckResult(result) {

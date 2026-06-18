@@ -37,6 +37,7 @@ function createFileNotificationEventRepository(options) {
           const acknowledged = Boolean(event.acknowledgedAt);
           if (acknowledged !== safeQuery.acknowledged) continue;
         }
+        if (safeQuery.deliveryStatus && (event.deliveryStatus || 'pending') !== safeQuery.deliveryStatus) continue;
         events.push(event);
       }
 
