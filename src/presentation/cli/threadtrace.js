@@ -164,6 +164,52 @@ function main(argv) {
     return;
   }
 
+  if (command === 'list-reports') {
+    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    runtime.listAnalysisReports({
+      storeDir,
+      sourceKey: options.sourceKey || options.forum,
+      sourceThreadId: options.sourceThreadId,
+      reportType: options.reportType,
+      limit: options.limit ? Number(options.limit) : 20
+    }).then(function (reports) {
+      reports.forEach(function (report) {
+        const thread = report.thread || {};
+        console.log((report.generatedAt || '') + '\t' + (report.reportType || '') + '\t' + (thread.sourceKey || '') + '\t' + (thread.sourceThreadId || '') + '\t' + (thread.title || ''));
+      });
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
+  if (command === 'run-semantic-enrichment-task') {
+    if (!options.sourceThreadId) {
+      console.error('run-semantic-enrichment-task requires --source-thread-id.');
+      process.exitCode = 1;
+      return;
+    }
+    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    runtime.runSemanticEnrichmentTask({
+      storeDir,
+      sourceKey: options.sourceKey || options.forum,
+      sourceThreadId: options.sourceThreadId,
+      baseReportType: options.baseReportType,
+      provider: options.provider || 'mock',
+      traceId: options.traceId
+    }).then(function (result) {
+      console.log('Task completed: ' + result.task.id);
+      console.log('Report type: ' + result.report.reportType);
+      console.log('Semantic provider: ' + result.report.semanticInsights.provider);
+      console.log('Semantic summary: ' + result.report.semanticInsights.summary);
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'operations-overview') {
     const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
     runtime.getOperationalOverview({
@@ -553,6 +599,18 @@ function parseArgs(args) {
     } else if (item === '--provider') {
       options.provider = args[index + 1];
       index += 1;
+    } else if (item === '--source-key') {
+      options.sourceKey = args[index + 1];
+      index += 1;
+    } else if (item === '--report-type') {
+      options.reportType = args[index + 1];
+      index += 1;
+    } else if (item === '--base-report-type') {
+      options.baseReportType = args[index + 1];
+      index += 1;
+    } else if (item === '--trace-id') {
+      options.traceId = args[index + 1];
+      index += 1;
     } else if (item === '--store-dir') {
       options.storeDir = args[index + 1];
       index += 1;
@@ -719,6 +777,8 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js ingest-html-dir [--forum nga] [--input dir] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-ingest-task [--forum nga] [--input dir] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-tasks [--store-dir dir] [--status status] [--type type] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js list-reports [--source-key key] [--source-thread-id id] [--report-type type] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js run-semantic-enrichment-task --source-thread-id id [--source-key nga] [--provider mock] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js operations-overview [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-readiness [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js migrate-store --from-store-dir dir [--to-store-dir dir] [--dry-run true|false] [--limit n]');

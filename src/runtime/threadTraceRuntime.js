@@ -15,6 +15,7 @@ const { acknowledgeNotificationEvent } = require('../application/use-cases/ackno
 const { dispatchPendingNotificationEvents } = require('../application/use-cases/dispatchPendingNotificationEvents');
 const { fetchAndStoreThreadPage } = require('../application/use-cases/fetchAndStoreThreadPage');
 const { enrichAnalysisReportWithLlm } = require('../application/use-cases/enrichAnalysisReportWithLlm');
+const { runSemanticEnrichmentTask } = require('../application/use-cases/runSemanticEnrichmentTask');
 const { getOperationalOverview } = require('../application/use-cases/getOperationalOverview');
 const { getOperationalReadiness } = require('../application/use-cases/getOperationalReadiness');
 const { createDefaultSourceIngestHandlerRegistry } = require('../application/source-ingest/standardSourceIngestHandlers');
@@ -71,6 +72,14 @@ function createThreadTraceRuntime(options) {
     }
     return postgresClient;
   };
+  const createLlmProviderFor = function (request) {
+    return safeOptions.llmProvider || createLlmProvider({
+      provider: request && request.provider,
+      env: safeOptions.env,
+      fetch: safeOptions.fetch,
+      openAiCompatible: safeOptions.openAiCompatibleLlm
+    });
+  };
 
   return {
     defaults,
@@ -111,12 +120,7 @@ function createThreadTraceRuntime(options) {
       });
       const enrichedReport = await enrichAnalysisReportWithLlm({
         report: result.report,
-        llmProvider: safeOptions.llmProvider || createLlmProvider({
-          provider: safeRequest.provider,
-          env: safeOptions.env,
-          fetch: safeOptions.fetch,
-          openAiCompatible: safeOptions.openAiCompatibleLlm
-        }),
+        llmProvider: createLlmProviderFor(safeRequest),
         providerKey: safeRequest.provider || 'mock',
         traceId: safeRequest.traceId
       });
@@ -170,6 +174,32 @@ function createThreadTraceRuntime(options) {
         status: safeRequest.status,
         type: safeRequest.type,
         limit: safeRequest.limit || 20
+      });
+    },
+
+    async listAnalysisReports(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return repositories.reportRepository.listReports({
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        sourceThreadId: safeRequest.sourceThreadId,
+        reportType: safeRequest.reportType,
+        limit: safeRequest.limit || 50
+      });
+    },
+
+    async runSemanticEnrichmentTask(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return runSemanticEnrichmentTask({
+        sourceKey: safeRequest.sourceKey || safeRequest.forum || defaults.defaultForum,
+        sourceThreadId: safeRequest.sourceThreadId,
+        baseReportType: safeRequest.baseReportType,
+        providerKey: safeRequest.provider || 'mock',
+        traceId: safeRequest.traceId,
+        reportRepository: repositories.reportRepository,
+        taskRepository: repositories.taskRepository,
+        llmProvider: createLlmProviderFor(safeRequest)
       });
     },
 

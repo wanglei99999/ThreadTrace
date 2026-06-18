@@ -161,6 +161,55 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/reports': {
+        get: {
+          summary: 'List analysis reports',
+          parameters: [
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceThreadId', in: 'query', required: false, schema: { type: 'string', example: '45974302' } },
+            { name: 'reportType', in: 'query', required: false, schema: { type: 'string', example: 'semantic-enrichment' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Analysis reports'
+            }
+          }
+        }
+      },
+      '/api/reports/tasks/semantic-enrichment': {
+        post: {
+          summary: 'Run and persist semantic enrichment for a stored base report',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['sourceThreadId'],
+                  properties: {
+                    sourceKey: { type: 'string', example: 'nga' },
+                    sourceThreadId: { type: 'string', example: '45974302' },
+                    baseReportType: { type: 'string', example: 'basic-history' },
+                    provider: { type: 'string', example: 'mock' },
+                    traceId: { type: 'string' },
+                    storeDir: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Completed semantic enrichment task'
+            },
+            400: {
+              description: 'Invalid request'
+            }
+          }
+        }
+      },
       '/api/operations/overview': {
         get: {
           summary: 'Get operational overview across sources, tasks, events, and raw pages',

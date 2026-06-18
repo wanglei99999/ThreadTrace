@@ -14,19 +14,27 @@ CLI:
 
 ```powershell
 node src/presentation/cli/threadtrace.js enrich-html-dir --forum nga --input example --provider mock
+node src/presentation/cli/threadtrace.js run-semantic-enrichment-task --source-key nga --source-thread-id 45974302 --provider mock
+node src/presentation/cli/threadtrace.js list-reports --source-key nga --source-thread-id 45974302 --report-type semantic-enrichment
 ```
 
 HTTP:
 
 ```text
 POST /api/enrich-directory
+POST /api/reports/tasks/semantic-enrichment
+GET /api/reports?sourceKey=nga&sourceThreadId=45974302&reportType=semantic-enrichment
 ```
 
 Runtime:
 
 ```js
 runtime.enrichDirectory({ forum: 'nga', inputDir: 'example', provider: 'mock' })
+runtime.runSemanticEnrichmentTask({ sourceKey: 'nga', sourceThreadId: '45974302', provider: 'mock' })
+runtime.listAnalysisReports({ sourceKey: 'nga', sourceThreadId: '45974302', reportType: 'semantic-enrichment' })
 ```
+
+`enrichDirectory` is useful for immediate previews. `runSemanticEnrichmentTask` reads a stored `basic-history` report, writes a `semantic-enrichment` report, and records a durable `semantic-enrichment` task.
 
 ## Output Shape
 

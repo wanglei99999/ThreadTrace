@@ -1,6 +1,8 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 const { analyzeSavedThreadDirectory } = require('../src/application/use-cases/analyzeSavedThreadDirectory');
@@ -48,6 +50,39 @@ test('runtime exposes semantic directory enrichment', async function () {
   assert.equal(result.report.semanticInsights.provider, 'mock');
   assert.equal(result.report.semanticInsights.traceId, 'runtime-trace');
   assert.ok(result.report.semanticInsights.usage.inputTokens > 0);
+});
+
+test('runtime persists semantic enrichment as a task report', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-semantic-task-'));
+  const runtime = createThreadTraceRuntime({
+    defaultInputDir: path.resolve(__dirname, '..', 'example'),
+    storeDir: tempDir,
+    llmProvider: createMockLlmProvider()
+  });
+  await runtime.runIngestDirectoryTask({});
+
+  const result = await runtime.runSemanticEnrichmentTask({
+    sourceKey: 'nga',
+    sourceThreadId: '45974302',
+    traceId: 'semantic-task-test'
+  });
+  const reports = await runtime.listAnalysisReports({
+    sourceKey: 'nga',
+    sourceThreadId: '45974302',
+    reportType: 'semantic-enrichment'
+  });
+  const tasks = await runtime.listTasks({
+    type: 'semantic-enrichment'
+  });
+
+  assert.equal(result.task.status, 'completed');
+  assert.equal(result.report.reportType, 'semantic-enrichment');
+  assert.equal(result.report.baseReportType, 'basic-history');
+  assert.equal(result.report.semanticInsights.traceId, 'semantic-task-test');
+  assert.equal(reports.length, 1);
+  assert.equal(reports[0].semanticInsights.provider, 'mock');
+  assert.equal(tasks.length, 1);
+  assert.equal(tasks[0].output.reportType, 'semantic-enrichment');
 });
 
 test('openai-compatible LLM provider posts structured requests and parses JSON output', async function () {

@@ -149,6 +149,45 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/reports') {
+    const reports = await context.runtime.listAnalysisReports({
+      sourceKey: url.searchParams.get('sourceKey') || url.searchParams.get('forum') || undefined,
+      sourceThreadId: url.searchParams.get('sourceThreadId') || undefined,
+      reportType: url.searchParams.get('reportType') || undefined,
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 50,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, 200, {
+      reports
+    });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/reports/tasks/semantic-enrichment') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    if (!body.sourceThreadId) {
+      writeJson(response, 400, {
+        error: {
+          message: 'POST /api/reports/tasks/semantic-enrichment requires sourceThreadId.'
+        }
+      });
+      return;
+    }
+    const result = await context.runtime.runSemanticEnrichmentTask({
+      sourceKey: body.sourceKey || body.forum,
+      sourceThreadId: body.sourceThreadId,
+      baseReportType: body.baseReportType,
+      provider: body.provider || 'mock',
+      traceId: body.traceId,
+      storeDir: body.storeDir || context.storeDir
+    });
+    writeJson(response, 200, {
+      task: result.task,
+      report: result.report
+    });
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/operations/overview') {
     const overview = await context.runtime.getOperationalOverview({
       limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,

@@ -65,6 +65,66 @@ test('http server exposes semantic enrichment API', async function () {
   }
 });
 
+test('http server runs and lists persisted semantic enrichment reports', async function () {
+  const reports = [];
+  const server = createThreadTraceServer({
+    runtime: {
+      listAdapters() {
+        return [{ sourceKey: 'nga', displayName: 'NGA' }];
+      },
+      async runSemanticEnrichmentTask(request) {
+        const report = {
+          reportType: 'semantic-enrichment',
+          baseReportType: request.baseReportType || 'basic-history',
+          generatedAt: '2026-06-19T10:00:00.000Z',
+          thread: {
+            sourceKey: request.sourceKey || 'nga',
+            sourceThreadId: request.sourceThreadId,
+            title: 'sample'
+          },
+          semanticInsights: {
+            provider: request.provider || 'mock',
+            summary: 'semantic summary'
+          }
+        };
+        reports.push(report);
+        return {
+          task: {
+            id: 'semantic-task-1',
+            type: 'semantic-enrichment',
+            status: 'completed'
+          },
+          report
+        };
+      },
+      async listAnalysisReports() {
+        return reports;
+      }
+    }
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const result = await postJson(baseUrl + '/api/reports/tasks/semantic-enrichment', {
+      sourceKey: 'nga',
+      sourceThreadId: '45974302',
+      provider: 'mock'
+    });
+    const listed = await getJson(baseUrl + '/api/reports?sourceKey=nga&sourceThreadId=45974302&reportType=semantic-enrichment');
+    const openApi = await getJson(baseUrl + '/openapi.json');
+
+    assert.equal(result.task.type, 'semantic-enrichment');
+    assert.equal(result.report.reportType, 'semantic-enrichment');
+    assert.equal(listed.reports.length, 1);
+    assert.ok(openApi.paths['/api/reports']);
+    assert.ok(openApi.paths['/api/reports/tasks/semantic-enrichment']);
+  } finally {
+    await close(server);
+  }
+});
+
 test('http server exposes operational overview API', async function () {
   const server = createThreadTraceServer({
     runtime: {
