@@ -474,6 +474,37 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/sources/{sourceId}/tasks/insight-pipeline': {
+        post: {
+          summary: 'Run source ingest and optional semantic enrichment pipeline',
+          parameters: [
+            { name: 'sourceId', in: 'path', required: true, schema: { type: 'string' } }
+          ],
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    provider: { type: 'string', example: 'mock' },
+                    traceId: { type: 'string' },
+                    baseReportType: { type: 'string', example: 'basic-history' },
+                    semanticEnrichmentEnabled: { type: 'boolean' },
+                    semanticSkipIfUnchanged: { type: 'boolean' },
+                    storeDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/data/store' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Completed source insight pipeline task'
+            }
+          }
+        }
+      },
       '/api/sources/tasks/ingest': {
         post: {
           summary: 'Run ingest tasks for all enabled tracked sources',

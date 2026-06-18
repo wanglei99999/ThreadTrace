@@ -464,6 +464,39 @@ function main(argv) {
     return;
   }
 
+  if (command === 'run-source-insight-pipeline') {
+    if (!options.sourceId) {
+      throw new Error('run-source-insight-pipeline requires --source-id.');
+    }
+    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    runtime.runSourceInsightPipelineTask({
+      sourceId: options.sourceId,
+      provider: options.provider || 'mock',
+      traceId: options.traceId,
+      baseReportType: options.baseReportType,
+      semanticEnrichmentEnabled: parseOptionalBoolean(options.semanticEnrichmentEnabled),
+      semanticSkipIfUnchanged: parseOptionalBoolean(options.semanticSkipIfUnchanged),
+      storeDir
+    }).then(function (result) {
+      console.log('Task completed: ' + result.task.id);
+      console.log('Source: ' + options.sourceId);
+      console.log('Ingest task: ' + result.ingest.task.id);
+      console.log('Changed: ' + result.ingest.cursorDiff.changed);
+      console.log('New posts: ' + result.ingest.cursorDiff.newPostCount);
+      console.log('Semantic status: ' + result.semantic.status);
+      if (result.semantic.reason) {
+        console.log('Semantic reason: ' + result.semantic.reason);
+      }
+      if (result.semantic.reportType) {
+        console.log('Semantic report type: ' + result.semantic.reportType);
+      }
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'run-sources-task') {
     const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
     runtime.runEnabledSourcesIngestTasks({
@@ -611,6 +644,12 @@ function parseArgs(args) {
     } else if (item === '--trace-id') {
       options.traceId = args[index + 1];
       index += 1;
+    } else if (item === '--semantic-enrichment-enabled') {
+      options.semanticEnrichmentEnabled = args[index + 1];
+      index += 1;
+    } else if (item === '--semantic-skip-if-unchanged') {
+      options.semanticSkipIfUnchanged = args[index + 1];
+      index += 1;
     } else if (item === '--store-dir') {
       options.storeDir = args[index + 1];
       index += 1;
@@ -718,6 +757,11 @@ function parseArgs(args) {
   return options;
 }
 
+function parseOptionalBoolean(value) {
+  if (value === undefined) return undefined;
+  return value !== 'false';
+}
+
 function findDefaultExampleHtml() {
   const exampleDir = path.resolve(process.cwd(), 'example');
   const files = fs.readdirSync(exampleDir)
@@ -791,6 +835,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--input dir] [--name name] [--interval-minutes n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-source-task --source-id id [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js run-source-insight-pipeline --source-id id [--provider mock] [--semantic-enrichment-enabled true|false] [--semantic-skip-if-unchanged true|false] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-sources-task [--forum nga] [--limit n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-due-sources-task [--forum nga] [--now iso] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js index-html-dir [--forum nga] [--input dir] [--store-dir dir]');

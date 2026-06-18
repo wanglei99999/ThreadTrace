@@ -9,6 +9,7 @@ const { runIngestSavedThreadDirectoryTask } = require('../application/use-cases/
 const { registerTrackedSource } = require('../application/use-cases/registerTrackedSource');
 const { listTrackedSources } = require('../application/use-cases/listTrackedSources');
 const { runTrackedSourceIngestTask } = require('../application/use-cases/runTrackedSourceIngestTask');
+const { runSourceInsightPipelineTask } = require('../application/use-cases/runSourceInsightPipelineTask');
 const { runEnabledSourcesIngestTasks } = require('../application/use-cases/runEnabledSourcesIngestTasks');
 const { runDueSourcesIngestTasks } = require('../application/use-cases/runDueSourcesIngestTasks');
 const { acknowledgeNotificationEvent } = require('../application/use-cases/acknowledgeNotificationEvent');
@@ -298,6 +299,36 @@ function createThreadTraceRuntime(options) {
         rawThreadPageRepository: repositories.rawThreadPageRepository,
         notificationEventRepository: repositories.notificationEventRepository,
         sourceIngestHandlerRegistry
+      });
+    },
+
+    async runSourceInsightPipelineTask(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      const source = await repositories.sourceRepository.findSource(safeRequest.sourceId);
+      if (!source) {
+        throw new Error('Unknown tracked source: ' + safeRequest.sourceId);
+      }
+
+      return runSourceInsightPipelineTask({
+        sourceId: safeRequest.sourceId,
+        sourceRepository: repositories.sourceRepository,
+        getAdapter: forumAdapterRegistry.get,
+        crawler: safeOptions.crawler || createHttpForumCrawler(safeOptions.crawlerOptions),
+        threadRepository: repositories.threadRepository,
+        reportRepository: repositories.reportRepository,
+        taskRepository: repositories.taskRepository,
+        rawThreadPageRepository: repositories.rawThreadPageRepository,
+        notificationEventRepository: repositories.notificationEventRepository,
+        sourceIngestHandlerRegistry,
+        llmProvider: createLlmProviderFor(safeRequest),
+        semanticEnrichment: {
+          enabled: safeRequest.semanticEnrichmentEnabled !== false,
+          skipIfUnchanged: safeRequest.semanticSkipIfUnchanged !== false,
+          baseReportType: safeRequest.baseReportType,
+          provider: safeRequest.provider || 'mock',
+          traceId: safeRequest.traceId
+        }
       });
     },
 

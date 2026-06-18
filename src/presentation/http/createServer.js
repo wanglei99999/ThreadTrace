@@ -389,6 +389,31 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  const sourcePipelineMatch = url.pathname.match(/^\/api\/sources\/([^/]+)\/tasks\/insight-pipeline$/);
+  if (request.method === 'POST' && sourcePipelineMatch) {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.runSourceInsightPipelineTask({
+      sourceId: decodeURIComponent(sourcePipelineMatch[1]),
+      provider: body.provider || 'mock',
+      traceId: body.traceId,
+      baseReportType: body.baseReportType,
+      semanticEnrichmentEnabled: body.semanticEnrichmentEnabled,
+      semanticSkipIfUnchanged: body.semanticSkipIfUnchanged,
+      storeDir: body.storeDir || context.storeDir
+    });
+    writeJson(response, 200, {
+      sourceId: decodeURIComponent(sourcePipelineMatch[1]),
+      task: result.task,
+      ingest: {
+        task: result.ingest.task,
+        cursor: result.ingest.cursor,
+        cursorDiff: result.ingest.cursorDiff
+      },
+      semantic: result.semantic
+    });
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/index-directory') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     const result = await context.runtime.indexDirectory({

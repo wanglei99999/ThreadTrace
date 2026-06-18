@@ -15,6 +15,7 @@ CLI:
 ```powershell
 node src/presentation/cli/threadtrace.js enrich-html-dir --forum nga --input example --provider mock
 node src/presentation/cli/threadtrace.js run-semantic-enrichment-task --source-key nga --source-thread-id 45974302 --provider mock
+node src/presentation/cli/threadtrace.js run-source-insight-pipeline --source-id nga-saved-html-directory-d940bb6e68 --provider mock
 node src/presentation/cli/threadtrace.js list-reports --source-key nga --source-thread-id 45974302 --report-type semantic-enrichment
 ```
 
@@ -23,6 +24,7 @@ HTTP:
 ```text
 POST /api/enrich-directory
 POST /api/reports/tasks/semantic-enrichment
+POST /api/sources/{sourceId}/tasks/insight-pipeline
 GET /api/reports?sourceKey=nga&sourceThreadId=45974302&reportType=semantic-enrichment
 ```
 
@@ -31,6 +33,7 @@ Runtime:
 ```js
 runtime.enrichDirectory({ forum: 'nga', inputDir: 'example', provider: 'mock' })
 runtime.runSemanticEnrichmentTask({ sourceKey: 'nga', sourceThreadId: '45974302', provider: 'mock' })
+runtime.runSourceInsightPipelineTask({ sourceId: 'nga-saved-html-directory-d940bb6e68', provider: 'mock' })
 runtime.listAnalysisReports({ sourceKey: 'nga', sourceThreadId: '45974302', reportType: 'semantic-enrichment' })
 ```
 

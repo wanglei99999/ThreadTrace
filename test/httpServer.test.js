@@ -341,6 +341,41 @@ test('http server can register sources and run source ingest tasks', async funct
   }
 });
 
+test('http server runs source insight pipeline tasks', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-http-source-pipeline-'));
+  const server = createThreadTraceServer({
+    defaultInputDir: path.resolve(__dirname, '..', 'example'),
+    storeDir: tempDir
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const registerResult = await postJsonWithStatus(baseUrl + '/api/sources', {
+      forum: 'nga',
+      displayName: 'NGA sample archive',
+      inputDir: path.resolve(__dirname, '..', 'example')
+    }, 201);
+    const result = await postJson(baseUrl + '/api/sources/' + encodeURIComponent(registerResult.source.id) + '/tasks/insight-pipeline', {
+      provider: 'mock',
+      traceId: 'http-source-pipeline'
+    });
+    const openApi = await getJson(baseUrl + '/openapi.json');
+
+    assert.equal(result.sourceId, registerResult.source.id);
+    assert.equal(result.task.status, 'completed');
+    assert.equal(result.task.type, 'source-insight-pipeline');
+    assert.equal(result.ingest.task.status, 'completed');
+    assert.equal(result.ingest.cursor.sourceThreadId, '45974302');
+    assert.equal(result.semantic.status, 'completed');
+    assert.equal(result.semantic.traceId, 'http-source-pipeline');
+    assert.ok(openApi.paths['/api/sources/{sourceId}/tasks/insight-pipeline']);
+  } finally {
+    await close(server);
+  }
+});
+
 test('http server exposes raw page crawl, list, and replay APIs', async function () {
   const calls = [];
   const server = createThreadTraceServer({
@@ -444,6 +479,10 @@ async function getJson(url) {
 }
 
 async function postJson(url, body) {
+  return postJsonWithStatus(url, body, 200);
+}
+
+async function postJsonWithStatus(url, body, status) {
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -451,6 +490,6 @@ async function postJson(url, body) {
     },
     body: JSON.stringify(body)
   });
-  assert.equal(response.status, 200);
+  assert.equal(response.status, status);
   return response.json();
 }
