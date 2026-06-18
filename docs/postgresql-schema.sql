@@ -84,6 +84,7 @@ create table if not exists notification_events (
   last_delivery_error jsonb,
   last_delivery_attempt_at timestamptz,
   last_delivered_at timestamptz,
+  next_delivery_at timestamptz,
   acknowledged_at timestamptz,
   acknowledged_by text,
   acknowledgement_note text,
@@ -92,6 +93,7 @@ create table if not exists notification_events (
 
 create index if not exists idx_notification_events_created on notification_events(created_at desc);
 create index if not exists idx_notification_events_delivery_status on notification_events(delivery_status);
+create index if not exists idx_notification_events_due on notification_events(delivery_status, next_delivery_at);
 create index if not exists idx_notification_events_ack on notification_events(acknowledged_at);
 create index if not exists idx_notification_events_source on notification_events(source_id);
 

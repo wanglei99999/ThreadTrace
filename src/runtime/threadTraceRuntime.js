@@ -23,18 +23,39 @@ const { createFileNotificationEventRepository } = require('../infrastructure/sto
 const { createFileNotificationChannel } = require('../infrastructure/notifications/fileNotificationChannel');
 const { createWebhookNotificationChannel } = require('../infrastructure/notifications/webhookNotificationChannel');
 const { createFileTextRetrievalIndex } = require('../infrastructure/retrieval/fileTextRetrievalIndex');
+const { createPostgresPool } = require('../infrastructure/postgres/postgresConnection');
+const { createPostgresRepositories } = require('../infrastructure/postgres/postgresRepositories');
 
 function createThreadTraceRuntime(options) {
   const safeOptions = options || {};
   const defaults = {
     defaultForum: safeOptions.defaultForum || 'nga',
     defaultInputDir: safeOptions.defaultInputDir || path.resolve(process.cwd(), 'example'),
-    storeDir: safeOptions.storeDir || path.resolve(process.cwd(), 'data', 'store')
+    storeDir: safeOptions.storeDir || path.resolve(process.cwd(), 'data', 'store'),
+    storageMode: normalizeStorageMode(safeOptions.storageMode || process.env.THREADTRACE_STORAGE || 'file')
   };
+  let postgresClient = safeOptions.postgresClient;
   const createRetrievalIndexFor = function (storeDir) {
     return createFileTextRetrievalIndex({
       indexFile: path.join(resolveStoreDir(defaults, storeDir), 'retrieval', 'documents.json')
     });
+  };
+  const createRepositoriesFor = function (storeDir) {
+    if (defaults.storageMode === 'postgres') {
+      return createPostgresRepositories({
+        client: getPostgresClient()
+      });
+    }
+    if (defaults.storageMode !== 'file') {
+      throw new Error('Unknown ThreadTrace storage mode: ' + defaults.storageMode);
+    }
+    return createFileRepositories(resolveStoreDir(defaults, storeDir));
+  };
+  const getPostgresClient = function () {
+    if (!postgresClient) {
+      postgresClient = createPostgresPool(safeOptions.postgres);
+    }
+    return postgresClient;
   };
 
   return {
@@ -49,7 +70,7 @@ function createThreadTraceRuntime(options) {
     },
 
     createRepositories(storeDir) {
-      return createRepositories(resolveStoreDir(defaults, storeDir));
+      return createRepositoriesFor(storeDir);
     },
 
     createRetrievalIndex(storeDir) {
@@ -78,7 +99,7 @@ function createThreadTraceRuntime(options) {
 
     async ingestDirectory(request) {
       const safeRequest = request || {};
-      const repositories = createRepositories(resolveStoreDir(defaults, safeRequest.storeDir));
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
       return ingestSavedThreadDirectory({
         adapter: getForumAdapter(safeRequest.forum || defaults.defaultForum),
         inputDir: safeRequest.inputDir || defaults.defaultInputDir,
@@ -89,7 +110,7 @@ function createThreadTraceRuntime(options) {
 
     async runIngestDirectoryTask(request) {
       const safeRequest = request || {};
-      const repositories = createRepositories(resolveStoreDir(defaults, safeRequest.storeDir));
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
       return runIngestSavedThreadDirectoryTask({
         forum: safeRequest.forum || defaults.defaultForum,
         adapter: getForumAdapter(safeRequest.forum || defaults.defaultForum),
@@ -103,7 +124,7 @@ function createThreadTraceRuntime(options) {
 
     async listTasks(request) {
       const safeRequest = request || {};
-      const repositories = createRepositories(resolveStoreDir(defaults, safeRequest.storeDir));
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
       return repositories.taskRepository.listTasks({
         status: safeRequest.status,
         type: safeRequest.type,
@@ -113,7 +134,7 @@ function createThreadTraceRuntime(options) {
 
     async registerSource(request) {
       const safeRequest = request || {};
-      const repositories = createRepositories(resolveStoreDir(defaults, safeRequest.storeDir));
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
       return registerTrackedSource({
         sourceRepository: repositories.sourceRepository,
         source: {
@@ -133,7 +154,7 @@ function createThreadTraceRuntime(options) {
 
     async listSources(request) {
       const safeRequest = request || {};
-      const repositories = createRepositories(resolveStoreDir(defaults, safeRequest.storeDir));
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
       return listTrackedSources({
         sourceRepository: repositories.sourceRepository,
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
@@ -144,7 +165,7 @@ function createThreadTraceRuntime(options) {
 
     async runSourceIngestTask(request) {
       const safeRequest = request || {};
-      const repositories = createRepositories(resolveStoreDir(defaults, safeRequest.storeDir));
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
       const source = await repositories.sourceRepository.findSource(safeRequest.sourceId);
       if (!source) {
         throw new Error('Unknown tracked source: ' + safeRequest.sourceId);
@@ -163,7 +184,7 @@ function createThreadTraceRuntime(options) {
 
     async runEnabledSourcesIngestTasks(request) {
       const safeRequest = request || {};
-      const repositories = createRepositories(resolveStoreDir(defaults, safeRequest.storeDir));
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
       return runEnabledSourcesIngestTasks({
         sourceRepository: repositories.sourceRepository,
         threadRepository: repositories.threadRepository,
@@ -178,7 +199,7 @@ function createThreadTraceRuntime(options) {
 
     async runDueSourcesIngestTasks(request) {
       const safeRequest = request || {};
-      const repositories = createRepositories(resolveStoreDir(defaults, safeRequest.storeDir));
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
       return runDueSourcesIngestTasks({
         sourceRepository: repositories.sourceRepository,
         threadRepository: repositories.threadRepository,
@@ -213,7 +234,7 @@ function createThreadTraceRuntime(options) {
 
     async listNotificationEvents(request) {
       const safeRequest = request || {};
-      const repositories = createRepositories(resolveStoreDir(defaults, safeRequest.storeDir));
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
       return repositories.notificationEventRepository.listEvents({
         type: safeRequest.type,
         sourceId: safeRequest.sourceId,
@@ -225,7 +246,7 @@ function createThreadTraceRuntime(options) {
 
     async acknowledgeNotificationEvent(request) {
       const safeRequest = request || {};
-      const repositories = createRepositories(resolveStoreDir(defaults, safeRequest.storeDir));
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
       return acknowledgeNotificationEvent({
         notificationEventRepository: repositories.notificationEventRepository,
         eventId: safeRequest.eventId,
@@ -237,7 +258,7 @@ function createThreadTraceRuntime(options) {
     async dispatchNotificationEvents(request) {
       const safeRequest = request || {};
       const storeDir = resolveStoreDir(defaults, safeRequest.storeDir);
-      const repositories = createRepositories(storeDir);
+      const repositories = createRepositoriesFor(storeDir);
       return dispatchPendingNotificationEvents({
         notificationEventRepository: repositories.notificationEventRepository,
         notificationChannel: createNotificationChannel(safeRequest, storeDir),
@@ -252,7 +273,7 @@ function createThreadTraceRuntime(options) {
   };
 }
 
-function createRepositories(storeDir) {
+function createFileRepositories(storeDir) {
   return {
     threadRepository: createFileThreadRepository({
       baseDir: path.join(storeDir, 'threads')
@@ -274,6 +295,10 @@ function createRepositories(storeDir) {
 
 function resolveStoreDir(defaults, storeDir) {
   return storeDir || defaults.storeDir;
+}
+
+function normalizeStorageMode(value) {
+  return String(value || 'file').trim().toLowerCase();
 }
 
 function buildSchedule(request) {
