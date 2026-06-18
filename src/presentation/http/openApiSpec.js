@@ -55,6 +55,19 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/connectors/catalog': {
+        get: {
+          summary: 'List source connector catalog',
+          parameters: [
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } }
+          ],
+          responses: {
+            200: {
+              description: 'Source types, required locations, and compatible forum adapters'
+            }
+          }
+        }
+      },
       '/api/analyze-directory': {
         post: {
           summary: 'Analyze a saved HTML directory',

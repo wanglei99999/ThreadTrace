@@ -618,6 +618,23 @@ function main(argv) {
     return;
   }
 
+  if (command === 'connector-catalog') {
+    const catalog = runtime.getSourceConnectorCatalog({
+      now: options.now
+    });
+    console.log('Connector catalog: sourceTypes=' + catalog.sourceTypes.length + ', adapters=' + catalog.adapters.length);
+    catalog.sourceTypes.forEach(function (sourceType) {
+      const required = sourceType.locationSchema && sourceType.locationSchema.required
+        ? sourceType.locationSchema.required.join(',')
+        : '';
+      const compatible = sourceType.compatibleSourceKeys && sourceType.compatibleSourceKeys.length
+        ? sourceType.compatibleSourceKeys.join(',')
+        : 'none';
+      console.log(sourceType.sourceType + '\tadapter=' + sourceType.requiresAdapter + '\trequired=' + required + '\tcompatible=' + compatible);
+    });
+    return;
+  }
+
   if (command === 'run-source-task') {
     if (!options.sourceId) {
       throw new Error('run-source-task requires --source-id.');
@@ -1064,6 +1081,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--source-type type] [--input dir] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-diagnostics [--forum nga] [--enabled true] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js connector-catalog [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js notification-diagnostics [--channel file|webhook] [--webhook-url url] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-source-task --source-id id [--source-run-stale-after-ms ms] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-source-insight-pipeline --source-id id [--provider mock] [--semantic-enrichment-enabled true|false] [--semantic-skip-if-unchanged true|false] [--source-run-stale-after-ms ms] [--store-dir dir]');

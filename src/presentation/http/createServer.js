@@ -81,6 +81,13 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/connectors/catalog') {
+    writeJson(response, 200, context.runtime.getSourceConnectorCatalog({
+      now: url.searchParams.get('now') || undefined
+    }));
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/openapi.json') {
     writeJson(response, 200, createOpenApiSpec());
     return;

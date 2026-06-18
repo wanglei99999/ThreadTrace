@@ -27,6 +27,7 @@ const { getOperationalReadiness } = require('../application/use-cases/getOperati
 const { getRuntimeDiagnostics } = require('../application/use-cases/getRuntimeDiagnostics');
 const { getDeploymentChecklist } = require('../application/use-cases/getDeploymentChecklist');
 const { getOperationsRunbook } = require('../application/use-cases/getOperationsRunbook');
+const { getSourceConnectorCatalog } = require('../application/use-cases/getSourceConnectorCatalog');
 const { createDefaultSourceIngestHandlerRegistry } = require('../application/source-ingest/standardSourceIngestHandlers');
 const { migrateStoreRecords } = require('../application/use-cases/migrateStoreRecords');
 const { runIngestRawThreadPageTask } = require('../application/use-cases/runIngestRawThreadPageTask');
@@ -124,6 +125,15 @@ function createThreadTraceRuntime(options) {
 
     listSourceIngestHandlers() {
       return sourceIngestHandlerRegistry.listHandlers();
+    },
+
+    getSourceConnectorCatalog(request) {
+      const safeRequest = request || {};
+      return getSourceConnectorCatalog({
+        sourceIngestHandlerRegistry,
+        forumAdapterRegistry,
+        now: safeRequest.now
+      });
     },
 
     createRepositories(storeDir) {
