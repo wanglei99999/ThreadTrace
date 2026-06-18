@@ -6,6 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 const { validateNormalizedThreadJsonFile } = require('../src/application/use-cases/validateNormalizedThreadJsonFile');
+const { readThreadSnapshotJson } = require('../src/application/use-cases/runIngestNormalizedThreadJsonTask');
 const { createThreadTraceRuntime } = require('../src/runtime/threadTraceRuntime');
 
 test('runtime ingests normalized thread snapshot JSON sources without a forum adapter', async function () {
@@ -71,15 +72,35 @@ test('runtime ingests normalized thread snapshot JSON sources without a forum ad
 test('normalized thread snapshot JSON validation reports file readiness', async function () {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-normalized-json-validation-'));
   const inputFile = path.join(tempDir, 'thread.json');
+  const invalidContractFile = path.join(tempDir, 'invalid-contract.json');
   await fs.writeFile(inputFile, '\uFEFF' + JSON.stringify({
     sourceKey: 'external',
     sourceThreadId: 'external-thread-2',
     title: 'Validated external thread',
     posts: []
   }, null, 2) + '\n', 'utf8');
+  await fs.writeFile(invalidContractFile, JSON.stringify({
+    sourceKey: 'external',
+    sourceThreadId: 'external-thread-3',
+    title: 'Invalid external thread',
+    posts: [
+      {
+        sourceKey: 'external',
+        floor: 0,
+        author: {
+          sourceKey: 'external'
+        },
+        contentText: 'missing post id and author fields'
+      }
+    ]
+  }, null, 2) + '\n', 'utf8');
 
   const valid = await validateNormalizedThreadJsonFile({
     inputFile,
+    now: '2026-06-19T10:00:00.000Z'
+  });
+  const invalidContract = await validateNormalizedThreadJsonFile({
+    inputFile: invalidContractFile,
     now: '2026-06-19T10:00:00.000Z'
   });
   const invalid = await validateNormalizedThreadJsonFile({
@@ -91,6 +112,14 @@ test('normalized thread snapshot JSON validation reports file readiness', async 
   assert.equal(valid.status, 'ok');
   assert.equal(valid.thread.sourceThreadId, 'external-thread-2');
   assert.equal(valid.thread.postCount, 0);
+  assert.equal(invalidContract.valid, false);
+  assert.equal(invalidContract.error.code, 'thread_json_contract_invalid');
+  assert.equal(invalidContract.checks.find(function (check) {
+    return check.key === 'threadJson.posts[0].sourcePostId';
+  }).status, 'fail');
+  await assert.rejects(function () {
+    return readThreadSnapshotJson(invalidContractFile);
+  }, /failed contract validation/);
   assert.equal(invalid.valid, false);
   assert.equal(invalid.status, 'fail');
   assert.equal(invalid.error.code, 'thread_json_invalid');

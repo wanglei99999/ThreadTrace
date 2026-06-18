@@ -133,6 +133,8 @@ content-type: application/json
 }
 ```
 
+The validation response includes field-level checks such as `threadJson.posts[0].sourcePostId`, so external collectors can fail fast before scheduling ingestion.
+
 ## Source Run Guard
 
 Source runs reject duplicate execution while a source is already `running`. The default stale window is 10 minutes; after that, a stuck `running` state is considered recoverable and the next run can proceed. Runtime, HTTP, CLI, batch, and due-worker entrypoints may pass `sourceRunStaleAfterMs` for controlled recovery.

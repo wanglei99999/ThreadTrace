@@ -2,6 +2,7 @@
 
 const fs = require('fs/promises');
 const { analyzeThreadHistory } = require('../../domain/analysis/basicHistoricalAnalyzer');
+const { validateThreadSnapshotPayload } = require('../../domain/contracts/threadSnapshotJsonContract');
 const { createThreadSnapshot } = require('../../domain/models/threadSnapshot');
 const { assertAnalysisReportRepository } = require('../ports/analysisReportRepository');
 const { assertTaskRepository } = require('../ports/taskRepository');
@@ -80,8 +81,14 @@ async function runIngestNormalizedThreadJsonTask(options) {
 }
 
 async function readThreadSnapshotJson(inputFile, defaults) {
-  const parsed = JSON.parse(stripUtf8Bom(await fs.readFile(inputFile, 'utf8')));
+  const parsed = await readThreadSnapshotPayload(inputFile);
   const safeDefaults = defaults || {};
+  const validation = validateThreadSnapshotPayload(parsed, {
+    sourceKey: safeDefaults.sourceKey
+  });
+  if (!validation.valid) {
+    throw new Error('Normalized thread JSON failed contract validation: ' + failedChecks(validation.checks).join(', '));
+  }
   const sourceKey = parsed.sourceKey || (parsed.forum && parsed.forum.sourceKey) || safeDefaults.sourceKey;
   const threadSnapshot = createThreadSnapshot(Object.assign({}, parsed, {
     sourceKey,
@@ -99,8 +106,20 @@ async function readThreadSnapshotJson(inputFile, defaults) {
   return threadSnapshot;
 }
 
+async function readThreadSnapshotPayload(inputFile) {
+  return JSON.parse(stripUtf8Bom(await fs.readFile(inputFile, 'utf8')));
+}
+
 function stripUtf8Bom(text) {
   return String(text || '').replace(/^\uFEFF/, '');
+}
+
+function failedChecks(checks) {
+  return (checks || []).filter(function (item) {
+    return item.status === 'fail';
+  }).map(function (item) {
+    return item.key;
+  });
 }
 
 async function buildReplayResult(options) {
@@ -131,5 +150,6 @@ async function buildReplayResult(options) {
 module.exports = {
   runIngestNormalizedThreadJsonTask,
   readThreadSnapshotJson,
+  readThreadSnapshotPayload,
   stripUtf8Bom
 };

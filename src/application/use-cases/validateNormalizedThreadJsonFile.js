@@ -1,6 +1,7 @@
 'use strict';
 
-const { readThreadSnapshotJson } = require('./runIngestNormalizedThreadJsonTask');
+const { validateThreadSnapshotPayload } = require('../../domain/contracts/threadSnapshotJsonContract');
+const { readThreadSnapshotPayload } = require('./runIngestNormalizedThreadJsonTask');
 
 async function validateNormalizedThreadJsonFile(options) {
   const safeOptions = options || {};
@@ -21,21 +22,26 @@ async function validateNormalizedThreadJsonFile(options) {
   }
 
   try {
-    const threadSnapshot = await readThreadSnapshotJson(inputFile, {
+    const payload = await readThreadSnapshotPayload(inputFile);
+    const validation = validateThreadSnapshotPayload(payload, {
       sourceKey: safeOptions.sourceKey || safeOptions.forum
     });
-    const checks = buildChecks(threadSnapshot);
+    const sourceKey = payload.sourceKey || (payload.forum && payload.forum.sourceKey) || safeOptions.sourceKey || safeOptions.forum;
     return validationResult({
       now: safeOptions.now,
-      valid: checks.every(function (item) { return item.status !== 'fail'; }),
-      status: aggregateStatus(checks),
+      valid: validation.valid,
+      status: validation.status,
       thread: {
-        sourceKey: threadSnapshot.sourceKey,
-        sourceThreadId: threadSnapshot.sourceThreadId,
-        title: threadSnapshot.title,
-        postCount: threadSnapshot.posts.length
+        sourceKey,
+        sourceThreadId: payload.sourceThreadId,
+        title: payload.title,
+        postCount: Array.isArray(payload.posts) ? payload.posts.length : 0
       },
-      checks
+      checks: validation.checks,
+      error: validation.valid ? undefined : {
+        code: 'thread_json_contract_invalid',
+        message: 'Normalized thread JSON does not satisfy the ThreadSnapshot contract.'
+      }
     });
   } catch (error) {
     return validationResult({
@@ -51,14 +57,6 @@ async function validateNormalizedThreadJsonFile(options) {
       }
     });
   }
-}
-
-function buildChecks(threadSnapshot) {
-  return [
-    check('threadJson.sourceKey', threadSnapshot.sourceKey ? 'ok' : 'fail', threadSnapshot.sourceKey || 'missing', 'Snapshot has a source key.'),
-    check('threadJson.sourceThreadId', threadSnapshot.sourceThreadId ? 'ok' : 'fail', threadSnapshot.sourceThreadId || 'missing', 'Snapshot has a source thread id.'),
-    check('threadJson.posts', Array.isArray(threadSnapshot.posts) ? 'ok' : 'fail', threadSnapshot.posts.length, 'Snapshot has a posts array.')
-  ];
 }
 
 function validationResult(options) {
@@ -80,12 +78,6 @@ function check(key, status, value, summary) {
     value,
     summary
   };
-}
-
-function aggregateStatus(checks) {
-  if (checks.some(function (item) { return item.status === 'fail'; })) return 'fail';
-  if (checks.some(function (item) { return item.status === 'warn'; })) return 'warn';
-  return 'ok';
 }
 
 module.exports = {
