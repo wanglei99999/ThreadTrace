@@ -13,6 +13,8 @@ const { createSourceChangedEvent } = require('../../domain/events/notificationEv
 const { createDefaultSourceIngestHandlerRegistry } = require('../source-ingest/standardSourceIngestHandlers');
 const { assertSourceRepository } = require('../ports/sourceRepository');
 
+const DEFAULT_SOURCE_RUN_STALE_AFTER_MS = 10 * 60 * 1000;
+
 async function runTrackedSourceIngestTask(options) {
   const safeOptions = options || {};
   const sourceRepository = assertSourceRepository(safeOptions.sourceRepository);
@@ -25,6 +27,10 @@ async function runTrackedSourceIngestTask(options) {
   if (source.enabled === false) {
     throw new Error('Tracked source is disabled: ' + source.id);
   }
+  assertSourceNotAlreadyRunning(source, {
+    now: safeOptions.now,
+    staleAfterMs: safeOptions.sourceRunStaleAfterMs
+  });
   const handler = handlerRegistry.findHandler(source);
   if (!handler) {
     throw new Error('Tracked source type is not ingestible yet: ' + source.sourceType);
@@ -68,6 +74,22 @@ async function runTrackedSourceIngestTask(options) {
   }
 }
 
+function assertSourceNotAlreadyRunning(source, options) {
+  const runState = source.runState || {};
+  if (runState.status !== 'running') return;
+  if (isStaleSourceRun(runState, options)) return;
+  throw new Error('Tracked source is already running: ' + source.id);
+}
+
+function isStaleSourceRun(runState, options) {
+  const safeOptions = options || {};
+  const staleAfterMs = safeOptions.staleAfterMs || DEFAULT_SOURCE_RUN_STALE_AFTER_MS;
+  const startedTime = Date.parse(runState.lastStartedAt);
+  const nowTime = Date.parse(safeOptions.now || new Date().toISOString());
+  if (Number.isNaN(startedTime) || Number.isNaN(nowTime)) return true;
+  return nowTime - startedTime > staleAfterMs;
+}
+
 function resolveAdapter(handler, source, getAdapter) {
   if (typeof getAdapter !== 'function') return undefined;
   if (handler.requiresAdapter === false) return undefined;
@@ -75,5 +97,6 @@ function resolveAdapter(handler, source, getAdapter) {
 }
 
 module.exports = {
-  runTrackedSourceIngestTask
+  runTrackedSourceIngestTask,
+  isStaleSourceRun
 };

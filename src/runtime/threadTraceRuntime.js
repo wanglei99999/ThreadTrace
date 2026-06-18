@@ -439,7 +439,9 @@ function createThreadTraceRuntime(options) {
         taskRepository: repositories.taskRepository,
         rawThreadPageRepository: repositories.rawThreadPageRepository,
         notificationEventRepository: repositories.notificationEventRepository,
-        sourceIngestHandlerRegistry
+        sourceIngestHandlerRegistry,
+        sourceRunStaleAfterMs: safeRequest.sourceRunStaleAfterMs,
+        now: safeRequest.now
       });
     },
 
@@ -463,6 +465,8 @@ function createThreadTraceRuntime(options) {
         notificationEventRepository: repositories.notificationEventRepository,
         sourceIngestHandlerRegistry,
         llmProvider: createLlmProviderFor(safeRequest),
+        sourceRunStaleAfterMs: safeRequest.sourceRunStaleAfterMs,
+        now: safeRequest.now,
         semanticEnrichment: {
           enabled: safeRequest.semanticEnrichmentEnabled !== false,
           skipIfUnchanged: safeRequest.semanticSkipIfUnchanged !== false,
@@ -486,6 +490,8 @@ function createThreadTraceRuntime(options) {
         crawler: safeOptions.crawler || createHttpForumCrawler(safeOptions.crawlerOptions),
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
         limit: safeRequest.limit || 50,
+        now: safeRequest.now,
+        sourceRunStaleAfterMs: safeRequest.sourceRunStaleAfterMs,
         getAdapter: forumAdapterRegistry.get,
         sourceIngestHandlerRegistry
       });
@@ -505,6 +511,7 @@ function createThreadTraceRuntime(options) {
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
         limit: safeRequest.limit || 50,
         now: safeRequest.now,
+        sourceRunStaleAfterMs: safeRequest.sourceRunStaleAfterMs,
         getAdapter: forumAdapterRegistry.get,
         sourceIngestHandlerRegistry
       });
@@ -536,6 +543,7 @@ function createThreadTraceRuntime(options) {
         sourceKey: safeRequest.forum || safeRequest.sourceKey,
         limit: safeRequest.limit,
         now: safeRequest.now,
+        sourceRunStaleAfterMs: safeRequest.sourceRunStaleAfterMs,
         sourceRepository: repositories.sourceRepository,
         getAdapter: forumAdapterRegistry.get,
         crawler: safeOptions.crawler || createHttpForumCrawler(safeOptions.crawlerOptions),

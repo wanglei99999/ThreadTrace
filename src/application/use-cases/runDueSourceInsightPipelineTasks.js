@@ -1,11 +1,11 @@
 'use strict';
 
-const { evaluateTrackedSourceSchedule } = require('../../domain/scheduling/trackedSourceSchedule');
 const { assertSourceRepository } = require('../ports/sourceRepository');
 const { assertThreadRepository } = require('../ports/threadRepository');
 const { assertAnalysisReportRepository } = require('../ports/analysisReportRepository');
 const { assertTaskRepository } = require('../ports/taskRepository');
 const { runSourceInsightPipelineTask } = require('./runSourceInsightPipelineTask');
+const { evaluateSourceRunSchedule } = require('./evaluateSourceRunSchedule');
 const {
   createTaskRecord,
   markTaskCompleted,
@@ -48,7 +48,9 @@ async function runDueSourceInsightPipelineTasks(options) {
     const skipped = [];
 
     sources.forEach(function (source) {
-      const decision = evaluateTrackedSourceSchedule(source, checkedAt);
+      const decision = evaluateSourceRunSchedule(source, checkedAt, {
+        sourceRunStaleAfterMs: safeOptions.sourceRunStaleAfterMs
+      });
       if (decision.due) {
         dueSources.push({
           source,
@@ -78,7 +80,9 @@ async function runDueSourceInsightPipelineTasks(options) {
           notificationEventRepository: safeOptions.notificationEventRepository,
           sourceIngestHandlerRegistry: safeOptions.sourceIngestHandlerRegistry,
           llmProvider: safeOptions.llmProvider,
-          semanticEnrichment
+          semanticEnrichment,
+          sourceRunStaleAfterMs: safeOptions.sourceRunStaleAfterMs,
+          now: checkedAt
         });
         results.push({
           source: result.ingest.source || item.source,

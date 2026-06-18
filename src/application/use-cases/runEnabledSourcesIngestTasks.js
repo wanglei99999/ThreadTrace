@@ -54,7 +54,9 @@ async function runEnabledSourcesIngestTasks(options) {
           taskRepository,
           rawThreadPageRepository: safeOptions.rawThreadPageRepository,
           notificationEventRepository: safeOptions.notificationEventRepository,
-          sourceIngestHandlerRegistry: safeOptions.sourceIngestHandlerRegistry
+          sourceIngestHandlerRegistry: safeOptions.sourceIngestHandlerRegistry,
+          sourceRunStaleAfterMs: safeOptions.sourceRunStaleAfterMs,
+          now: safeOptions.now
         });
         results.push({
           source: result.source || source,

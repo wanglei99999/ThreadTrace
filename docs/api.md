@@ -253,10 +253,14 @@ Returns: stable run summaries with task id, source metadata, cursor diff, semant
 请求：
 
 ```json
-{}
+{
+  "sourceRunStaleAfterMs": 600000
+}
 ```
 
 返回：任务记录和基础历史分析报告。
+
+如果来源当前处于未过期的 `running` 状态，请求会失败以避免重复导入。同一规则也适用于来源洞察流水线；默认恢复窗口为 10 分钟。
 
 ### `POST /api/sources/tasks/ingest`
 
@@ -267,7 +271,8 @@ Returns: stable run summaries with task id, source metadata, cursor diff, semant
 ```json
 {
   "forum": "nga",
-  "limit": 50
+  "limit": 50,
+  "sourceRunStaleAfterMs": 600000
 }
 ```
 
@@ -275,7 +280,7 @@ Returns: stable run summaries with task id, source metadata, cursor diff, semant
 
 ### `POST /api/sources/tasks/ingest-due`
 
-只运行已启用且调度到期的来源。调度规则来自来源的 `schedule.intervalMinutes` 或 `schedule.nextRunAt`，运行中的来源会被跳过，未设置调度的来源不会自动运行。
+只运行已启用且调度到期的来源。调度规则来自来源的 `schedule.intervalMinutes` 或 `schedule.nextRunAt`；未过期的运行中来源会被跳过，超过恢复窗口的 `running` 状态会重新按调度规则评估，未设置调度的来源不会自动运行。
 
 请求：
 
@@ -283,11 +288,14 @@ Returns: stable run summaries with task id, source metadata, cursor diff, semant
 {
   "forum": "nga",
   "limit": 50,
-  "now": "2026-06-18T10:00:00.000Z"
+  "now": "2026-06-18T10:00:00.000Z",
+  "sourceRunStaleAfterMs": 600000
 }
 ```
 
 返回：父任务记录、到期数量、跳过数量、成功/失败数量和每个来源的调度原因。父任务类型为 `ingest-due-sources`。
+
+批量入口会对每个来源应用同一套重复运行保护；单个来源重复运行会记录为该来源失败，不会中断整个父任务。
 
 ### `POST /api/index-directory`
 

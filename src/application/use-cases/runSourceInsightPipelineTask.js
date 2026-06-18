@@ -51,7 +51,9 @@ async function runSourceInsightPipelineTask(options) {
       taskRepository,
       rawThreadPageRepository,
       notificationEventRepository: safeOptions.notificationEventRepository,
-      sourceIngestHandlerRegistry: safeOptions.sourceIngestHandlerRegistry
+      sourceIngestHandlerRegistry: safeOptions.sourceIngestHandlerRegistry,
+      sourceRunStaleAfterMs: safeOptions.sourceRunStaleAfterMs,
+      now: safeOptions.now
     });
     const semantic = await maybeRunSemanticEnrichment({
       ingest,

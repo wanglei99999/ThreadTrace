@@ -438,6 +438,8 @@ async function routeRequest(request, response, context) {
     const result = await context.runtime.runEnabledSourcesIngestTasks({
       forum: body.forum,
       limit: body.limit,
+      sourceRunStaleAfterMs: body.sourceRunStaleAfterMs,
+      now: body.now,
       storeDir: body.storeDir || context.storeDir
     });
     writeJson(response, 200, result);
@@ -450,6 +452,7 @@ async function routeRequest(request, response, context) {
       forum: body.forum,
       limit: body.limit,
       now: body.now,
+      sourceRunStaleAfterMs: body.sourceRunStaleAfterMs,
       storeDir: body.storeDir || context.storeDir
     });
     writeJson(response, 200, result);
@@ -462,6 +465,7 @@ async function routeRequest(request, response, context) {
       forum: body.forum,
       limit: body.limit,
       now: body.now,
+      sourceRunStaleAfterMs: body.sourceRunStaleAfterMs,
       provider: body.provider || 'mock',
       traceId: body.traceId,
       baseReportType: body.baseReportType,
@@ -478,6 +482,8 @@ async function routeRequest(request, response, context) {
     const body = await readJsonBody(request, context.maxBodyBytes);
     const result = await context.runtime.runSourceIngestTask({
       sourceId: decodeURIComponent(sourceIngestMatch[1]),
+      sourceRunStaleAfterMs: body.sourceRunStaleAfterMs,
+      now: body.now,
       storeDir: body.storeDir || context.storeDir
     });
     writeJson(response, 200, {
@@ -498,6 +504,8 @@ async function routeRequest(request, response, context) {
       baseReportType: body.baseReportType,
       semanticEnrichmentEnabled: body.semanticEnrichmentEnabled,
       semanticSkipIfUnchanged: body.semanticSkipIfUnchanged,
+      sourceRunStaleAfterMs: body.sourceRunStaleAfterMs,
+      now: body.now,
       storeDir: body.storeDir || context.storeDir
     });
     writeJson(response, 200, {

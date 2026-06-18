@@ -5,6 +5,7 @@ ThreadTrace separates tracked-source lifecycle from source-specific ingest behav
 `runTrackedSourceIngestTask` owns:
 
 - source lookup and enabled-state validation
+- duplicate-run protection for active source runs
 - run-state transitions
 - cursor construction and cursor diffing
 - source-changed notification events
@@ -63,3 +64,7 @@ node src/presentation/cli/threadtrace.js source-diagnostics
 Forum-HTML handlers should use `requiresAdapter: true` and consume `context.adapter`. API-native, queue-native, or already-normalized sources can use `requiresAdapter: false` and return a canonical `ThreadSnapshot` directly.
 
 This keeps future integrations such as other forums, RSS-like sources, webhook submissions, or database-backed sources out of the tracked-source lifecycle code.
+
+## Source Run Guard
+
+Source runs reject duplicate execution while a source is already `running`. The default stale window is 10 minutes; after that, a stuck `running` state is considered recoverable and the next run can proceed. Runtime, HTTP, CLI, batch, and due-worker entrypoints may pass `sourceRunStaleAfterMs` for controlled recovery.

@@ -78,11 +78,14 @@ Example body:
   "traceId": "manual-run",
   "baseReportType": "basic-history",
   "semanticEnrichmentEnabled": true,
-  "semanticSkipIfUnchanged": true
+  "semanticSkipIfUnchanged": true,
+  "sourceRunStaleAfterMs": 600000
 }
 ```
 
 Run history can be filtered with `sourceId`, `status`, and `limit`. It returns stable summaries derived from durable task records, including the source display name, cursor diff, semantic status, and run timestamps.
+
+The single-source and due-source pipeline endpoints use the same source run guard as ingest tasks. A non-stale `running` source is rejected or skipped; a stale `running` source can recover after `sourceRunStaleAfterMs`.
 
 ## Runtime
 

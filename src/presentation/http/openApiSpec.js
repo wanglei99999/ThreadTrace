@@ -593,6 +593,8 @@ function createOpenApiSpec() {
                 schema: {
                   type: 'object',
                   properties: {
+                    sourceRunStaleAfterMs: { type: 'number', example: 600000 },
+                    now: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
                     storeDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/data/store' }
                   }
                 }
@@ -624,6 +626,8 @@ function createOpenApiSpec() {
                     baseReportType: { type: 'string', example: 'basic-history' },
                     semanticEnrichmentEnabled: { type: 'boolean' },
                     semanticSkipIfUnchanged: { type: 'boolean' },
+                    sourceRunStaleAfterMs: { type: 'number', example: 600000 },
+                    now: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
                     storeDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/data/store' }
                   }
                 }
@@ -649,6 +653,8 @@ function createOpenApiSpec() {
                   properties: {
                     forum: { type: 'string', example: 'nga' },
                     limit: { type: 'number', example: 50 },
+                    sourceRunStaleAfterMs: { type: 'number', example: 600000 },
+                    now: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
                     storeDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/data/store' }
                   }
                 }
@@ -675,6 +681,7 @@ function createOpenApiSpec() {
                     forum: { type: 'string', example: 'nga' },
                     limit: { type: 'number', example: 50 },
                     now: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+                    sourceRunStaleAfterMs: { type: 'number', example: 600000 },
                     storeDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/data/store' }
                   }
                 }
@@ -701,6 +708,7 @@ function createOpenApiSpec() {
                     forum: { type: 'string', example: 'nga' },
                     limit: { type: 'number', example: 50 },
                     now: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+                    sourceRunStaleAfterMs: { type: 'number', example: 600000 },
                     provider: { type: 'string', example: 'mock' },
                     traceId: { type: 'string' },
                     baseReportType: { type: 'string', example: 'basic-history' },
