@@ -92,6 +92,32 @@ test('http server can run and list ingest tasks', async function () {
   }
 });
 
+test('http server can index and search historical evidence', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-http-search-'));
+  const server = createThreadTraceServer({
+    defaultInputDir: path.resolve(__dirname, '..', 'example'),
+    storeDir: tempDir
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const indexResult = await postJson(baseUrl + '/api/index-directory', {});
+    const searchResult = await postJson(baseUrl + '/api/search', {
+      text: '科技',
+      limit: 5
+    });
+
+    assert.equal(indexResult.sourceThreadId, '45974302');
+    assert.equal(indexResult.indexedDocumentCount, 20);
+    assert.ok(searchResult.results.length >= 1);
+    assert.equal(searchResult.results[0].metadata.sourceThreadId, '45974302');
+  } finally {
+    await close(server);
+  }
+});
+
 function listen(server, port) {
   return new Promise(function (resolve, reject) {
     server.once('error', reject);

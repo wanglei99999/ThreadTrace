@@ -13,6 +13,8 @@
     "analyze:sample-dir": "node src/presentation/cli/threadtrace.js analyze-html-dir",
     "ingest:sample-dir": "node src/presentation/cli/threadtrace.js ingest-html-dir",
     "task:ingest:sample": "node src/presentation/cli/threadtrace.js run-ingest-task",
+    "index:sample-dir": "node src/presentation/cli/threadtrace.js index-html-dir",
+    "search:sample": "node src/presentation/cli/threadtrace.js search-index --text 科技",
     "interpret:sample": "node src/presentation/cli/threadtrace.js interpret-text-dir --text 科技后面看量确认",
     "serve": "node src/presentation/http/server.js",
     "serve:web": "node src/presentation/http/server.js",

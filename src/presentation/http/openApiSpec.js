@@ -124,6 +124,58 @@ function createOpenApiSpec() {
             }
           }
         }
+      },
+      '/api/index-directory': {
+        post: {
+          summary: 'Index posts from a saved HTML directory into the retrieval index',
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    forum: { type: 'string', example: 'nga' },
+                    inputDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/example' },
+                    storeDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/data/store' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Index summary'
+            }
+          }
+        }
+      },
+      '/api/search': {
+        post: {
+          summary: 'Search indexed historical evidence',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['text'],
+                  properties: {
+                    text: { type: 'string', example: '科技' },
+                    limit: { type: 'number', example: 10 },
+                    filter: { type: 'object' },
+                    storeDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/data/store' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Search results'
+            }
+          }
+        }
       }
     }
   };

@@ -10,6 +10,8 @@ const { analyzeSavedThreadDirectory } = require('../../application/use-cases/ana
 const { ingestSavedThreadDirectory } = require('../../application/use-cases/ingestSavedThreadDirectory');
 const { runIngestSavedThreadDirectoryTask } = require('../../application/use-cases/runIngestSavedThreadDirectoryTask');
 const { interpretNewPostFromSavedThreadDirectory } = require('../../application/use-cases/interpretNewPostFromSavedThreadDirectory');
+const { indexSavedThreadDirectory } = require('../../application/use-cases/indexSavedThreadDirectory');
+const { searchEvidence } = require('../../application/use-cases/searchEvidence');
 const { writeJsonFile } = require('../../infrastructure/storage/jsonFileStorage');
 const { writeTextFile } = require('../../infrastructure/storage/textFileWriter');
 const { getForumAdapter, listForumAdapters } = require('../../infrastructure/forum-adapters/registry');
@@ -18,6 +20,7 @@ const { renderNewPostContextMarkdown } = require('../../domain/analysis/contextM
 const { createFileThreadRepository } = require('../../infrastructure/storage/fileThreadRepository');
 const { createFileAnalysisReportRepository } = require('../../infrastructure/storage/fileAnalysisReportRepository');
 const { createFileTaskRepository } = require('../../infrastructure/storage/fileTaskRepository');
+const { createFileTextRetrievalIndex } = require('../../infrastructure/retrieval/fileTextRetrievalIndex');
 
 function main(argv) {
   const command = argv[2] || 'help';
@@ -188,6 +191,48 @@ function main(argv) {
     return;
   }
 
+  if (command === 'index-html-dir') {
+    const inputDir = options.input || path.resolve(process.cwd(), 'example');
+    const adapter = getForumAdapter(options.forum || 'nga');
+    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    indexSavedThreadDirectory({
+      adapter,
+      inputDir,
+      retrievalIndex: createFileTextRetrievalIndex({
+        indexFile: path.join(storeDir, 'retrieval', 'documents.json')
+      })
+    }).then(function (result) {
+      console.log('Indexed documents: ' + result.indexedDocumentCount);
+      printThreadSummary(result.threadSnapshot);
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
+  if (command === 'search-index') {
+    if (!options.text) {
+      throw new Error('search-index requires --text.');
+    }
+    const storeDir = options.storeDir || path.resolve(process.cwd(), 'data', 'store');
+    searchEvidence({
+      text: options.text,
+      limit: options.limit ? Number(options.limit) : 10,
+      retrievalIndex: createFileTextRetrievalIndex({
+        indexFile: path.join(storeDir, 'retrieval', 'documents.json')
+      })
+    }).then(function (results) {
+      results.forEach(function (result) {
+        console.log(result.score + '\t#' + result.metadata.floor + '\t' + result.metadata.author + '\t' + result.text);
+      });
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'list-adapters') {
     listForumAdapters().forEach(function (adapter) {
       console.log(adapter.sourceKey + '\t' + adapter.displayName);
@@ -298,6 +343,8 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js ingest-html-dir [--forum nga] [--input dir] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-ingest-task [--forum nga] [--input dir] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-tasks [--store-dir dir] [--status status] [--type type] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js index-html-dir [--forum nga] [--input dir] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js search-index --text text [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js interpret-text-dir [--forum nga] [--input dir] --text text [--author-id id] [--output file] [--markdown-output file]');
 }
 

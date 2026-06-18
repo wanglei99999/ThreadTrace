@@ -87,6 +87,37 @@ http://127.0.0.1:3017
 - `type`: 可选，如 `ingest-saved-thread-directory`。
 - `limit`: 可选，默认 20。
 
+### `POST /api/index-directory`
+
+将保存页目录解析为楼层文档并写入本地检索索引。
+
+请求：
+
+```json
+{
+  "forum": "nga",
+  "inputDir": "D:/Coding/GitCoding/ThreadTrace/example",
+  "storeDir": "D:/Coding/GitCoding/ThreadTrace/data/store"
+}
+```
+
+返回：索引文档数量和主题信息。
+
+### `POST /api/search`
+
+搜索已索引的历史证据。
+
+请求：
+
+```json
+{
+  "text": "科技",
+  "limit": 10
+}
+```
+
+返回：命中的楼层证据、分数、摘要和元数据。
+
 ## 工程约束
 
 - API 默认允许 CORS，方便本地前端工作台调试。

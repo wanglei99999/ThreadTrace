@@ -7,9 +7,12 @@ const { getForumAdapter, listForumAdapters } = require('../../infrastructure/for
 const { analyzeSavedThreadDirectory } = require('../../application/use-cases/analyzeSavedThreadDirectory');
 const { interpretNewPostFromSavedThreadDirectory } = require('../../application/use-cases/interpretNewPostFromSavedThreadDirectory');
 const { runIngestSavedThreadDirectoryTask } = require('../../application/use-cases/runIngestSavedThreadDirectoryTask');
+const { indexSavedThreadDirectory } = require('../../application/use-cases/indexSavedThreadDirectory');
+const { searchEvidence } = require('../../application/use-cases/searchEvidence');
 const { createFileThreadRepository } = require('../../infrastructure/storage/fileThreadRepository');
 const { createFileAnalysisReportRepository } = require('../../infrastructure/storage/fileAnalysisReportRepository');
 const { createFileTaskRepository } = require('../../infrastructure/storage/fileTaskRepository');
+const { createFileTextRetrievalIndex } = require('../../infrastructure/retrieval/fileTextRetrievalIndex');
 const { createOpenApiSpec } = require('./openApiSpec');
 
 function createThreadTraceServer(options) {
@@ -143,6 +146,51 @@ async function routeRequest(request, response, context) {
     });
     writeJson(response, 200, {
       tasks
+    });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/index-directory') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const adapter = getForumAdapter(body.forum || 'nga');
+    const storeDir = body.storeDir || context.storeDir;
+    const result = await indexSavedThreadDirectory({
+      adapter,
+      inputDir: body.inputDir || context.defaultInputDir,
+      retrievalIndex: createFileTextRetrievalIndex({
+        indexFile: path.join(storeDir, 'retrieval', 'documents.json')
+      })
+    });
+    writeJson(response, 200, {
+      sourceKey: result.threadSnapshot.sourceKey,
+      sourceThreadId: result.threadSnapshot.sourceThreadId,
+      title: result.threadSnapshot.title,
+      indexedDocumentCount: result.indexedDocumentCount
+    });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/search') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    if (!body.text) {
+      writeJson(response, 400, {
+        error: {
+          message: 'POST /api/search requires text.'
+        }
+      });
+      return;
+    }
+    const storeDir = body.storeDir || context.storeDir;
+    const results = await searchEvidence({
+      text: body.text,
+      filter: body.filter,
+      limit: body.limit || 10,
+      retrievalIndex: createFileTextRetrievalIndex({
+        indexFile: path.join(storeDir, 'retrieval', 'documents.json')
+      })
+    });
+    writeJson(response, 200, {
+      results
     });
     return;
   }
