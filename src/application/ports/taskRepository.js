@@ -21,7 +21,7 @@
  * @typedef {Object} TaskRepository
  * @property {(task: TaskRecord) => Promise<void>} saveTask
  * @property {(id: string) => Promise<TaskRecord | undefined>} findTask
- * @property {(query?: { status?: string, type?: string, limit?: number }) => Promise<TaskRecord[]>} listTasks
+ * @property {(query?: { status?: string, type?: string, requestId?: string, traceId?: string, idempotencyKey?: string, limit?: number }) => Promise<TaskRecord[]>} listTasks
  */
 
 function assertTaskRepository(repository) {

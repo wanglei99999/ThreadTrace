@@ -38,6 +38,11 @@ test('ingest task records status and output in task repository', async function 
     status: 'completed',
     type: 'ingest-saved-thread-directory'
   });
+  const tasksByTrace = await taskRepository.listTasks({
+    requestId: 'task-request-1',
+    traceId: 'trace-1',
+    idempotencyKey: 'idem-1'
+  });
 
   assert.equal(result.task.status, 'completed');
   assert.deepEqual(result.task.input._trace, {
@@ -48,4 +53,6 @@ test('ingest task records status and output in task repository', async function 
   assert.equal(loadedTask.output.sourceThreadId, '45974302');
   assert.equal(loadedTask.input._trace.requestId, 'task-request-1');
   assert.equal(tasks.length, 1);
+  assert.equal(tasksByTrace.length, 1);
+  assert.equal(tasksByTrace[0].id, result.task.id);
 });

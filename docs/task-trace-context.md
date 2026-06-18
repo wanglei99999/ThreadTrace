@@ -32,3 +32,21 @@ The metadata is observational. It does not yet deduplicate task execution. That 
 - Source batch and pipeline tasks propagate trace metadata to child source ingest and semantic enrichment tasks.
 - CLI source task commands accept `--trace-id` for operator-driven runs.
 - New task-producing use cases should call `createTaskRecord(type, input, options)` with the original request options.
+
+## Querying Tasks
+
+Task listings can be filtered by trace metadata:
+
+```http
+GET /api/tasks?requestId=http-request-1
+GET /api/tasks?traceId=semantic-trace-1
+GET /api/tasks?idempotencyKey=client-retry-key-1
+```
+
+CLI:
+
+```powershell
+node src/presentation/cli/threadtrace.js list-tasks --request-id http-request-1
+node src/presentation/cli/threadtrace.js list-tasks --trace-id semantic-trace-1
+node src/presentation/cli/threadtrace.js list-tasks --idempotency-key client-retry-key-1
+```

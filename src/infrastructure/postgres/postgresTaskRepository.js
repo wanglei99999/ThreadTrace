@@ -56,6 +56,18 @@ function createPostgresTaskRepository(options) {
         params.push(safeQuery.type);
         where.push('type = $' + params.length);
       }
+      if (safeQuery.requestId) {
+        params.push(safeQuery.requestId);
+        where.push("input -> '_trace' ->> 'requestId' = $" + params.length);
+      }
+      if (safeQuery.traceId) {
+        params.push(safeQuery.traceId);
+        where.push("input -> '_trace' ->> 'traceId' = $" + params.length);
+      }
+      if (safeQuery.idempotencyKey) {
+        params.push(safeQuery.idempotencyKey);
+        where.push("input -> '_trace' ->> 'idempotencyKey' = $" + params.length);
+      }
       const sql = 'select * from task_records' +
         (where.length ? ' where ' + where.join(' and ') : '') +
         ' order by created_at desc' +

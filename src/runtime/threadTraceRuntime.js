@@ -218,6 +218,9 @@ function createThreadTraceRuntime(options) {
       return repositories.taskRepository.listTasks({
         status: safeRequest.status,
         type: safeRequest.type,
+        requestId: safeRequest.requestId,
+        traceId: safeRequest.traceId,
+        idempotencyKey: safeRequest.idempotencyKey,
         limit: safeRequest.limit || 20
       });
     },

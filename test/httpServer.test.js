@@ -507,6 +507,8 @@ test('http server can run and list ingest tasks', async function () {
     });
     const taskResult = await taskResponse.json();
     const tasksResult = await getJson(baseUrl + '/api/tasks');
+    const tasksByRequestId = await getJson(baseUrl + '/api/tasks?requestId=http-task-request-1');
+    const tasksByIdempotencyKey = await getJson(baseUrl + '/api/tasks?idempotencyKey=http-task-idem-1');
 
     assert.equal(taskResult.task.status, 'completed');
     assert.equal(taskResult.task.output.sourceThreadId, '45974302');
@@ -515,6 +517,10 @@ test('http server can run and list ingest tasks', async function () {
     assert.equal(tasksResult.tasks.length, 1);
     assert.equal(tasksResult.tasks[0].id, taskResult.task.id);
     assert.equal(tasksResult.tasks[0].input._trace.requestId, 'http-task-request-1');
+    assert.equal(tasksByRequestId.tasks.length, 1);
+    assert.equal(tasksByRequestId.tasks[0].id, taskResult.task.id);
+    assert.equal(tasksByIdempotencyKey.tasks.length, 1);
+    assert.equal(tasksByIdempotencyKey.tasks[0].id, taskResult.task.id);
   } finally {
     await close(server);
   }

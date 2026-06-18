@@ -6,6 +6,7 @@ const { createThreadTraceRuntime } = require('../src/runtime/threadTraceRuntime'
 const { createPostgresConfig } = require('../src/infrastructure/postgres/postgresConfig');
 const { createPostgresNotificationEventRepository } = require('../src/infrastructure/postgres/postgresNotificationEventRepository');
 const { createPostgresSourceRepository } = require('../src/infrastructure/postgres/postgresSourceRepository');
+const { createPostgresTaskRepository } = require('../src/infrastructure/postgres/postgresTaskRepository');
 const { createPostgresWorkerLeaseRepository } = require('../src/infrastructure/postgres/postgresWorkerLeaseRepository');
 const { createPostgresWorkerRunRepository } = require('../src/infrastructure/postgres/postgresWorkerRunRepository');
 
@@ -181,6 +182,54 @@ test('postgres notification repository queries due outbox events', async functio
   assert.equal(events[0].deliveryStatus, 'failed');
   assert.equal(events[0].nextDeliveryAt, '2026-06-18T10:01:00.000Z');
   assert.equal(events[0].lastDeliveryError.message, 'timeout');
+});
+
+test('postgres task repository filters by trace metadata', async function () {
+  const queries = [];
+  const repository = createPostgresTaskRepository({
+    client: {
+      async query(sql, params) {
+        queries.push({ sql, params });
+        return {
+          rows: [
+            {
+              id: '7d0b0bb6-0f1d-4bfe-a7e9-0d58a6ea79f0',
+              type: 'ingest-saved-thread-directory',
+              status: 'completed',
+              input: {
+                _trace: {
+                  requestId: 'request-1',
+                  traceId: 'trace-1',
+                  idempotencyKey: 'idem-1'
+                }
+              },
+              output: {},
+              error: null,
+              created_at: new Date('2026-06-18T10:00:00.000Z'),
+              updated_at: new Date('2026-06-18T10:01:00.000Z'),
+              started_at: new Date('2026-06-18T10:00:00.000Z'),
+              finished_at: new Date('2026-06-18T10:01:00.000Z')
+            }
+          ]
+        };
+      }
+    }
+  });
+
+  const tasks = await repository.listTasks({
+    type: 'ingest-saved-thread-directory',
+    requestId: 'request-1',
+    traceId: 'trace-1',
+    idempotencyKey: 'idem-1',
+    limit: 5
+  });
+
+  assert.match(queries[0].sql, /type = \$1/);
+  assert.match(queries[0].sql, /input -> '_trace' ->> 'requestId' = \$2/);
+  assert.match(queries[0].sql, /input -> '_trace' ->> 'traceId' = \$3/);
+  assert.match(queries[0].sql, /input -> '_trace' ->> 'idempotencyKey' = \$4/);
+  assert.deepEqual(queries[0].params, ['ingest-saved-thread-directory', 'request-1', 'trace-1', 'idem-1', 5]);
+  assert.equal(tasks[0].input._trace.requestId, 'request-1');
 });
 
 test('postgres worker run repository maps rows and filters runs', async function () {

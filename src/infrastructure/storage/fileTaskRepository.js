@@ -33,6 +33,9 @@ function createFileTaskRepository(options) {
         const task = JSON.parse(await fs.readFile(filePath, 'utf8'));
         if (safeQuery.status && task.status !== safeQuery.status) continue;
         if (safeQuery.type && task.type !== safeQuery.type) continue;
+        if (safeQuery.requestId && taskTraceValue(task, 'requestId') !== safeQuery.requestId) continue;
+        if (safeQuery.traceId && taskTraceValue(task, 'traceId') !== safeQuery.traceId) continue;
+        if (safeQuery.idempotencyKey && taskTraceValue(task, 'idempotencyKey') !== safeQuery.idempotencyKey) continue;
         tasks.push(task);
       }
 
@@ -69,6 +72,12 @@ async function listTaskFiles(baseDir) {
     if (error && error.code === 'ENOENT') return [];
     throw error;
   }
+}
+
+function taskTraceValue(task, key) {
+  return task && task.input && task.input._trace
+    ? task.input._trace[key]
+    : undefined;
 }
 
 module.exports = {

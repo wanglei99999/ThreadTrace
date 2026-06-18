@@ -181,6 +181,9 @@ function createOpenApiSpec() {
           parameters: [
             { name: 'status', in: 'query', required: false, schema: { type: 'string' } },
             { name: 'type', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'requestId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'traceId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'idempotencyKey', in: 'query', required: false, schema: { type: 'string' } },
             { name: 'limit', in: 'query', required: false, schema: { type: 'number' } }
           ],
           responses: {

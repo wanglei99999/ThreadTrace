@@ -164,6 +164,9 @@ async function routeRequest(request, response, context) {
     const tasks = await context.runtime.listTasks({
       status: url.searchParams.get('status') || undefined,
       type: url.searchParams.get('type') || undefined,
+      requestId: url.searchParams.get('requestId') || undefined,
+      traceId: url.searchParams.get('traceId') || undefined,
+      idempotencyKey: url.searchParams.get('idempotencyKey') || undefined,
       limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 20
     });
     writeJson(response, 200, {
