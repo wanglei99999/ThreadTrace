@@ -138,6 +138,28 @@ test('runtime validates connector module files before startup configuration', as
   assert.match(broken.errors[0].message, /validation boom/);
 });
 
+test('connector module validation reloads changed module files', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-connector-module-reload-'));
+  const modulePath = path.join(tempDir, 'reloadConnector.cjs');
+  const runtime = createThreadTraceRuntime({
+    storeDir: path.join(tempDir, 'store')
+  });
+
+  await fs.writeFile(modulePath, connectorModuleSource('reload-feed-v1'), 'utf8');
+  const first = runtime.validateConnectorModule({
+    modulePath,
+    now: '2026-06-19T10:00:00.000Z'
+  });
+  await fs.writeFile(modulePath, connectorModuleSource('reload-feed-v2'), 'utf8');
+  const second = runtime.validateConnectorModule({
+    modulePath,
+    now: '2026-06-19T10:00:00.000Z'
+  });
+
+  assert.equal(first.modules[0].sourceIngestHandlers[0], 'reload-feed-v1');
+  assert.equal(second.modules[0].sourceIngestHandlers[0], 'reload-feed-v2');
+});
+
 test('runtime reports connector module load failures without blocking startup', async function () {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-broken-connector-module-'));
   const modulePath = path.join(tempDir, 'brokenConnector.cjs');
@@ -169,3 +191,19 @@ test('runtime reports connector module load failures without blocking startup', 
   assert.equal(readiness.status, 'fail');
   assert.equal(readiness.modules.errorCount, 1);
 });
+
+function connectorModuleSource(sourceType) {
+  return [
+    "'use strict';",
+    "module.exports = {",
+    "  sourceIngestHandlers: [{",
+    "    sourceType: '" + sourceType + "',",
+    "    requiresAdapter: false,",
+    "    description: 'Reload validation feed.',",
+    "    locationSchema: { required: ['feedUrl'], properties: { feedUrl: { type: 'string' } } },",
+    "    async run() { throw new Error('not used in this test'); }",
+    "  }]",
+    "};",
+    ""
+  ].join('\n');
+}

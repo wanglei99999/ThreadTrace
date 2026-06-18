@@ -15,6 +15,9 @@ function loadConnectorModulesReport(options) {
   modulePaths.forEach(function (modulePath) {
     const resolvedPath = path.resolve(safeOptions.cwd || process.cwd(), modulePath);
     try {
+      if (safeOptions.reload === true) {
+        delete require.cache[require.resolve(resolvedPath)];
+      }
       const loadedModule = normalizeModuleExport(require(resolvedPath));
       const registration = applyConnectorModule(loadedModule, {
         modulePath: resolvedPath,

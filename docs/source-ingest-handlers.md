@@ -77,6 +77,8 @@ content-type: application/json
 }
 ```
 
+Validation and onboarding preflight reload the module file for each run, so connector authors can edit a module and immediately re-run the check without restarting ThreadTrace.
+
 Runtime and HTTP discovery:
 
 ```text

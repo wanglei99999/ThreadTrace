@@ -167,7 +167,8 @@ function createThreadTraceRuntime(options) {
           cwd: safeOptions.cwd,
           forumAdapterRegistry: createDefaultForumAdapterRegistry(),
           sourceIngestHandlerRegistry: createDefaultSourceIngestHandlerRegistry(),
-          runtimeConfig
+          runtimeConfig,
+          reload: true
         })
         : { modules: [], errors: [] };
       return validateConnectorModuleLoad({
@@ -218,7 +219,8 @@ function createThreadTraceRuntime(options) {
           cwd: safeOptions.cwd,
           forumAdapterRegistry: preflightForumAdapterRegistry,
           sourceIngestHandlerRegistry: preflightSourceIngestHandlerRegistry,
-          runtimeConfig
+          runtimeConfig,
+          reload: true
         })
         : undefined;
       const connectorModuleValidation = connectorModuleReport
