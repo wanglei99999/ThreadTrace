@@ -82,6 +82,56 @@ test('postgres source repository maps rows and writes upserts', async function (
   assert.equal(sources[0].cursor.postCount, 20);
 });
 
+test('postgres source repository acquires source runs with conditional update', async function () {
+  const queries = [];
+  const repository = createPostgresSourceRepository({
+    client: {
+      async query(sql, params) {
+        queries.push({ sql, params });
+        if (sql.startsWith('update tracked_sources')) {
+          return {
+            rows: [
+              {
+                id: 'source-1',
+                source_key: 'nga',
+                source_type: 'saved-html-directory',
+                display_name: 'NGA archive',
+                location: { inputDir: 'example' },
+                enabled: true,
+                tags: [],
+                schedule: null,
+                cursor: null,
+                run_state: { status: 'running', lastStartedAt: '2026-06-19T10:01:00.000Z' },
+                created_at: new Date('2026-06-19T10:00:00.000Z'),
+                updated_at: new Date('2026-06-19T10:01:00.000Z')
+              }
+            ]
+          };
+        }
+        return { rows: [] };
+      }
+    }
+  });
+
+  const result = await repository.acquireSourceRun({
+    sourceId: 'source-1',
+    now: '2026-06-19T10:01:00.000Z',
+    staleAfterMs: 10 * 60 * 1000
+  });
+
+  assert.equal(result.acquired, true);
+  assert.match(queries[0].sql, /update tracked_sources/);
+  assert.match(queries[0].sql, /run_state ->> 'status' is distinct from 'running'/);
+  assert.match(queries[0].sql, /lastStartedAt/);
+  assert.equal(queries[0].params[0], 'source-1');
+  assert.deepEqual(queries[0].params[1], {
+    status: 'running',
+    lastStartedAt: '2026-06-19T10:01:00.000Z'
+  });
+  assert.equal(queries[0].params[3], '2026-06-19T09:51:00.000Z');
+  assert.equal(result.source.runState.status, 'running');
+});
+
 test('postgres notification repository queries due outbox events', async function () {
   const queries = [];
   const repository = createPostgresNotificationEventRepository({

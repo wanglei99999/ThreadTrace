@@ -8,6 +8,7 @@
  * @property {(source: Object) => Promise<void>} saveSource
  * @property {(id: string) => Promise<Object|undefined>} findSource
  * @property {(query?: { sourceKey?: string, enabled?: boolean, limit?: number }) => Promise<Object[]>} listSources
+ * @property {(request: { sourceId: string, now?: string, staleAfterMs?: number }) => Promise<{ acquired: boolean, source?: Object, reason?: string }>=} acquireSourceRun
  */
 
 function assertSourceRepository(repository) {

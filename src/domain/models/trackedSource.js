@@ -7,6 +7,8 @@ const SOURCE_TYPES = {
   THREAD_URL: 'thread-url'
 };
 
+const DEFAULT_SOURCE_RUN_STALE_AFTER_MS = 10 * 60 * 1000;
+
 function createTrackedSource(input) {
   const safeInput = input || {};
   const sourceKey = safeInput.sourceKey || safeInput.forum || 'nga';
@@ -81,6 +83,15 @@ function markTrackedSourceRunFailed(source, error, timestamp) {
   });
 }
 
+function isTrackedSourceRunStale(runState, options) {
+  const safeOptions = options || {};
+  const staleAfterMs = safeOptions.staleAfterMs === undefined ? DEFAULT_SOURCE_RUN_STALE_AFTER_MS : safeOptions.staleAfterMs;
+  const startedTime = Date.parse(runState && runState.lastStartedAt);
+  const nowTime = Date.parse(safeOptions.now || new Date().toISOString());
+  if (Number.isNaN(startedTime) || Number.isNaN(nowTime)) return true;
+  return nowTime - startedTime > staleAfterMs;
+}
+
 function normalizeLocation(sourceType, location) {
   const safeLocation = location || {};
   if (sourceType === SOURCE_TYPES.SAVED_HTML_DIRECTORY) {
@@ -126,9 +137,11 @@ function safeSegment(value) {
 }
 
 module.exports = {
+  DEFAULT_SOURCE_RUN_STALE_AFTER_MS,
   SOURCE_TYPES,
   createTrackedSource,
   markTrackedSourceRunStarted,
   markTrackedSourceRunCompleted,
-  markTrackedSourceRunFailed
+  markTrackedSourceRunFailed,
+  isTrackedSourceRunStale
 };

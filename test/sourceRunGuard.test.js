@@ -72,6 +72,42 @@ test('tracked source ingest recovers stale running source state', async function
   assert.equal(result.cursor.sourceThreadId, 'thread-1');
 });
 
+test('tracked source ingest uses repository source-run acquire when available', async function () {
+  let acquireCalls = 0;
+  let directSaves = 0;
+  const source = createSource();
+
+  const result = await runTrackedSourceIngestTask({
+    sourceId: source.id,
+    sourceRepository: {
+      async saveSource() { directSaves += 1; },
+      async findSource() { return source; },
+      async listSources() { return [source]; },
+      async acquireSourceRun(request) {
+        acquireCalls += 1;
+        assert.equal(request.sourceId, source.id);
+        assert.equal(request.staleAfterMs, 1234);
+        return {
+          acquired: true,
+          source: Object.assign({}, source, {
+            runState: {
+              status: 'running',
+              lastStartedAt: request.now
+            }
+          })
+        };
+      }
+    },
+    sourceIngestHandlerRegistry: createHandlerRegistry(createHandlerResult),
+    now: '2026-06-19T10:01:00.000Z',
+    sourceRunStaleAfterMs: 1234
+  });
+
+  assert.equal(acquireCalls, 1);
+  assert.equal(directSaves, 1);
+  assert.equal(result.source.runState.status, 'completed');
+});
+
 test('stale source run helper treats invalid timestamps as recoverable', function () {
   assert.equal(isStaleSourceRun({
     status: 'running'

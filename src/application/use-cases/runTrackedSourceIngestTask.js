@@ -3,7 +3,8 @@
 const {
   markTrackedSourceRunCompleted,
   markTrackedSourceRunFailed,
-  markTrackedSourceRunStarted
+  markTrackedSourceRunStarted,
+  isTrackedSourceRunStale
 } = require('../../domain/models/trackedSource');
 const {
   buildThreadSnapshotCursor,
@@ -12,8 +13,6 @@ const {
 const { createSourceChangedEvent } = require('../../domain/events/notificationEvent');
 const { createDefaultSourceIngestHandlerRegistry } = require('../source-ingest/standardSourceIngestHandlers');
 const { assertSourceRepository } = require('../ports/sourceRepository');
-
-const DEFAULT_SOURCE_RUN_STALE_AFTER_MS = 10 * 60 * 1000;
 
 async function runTrackedSourceIngestTask(options) {
   const safeOptions = options || {};
@@ -27,18 +26,16 @@ async function runTrackedSourceIngestTask(options) {
   if (source.enabled === false) {
     throw new Error('Tracked source is disabled: ' + source.id);
   }
-  assertSourceNotAlreadyRunning(source, {
-    now: safeOptions.now,
-    staleAfterMs: safeOptions.sourceRunStaleAfterMs
-  });
   const handler = handlerRegistry.findHandler(source);
   if (!handler) {
     throw new Error('Tracked source type is not ingestible yet: ' + source.sourceType);
   }
   const adapter = safeOptions.adapter || resolveAdapter(handler, source, safeOptions.getAdapter);
 
-  let runningSource = markTrackedSourceRunStarted(source);
-  await sourceRepository.saveSource(runningSource);
+  let runningSource = await acquireSourceRun(sourceRepository, source, {
+    now: safeOptions.now,
+    staleAfterMs: safeOptions.sourceRunStaleAfterMs
+  });
 
   try {
     const result = await handler.run({
@@ -74,6 +71,35 @@ async function runTrackedSourceIngestTask(options) {
   }
 }
 
+async function acquireSourceRun(sourceRepository, source, options) {
+  if (typeof sourceRepository.acquireSourceRun === 'function') {
+    const result = await sourceRepository.acquireSourceRun({
+      sourceId: source.id,
+      now: options && options.now,
+      staleAfterMs: options && options.staleAfterMs
+    });
+    if (!result || !result.acquired) {
+      throw new Error(sourceAcquireFailureMessage(source, result));
+    }
+    return result.source || markTrackedSourceRunStarted(source, options && options.now);
+  }
+
+  assertSourceNotAlreadyRunning(source, options);
+  const runningSource = markTrackedSourceRunStarted(source, options && options.now);
+  await sourceRepository.saveSource(runningSource);
+  return runningSource;
+}
+
+function sourceAcquireFailureMessage(source, result) {
+  if (result && result.reason === 'unknown-source') {
+    return 'Unknown tracked source: ' + source.id;
+  }
+  if (result && result.reason === 'transition-lock-held') {
+    return 'Tracked source run transition is locked: ' + source.id;
+  }
+  return 'Tracked source is already running: ' + source.id;
+}
+
 function assertSourceNotAlreadyRunning(source, options) {
   const runState = source.runState || {};
   if (runState.status !== 'running') return;
@@ -83,11 +109,10 @@ function assertSourceNotAlreadyRunning(source, options) {
 
 function isStaleSourceRun(runState, options) {
   const safeOptions = options || {};
-  const staleAfterMs = safeOptions.staleAfterMs === undefined ? DEFAULT_SOURCE_RUN_STALE_AFTER_MS : safeOptions.staleAfterMs;
-  const startedTime = Date.parse(runState.lastStartedAt);
-  const nowTime = Date.parse(safeOptions.now || new Date().toISOString());
-  if (Number.isNaN(startedTime) || Number.isNaN(nowTime)) return true;
-  return nowTime - startedTime > staleAfterMs;
+  return isTrackedSourceRunStale(runState, {
+    now: safeOptions.now,
+    staleAfterMs: safeOptions.staleAfterMs
+  });
 }
 
 function resolveAdapter(handler, source, getAdapter) {

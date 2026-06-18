@@ -3,6 +3,7 @@
 const { assertSourceRepository } = require('../../application/ports/sourceRepository');
 const { assertPostgresClient } = require('./postgresConnection');
 const { optionalJson, pushLimit, toIso } = require('./postgresRows');
+const { DEFAULT_SOURCE_RUN_STALE_AFTER_MS } = require('../../domain/models/trackedSource');
 
 function createPostgresSourceRepository(options) {
   const client = assertPostgresClient(options && options.client);
@@ -66,6 +67,51 @@ function createPostgresSourceRepository(options) {
         pushLimit(params, safeQuery.limit);
       const result = await client.query(sql, params);
       return result.rows.map(rowToSource);
+    },
+
+    async acquireSourceRun(request) {
+      const safeRequest = request || {};
+      const now = resolveIsoTimestamp(safeRequest.now);
+      const staleAfterMs = safeRequest.staleAfterMs === undefined
+        ? DEFAULT_SOURCE_RUN_STALE_AFTER_MS
+        : Number(safeRequest.staleAfterMs);
+      const staleBefore = new Date(Date.parse(now) - staleAfterMs).toISOString();
+      const runStatePatch = {
+        status: 'running',
+        lastStartedAt: now
+      };
+      const result = await client.query(
+        [
+          'update tracked_sources set',
+          'run_state = coalesce(run_state, \'{}\'::jsonb) || $2::jsonb,',
+          'updated_at = $3',
+          'where id = $1 and (',
+          'run_state ->> \'status\' is distinct from \'running\'',
+          'or run_state ->> \'lastStartedAt\' is null',
+          'or run_state ->> \'lastStartedAt\' !~ $5',
+          'or run_state ->> \'lastStartedAt\' < $4',
+          ')',
+          'returning *'
+        ].join(' '),
+        [
+          safeRequest.sourceId,
+          runStatePatch,
+          now,
+          staleBefore,
+          '^\\d{4}-\\d{2}-\\d{2}T'
+        ]
+      );
+      if (result.rows[0]) {
+        return {
+          acquired: true,
+          source: rowToSource(result.rows[0])
+        };
+      }
+      const existing = await repository.findSource(safeRequest.sourceId);
+      return {
+        acquired: false,
+        source: existing
+      };
     }
   };
 
@@ -87,6 +133,14 @@ function rowToSource(row) {
     createdAt: toIso(row.created_at),
     updatedAt: toIso(row.updated_at)
   };
+}
+
+function resolveIsoTimestamp(value) {
+  if (value) {
+    const time = Date.parse(value);
+    if (!Number.isNaN(time)) return new Date(time).toISOString();
+  }
+  return new Date().toISOString();
 }
 
 module.exports = {
