@@ -21,6 +21,10 @@ ThreadTrace uses a notification outbox to decouple forum/source ingestion from u
    - `lastDeliveryAttemptAt`
    - `lastDeliveryError`
    - `nextDeliveryAt`, unless max attempts have been exhausted.
+7. Runbook action synthesis can close stale `runbook-action` events when the action is no longer present:
+   - `deliveryStatus: "resolved"`
+   - `acknowledgedBy: "runbook-synthesizer"`
+   - `nextDeliveryAt: undefined`
 
 Acknowledgement is separate from delivery. A delivered event can still be unacknowledged in the UI, and an acknowledged event remains queryable for audit/history. Dispatch workers do not deliver acknowledged events.
 
@@ -64,7 +68,7 @@ POST /api/operations/runbook/events
 POST /api/events/dispatch
 ```
 
-`synthesize-runbook-events` and `POST /api/operations/runbook/events` default to dry-run. Set `--execute true` or request body `{"execute": true}` to persist `runbook-action` events into the outbox. Stable event IDs are derived from the runbook action key, so repeated synthesis updates pending/failed events without duplicating alerts. Acknowledged or already delivered runbook events are left untouched for audit safety.
+`synthesize-runbook-events` and `POST /api/operations/runbook/events` default to dry-run. Set `--execute true` or request body `{"execute": true}` to persist `runbook-action` events into the outbox. Stable event IDs are derived from the runbook action key, so repeated synthesis updates pending/failed events without duplicating alerts. Stale runbook events are marked `resolved` when their action disappears, and system-resolved events reopen as `pending` if the same action returns. Operator-acknowledged or already delivered runbook events are left untouched for audit safety.
 
 Useful environment variables:
 

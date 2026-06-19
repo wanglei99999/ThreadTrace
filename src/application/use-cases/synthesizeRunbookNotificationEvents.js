@@ -12,6 +12,7 @@ async function synthesizeRunbookNotificationEvents(options) {
   const actions = (runbook.actions || [])
     .filter(shouldNotifyAction)
     .slice(0, safeOptions.limit || 50);
+  const activeEventIds = new Set();
   const results = [];
 
   for (const action of actions) {
@@ -20,6 +21,7 @@ async function synthesizeRunbookNotificationEvents(options) {
       runbook,
       now
     });
+    activeEventIds.add(result.event.id);
     if (execute && result.shouldSave) {
       await notificationEventRepository.saveEvent(result.event);
     }
@@ -31,6 +33,17 @@ async function synthesizeRunbookNotificationEvents(options) {
     });
   }
 
+  const staleResults = safeOptions.resolveStale === false
+    ? []
+    : await resolveStaleRunbookEvents({
+      notificationEventRepository,
+      activeEventIds,
+      execute,
+      now,
+      limit: safeOptions.staleLimit || safeOptions.limit || 100
+    });
+  results.push.apply(results, staleResults);
+
   return {
     generatedAt: now,
     status: 'ok',
@@ -38,13 +51,19 @@ async function synthesizeRunbookNotificationEvents(options) {
     executed: execute,
     actionCount: actions.length,
     eventCount: results.filter(function (result) {
-      return result.status === 'created' || result.status === 'updated';
+      return result.status === 'created' || result.status === 'updated' || result.status === 'resolved' || result.status === 'reopened';
     }).length,
     createdCount: results.filter(function (result) {
       return result.status === 'created';
     }).length,
     updatedCount: results.filter(function (result) {
       return result.status === 'updated';
+    }).length,
+    resolvedCount: results.filter(function (result) {
+      return result.status === 'resolved';
+    }).length,
+    reopenedCount: results.filter(function (result) {
+      return result.status === 'reopened';
     }).length,
     skippedCount: results.filter(function (result) {
       return result.status === 'skipped';
@@ -81,6 +100,13 @@ async function buildRunbookEventResult(action, options) {
       event: draft
     };
   }
+  if (isAutoResolvedRunbookEvent(existing)) {
+    return {
+      status: 'reopened',
+      shouldSave: true,
+      event: reopenAutoResolvedRunbookEvent(existing, draft)
+    };
+  }
   if (existing.acknowledgedAt) {
     return {
       status: 'skipped',
@@ -104,6 +130,63 @@ async function buildRunbookEventResult(action, options) {
   };
 }
 
+async function resolveStaleRunbookEvents(options) {
+  const events = await options.notificationEventRepository.listEvents({
+    type: 'runbook-action',
+    acknowledged: false,
+    limit: options.limit
+  });
+  const staleEvents = events.filter(function (event) {
+    return !options.activeEventIds.has(event.id) && event.deliveryStatus !== 'resolved' && event.deliveryStatus !== 'delivered';
+  });
+  const results = [];
+
+  for (const event of staleEvents) {
+    const resolvedEvent = markRunbookEventResolved(event, options.now);
+    if (options.execute) {
+      await options.notificationEventRepository.saveEvent(resolvedEvent);
+    }
+    results.push({
+      status: 'resolved',
+      actionKey: event.payload && event.payload.action && event.payload.action.key,
+      event: resolvedEvent,
+      reason: 'runbook-action-cleared'
+    });
+  }
+
+  return results;
+}
+
+function markRunbookEventResolved(event, now) {
+  return Object.assign({}, event, {
+    deliveryStatus: 'resolved',
+    nextDeliveryAt: undefined,
+    acknowledgedAt: now,
+    acknowledgedBy: 'runbook-synthesizer',
+    acknowledgementNote: 'Runbook action is no longer active.',
+    payload: Object.assign({}, event.payload || {}, {
+      resolution: {
+        status: 'resolved',
+        resolvedAt: now,
+        reason: 'runbook-action-cleared'
+      }
+    })
+  });
+}
+
+function isAutoResolvedRunbookEvent(event) {
+  return event.deliveryStatus === 'resolved' && event.acknowledgedBy === 'runbook-synthesizer';
+}
+
+function reopenAutoResolvedRunbookEvent(existing, draft) {
+  return Object.assign({}, draft, {
+    createdAt: existing.createdAt || draft.createdAt,
+    payload: Object.assign({}, draft.payload || {}, {
+      previousResolution: existing.payload && existing.payload.resolution
+    })
+  });
+}
+
 function mergeExistingDeliveryState(existing, draft) {
   return Object.assign({}, draft, {
     createdAt: existing.createdAt || draft.createdAt,
@@ -122,5 +205,6 @@ function mergeExistingDeliveryState(existing, draft) {
 
 module.exports = {
   synthesizeRunbookNotificationEvents,
-  buildRunbookEventResult
+  buildRunbookEventResult,
+  resolveStaleRunbookEvents
 };

@@ -286,7 +286,7 @@ Request:
 }
 ```
 
-The endpoint defaults to dry-run. Set `execute: true` or `dryRun: false` to persist `runbook-action` events. Event IDs are stable per runbook action key, so repeated synthesis updates pending or failed events without duplicating alerts. Acknowledged and delivered events are skipped.
+The endpoint defaults to dry-run. Set `execute: true` or `dryRun: false` to persist `runbook-action` events. Event IDs are stable per runbook action key, so repeated synthesis updates pending or failed events without duplicating alerts. The response includes created, updated, resolved, reopened, and skipped counts. Operator-acknowledged and delivered events are skipped.
 
 ### `GET /api/notifications/diagnostics`
 

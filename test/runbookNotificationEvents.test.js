@@ -100,6 +100,107 @@ test('runbook notification event synthesis updates pending event payload without
   assert.equal(saved[0].lastDeliveryError.message, 'temporary outage');
 });
 
+test('runbook notification event synthesis dry-runs stale event resolution', async function () {
+  const saved = [];
+  const staleAction = action('source.stale', 'warning');
+  const staleEvent = existingEvent(staleAction, {
+    deliveryStatus: 'pending',
+    nextDeliveryAt: '2026-06-19T09:30:00.000Z'
+  });
+  const result = await synthesizeRunbookNotificationEvents({
+    notificationEventRepository: repository([staleEvent], saved),
+    runbook: runbook([]),
+    now: '2026-06-19T10:00:00.000Z'
+  });
+
+  assert.equal(result.dryRun, true);
+  assert.equal(result.resolvedCount, 1);
+  assert.equal(result.eventCount, 1);
+  assert.equal(result.results[0].status, 'resolved');
+  assert.equal(result.results[0].event.deliveryStatus, 'resolved');
+  assert.equal(result.results[0].event.acknowledgedBy, 'runbook-synthesizer');
+  assert.equal(saved.length, 0);
+});
+
+test('runbook notification event synthesis executes stale event resolution', async function () {
+  const saved = [];
+  const staleAction = action('source.stale.execute', 'critical');
+  const staleEvent = existingEvent(staleAction, {
+    deliveryStatus: 'failed',
+    deliveryAttempts: 2,
+    nextDeliveryAt: '2026-06-19T09:30:00.000Z'
+  });
+  const result = await synthesizeRunbookNotificationEvents({
+    notificationEventRepository: repository([staleEvent], saved),
+    runbook: runbook([]),
+    execute: true,
+    now: '2026-06-19T10:00:00.000Z'
+  });
+
+  assert.equal(result.resolvedCount, 1);
+  assert.equal(saved.length, 1);
+  assert.equal(saved[0].deliveryStatus, 'resolved');
+  assert.equal(saved[0].nextDeliveryAt, undefined);
+  assert.equal(saved[0].acknowledgedAt, '2026-06-19T10:00:00.000Z');
+  assert.equal(saved[0].acknowledgedBy, 'runbook-synthesizer');
+  assert.equal(saved[0].payload.resolution.reason, 'runbook-action-cleared');
+});
+
+test('runbook notification event synthesis leaves delivered stale events untouched', async function () {
+  const saved = [];
+  const staleAction = action('source.delivered.stale', 'warning');
+  const deliveredEvent = existingEvent(staleAction, {
+    deliveryStatus: 'delivered',
+    lastDeliveredAt: '2026-06-19T09:30:00.000Z',
+    nextDeliveryAt: undefined
+  });
+  const result = await synthesizeRunbookNotificationEvents({
+    notificationEventRepository: repository([deliveredEvent], saved),
+    runbook: runbook([]),
+    execute: true,
+    now: '2026-06-19T10:00:00.000Z'
+  });
+
+  assert.equal(result.resolvedCount, 0);
+  assert.equal(result.eventCount, 0);
+  assert.equal(saved.length, 0);
+});
+
+test('runbook notification event synthesis reopens auto-resolved actions when they return', async function () {
+  const saved = [];
+  const item = action('source.reopened', 'warning');
+  const resolved = existingEvent(item, {
+    deliveryStatus: 'resolved',
+    nextDeliveryAt: undefined,
+    acknowledgedAt: '2026-06-19T09:00:00.000Z',
+    acknowledgedBy: 'runbook-synthesizer',
+    acknowledgementNote: 'Runbook action is no longer active.'
+  });
+  resolved.payload = Object.assign({}, resolved.payload, {
+    resolution: {
+      status: 'resolved',
+      resolvedAt: '2026-06-19T09:00:00.000Z',
+      reason: 'runbook-action-cleared'
+    }
+  });
+
+  const result = await synthesizeRunbookNotificationEvents({
+    notificationEventRepository: repository([resolved], saved),
+    runbook: runbook([item]),
+    execute: true,
+    now: '2026-06-19T10:00:00.000Z'
+  });
+
+  assert.equal(result.reopenedCount, 1);
+  assert.equal(saved.length, 1);
+  assert.equal(saved[0].deliveryStatus, 'pending');
+  assert.equal(saved[0].deliveryAttempts, 0);
+  assert.equal(saved[0].nextDeliveryAt, '2026-06-19T10:00:00.000Z');
+  assert.equal(saved[0].acknowledgedAt, undefined);
+  assert.equal(saved[0].acknowledgedBy, undefined);
+  assert.equal(saved[0].payload.previousResolution.reason, 'runbook-action-cleared');
+});
+
 function runbook(actions) {
   return {
     generatedAt: '2026-06-19T09:59:00.000Z',

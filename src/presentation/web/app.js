@@ -1300,6 +1300,8 @@ function renderRunbookNotificationEventResult(result) {
     metric('Events', result.eventCount || 0),
     metric('Created', result.createdCount || 0),
     metric('Updated', result.updatedCount || 0),
+    metric('Resolved', result.resolvedCount || 0),
+    metric('Reopened', result.reopenedCount || 0),
     metric('Skipped', result.skippedCount || 0),
     evidenceList(items.map(function (item) {
       const event = item.event || {};
