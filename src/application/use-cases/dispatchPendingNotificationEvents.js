@@ -18,6 +18,7 @@ async function dispatchPendingNotificationEvents(options) {
   const maxRetryBackoffMs = safeOptions.maxRetryBackoffMs || 60 * 60 * 1000;
   const pendingEvents = await notificationEventRepository.listEvents({
     deliveryStatus: 'pending',
+    acknowledged: false,
     dueBefore: now,
     limit
   });
@@ -25,12 +26,13 @@ async function dispatchPendingNotificationEvents(options) {
     ? []
     : await notificationEventRepository.listEvents({
       deliveryStatus: 'failed',
+      acknowledged: false,
       dueBefore: now,
       limit
     });
   const events = pendingEvents.concat(failedEvents)
     .filter(function (event) {
-      return (event.deliveryAttempts || 0) < maxAttempts && isEventDue(event, now);
+      return !event.acknowledgedAt && (event.deliveryAttempts || 0) < maxAttempts && isEventDue(event, now);
     })
     .slice(0, limit);
   const results = [];

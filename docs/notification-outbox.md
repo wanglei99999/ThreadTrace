@@ -10,7 +10,7 @@ ThreadTrace uses a notification outbox to decouple forum/source ingestion from u
    - `deliveryStatus: "pending"`
    - `deliveryAttempts: 0`
    - `nextDeliveryAt: createdAt`
-4. `dispatchPendingNotificationEvents` loads due `pending` and `failed` events.
+4. `dispatchPendingNotificationEvents` loads due, unacknowledged `pending` and `failed` events.
 5. Successful delivery changes the event to:
    - `deliveryStatus: "delivered"`
    - `lastDeliveredAt`
@@ -22,7 +22,7 @@ ThreadTrace uses a notification outbox to decouple forum/source ingestion from u
    - `lastDeliveryError`
    - `nextDeliveryAt`, unless max attempts have been exhausted.
 
-Acknowledgement is separate from delivery. A delivered event can still be unacknowledged in the UI, and an acknowledged event remains queryable for audit/history.
+Acknowledgement is separate from delivery. A delivered event can still be unacknowledged in the UI, and an acknowledged event remains queryable for audit/history. Dispatch workers do not deliver acknowledged events.
 
 ## Retry Policy
 
