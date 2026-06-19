@@ -28,7 +28,7 @@ GET /api/runtime/diagnostics
 
 Web UI:
 
-The system view includes a source operations panel that combines `/api/sources/schedule`, `/api/sources/lifecycle`, and `/api/operations/runbook`. It highlights due sources, skipped/backoff reasons, disable guards, lifecycle attention items, and source-scoped runbook actions without starting any worker or writing task records.
+The system view includes a source operations panel that combines `/api/sources/schedule`, `/api/sources/lifecycle`, and `/api/operations/runbook`. It highlights due sources, skipped/backoff reasons, disable guards, lifecycle attention items, and source-scoped runbook actions. Operators can run a source, run its insight pipeline, dry-run/execute enablement changes, and reset failed sources from the same panel while preserving the dry-run and confirmation boundaries used by the CLI and HTTP APIs.
 
 Runtime:
 

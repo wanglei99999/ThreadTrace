@@ -227,27 +227,25 @@ function bindForms() {
   document.getElementById('sourceResult').addEventListener('click', async function (event) {
     const button = event.target.closest('button[data-action="run-source"],button[data-action="run-source-pipeline"]');
     if (!button) return;
-    const isPipeline = button.dataset.action === 'run-source-pipeline';
-    await renderAsync('taskResult', function () {
-      const taskPath = isPipeline ? '/tasks/insight-pipeline' : '/tasks/ingest';
-      return requestJson('/api/sources/' + encodeURIComponent(button.dataset.sourceId) + taskPath, {
-        provider: 'mock'
-      });
-    }, isPipeline ? renderSourcePipelineRunResult : renderSourceTaskRunResult);
-    await loadSystemStatus();
-    await loadTasks();
-    await loadSources();
-    await loadSourceOperations();
-    await loadEvents();
-    await loadRawPages();
+    await runSourceTaskFromButton(button, 'taskResult');
   });
 
   document.getElementById('sourceOperationsResult').addEventListener('click', async function (event) {
-    const button = event.target.closest('button[data-action="reset-source-failure"]');
+    const button = event.target.closest('button[data-action]');
     if (!button) return;
-    const execute = button.dataset.execute === 'true';
-    if (execute && !window.confirm('Reset this source failure state and retry now?')) return;
-    await resetSourceFailureFromButton(button, execute);
+    if (button.dataset.action === 'reset-source-failure') {
+      const execute = button.dataset.execute === 'true';
+      if (execute && !window.confirm('Reset this source failure state and retry now?')) return;
+      await resetSourceFailureFromButton(button, execute);
+      return;
+    }
+    if (button.dataset.action === 'set-source-enabled') {
+      await setSourceEnabledFromButton(button);
+      return;
+    }
+    if (button.dataset.action === 'run-source' || button.dataset.action === 'run-source-pipeline') {
+      await runSourceTaskFromButton(button, 'sourceOperationActionResult');
+    }
   });
 
   document.getElementById('rawPageResult').addEventListener('click', async function (event) {
@@ -577,6 +575,39 @@ async function runDuePipelines() {
   await loadSourceOperations();
   await loadEvents();
   await loadRawPages();
+}
+
+async function runSourceTaskFromButton(button, targetId) {
+  const isPipeline = button.dataset.action === 'run-source-pipeline';
+  await renderAsync(targetId, function () {
+    const taskPath = isPipeline ? '/tasks/insight-pipeline' : '/tasks/ingest';
+    return requestJson('/api/sources/' + encodeURIComponent(button.dataset.sourceId) + taskPath, {
+      provider: 'mock'
+    });
+  }, isPipeline ? renderSourcePipelineRunResult : renderSourceTaskRunResult);
+  await loadSystemStatus();
+  await loadTasks();
+  await loadSources();
+  await loadSourceOperations();
+  await loadEvents();
+  await loadRawPages();
+}
+
+async function setSourceEnabledFromButton(button) {
+  const sourceId = button.dataset.sourceId;
+  const enabled = button.dataset.enabled === 'true';
+  const execute = button.dataset.execute === 'true';
+  const operation = enabled ? 'enable' : 'disable';
+  if (execute && !window.confirm((enabled ? 'Enable' : 'Disable') + ' this tracked source?')) return;
+  await renderAsync('sourceOperationActionResult', function () {
+    return requestJson('/api/sources/' + encodeURIComponent(sourceId) + '/' + operation, {
+      execute
+    });
+  }, renderSourceLifecycleUpdateResult);
+  await loadSystemStatus();
+  await loadTasks();
+  await loadSources();
+  await loadSourceOperations();
 }
 
 async function resetSourceFailureFromButton(button, execute) {
@@ -1137,6 +1168,8 @@ function renderLifecycleSourceRow(source) {
   ].filter(Boolean).join(' | ');
   const controls = '<span class="button-group source-op-buttons">' +
     statusBadge(label, variant) +
+    renderSourceRunButtons(source) +
+    renderSourceEnablementButtons(source) +
     renderSourceFailureResetButtons(source) +
     '</span>';
   return '<div class="action-row ops-row"><span>' +
@@ -1145,6 +1178,31 @@ function renderLifecycleSourceRow(source) {
     '</span>' +
     controls +
     '</div>';
+}
+
+function renderSourceRunButtons(source) {
+  if (source.enabled === false) return '';
+  const runState = source.runState || {};
+  if (runState.status === 'running') return '';
+  const sourceId = escapeHtml(source.id);
+  return [
+    '<button class="inline-button secondary-inline-button" type="button" data-action="run-source" data-source-id="' + sourceId + '">Run</button>',
+    '<button class="inline-button secondary-inline-button" type="button" data-action="run-source-pipeline" data-source-id="' + sourceId + '">Insight</button>'
+  ].join('');
+}
+
+function renderSourceEnablementButtons(source) {
+  const sourceId = escapeHtml(source.id);
+  if (source.enabled === false) {
+    return [
+      '<button class="inline-button secondary-inline-button" type="button" data-action="set-source-enabled" data-source-id="' + sourceId + '" data-enabled="true" data-execute="false">Enable check</button>',
+      '<button class="inline-button" type="button" data-action="set-source-enabled" data-source-id="' + sourceId + '" data-enabled="true" data-execute="true">Enable</button>'
+    ].join('');
+  }
+  return [
+    '<button class="inline-button secondary-inline-button" type="button" data-action="set-source-enabled" data-source-id="' + sourceId + '" data-enabled="false" data-execute="false">Disable check</button>',
+    '<button class="inline-button warning-inline-button" type="button" data-action="set-source-enabled" data-source-id="' + sourceId + '" data-enabled="false" data-execute="true">Disable</button>'
+  ].join('');
 }
 
 function renderSourceFailureResetButtons(source) {
@@ -1156,6 +1214,24 @@ function renderSourceFailureResetButtons(source) {
     '<button class="inline-button secondary-inline-button" type="button" data-action="reset-source-failure" data-source-id="' + sourceId + '" data-execute="false" data-retry-now="true">Reset check</button>',
     '<button class="inline-button warning-inline-button" type="button" data-action="reset-source-failure" data-source-id="' + sourceId + '" data-execute="true" data-retry-now="true">Retry now</button>'
   ].join('');
+}
+
+function renderSourceLifecycleUpdateResult(result) {
+  const update = result.result || result;
+  const task = result.task || {};
+  const before = update.sourceBefore || {};
+  const after = update.sourceAfter || {};
+  const guard = update.guard || {};
+  return panel(after.enabled ? 'Source enable' : 'Source disable', [
+    metric('Status', update.status || 'unknown'),
+    metric('Task', task.id || 'none'),
+    metric('Mode', update.dryRun ? 'dry-run' : 'execute'),
+    metric('Changed', update.changed ? 'yes' : 'no'),
+    metric('Source', (before.id || after.id || 'unknown') + ' / ' + (after.displayName || before.displayName || 'unknown')),
+    metric('Enabled before', before.enabled === undefined ? 'unknown' : before.enabled),
+    metric('Enabled after', after.enabled === undefined ? 'unknown' : after.enabled),
+    metric('Guard', guard.running ? 'running=' + guard.running + ' blocked=' + guard.blocked + ' stale=' + guard.stale : 'not-running')
+  ].join(''), 'wide');
 }
 
 function renderSourceFailureResetResult(result) {

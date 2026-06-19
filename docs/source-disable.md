@@ -63,6 +63,15 @@ Request:
 
 Set `execute: true` or `dryRun: false` to save the disabled source.
 
+## Web UI
+
+The system view's Source operations panel exposes source lifecycle controls beside each lifecycle row:
+
+- `Enable check` / `Disable check`: create a dry-run task audit record without changing the source.
+- `Enable` / `Disable`: ask for browser confirmation, then execute the lifecycle change.
+
+Disable execution still uses the same active-run guard as CLI and HTTP. A non-stale running source returns `source_disable_running`; the Web UI does not force-disable sources.
+
 ## Audit Trail
 
 The entrypoints create durable task records with type `disable-tracked-source` or `enable-tracked-source`.
