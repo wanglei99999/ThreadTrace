@@ -216,6 +216,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.paths['/api/sources/{sourceId}/tasks/ingest'].post.responses[404].$ref, '#/components/responses/NotFound');
     assert.equal(openApi.paths['/api/sources/{sourceId}/tasks/ingest'].post.responses[409].$ref, '#/components/responses/Conflict');
     assert.equal(openApi.paths['/api/sources/tasks/ingest-due'].post.requestBody.content['application/json'].schema.properties.sourceFailureRetryBackoffMs.example, 60000);
+    assert.ok(openApi.paths['/api/sources/lifecycle'].get.parameters.some(function (parameter) {
+      return parameter.name === 'sourceFailureRetryBackoffMs';
+    }));
     assert.equal(context.reportType, 'new-post-context');
     assert.ok(context.relatedEvidence.length >= 1);
   } finally {
@@ -990,6 +993,7 @@ test('http server can register sources and run source ingest tasks', async funct
     assert.equal(enableDryRun.result.dryRun, true);
     assert.equal(lifecycle.summary.total, 1);
     assert.equal(lifecycle.summary.disableBlocked, 0);
+    assert.equal(lifecycle.summary.failureRetryWaiting, 0);
     assert.equal(lifecycle.sources[0].id, registerResult.source.id);
     assert.equal(lifecycle.sources[0].disableGuard.canDisable, true);
     assert.equal(sourcesAfterDisableDryRun.sources[0].enabled, true);

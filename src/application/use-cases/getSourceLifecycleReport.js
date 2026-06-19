@@ -2,6 +2,7 @@
 
 const { assertSourceRepository } = require('../ports/sourceRepository');
 const { assertTaskRepository } = require('../ports/taskRepository');
+const { buildSourceFailureRetryPlan } = require('../../domain/scheduling/trackedSourceSchedule');
 const { buildDisableGuard, resolveSourceRunStaleAfterMs } = require('./setTrackedSourceEnabled');
 
 const LIFECYCLE_TASK_TYPES = ['disable-tracked-source', 'enable-tracked-source'];
@@ -14,6 +15,10 @@ async function getSourceLifecycleReport(options) {
   const sourceRepository = assertSourceRepository(safeOptions.sourceRepository);
   const taskRepository = assertTaskRepository(safeOptions.taskRepository);
   const sourceRunStaleAfterMs = resolveSourceRunStaleAfterMs(safeOptions);
+  const sourceFailureRetryOptions = {
+    sourceFailureRetryBackoffMs: safeOptions.sourceFailureRetryBackoffMs,
+    sourceFailureMaxRetryBackoffMs: safeOptions.sourceFailureMaxRetryBackoffMs
+  };
 
   const sources = await sourceRepository.listSources({
     sourceKey: safeOptions.sourceKey,
@@ -28,17 +33,21 @@ async function getSourceLifecycleReport(options) {
   const sourceReports = sources.map(function (source) {
     return summarizeSourceLifecycle(source, lifecycleTasks, {
       now,
-      sourceRunStaleAfterMs
+      sourceRunStaleAfterMs,
+      sourceFailureRetryOptions
     });
   });
 
   const blocked = sourceReports.filter(function (source) {
     return source.disableGuard.blocked;
   });
+  const retryWaiting = sourceReports.filter(function (source) {
+    return source.failureRetry.active && !source.failureRetry.elapsed;
+  });
 
   return {
     generatedAt: now,
-    status: blocked.length > 0 ? 'warn' : 'ok',
+    status: blocked.length > 0 || retryWaiting.length > 0 ? 'warn' : 'ok',
     windowLimit: limit,
     taskWindowLimit: taskLimit,
     sourceRunStaleAfterMs,
@@ -63,6 +72,7 @@ function summarizeSourceLifecycle(source, lifecycleTasks, options) {
     now: options.now,
     sourceRunStaleAfterMs: options.sourceRunStaleAfterMs
   });
+  const failureRetry = buildSourceFailureRetryPlan(source, options.now, options.sourceFailureRetryOptions);
   const latestLifecycleTask = lifecycleTasks.find(function (task) {
     return taskSourceId(task) === source.id;
   });
@@ -81,8 +91,9 @@ function summarizeSourceLifecycle(source, lifecycleTasks, options) {
       staleAfterMs: disableGuard.staleAfterMs,
       lastStartedAt: disableGuard.lastStartedAt
     },
+    failureRetry: summarizeFailureRetry(failureRetry),
     latestLifecycleTask: summarizeLifecycleTask(latestLifecycleTask),
-    nextAction: getNextLifecycleAction(source, disableGuard)
+    nextAction: getNextLifecycleAction(source, disableGuard, failureRetry)
   };
 }
 
@@ -94,6 +105,9 @@ function summarizeLifecycleSources(sources) {
     running: sources.filter(function (source) { return source.runState.status === 'running'; }).length,
     staleRunning: sources.filter(function (source) {
       return source.disableGuard.running && source.disableGuard.stale;
+    }).length,
+    failureRetryWaiting: sources.filter(function (source) {
+      return source.failureRetry.active && !source.failureRetry.elapsed;
     }).length,
     disableBlocked: sources.filter(function (source) {
       return source.disableGuard.blocked;
@@ -132,9 +146,22 @@ function summarizeLifecycleTask(task) {
   };
 }
 
-function getNextLifecycleAction(source, disableGuard) {
+function summarizeFailureRetry(failureRetry) {
+  const safeFailureRetry = failureRetry || {};
+  return {
+    active: safeFailureRetry.active === true,
+    elapsed: safeFailureRetry.elapsed !== false,
+    retryAt: safeFailureRetry.retryAt,
+    failureCount: safeFailureRetry.failureCount,
+    backoffMs: safeFailureRetry.backoffMs
+  };
+}
+
+function getNextLifecycleAction(source, disableGuard, failureRetry) {
   if (source.enabled === false) return 'enable-source';
   if (disableGuard.blocked) return 'wait-for-run-or-force-disable';
+  if (failureRetry && failureRetry.active && !failureRetry.elapsed) return 'wait-for-failure-backoff';
+  if (failureRetry && failureRetry.active && failureRetry.elapsed) return 'run-due-source-task';
   if (disableGuard.running && disableGuard.stale) return 'disable-or-recover-stale-run';
   return 'disable-source';
 }

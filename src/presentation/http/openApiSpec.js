@@ -1136,6 +1136,8 @@ function createOpenApiSpec() {
             { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
             { name: 'taskLimit', in: 'query', required: false, schema: { type: 'number' } },
             { name: 'sourceRunStaleAfterMs', in: 'query', required: false, schema: { type: 'number', example: 600000 } },
+            { name: 'sourceFailureRetryBackoffMs', in: 'query', required: false, schema: { type: 'number', example: 60000 } },
+            { name: 'sourceFailureMaxRetryBackoffMs', in: 'query', required: false, schema: { type: 'number', example: 3600000 } },
             { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
             { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
           ],

@@ -8,6 +8,8 @@ test('source lifecycle report summarizes disable guards and lifecycle tasks', as
   const report = await getSourceLifecycleReport({
     now: '2026-06-19T10:00:00.000Z',
     sourceRunStaleAfterMs: 10 * 60 * 1000,
+    sourceFailureRetryBackoffMs: 60 * 1000,
+    sourceFailureMaxRetryBackoffMs: 60 * 60 * 1000,
     sourceRepository: {
       async saveSource() {},
       async findSource() {},
@@ -33,6 +35,18 @@ test('source lifecycle report summarizes disable guards and lifecycle tasks', as
             runState: {
               status: 'completed',
               lastFinishedAt: '2026-06-19T09:30:00.000Z'
+            }
+          }),
+          source('source-4', {
+            displayName: 'Failed source',
+            updatedAt: '2026-06-19T09:59:00.000Z',
+            schedule: {
+              nextRunAt: '2026-06-19T09:00:00.000Z'
+            },
+            runState: {
+              status: 'failed',
+              failureCount: 2,
+              lastFinishedAt: '2026-06-19T09:59:00.000Z'
             }
           })
         ];
@@ -87,11 +101,12 @@ test('source lifecycle report summarizes disable guards and lifecycle tasks', as
   });
 
   assert.equal(report.status, 'warn');
-  assert.equal(report.summary.total, 3);
-  assert.equal(report.summary.enabled, 2);
+  assert.equal(report.summary.total, 4);
+  assert.equal(report.summary.enabled, 3);
   assert.equal(report.summary.disabled, 1);
   assert.equal(report.summary.running, 2);
   assert.equal(report.summary.staleRunning, 1);
+  assert.equal(report.summary.failureRetryWaiting, 1);
   assert.equal(report.summary.disableBlocked, 1);
   assert.equal(report.blockedDisables.length, 1);
   assert.equal(report.blockedDisables[0].sourceId, 'source-1');
@@ -100,6 +115,10 @@ test('source lifecycle report summarizes disable guards and lifecycle tasks', as
   assert.equal(report.sources[1].disableGuard.stale, true);
   assert.equal(report.sources[1].nextAction, 'disable-or-recover-stale-run');
   assert.equal(report.sources[2].nextAction, 'enable-source');
+  assert.equal(report.sources[3].failureRetry.active, true);
+  assert.equal(report.sources[3].failureRetry.elapsed, false);
+  assert.equal(report.sources[3].failureRetry.retryAt, '2026-06-19T10:01:00.000Z');
+  assert.equal(report.sources[3].nextAction, 'wait-for-failure-backoff');
   assert.deepEqual(report.recentLifecycleTasks.map(function (task) {
     return task.id;
   }), ['task-disable-1', 'task-enable-1']);

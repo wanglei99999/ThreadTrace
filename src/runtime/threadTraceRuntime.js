@@ -717,7 +717,9 @@ function createThreadTraceRuntime(options) {
         enabled: safeRequest.enabled,
         limit: safeRequest.limit || 100,
         taskLimit: safeRequest.taskLimit || safeRequest.limit || 100,
-        sourceRunStaleAfterMs: safeRequest.sourceRunStaleAfterMs,
+        sourceRunStaleAfterMs: resolveSourceRunStaleAfterMs(safeRequest, runtimeConfig),
+        sourceFailureRetryBackoffMs: resolveSourceFailureRetryBackoffMs(safeRequest, runtimeConfig),
+        sourceFailureMaxRetryBackoffMs: resolveSourceFailureMaxRetryBackoffMs(safeRequest, runtimeConfig),
         now: safeRequest.now
       });
     },

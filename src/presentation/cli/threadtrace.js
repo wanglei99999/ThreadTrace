@@ -281,16 +281,18 @@ function main(argv) {
       limit: options.limit ? Number(options.limit) : 100,
       taskLimit: options.taskLimit ? Number(options.taskLimit) : undefined,
       sourceRunStaleAfterMs: options.sourceRunStaleAfterMs,
+      sourceFailureRetryBackoffMs: options.sourceFailureRetryBackoffMs ? Number(options.sourceFailureRetryBackoffMs) : undefined,
+      sourceFailureMaxRetryBackoffMs: options.sourceFailureMaxRetryBackoffMs ? Number(options.sourceFailureMaxRetryBackoffMs) : undefined,
       now: options.now,
       storeDir
     }).then(function (report) {
       console.log('Source lifecycle: ' + report.status);
-      console.log('Sources: total=' + report.summary.total + ', enabled=' + report.summary.enabled + ', disabled=' + report.summary.disabled + ', running=' + report.summary.running + ', disableBlocked=' + report.summary.disableBlocked);
+      console.log('Sources: total=' + report.summary.total + ', enabled=' + report.summary.enabled + ', disabled=' + report.summary.disabled + ', running=' + report.summary.running + ', failureRetryWaiting=' + report.summary.failureRetryWaiting + ', disableBlocked=' + report.summary.disableBlocked);
       report.blockedDisables.forEach(function (source) {
         console.log('blocked\t' + source.sourceId + '\t' + source.displayName + '\tlastStarted=' + (source.lastStartedAt || 'unknown') + '\t' + source.nextAction);
       });
       report.sources.forEach(function (source) {
-        console.log(source.id + '\t' + source.sourceKey + '\t' + source.sourceType + '\tenabled=' + source.enabled + '\trun=' + source.runState.status + '\tcanDisable=' + source.disableGuard.canDisable + '\tnext=' + source.nextAction);
+        console.log(source.id + '\t' + source.sourceKey + '\t' + source.sourceType + '\tenabled=' + source.enabled + '\trun=' + source.runState.status + '\tcanDisable=' + source.disableGuard.canDisable + '\tretryAt=' + (source.failureRetry.retryAt || 'none') + '\tnext=' + source.nextAction);
       });
       if (report.status === 'warn') {
         process.exitCode = 2;
@@ -1750,7 +1752,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js run-semantic-enrichment-task --source-thread-id id [--source-key nga] [--provider mock] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js operations-overview [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-readiness [--store-dir dir] [--limit n]');
-  console.log('  node src/presentation/cli/threadtrace.js source-lifecycle-report [--forum nga] [--enabled true] [--source-run-stale-after-ms ms] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js source-lifecycle-report [--forum nga] [--enabled true] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js trace-context [--request-id id | --trace-id id | --idempotency-key key] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-runbook [--forum nga] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js worker-topology-plan [--topology operations-worker|split-workers] [--source-task-mode ingest|insight-pipeline] [--store-dir dir] [--limit n]');

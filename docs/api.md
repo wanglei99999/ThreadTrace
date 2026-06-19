@@ -218,9 +218,11 @@ Query parameters:
 - `limit`: optional source window, defaults to 100.
 - `taskLimit`: optional lifecycle task audit scan window.
 - `sourceRunStaleAfterMs`: optional running-source stale window, defaults to 10 minutes.
+- `sourceFailureRetryBackoffMs`: optional first retry delay after a failed source run.
+- `sourceFailureMaxRetryBackoffMs`: optional maximum retry delay for exponential source failure backoff.
 - `now`: optional fixed time for repeatable checks.
 
-Returns `summary`, `blockedDisables`, per-source `disableGuard`, `latestLifecycleTask`, and `recentLifecycleTasks`.
+Returns `summary`, `blockedDisables`, per-source `disableGuard`, `failureRetry`, `latestLifecycleTask`, and `recentLifecycleTasks`.
 
 ### `GET /api/deployment/checklist`
 
