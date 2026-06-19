@@ -1152,6 +1152,27 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/sources/schedule': {
+        get: {
+          summary: 'Preview tracked source due scheduling decisions without running workers',
+          parameters: [
+            { name: 'forum', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'enabled', in: 'query', required: false, schema: { type: 'boolean' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'sourceRunStaleAfterMs', in: 'query', required: false, schema: { type: 'number', example: 600000 } },
+            { name: 'sourceFailureRetryBackoffMs', in: 'query', required: false, schema: { type: 'number', example: 60000 } },
+            { name: 'sourceFailureMaxRetryBackoffMs', in: 'query', required: false, schema: { type: 'number', example: 3600000 } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Schedule preview with due and skipped sources plus decision reasons'
+            }
+          }
+        }
+      },
       '/api/sources/{sourceId}/disable': {
         post: {
           summary: 'Dry-run or execute a safe tracked source disable operation with task audit record',

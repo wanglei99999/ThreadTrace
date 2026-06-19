@@ -54,6 +54,7 @@ node src/presentation/cli/threadtrace.js resource-provisioning-plan --manifest-f
 node src/presentation/cli/threadtrace.js deployment-gate --manifest-file <file>
 node src/presentation/cli/threadtrace.js rollout-manifest-apply --manifest-file <file>
 node src/presentation/cli/threadtrace.js source-lifecycle-report
+node src/presentation/cli/threadtrace.js source-schedule-report
 node src/presentation/cli/threadtrace.js disable-source --source-id <id>
 node src/presentation/cli/threadtrace.js disable-source --source-id <id> --execute true --force true
 node src/presentation/cli/threadtrace.js enable-source --source-id <id>
@@ -112,6 +113,7 @@ These commands use the same runtime composition as the HTTP API and Web console.
 - `GET /api/sources`
 - `GET /api/sources/diagnostics`
 - `GET /api/sources/lifecycle`
+- `GET /api/sources/schedule`
 - `POST /api/sources/ingest/dry-run`
 - `POST /api/sources/{sourceId}/disable`
 - `POST /api/sources/{sourceId}/enable`

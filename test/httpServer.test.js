@@ -203,6 +203,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/sources/{sourceId}/disable']);
     assert.ok(openApi.paths['/api/sources/{sourceId}/enable']);
     assert.ok(openApi.paths['/api/sources/lifecycle']);
+    assert.ok(openApi.paths['/api/sources/schedule']);
     assert.ok(openApi.paths['/api/sources/onboarding/preflight']);
     assert.ok(openApi.paths['/api/runtime/diagnostics']);
     assert.ok(openApi.paths['/api/sources/validate']);
@@ -971,6 +972,7 @@ test('http server can register sources and run source ingest tasks', async funct
       now: '2026-06-19T10:00:00.000Z'
     });
     const lifecycle = await getJson(baseUrl + '/api/sources/lifecycle?now=2026-06-19T10:00:00.000Z');
+    const schedule = await getJson(baseUrl + '/api/sources/schedule?now=2026-06-19T10:00:00.000Z');
     const sourcesAfterDisableDryRun = await getJson(baseUrl + '/api/sources');
     const dueResult = await postJson(baseUrl + '/api/sources/tasks/ingest-due', {});
     const skippedDueResult = await postJson(baseUrl + '/api/sources/tasks/ingest-due', {});
@@ -1000,6 +1002,9 @@ test('http server can register sources and run source ingest tasks', async funct
     assert.equal(lifecycle.summary.failureRetryWaiting, 0);
     assert.equal(lifecycle.sources[0].id, registerResult.source.id);
     assert.equal(lifecycle.sources[0].disableGuard.canDisable, true);
+    assert.equal(schedule.summary.total, 1);
+    assert.equal(schedule.sources[0].id, registerResult.source.id);
+    assert.equal(schedule.sources[0].decision.reason, 'never-finished');
     assert.equal(sourcesAfterDisableDryRun.sources[0].enabled, true);
     assert.equal(dueResult.task.type, 'ingest-due-sources');
     assert.equal(dueResult.dueCount, 1);

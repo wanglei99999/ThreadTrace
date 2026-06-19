@@ -224,6 +224,22 @@ Query parameters:
 
 Returns `summary`, `blockedDisables`, per-source `disableGuard`, `failureRetry`, `latestLifecycleTask`, and `recentLifecycleTasks`.
 
+### `GET /api/sources/schedule`
+
+Previews due-source scheduling decisions without running workers or writing task records.
+
+Query parameters:
+
+- `forum` / `sourceKey`: optional source key filter.
+- `enabled`: optional `true` or `false`.
+- `limit`: optional source window, defaults to 100.
+- `sourceRunStaleAfterMs`: optional stale running-source recovery window.
+- `sourceFailureRetryBackoffMs`: optional first retry delay after a failed source run.
+- `sourceFailureMaxRetryBackoffMs`: optional maximum retry delay for exponential source failure backoff.
+- `now`: optional fixed time for repeatable checks.
+
+Returns `summary.byReason`, `dueSources`, `skippedSources`, and per-source schedule decisions.
+
 ### `GET /api/deployment/checklist`
 
 查询部署前验收清单。它聚合 runtime diagnostics、source diagnostics 和 operations readiness，用于部署脚本或控制台判断当前实例是否具备上线条件。

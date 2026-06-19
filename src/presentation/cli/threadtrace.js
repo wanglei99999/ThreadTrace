@@ -304,6 +304,31 @@ function main(argv) {
     return;
   }
 
+  if (command === 'source-schedule-report') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.getSourceScheduleReport({
+      forum: options.forum,
+      sourceKey: options.sourceKey,
+      enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
+      limit: options.limit ? Number(options.limit) : 100,
+      sourceRunStaleAfterMs: options.sourceRunStaleAfterMs ? Number(options.sourceRunStaleAfterMs) : undefined,
+      sourceFailureRetryBackoffMs: options.sourceFailureRetryBackoffMs ? Number(options.sourceFailureRetryBackoffMs) : undefined,
+      sourceFailureMaxRetryBackoffMs: options.sourceFailureMaxRetryBackoffMs ? Number(options.sourceFailureMaxRetryBackoffMs) : undefined,
+      now: options.now,
+      storeDir
+    }).then(function (report) {
+      console.log('Source schedule: ' + report.status);
+      console.log('Sources: total=' + report.summary.total + ', due=' + report.summary.due + ', skipped=' + report.summary.skipped);
+      report.sources.forEach(function (source) {
+        console.log(source.id + '\t' + source.sourceKey + '\t' + source.sourceType + '\tdue=' + source.decision.due + '\treason=' + source.decision.reason + '\tnextRunAt=' + (source.decision.nextRunAt || 'none') + '\tretryAt=' + (source.decision.retryAt || 'none'));
+      });
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'trace-context') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.getTaskTraceContext({
@@ -1757,6 +1782,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js operations-overview [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-readiness [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-lifecycle-report [--forum nga] [--enabled true] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js source-schedule-report [--forum nga] [--enabled true] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js trace-context [--request-id id | --trace-id id | --idempotency-key key] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-runbook [--forum nga] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js worker-topology-plan [--topology operations-worker|split-workers] [--source-task-mode ingest|insight-pipeline] [--store-dir dir] [--limit n]');

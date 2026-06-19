@@ -32,6 +32,7 @@ const { runDisableTrackedSourceTask } = require('../application/use-cases/runDis
 const { enableTrackedSource } = require('../application/use-cases/enableTrackedSource');
 const { runEnableTrackedSourceTask } = require('../application/use-cases/runEnableTrackedSourceTask');
 const { getSourceLifecycleReport } = require('../application/use-cases/getSourceLifecycleReport');
+const { getSourceScheduleReport } = require('../application/use-cases/getSourceScheduleReport');
 const { getOperationalOverview } = require('../application/use-cases/getOperationalOverview');
 const { getOperationalReadiness } = require('../application/use-cases/getOperationalReadiness');
 const { getTaskTraceContext } = require('../application/use-cases/getTaskTraceContext');
@@ -717,6 +718,21 @@ function createThreadTraceRuntime(options) {
         enabled: safeRequest.enabled,
         limit: safeRequest.limit || 100,
         taskLimit: safeRequest.taskLimit || safeRequest.limit || 100,
+        sourceRunStaleAfterMs: resolveSourceRunStaleAfterMs(safeRequest, runtimeConfig),
+        sourceFailureRetryBackoffMs: resolveSourceFailureRetryBackoffMs(safeRequest, runtimeConfig),
+        sourceFailureMaxRetryBackoffMs: resolveSourceFailureMaxRetryBackoffMs(safeRequest, runtimeConfig),
+        now: safeRequest.now
+      });
+    },
+
+    async getSourceScheduleReport(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return getSourceScheduleReport({
+        sourceRepository: repositories.sourceRepository,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 100,
         sourceRunStaleAfterMs: resolveSourceRunStaleAfterMs(safeRequest, runtimeConfig),
         sourceFailureRetryBackoffMs: resolveSourceFailureRetryBackoffMs(safeRequest, runtimeConfig),
         sourceFailureMaxRetryBackoffMs: resolveSourceFailureMaxRetryBackoffMs(safeRequest, runtimeConfig),

@@ -21,6 +21,8 @@ POST /api/operations/rollout-manifest-plan
 POST /api/operations/resource-provisioning-plan
 POST /api/deployment/gate
 POST /api/operations/rollout-manifest/apply
+GET /api/sources/schedule
+GET /api/sources/lifecycle
 GET /api/runtime/diagnostics
 ```
 

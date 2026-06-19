@@ -615,6 +615,23 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/sources/schedule') {
+    const enabledParam = url.searchParams.get('enabled');
+    const report = await context.runtime.getSourceScheduleReport({
+      forum: url.searchParams.get('forum') || undefined,
+      sourceKey: url.searchParams.get('sourceKey') || undefined,
+      enabled: enabledParam === null ? undefined : enabledParam === 'true',
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,
+      sourceRunStaleAfterMs: url.searchParams.get('sourceRunStaleAfterMs') ? Number(url.searchParams.get('sourceRunStaleAfterMs')) : undefined,
+      sourceFailureRetryBackoffMs: url.searchParams.get('sourceFailureRetryBackoffMs') ? Number(url.searchParams.get('sourceFailureRetryBackoffMs')) : undefined,
+      sourceFailureMaxRetryBackoffMs: url.searchParams.get('sourceFailureMaxRetryBackoffMs') ? Number(url.searchParams.get('sourceFailureMaxRetryBackoffMs')) : undefined,
+      now: url.searchParams.get('now') || undefined,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, 200, report);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/sources') {
     const enabledParam = url.searchParams.get('enabled');
     const sources = await context.runtime.listSources({
