@@ -740,6 +740,40 @@ function main(argv) {
     return;
   }
 
+  if (command === 'reset-source-failure') {
+    if (!options.sourceId) {
+      throw new Error('reset-source-failure requires --source-id.');
+    }
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.runResetSourceFailureTask({
+      sourceId: options.sourceId,
+      execute: options.execute === 'true' || options.dryRun === 'false',
+      retryNow: options.retryNow === 'true',
+      nextRunAt: options.nextRunAt,
+      resetBy: options.resetBy,
+      now: options.now,
+      storeDir,
+      requestId: options.requestId,
+      traceId: options.traceId,
+      idempotencyKey: options.idempotencyKey
+    }).then(function (result) {
+      const resetResult = result.result;
+      console.log('Reset source failure: ' + resetResult.status);
+      console.log('Task: ' + result.task.id + '\t' + result.task.status);
+      if (result.idempotency) {
+        console.log('Idempotency: reused=' + result.idempotency.reused + '\ttask=' + result.idempotency.taskId);
+      }
+      console.log('Mode: ' + (resetResult.dryRun ? 'dry-run' : 'execute'));
+      console.log('Changed: ' + resetResult.changed + '\tReason: ' + resetResult.reason);
+      console.log('Retry now: ' + resetResult.retryNow + '\tNext run: ' + (resetResult.nextRunAt || 'unchanged'));
+      console.log('Source: ' + resetResult.sourceBefore.id + '\t' + resetResult.sourceBefore.displayName);
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'validate-source') {
     const sourceType = options.sourceType || 'saved-html-directory';
     const inputDir = options.input || (sourceType === 'saved-html-directory' ? defaultInputDir : undefined);
@@ -1808,6 +1842,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--source-type type] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js disable-source --source-id id [--execute true] [--force true] [--source-run-stale-after-ms ms] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js enable-source --source-id id [--execute true] [--store-dir dir] [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js reset-source-failure --source-id id [--execute true] [--retry-now true] [--next-run-at iso] [--reset-by user] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-diagnostics [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js connector-catalog [--now iso]');

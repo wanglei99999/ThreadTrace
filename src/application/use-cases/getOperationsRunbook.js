@@ -138,7 +138,8 @@ function sourceLifecycleActions(report) {
       recommendedCommand: 'node src/presentation/cli/threadtrace.js source-lifecycle-report',
       relatedCommands: [
         'node src/presentation/cli/threadtrace.js source-diagnostics',
-        'node src/presentation/cli/threadtrace.js run-due-sources-task'
+        'node src/presentation/cli/threadtrace.js run-due-sources-task',
+        'node src/presentation/cli/threadtrace.js reset-source-failure --source-id ' + quoteCommandValue(source.id) + ' --retry-now true --execute true'
       ],
       evidence: {
         sourceId: source.id,

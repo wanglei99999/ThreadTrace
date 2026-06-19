@@ -139,6 +139,7 @@ test('operations runbook turns source lifecycle signals into actions', function 
   assert.equal(runbook.actions[1].key, 'sourceLifecycle.failureRetry.source-failed');
   assert.equal(runbook.actions[1].evidence.retryAt, '2026-06-19T10:01:00.000Z');
   assert.match(runbook.actions[1].summary, /Failed source/);
+  assert.match(runbook.actions[1].relatedCommands[2], /reset-source-failure --source-id source-failed/);
 });
 
 test('operations runbook flags connector module load failures', function () {

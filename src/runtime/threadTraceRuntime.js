@@ -31,6 +31,8 @@ const { disableTrackedSource } = require('../application/use-cases/disableTracke
 const { runDisableTrackedSourceTask } = require('../application/use-cases/runDisableTrackedSourceTask');
 const { enableTrackedSource } = require('../application/use-cases/enableTrackedSource');
 const { runEnableTrackedSourceTask } = require('../application/use-cases/runEnableTrackedSourceTask');
+const { resetTrackedSourceFailure } = require('../application/use-cases/resetTrackedSourceFailure');
+const { runResetTrackedSourceFailureTask } = require('../application/use-cases/runResetTrackedSourceFailureTask');
 const { getSourceLifecycleReport } = require('../application/use-cases/getSourceLifecycleReport');
 const { getSourceScheduleReport } = require('../application/use-cases/getSourceScheduleReport');
 const { getOperationalOverview } = require('../application/use-cases/getOperationalOverview');
@@ -956,6 +958,20 @@ function createThreadTraceRuntime(options) {
       });
     },
 
+    async resetSourceFailure(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return resetTrackedSourceFailure({
+        sourceRepository: repositories.sourceRepository,
+        sourceId: safeRequest.sourceId,
+        execute: safeRequest.execute,
+        retryNow: safeRequest.retryNow,
+        nextRunAt: safeRequest.nextRunAt,
+        resetBy: safeRequest.resetBy || safeRequest.acknowledgedBy,
+        now: safeRequest.now
+      });
+    },
+
     async runDisableSourceTask(request) {
       const safeRequest = request || {};
       const repositories = createRepositoriesFor(safeRequest.storeDir);
@@ -988,6 +1004,28 @@ function createThreadTraceRuntime(options) {
         },
         sourceId: safeRequest.sourceId,
         execute: safeRequest.execute,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir,
+        requestId: safeRequest.requestId,
+        traceId: safeRequest.traceId,
+        idempotencyKey: safeRequest.idempotencyKey
+      });
+    },
+
+    async runResetSourceFailureTask(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      const runtime = this;
+      return runResetTrackedSourceFailureTask({
+        taskRepository: repositories.taskRepository,
+        resetTrackedSourceFailure(requestForReset) {
+          return runtime.resetSourceFailure(requestForReset);
+        },
+        sourceId: safeRequest.sourceId,
+        execute: safeRequest.execute,
+        retryNow: safeRequest.retryNow,
+        nextRunAt: safeRequest.nextRunAt,
+        resetBy: safeRequest.resetBy || safeRequest.acknowledgedBy,
         now: safeRequest.now,
         storeDir: safeRequest.storeDir,
         requestId: safeRequest.requestId,

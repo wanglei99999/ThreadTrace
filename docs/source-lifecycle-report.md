@@ -1,6 +1,6 @@
 # Source Lifecycle Report
 
-The source lifecycle report is an operator view for tracked source state. It combines source records, the safe disable guard, and recent enable/disable task audit records.
+The source lifecycle report is an operator view for tracked source state. It combines source records, the safe disable guard, failure retry state, and recent enable/disable/failure-reset task audit records.
 
 ## CLI
 
@@ -36,6 +36,8 @@ The report returns:
 - `summary`: source counts, running counts, stale running counts, failure-retry-waiting counts, and disable-blocked counts.
 - `blockedDisables`: sources that currently need waiting or an explicit force disable.
 - `sources`: per-source lifecycle state, disable guard, failure retry plan, latest lifecycle task, and next action.
-- `recentLifecycleTasks`: recent `disable-tracked-source` and `enable-tracked-source` task records.
+- `recentLifecycleTasks`: recent `disable-tracked-source`, `enable-tracked-source`, and `reset-tracked-source-failure` task records.
 
 Use this report before rollout rollback, source maintenance, or worker recovery so operators can distinguish a safe disable from an active run that should finish first.
+
+When a failed source is waiting for retry backoff and an operator has reviewed the failure, use `reset-source-failure --retry-now true --execute true` or `POST /api/sources/{sourceId}/failure/reset` to clear the failure state and make the source schedulable again.

@@ -86,6 +86,19 @@ test('source lifecycle report summarizes disable guards and lifecycle tasks', as
             updatedAt: '2026-06-19T09:30:01.000Z'
           },
           {
+            id: 'task-reset-1',
+            type: 'reset-tracked-source-failure',
+            status: 'completed',
+            input: {
+              sourceId: 'source-4',
+              execute: true,
+              dryRun: false,
+              retryNow: true
+            },
+            createdAt: '2026-06-19T09:58:00.000Z',
+            updatedAt: '2026-06-19T09:58:01.000Z'
+          },
+          {
             id: 'task-ingest-1',
             type: 'source-ingest',
             status: 'completed',
@@ -118,10 +131,11 @@ test('source lifecycle report summarizes disable guards and lifecycle tasks', as
   assert.equal(report.sources[3].failureRetry.active, true);
   assert.equal(report.sources[3].failureRetry.elapsed, false);
   assert.equal(report.sources[3].failureRetry.retryAt, '2026-06-19T10:01:00.000Z');
+  assert.equal(report.sources[3].latestLifecycleTask.id, 'task-reset-1');
   assert.equal(report.sources[3].nextAction, 'wait-for-failure-backoff');
   assert.deepEqual(report.recentLifecycleTasks.map(function (task) {
     return task.id;
-  }), ['task-disable-1', 'task-enable-1']);
+  }), ['task-disable-1', 'task-reset-1', 'task-enable-1']);
 });
 
 function source(id, overrides) {

@@ -58,6 +58,7 @@ node src/presentation/cli/threadtrace.js source-schedule-report
 node src/presentation/cli/threadtrace.js disable-source --source-id <id>
 node src/presentation/cli/threadtrace.js disable-source --source-id <id> --execute true --force true
 node src/presentation/cli/threadtrace.js enable-source --source-id <id>
+node src/presentation/cli/threadtrace.js reset-source-failure --source-id <id> --retry-now true --execute true
 node src/presentation/cli/threadtrace.js list-sources
 node src/presentation/cli/threadtrace.js list-events
 node src/presentation/cli/threadtrace.js dispatch-events

@@ -782,6 +782,24 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  const resetSourceFailureMatch = url.pathname.match(/^\/api\/sources\/([^/]+)\/failure\/reset$/);
+  if (request.method === 'POST' && resetSourceFailureMatch) {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.runResetSourceFailureTask({
+      sourceId: decodeURIComponent(resetSourceFailureMatch[1]),
+      execute: body.execute === true || body.dryRun === false,
+      retryNow: body.retryNow === true,
+      nextRunAt: body.nextRunAt,
+      resetBy: body.resetBy || body.acknowledgedBy,
+      now: body.now,
+      storeDir: body.storeDir || context.storeDir,
+      requestId: context.requestId,
+      idempotencyKey: context.idempotencyKey
+    });
+    writeJson(response, 200, result);
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/sources/tasks/ingest') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     const result = await context.runtime.runEnabledSourcesIngestTasks({

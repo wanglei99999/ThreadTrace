@@ -204,6 +204,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/operations/rollout-manifest/apply']);
     assert.ok(openApi.paths['/api/sources/{sourceId}/disable']);
     assert.ok(openApi.paths['/api/sources/{sourceId}/enable']);
+    assert.ok(openApi.paths['/api/sources/{sourceId}/failure/reset']);
     assert.ok(openApi.paths['/api/sources/lifecycle']);
     assert.ok(openApi.paths['/api/sources/schedule']);
     assert.ok(openApi.paths['/api/sources/onboarding/preflight']);
@@ -216,6 +217,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.components.responses.BadRequest.content['application/json'].schema.$ref, '#/components/schemas/ErrorResponse');
     assert.equal(openApi.paths['/api/search'].post.responses[400].$ref, '#/components/responses/BadRequest');
     assert.equal(openApi.paths['/api/sources/{sourceId}/disable'].post.responses[409].$ref, '#/components/responses/Conflict');
+    assert.equal(openApi.paths['/api/sources/{sourceId}/failure/reset'].post.requestBody.content['application/json'].schema.properties.retryNow.example, true);
     assert.equal(openApi.paths['/api/sources/{sourceId}/tasks/ingest'].post.responses[404].$ref, '#/components/responses/NotFound');
     assert.equal(openApi.paths['/api/sources/{sourceId}/tasks/ingest'].post.responses[409].$ref, '#/components/responses/Conflict');
     assert.equal(openApi.paths['/api/sources/tasks/ingest-due'].post.requestBody.content['application/json'].schema.properties.sourceFailureRetryBackoffMs.example, 60000);
@@ -840,6 +842,73 @@ test('http server maps source disable conflicts to 409', async function () {
     assert.equal(body.error.code, 'source_disable_running');
     assert.equal(body.error.details.sourceId, 'source-1');
     assert.equal(body.error.details.staleAfterMs, 1234);
+  } finally {
+    await close(server);
+  }
+});
+
+test('http server runs source failure reset task endpoint', async function () {
+  const calls = [];
+  const server = createThreadTraceServer({
+    runtime: {
+      async runResetSourceFailureTask(request) {
+        calls.push(request);
+        return {
+          task: {
+            id: 'reset-task-1',
+            type: 'reset-tracked-source-failure',
+            status: 'completed'
+          },
+          result: {
+            status: 'ok',
+            dryRun: false,
+            executed: true,
+            changed: true,
+            reason: 'failure-reset-and-requeued',
+            retryNow: true,
+            sourceAfter: {
+              id: request.sourceId,
+              runState: {
+                status: 'completed',
+                failureCount: 0
+              }
+            }
+          }
+        };
+      }
+    }
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const response = await fetch(baseUrl + '/api/sources/source-1/failure/reset', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-request-id': 'reset-http-request-1',
+        'idempotency-key': 'reset-http-idem-1'
+      },
+      body: JSON.stringify({
+        execute: true,
+        retryNow: true,
+        resetBy: 'web',
+        now: '2026-06-19T10:00:00.000Z'
+      })
+    });
+    const body = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].sourceId, 'source-1');
+    assert.equal(calls[0].execute, true);
+    assert.equal(calls[0].retryNow, true);
+    assert.equal(calls[0].resetBy, 'web');
+    assert.equal(calls[0].requestId, 'reset-http-request-1');
+    assert.equal(calls[0].idempotencyKey, 'reset-http-idem-1');
+    assert.equal(body.task.type, 'reset-tracked-source-failure');
+    assert.equal(body.result.reason, 'failure-reset-and-requeued');
   } finally {
     await close(server);
   }

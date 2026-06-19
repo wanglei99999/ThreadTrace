@@ -1132,7 +1132,7 @@ function createOpenApiSpec() {
       },
       '/api/sources/lifecycle': {
         get: {
-          summary: 'Report tracked source lifecycle state, disable guards, and recent enable/disable tasks',
+          summary: 'Report tracked source lifecycle state, disable guards, failure resets, and recent lifecycle tasks',
           parameters: [
             { name: 'forum', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
             { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
@@ -1147,7 +1147,7 @@ function createOpenApiSpec() {
           ],
           responses: {
             200: {
-              description: 'Lifecycle report with disable guard state and recent lifecycle task audit records'
+              description: 'Lifecycle report with disable guard state, failure retry state, and recent lifecycle task audit records'
             }
           }
         }
@@ -1235,6 +1235,41 @@ function createOpenApiSpec() {
           responses: {
             200: {
               description: 'Source enable dry-run or execution result with task audit record'
+            },
+            404: {
+              $ref: '#/components/responses/NotFound'
+            }
+          }
+        }
+      },
+      '/api/sources/{sourceId}/failure/reset': {
+        post: {
+          summary: 'Dry-run or execute a tracked source failure-state reset with task audit record',
+          parameters: [
+            { name: 'sourceId', in: 'path', required: true, schema: { type: 'string' } }
+          ],
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    execute: { type: 'boolean', example: false },
+                    dryRun: { type: 'boolean', example: true },
+                    retryNow: { type: 'boolean', example: true },
+                    nextRunAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+                    resetBy: { type: 'string', example: 'operator' },
+                    now: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+                    storeDir: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Source failure reset dry-run or execution result with task audit record'
             },
             404: {
               $ref: '#/components/responses/NotFound'

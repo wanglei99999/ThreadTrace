@@ -5,7 +5,7 @@ const { assertTaskRepository } = require('../ports/taskRepository');
 const { buildSourceFailureRetryPlan } = require('../../domain/scheduling/trackedSourceSchedule');
 const { buildDisableGuard, resolveSourceRunStaleAfterMs } = require('./setTrackedSourceEnabled');
 
-const LIFECYCLE_TASK_TYPES = ['disable-tracked-source', 'enable-tracked-source'];
+const LIFECYCLE_TASK_TYPES = ['disable-tracked-source', 'enable-tracked-source', 'reset-tracked-source-failure'];
 
 async function getSourceLifecycleReport(options) {
   const safeOptions = options || {};

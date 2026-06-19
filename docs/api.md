@@ -209,7 +209,7 @@ Returns: stable run summaries with task id, source metadata, cursor diff, semant
 
 ### `GET /api/sources/lifecycle`
 
-Reports tracked source lifecycle state, safe disable guard results, and recent enable/disable task audit records.
+Reports tracked source lifecycle state, safe disable guard results, failure retry state, and recent lifecycle task audit records.
 
 Query parameters:
 
@@ -330,6 +330,23 @@ Request:
 ```
 
 Set `execute: true` or `dryRun: false` to persist `enabled=true`.
+
+### `POST /api/sources/{sourceId}/failure/reset`
+
+Clears a failed source run state after operator review. The endpoint defaults to dry-run and returns a durable task audit record plus the reset result.
+
+Request:
+
+```json
+{
+  "execute": false,
+  "retryNow": true,
+  "nextRunAt": "2026-06-19T10:05:00.000Z",
+  "resetBy": "operator"
+}
+```
+
+Set `execute: true` or `dryRun: false` to persist the reset. `retryNow: true` sets `schedule.nextRunAt` to `now`; `nextRunAt` can be used for a controlled retry window. The task type is `reset-tracked-source-failure`. If the source is not failed, the action returns `changed=false` and does not write.
 
 ### `POST /api/sources/{sourceId}/tasks/ingest`
 
