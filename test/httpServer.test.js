@@ -139,6 +139,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(homeHtml, /deploymentGateResult/);
     assert.match(homeHtml, /rolloutApplyResult/);
     assert.match(homeHtml, /runbookResult/);
+    assert.match(homeHtml, /refreshSourceOperationsButton/);
+    assert.match(homeHtml, /sourceOperationsResult/);
     assert.equal(adapters.adapters[0].sourceKey, 'nga');
     assert.equal(adapterDiagnostics.status, 'ok');
     assert.equal(adapterDiagnostics.adapterCount, 1);

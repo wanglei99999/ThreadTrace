@@ -134,6 +134,7 @@
           </label>
           <button type="submit">保存来源</button>
           <button id="refreshSourcesButton" class="secondary-button" type="button">刷新来源</button>
+          <button id="refreshSourceOperationsButton" class="secondary-button" type="button">Source ops</button>
           <button id="runSourcesButton" class="secondary-button" type="button">运行全部</button>
           <button id="runDueSourcesButton" class="secondary-button" type="button">运行到期</button>
           <button id="runDuePipelinesButton" class="secondary-button" type="button">洞察到期</button>
@@ -197,6 +198,7 @@
           <button type="submit">接入预检</button>
         </form>
         <div class="status-list" id="systemStatus"></div>
+        <div class="result-grid task-grid" id="sourceOperationsResult"></div>
         <div class="result-grid task-grid" id="runbookResult"></div>
         <form id="connectorModuleValidationForm" class="control-strip">
           <label class="grow">

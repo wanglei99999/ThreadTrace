@@ -26,6 +26,10 @@ GET /api/sources/lifecycle
 GET /api/runtime/diagnostics
 ```
 
+Web UI:
+
+The system view includes a source operations panel that combines `/api/sources/schedule`, `/api/sources/lifecycle`, and `/api/operations/runbook`. It highlights due sources, skipped/backoff reasons, disable guards, lifecycle attention items, and source-scoped runbook actions without starting any worker or writing task records.
+
 Runtime:
 
 ```js

@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('enrichHistoryButton').addEventListener('click', enrichHistoryDirectory);
   document.getElementById('refreshTasksButton').addEventListener('click', loadTasks);
   document.getElementById('refreshSourcesButton').addEventListener('click', loadSources);
+  document.getElementById('refreshSourceOperationsButton').addEventListener('click', loadSourceOperations);
   document.getElementById('refreshEventsButton').addEventListener('click', loadEvents);
   document.getElementById('refreshRawPagesButton').addEventListener('click', loadRawPages);
   document.getElementById('dispatchEventsButton').addEventListener('click', dispatchEvents);
@@ -101,6 +102,7 @@ function bindForms() {
     }, renderSourceSaveResult);
     await loadSystemStatus();
     await loadSources();
+    await loadSourceOperations();
   });
 
   document.getElementById('threadUrlForm').addEventListener('submit', async function (event) {
@@ -117,6 +119,7 @@ function bindForms() {
     }, renderSourceSaveResult);
     await loadSystemStatus();
     await loadSources();
+    await loadSourceOperations();
   });
 
   document.getElementById('sourceOnboardingForm').addEventListener('submit', async function (event) {
@@ -218,6 +221,7 @@ function bindForms() {
       });
     }, renderRolloutManifestApply);
     await loadSources();
+    await loadSourceOperations();
   });
 
   document.getElementById('sourceResult').addEventListener('click', async function (event) {
@@ -232,6 +236,8 @@ function bindForms() {
     }, isPipeline ? renderSourcePipelineRunResult : renderSourceTaskRunResult);
     await loadSystemStatus();
     await loadTasks();
+    await loadSources();
+    await loadSourceOperations();
     await loadEvents();
     await loadRawPages();
   });
@@ -352,6 +358,7 @@ function setView(viewName) {
   document.getElementById('viewSubtitle').textContent = views[viewName].subtitle;
   if (viewName === 'system') loadSystemStatus();
   if (viewName === 'system') loadSources();
+  if (viewName === 'system') loadSourceOperations();
   if (viewName === 'system') loadEvents();
   if (viewName === 'system') loadRawPages();
 }
@@ -480,6 +487,28 @@ async function loadSources() {
   }, renderSourceList);
 }
 
+async function loadSourceOperations() {
+  await renderAsync('sourceOperationsResult', function () {
+    return Promise.all([
+      fetchJson('/api/sources/lifecycle?limit=100', {
+        acceptErrorStatus: true
+      }),
+      fetchJson('/api/sources/schedule?limit=100', {
+        acceptErrorStatus: true
+      }),
+      fetchJson('/api/operations/runbook?limit=100', {
+        acceptErrorStatus: true
+      })
+    ]).then(function (results) {
+      return {
+        lifecycle: results[0],
+        schedule: results[1],
+        runbook: results[2]
+      };
+    });
+  }, renderSourceOperations);
+}
+
 async function loadEvents() {
   await renderAsync('eventResult', function () {
     return fetchJson('/api/events?limit=10');
@@ -511,6 +540,7 @@ async function runAllSources() {
   await loadSystemStatus();
   await loadTasks();
   await loadSources();
+  await loadSourceOperations();
   await loadEvents();
   await loadRawPages();
 }
@@ -522,6 +552,7 @@ async function runDueSources() {
   await loadSystemStatus();
   await loadTasks();
   await loadSources();
+  await loadSourceOperations();
   await loadEvents();
   await loadRawPages();
 }
@@ -535,6 +566,7 @@ async function runDuePipelines() {
   await loadSystemStatus();
   await loadTasks();
   await loadSources();
+  await loadSourceOperations();
   await loadEvents();
   await loadRawPages();
 }
@@ -982,6 +1014,156 @@ function renderOperationsRunbook(runbook) {
     }).join('');
     return '<div class="action-row"><span>' + escapeHtml(action.severity + ' · ' + action.area + ' · ' + action.title) + '<small>' + escapeHtml(action.summary) + '</small>' + command + '</span></div>';
   }).join(''), 'wide');
+}
+
+function renderSourceOperations(result) {
+  const lifecycle = result.lifecycle || {};
+  const schedule = result.schedule || {};
+  const runbook = result.runbook || {};
+  const lifecycleSummary = lifecycle.summary || {};
+  const scheduleSummary = schedule.summary || {};
+  const actions = runbook.actions || [];
+  const sourceActions = actions.filter(function (action) {
+    return action.area === 'sources';
+  });
+  const panels = [
+    panel('Source operations', [
+      '<div class="summary-strip">',
+      summaryTile('Lifecycle', lifecycle.status || 'unknown', statusVariant(lifecycle.status)),
+      summaryTile('Schedule', schedule.status || 'unknown', statusVariant(schedule.status)),
+      summaryTile('Enabled', String(lifecycleSummary.enabled || 0) + '/' + String(lifecycleSummary.total || 0)),
+      summaryTile('Due now', String(scheduleSummary.due || 0)),
+      summaryTile('Skipped', String(scheduleSummary.skipped || 0)),
+      summaryTile('Retry wait', String(lifecycleSummary.failureRetryWaiting || 0), lifecycleSummary.failureRetryWaiting > 0 ? 'warn' : 'ok'),
+      summaryTile('Disable blocked', String(lifecycleSummary.disableBlocked || 0), lifecycleSummary.disableBlocked > 0 ? 'warn' : 'ok'),
+      summaryTile('Runbook', String(runbook.actionCount || actions.length || 0), statusVariant(runbook.status)),
+      '</div>',
+      '<div class="tag-list reason-tags">',
+      renderReasonTags(scheduleSummary.byReason),
+      '</div>'
+    ].join(''), 'wide'),
+    panel('Due sources', renderScheduleDecisionRows(schedule.dueSources || [], 'No due sources.'), 'wide'),
+    panel('Skipped sources', renderScheduleDecisionRows((schedule.skippedSources || []).slice(0, 10), 'No skipped sources.'), 'wide'),
+    panel('Lifecycle attention', renderLifecycleAttentionRows(lifecycle.sources || []), 'wide')
+  ];
+  if (sourceActions.length > 0) {
+    panels.push(panel('Source runbook actions', renderRunbookActionRows(sourceActions), 'wide'));
+  }
+  return panels.join('');
+}
+
+function renderReasonTags(byReason) {
+  const reasons = Object.keys(byReason || {}).sort();
+  if (reasons.length === 0) return '<span class="muted">No schedule reasons yet.</span>';
+  return reasons.map(function (reason) {
+    return '<span class="tag">' + escapeHtml(reason + ': ' + byReason[reason]) + '</span>';
+  }).join('');
+}
+
+function renderScheduleDecisionRows(sources, emptyText) {
+  if (!sources || sources.length === 0) return '<div class="muted">' + escapeHtml(emptyText) + '</div>';
+  return sources.map(function (source) {
+    const decision = source.decision || {};
+    const runState = source.runState || {};
+    const details = [
+      source.id,
+      source.sourceKey + '/' + source.sourceType,
+      'run=' + (runState.status || 'unknown'),
+      'reason=' + (decision.reason || 'unknown'),
+      decision.nextRunAt ? 'next=' + decision.nextRunAt : undefined,
+      decision.retryAt ? 'retry=' + decision.retryAt : undefined,
+      decision.backoffMs ? 'backoff=' + formatDurationMs(decision.backoffMs) : undefined
+    ].filter(Boolean).join(' | ');
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(source.displayName || source.id) + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '</span>' +
+      statusBadge(decision.due ? 'due' : 'skip', decision.due ? 'ok' : 'muted') +
+      '</div>';
+  }).join('');
+}
+
+function renderLifecycleAttentionRows(sources) {
+  const attentionSources = (sources || []).filter(function (source) {
+    const guard = source.disableGuard || {};
+    const retry = source.failureRetry || {};
+    return guard.blocked || guard.stale || (retry.active && !retry.elapsed) || source.enabled === false;
+  });
+  const rows = attentionSources.length > 0 ? attentionSources : (sources || []).slice(0, 5);
+  if (rows.length === 0) return '<div class="muted">No tracked sources.</div>';
+  if (attentionSources.length === 0) {
+    return '<div class="muted">No lifecycle attention needed.</div>' + rows.map(renderLifecycleSourceRow).join('');
+  }
+  return rows.map(renderLifecycleSourceRow).join('');
+}
+
+function renderLifecycleSourceRow(source) {
+  const guard = source.disableGuard || {};
+  const retry = source.failureRetry || {};
+  const runState = source.runState || {};
+  const variant = guard.blocked || (retry.active && !retry.elapsed) ? 'warn' : (source.enabled === false ? 'muted' : 'ok');
+  const label = guard.blocked ? 'blocked' : (retry.active && !retry.elapsed ? 'retry wait' : (source.enabled === false ? 'disabled' : 'ready'));
+  const details = [
+    source.id,
+    'run=' + (runState.status || 'unknown'),
+    'action=' + (source.nextAction || 'unknown'),
+    guard.lastStartedAt ? 'started=' + guard.lastStartedAt : undefined,
+    retry.retryAt ? 'retry=' + retry.retryAt : undefined,
+    retry.backoffMs ? 'backoff=' + formatDurationMs(retry.backoffMs) : undefined,
+    source.latestLifecycleTask ? 'task=' + source.latestLifecycleTask.id + '/' + source.latestLifecycleTask.status : undefined
+  ].filter(Boolean).join(' | ');
+  return '<div class="action-row ops-row"><span>' +
+    '<strong>' + escapeHtml(source.displayName || source.id) + '</strong>' +
+    '<small>' + escapeHtml(details) + '</small>' +
+    '</span>' +
+    statusBadge(label, variant) +
+    '</div>';
+}
+
+function renderRunbookActionRows(actions) {
+  return actions.slice(0, 10).map(function (action) {
+    const command = action.recommendedCommand ? '<small>' + escapeHtml(action.recommendedCommand) + '</small>' : '';
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(action.title || action.key) + '</strong>' +
+      '<small>' + escapeHtml(action.summary || '') + '</small>' +
+      command +
+      '</span>' +
+      statusBadge(action.severity || 'info', action.severity === 'critical' ? 'fail' : 'warn') +
+      '</div>';
+  }).join('');
+}
+
+function summaryTile(label, value, variant) {
+  const className = variant ? 'summary-tile ' + statusClassName(variant) : 'summary-tile';
+  return '<div class="' + className + '"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(value) + '</strong></div>';
+}
+
+function statusBadge(label, variant) {
+  return '<span class="status-badge ' + statusClassName(variant) + '">' + escapeHtml(label) + '</span>';
+}
+
+function statusVariant(status) {
+  if (status === 'ok') return 'ok';
+  if (status === 'fail' || status === 'critical') return 'fail';
+  if (status === 'warn' || status === 'warning') return 'warn';
+  return 'muted';
+}
+
+function statusClassName(variant) {
+  if (variant === 'ok') return 'status-ok';
+  if (variant === 'warn') return 'status-warn';
+  if (variant === 'fail') return 'status-fail';
+  return 'status-muted';
+}
+
+function formatDurationMs(value) {
+  const ms = Number(value);
+  if (!Number.isFinite(ms) || ms <= 0) return String(value || 0) + 'ms';
+  const seconds = Math.round(ms / 1000);
+  if (seconds < 60) return seconds + 's';
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return minutes + 'm';
+  return Math.round(minutes / 60) + 'h';
 }
 
 function renderPipelineRunSummary(run) {
