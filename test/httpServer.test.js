@@ -21,6 +21,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
   try {
     const health = await getJson(baseUrl + '/health');
     const home = await fetch(baseUrl + '/');
+    const webApp = await fetch(baseUrl + '/app.js');
     const adapters = await getJson(baseUrl + '/adapters');
     const adapterDiagnostics = await getJson(baseUrl + '/api/adapters/diagnostics?now=2026-06-19T10:00:00.000Z');
     const handlers = await getJson(baseUrl + '/api/source-ingest-handlers');
@@ -117,6 +118,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(health.ok, true);
     assert.equal(home.status, 200);
     const homeHtml = await home.text();
+    const webAppJs = await webApp.text();
     assert.match(homeHtml, /ThreadTrace/);
     assert.match(homeHtml, /sourceOnboardingForm/);
     assert.match(homeHtml, /onboardingResult/);
@@ -141,6 +143,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(homeHtml, /runbookResult/);
     assert.match(homeHtml, /refreshSourceOperationsButton/);
     assert.match(homeHtml, /sourceOperationsResult/);
+    assert.match(homeHtml, /sourceOperationActionResult/);
+    assert.match(webAppJs, /reset-source-failure/);
+    assert.match(webAppJs, /failure\/reset/);
     assert.equal(adapters.adapters[0].sourceKey, 'nga');
     assert.equal(adapterDiagnostics.status, 'ok');
     assert.equal(adapterDiagnostics.adapterCount, 1);

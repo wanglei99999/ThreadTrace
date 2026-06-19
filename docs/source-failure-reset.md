@@ -43,6 +43,13 @@ Request:
 
 Set `execute: true` or `dryRun: false` to persist the updated source. `retryNow: true` sets `schedule.nextRunAt` to `now`; `nextRunAt` can be used instead for a controlled retry window.
 
+## Web UI
+
+The system view's Source operations panel shows failure-reset controls on failed or retry-backoff sources:
+
+- `Reset check`: dry-runs the reset and writes only the audit task.
+- `Retry now`: asks for browser confirmation, executes the reset, and sets the source due immediately.
+
 ## State Change
 
 When the source is failed, execution updates the source to:

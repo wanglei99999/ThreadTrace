@@ -242,6 +242,14 @@ function bindForms() {
     await loadRawPages();
   });
 
+  document.getElementById('sourceOperationsResult').addEventListener('click', async function (event) {
+    const button = event.target.closest('button[data-action="reset-source-failure"]');
+    if (!button) return;
+    const execute = button.dataset.execute === 'true';
+    if (execute && !window.confirm('Reset this source failure state and retry now?')) return;
+    await resetSourceFailureFromButton(button, execute);
+  });
+
   document.getElementById('rawPageResult').addEventListener('click', async function (event) {
     const button = event.target.closest('button[data-action="replay-raw-page"]');
     if (!button) return;
@@ -569,6 +577,21 @@ async function runDuePipelines() {
   await loadSourceOperations();
   await loadEvents();
   await loadRawPages();
+}
+
+async function resetSourceFailureFromButton(button, execute) {
+  const sourceId = button.dataset.sourceId;
+  await renderAsync('sourceOperationActionResult', function () {
+    return requestJson('/api/sources/' + encodeURIComponent(sourceId) + '/failure/reset', {
+      execute,
+      retryNow: button.dataset.retryNow === 'true',
+      resetBy: 'web'
+    });
+  }, renderSourceFailureResetResult);
+  await loadSystemStatus();
+  await loadTasks();
+  await loadSources();
+  await loadSourceOperations();
 }
 
 async function dispatchEvents() {
@@ -1112,12 +1135,45 @@ function renderLifecycleSourceRow(source) {
     retry.backoffMs ? 'backoff=' + formatDurationMs(retry.backoffMs) : undefined,
     source.latestLifecycleTask ? 'task=' + source.latestLifecycleTask.id + '/' + source.latestLifecycleTask.status : undefined
   ].filter(Boolean).join(' | ');
+  const controls = '<span class="button-group source-op-buttons">' +
+    statusBadge(label, variant) +
+    renderSourceFailureResetButtons(source) +
+    '</span>';
   return '<div class="action-row ops-row"><span>' +
     '<strong>' + escapeHtml(source.displayName || source.id) + '</strong>' +
     '<small>' + escapeHtml(details) + '</small>' +
     '</span>' +
-    statusBadge(label, variant) +
+    controls +
     '</div>';
+}
+
+function renderSourceFailureResetButtons(source) {
+  const runState = source.runState || {};
+  const retry = source.failureRetry || {};
+  if (runState.status !== 'failed' && !retry.active) return '';
+  const sourceId = escapeHtml(source.id);
+  return [
+    '<button class="inline-button secondary-inline-button" type="button" data-action="reset-source-failure" data-source-id="' + sourceId + '" data-execute="false" data-retry-now="true">Reset check</button>',
+    '<button class="inline-button warning-inline-button" type="button" data-action="reset-source-failure" data-source-id="' + sourceId + '" data-execute="true" data-retry-now="true">Retry now</button>'
+  ].join('');
+}
+
+function renderSourceFailureResetResult(result) {
+  const reset = result.result || result;
+  const task = result.task || {};
+  const sourceAfter = reset.sourceAfter || {};
+  const runState = sourceAfter.runState || {};
+  const schedule = sourceAfter.schedule || {};
+  return panel('Source failure reset', [
+    metric('Status', reset.status || 'unknown'),
+    metric('Task', task.id || 'none'),
+    metric('Mode', reset.dryRun ? 'dry-run' : 'execute'),
+    metric('Changed', reset.changed ? 'yes' : 'no'),
+    metric('Reason', reset.reason || 'unknown'),
+    metric('Run state', runState.status || 'unknown'),
+    metric('Failure count', runState.failureCount === undefined ? 'unknown' : runState.failureCount),
+    metric('Next run', schedule.nextRunAt || reset.nextRunAt || 'unchanged')
+  ].join(''), 'wide');
 }
 
 function renderRunbookActionRows(actions) {

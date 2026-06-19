@@ -315,6 +315,16 @@ form button[type="submit"]:hover {
   background: var(--panel-strong);
 }
 
+.warning-inline-button {
+  color: #8b5a14;
+  background: #fff7e8;
+  border: 1px solid #e4c58f;
+}
+
+.warning-inline-button:hover {
+  background: #ffedc7;
+}
+
 .muted {
   color: var(--muted);
 }
@@ -366,6 +376,10 @@ form button[type="submit"]:hover {
 
 .ops-row strong {
   font-size: 14px;
+}
+
+.source-op-buttons {
+  align-items: center;
 }
 
 .status-badge {
