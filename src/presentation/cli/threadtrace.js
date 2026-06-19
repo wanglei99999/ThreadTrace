@@ -390,6 +390,35 @@ function main(argv) {
     return;
   }
 
+  if (command === 'synthesize-runbook-events') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.synthesizeRunbookNotificationEvents({
+      forum: options.forum,
+      sourceKey: options.sourceKey,
+      enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
+      execute: options.execute === 'true' || options.dryRun === 'false',
+      limit: options.limit ? Number(options.limit) : 100,
+      pipelineLimit: options.pipelineLimit ? Number(options.pipelineLimit) : 20,
+      taskLimit: options.taskLimit ? Number(options.taskLimit) : undefined,
+      sourceRunStaleAfterMs: options.sourceRunStaleAfterMs ? Number(options.sourceRunStaleAfterMs) : undefined,
+      sourceFailureRetryBackoffMs: options.sourceFailureRetryBackoffMs ? Number(options.sourceFailureRetryBackoffMs) : undefined,
+      sourceFailureMaxRetryBackoffMs: options.sourceFailureMaxRetryBackoffMs ? Number(options.sourceFailureMaxRetryBackoffMs) : undefined,
+      now: options.now,
+      storeDir
+    }).then(function (result) {
+      console.log('Runbook events: ' + result.status);
+      console.log('Mode: ' + (result.dryRun ? 'dry-run' : 'execute'));
+      console.log('Actions: ' + result.actionCount + '\tcreated=' + result.createdCount + '\tupdated=' + result.updatedCount + '\tskipped=' + result.skippedCount);
+      result.results.forEach(function (item) {
+        console.log(item.status + '\t' + item.actionKey + '\t' + item.event.id + '\t' + item.event.severity);
+      });
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'worker-topology-plan') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.getWorkerTopologyPlan({
@@ -1819,6 +1848,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js source-schedule-report [--forum nga] [--enabled true] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js trace-context [--request-id id | --trace-id id | --idempotency-key key] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-runbook [--forum nga] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js synthesize-runbook-events [--execute true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js worker-topology-plan [--topology operations-worker|split-workers] [--source-task-mode ingest|insight-pipeline] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js runtime-diagnostics [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js adapter-diagnostics [--now iso]');

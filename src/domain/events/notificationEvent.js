@@ -33,6 +33,36 @@ function createSourceChangedEvent(input) {
   };
 }
 
+function createRunbookActionEvent(input) {
+  const safeInput = input || {};
+  const action = safeInput.action || {};
+  const now = safeInput.createdAt || new Date().toISOString();
+  return {
+    id: safeInput.id || buildRunbookActionEventId(action),
+    type: 'runbook-action',
+    severity: severityForRunbookAction(action),
+    sourceId: action.evidence && action.evidence.sourceId,
+    sourceKey: action.evidence && action.evidence.sourceKey,
+    taskId: action.evidence && action.evidence.taskId,
+    createdAt: now,
+    title: action.title || action.key || 'Runbook action',
+    summary: action.summary || action.title || action.key || 'Runbook action requires attention.',
+    payload: {
+      action,
+      runbookGeneratedAt: safeInput.runbookGeneratedAt,
+      runbookStatus: safeInput.runbookStatus
+    },
+    deliveryStatus: safeInput.deliveryStatus || 'pending',
+    deliveryAttempts: safeInput.deliveryAttempts || 0,
+    nextDeliveryAt: safeInput.nextDeliveryAt || now,
+    lastDeliveryError: safeInput.lastDeliveryError,
+    lastDeliveredAt: safeInput.lastDeliveredAt,
+    acknowledgedAt: safeInput.acknowledgedAt,
+    acknowledgedBy: safeInput.acknowledgedBy,
+    acknowledgementNote: safeInput.acknowledgementNote
+  };
+}
+
 function acknowledgeNotificationEvent(event, input) {
   const safeInput = input || {};
   const now = safeInput.acknowledgedAt || new Date().toISOString();
@@ -78,6 +108,18 @@ function normalizeDeliveryFailureOptions(options) {
   return options;
 }
 
+function buildRunbookActionEventId(action) {
+  const key = action && action.key ? action.key : 'unknown';
+  const digest = crypto.createHash('sha1').update(String(key)).digest('hex').slice(0, 12);
+  return 'runbook-action-' + digest;
+}
+
+function severityForRunbookAction(action) {
+  if (action && action.severity === 'critical') return 'critical';
+  if (action && action.severity === 'warning') return 'warning';
+  return 'info';
+}
+
 function buildSummary(source, cursorDiff, cursor) {
   const name = source.displayName || source.id || 'source';
   if (!cursorDiff.previousPostCount) {
@@ -91,6 +133,8 @@ function buildSummary(source, cursorDiff, cursor) {
 
 module.exports = {
   createSourceChangedEvent,
+  createRunbookActionEvent,
+  buildRunbookActionEventId,
   acknowledgeNotificationEvent,
   markNotificationEventDelivered,
   markNotificationEventDeliveryFailed

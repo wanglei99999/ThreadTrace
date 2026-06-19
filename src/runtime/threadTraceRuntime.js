@@ -23,6 +23,7 @@ const { runDueSourcesIngestTasks } = require('../application/use-cases/runDueSou
 const { runDueSourceInsightPipelineTasks } = require('../application/use-cases/runDueSourceInsightPipelineTasks');
 const { acknowledgeNotificationEvent } = require('../application/use-cases/acknowledgeNotificationEvent');
 const { dispatchPendingNotificationEvents } = require('../application/use-cases/dispatchPendingNotificationEvents');
+const { synthesizeRunbookNotificationEvents } = require('../application/use-cases/synthesizeRunbookNotificationEvents');
 const { fetchAndStoreThreadPage } = require('../application/use-cases/fetchAndStoreThreadPage');
 const { enrichAnalysisReportWithLlm } = require('../application/use-cases/enrichAnalysisReportWithLlm');
 const { runSemanticEnrichmentTask } = require('../application/use-cases/runSemanticEnrichmentTask');
@@ -1298,6 +1299,34 @@ function createThreadTraceRuntime(options) {
         acknowledged: safeRequest.acknowledged,
         deliveryStatus: safeRequest.deliveryStatus,
         limit: safeRequest.limit || 50
+      });
+    },
+
+    async synthesizeRunbookNotificationEvents(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      const runtime = this;
+      return synthesizeRunbookNotificationEvents({
+        notificationEventRepository: repositories.notificationEventRepository,
+        getOperationsRunbook(runbookRequest) {
+          return runtime.getOperationsRunbook(Object.assign({}, runbookRequest, {
+            forum: safeRequest.forum,
+            sourceKey: safeRequest.sourceKey,
+            enabled: safeRequest.enabled,
+            limit: safeRequest.limit || 100,
+            pipelineLimit: safeRequest.pipelineLimit,
+            taskLimit: safeRequest.taskLimit,
+            sourceRunStaleAfterMs: safeRequest.sourceRunStaleAfterMs,
+            sourceFailureRetryBackoffMs: safeRequest.sourceFailureRetryBackoffMs,
+            sourceFailureMaxRetryBackoffMs: safeRequest.sourceFailureMaxRetryBackoffMs,
+            now: safeRequest.now,
+            storeDir: safeRequest.storeDir
+          }));
+        },
+        execute: safeRequest.execute,
+        limit: safeRequest.limit,
+        now: safeRequest.now,
+        includeRunbook: safeRequest.includeRunbook
       });
     },
 

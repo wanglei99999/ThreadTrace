@@ -461,6 +461,42 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/operations/runbook/events': {
+        post: {
+          summary: 'Dry-run or execute synthesis of operations runbook actions into notification outbox events',
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    execute: { type: 'boolean', example: false },
+                    dryRun: { type: 'boolean', example: true },
+                    forum: { type: 'string', example: 'nga' },
+                    sourceKey: { type: 'string', example: 'nga' },
+                    enabled: { type: 'boolean' },
+                    limit: { type: 'number', example: 100 },
+                    pipelineLimit: { type: 'number', example: 20 },
+                    taskLimit: { type: 'number', example: 100 },
+                    sourceRunStaleAfterMs: { type: 'number', example: 600000 },
+                    sourceFailureRetryBackoffMs: { type: 'number', example: 60000 },
+                    sourceFailureMaxRetryBackoffMs: { type: 'number', example: 3600000 },
+                    includeRunbook: { type: 'boolean', example: false },
+                    now: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+                    storeDir: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Runbook notification event synthesis result'
+            }
+          }
+        }
+      },
       '/api/operations/worker-topology-plan': {
         get: {
           summary: 'Plan worker deployment topology for local, single-process, or split-worker operations',

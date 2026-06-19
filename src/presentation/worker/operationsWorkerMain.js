@@ -71,6 +71,7 @@ function buildRequest(options, storeDir, config) {
   return {
     sources: {
       forum: options.forum,
+      sourceKey: options.sourceKey,
       limit: options.limit ? Number(options.limit) : undefined,
       sourceTaskMode: config.workers.sourceTaskMode,
       provider: config.llm.provider,
@@ -94,6 +95,18 @@ function buildRequest(options, storeDir, config) {
       includeFailed: options.includeFailed === undefined ? undefined : options.includeFailed !== 'false',
       storeDir
     },
+    runbookEvents: options.runbookEvents === 'true' || options.runbookEventsExecute === 'true'
+      ? {
+        forum: options.forum,
+        sourceKey: options.sourceKey,
+        execute: options.runbookEventsExecute === 'true',
+        limit: options.limit ? Number(options.limit) : undefined,
+        sourceRunStaleAfterMs: config.workers.sourceRunStaleAfterMs,
+        sourceFailureRetryBackoffMs: config.workers.sourceFailureRetryBackoffMs,
+        sourceFailureMaxRetryBackoffMs: config.workers.sourceFailureMaxRetryBackoffMs,
+        storeDir
+      }
+      : undefined,
     overview: {
       limit: options.limit ? Number(options.limit) : undefined,
       storeDir
@@ -117,6 +130,9 @@ function parseArgs(args) {
       index += 1;
     } else if (item === '--forum') {
       options.forum = args[index + 1];
+      index += 1;
+    } else if (item === '--source-key') {
+      options.sourceKey = args[index + 1];
       index += 1;
     } else if (item === '--channel') {
       options.channel = args[index + 1];
@@ -159,6 +175,12 @@ function parseArgs(args) {
       index += 1;
     } else if (item === '--include-failed') {
       options.includeFailed = args[index + 1];
+      index += 1;
+    } else if (item === '--runbook-events') {
+      options.runbookEvents = args[index + 1];
+      index += 1;
+    } else if (item === '--runbook-events-execute') {
+      options.runbookEventsExecute = args[index + 1];
       index += 1;
     } else if (item === '--interval-ms') {
       options.intervalMs = args[index + 1];

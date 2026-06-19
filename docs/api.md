@@ -271,6 +271,23 @@ Returns `summary.byReason`, `dueSources`, `skippedSources`, and per-source sched
 
 返回：整体 `status`、`actionCount` 和行动项。存在 critical 行动时 HTTP 状态码为 503，响应体仍包含完整 Runbook。
 
+### `POST /api/operations/runbook/events`
+
+Dry-runs or executes synthesis of critical and warning runbook actions into notification outbox events.
+
+Request:
+
+```json
+{
+  "execute": false,
+  "forum": "nga",
+  "limit": 100,
+  "includeRunbook": false
+}
+```
+
+The endpoint defaults to dry-run. Set `execute: true` or `dryRun: false` to persist `runbook-action` events. Event IDs are stable per runbook action key, so repeated synthesis updates pending or failed events without duplicating alerts. Acknowledged and delivered events are skipped.
+
 ### `GET /api/notifications/diagnostics`
 
 诊断通知投递通道配置。`file` 通道会检查本地 deliveries 目录可写；`webhook` 通道会检查 URL 是否存在且使用 `http` 或 `https`，不会主动投递外部请求。

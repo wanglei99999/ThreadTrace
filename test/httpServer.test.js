@@ -210,6 +210,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/operations/resource-provisioning-plan']);
     assert.ok(openApi.paths['/api/deployment/gate']);
     assert.ok(openApi.paths['/api/operations/rollout-manifest/apply']);
+    assert.ok(openApi.paths['/api/operations/runbook/events']);
     assert.ok(openApi.paths['/api/sources/{sourceId}/disable']);
     assert.ok(openApi.paths['/api/sources/{sourceId}/enable']);
     assert.ok(openApi.paths['/api/sources/{sourceId}/failure/reset']);
@@ -229,6 +230,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.paths['/api/sources/{sourceId}/tasks/ingest'].post.responses[404].$ref, '#/components/responses/NotFound');
     assert.equal(openApi.paths['/api/sources/{sourceId}/tasks/ingest'].post.responses[409].$ref, '#/components/responses/Conflict');
     assert.equal(openApi.paths['/api/sources/tasks/ingest-due'].post.requestBody.content['application/json'].schema.properties.sourceFailureRetryBackoffMs.example, 60000);
+    assert.equal(openApi.paths['/api/operations/runbook/events'].post.requestBody.content['application/json'].schema.properties.execute.example, false);
     assert.ok(openApi.paths['/api/sources/lifecycle'].get.parameters.some(function (parameter) {
       return parameter.name === 'sourceFailureRetryBackoffMs';
     }));
@@ -510,6 +512,58 @@ test('http server exposes operations runbook API', async function () {
     assert.ok(openApi.paths['/api/operations/runbook'].get.parameters.some(function (parameter) {
       return parameter.name === 'sourceFailureRetryBackoffMs';
     }));
+  } finally {
+    await close(server);
+  }
+});
+
+test('http server synthesizes runbook notification events', async function () {
+  const calls = [];
+  const server = createThreadTraceServer({
+    runtime: {
+      async synthesizeRunbookNotificationEvents(request) {
+        calls.push(request);
+        return {
+          status: 'ok',
+          dryRun: !request.execute,
+          executed: request.execute,
+          actionCount: 1,
+          eventCount: 1,
+          createdCount: 1,
+          updatedCount: 0,
+          skippedCount: 0,
+          results: [
+            {
+              status: 'created',
+              actionKey: 'checklist.sources',
+              event: {
+                id: 'runbook-action-1',
+                type: 'runbook-action',
+                severity: 'critical'
+              }
+            }
+          ]
+        };
+      }
+    }
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const result = await postJson(baseUrl + '/api/operations/runbook/events', {
+      execute: true,
+      limit: 25,
+      now: '2026-06-19T10:00:00.000Z'
+    });
+
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].execute, true);
+    assert.equal(calls[0].limit, 25);
+    assert.equal(calls[0].now, '2026-06-19T10:00:00.000Z');
+    assert.equal(result.executed, true);
+    assert.equal(result.results[0].event.type, 'runbook-action');
   } finally {
     await close(server);
   }

@@ -68,6 +68,70 @@ test('operations worker runs due sources, event dispatch, and overview in order'
   assert.equal(workerRuns.at(-1).output.events.dispatchedCount, 2);
 });
 
+test('operations worker can synthesize runbook notification events before dispatch', async function () {
+  const calls = [];
+  const worker = createOperationsWorker({
+    logger: silentLogger(),
+    runtime: {
+      async runDueSourcesIngestTasks() {
+        calls.push(['sources']);
+        return {
+          dueCount: 0,
+          completedCount: 0,
+          failedCount: 0,
+          skippedCount: 0
+        };
+      },
+      async synthesizeRunbookNotificationEvents(request) {
+        calls.push(['runbook-events', request.execute]);
+        return {
+          actionCount: 1,
+          eventCount: 1,
+          createdCount: 1,
+          updatedCount: 0,
+          skippedCount: 0
+        };
+      },
+      async dispatchNotificationEvents() {
+        calls.push(['events']);
+        return {
+          dispatchedCount: 1,
+          failedCount: 0,
+          skippedCount: 0
+        };
+      },
+      async getOperationalOverview() {
+        calls.push(['overview']);
+        return {
+          events: {
+            unacknowledged: 1
+          },
+          workers: {
+            stale: 0
+          },
+          tasks: {
+            failed: 0
+          }
+        };
+      }
+    }
+  });
+
+  const result = await worker.runOnce({
+    runbookEvents: {
+      execute: true
+    }
+  });
+
+  assert.deepEqual(calls, [
+    ['sources'],
+    ['runbook-events', true],
+    ['events'],
+    ['overview']
+  ]);
+  assert.equal(result.runbookEvents.eventCount, 1);
+});
+
 test('operations worker skips overlapping runs', async function () {
   let releaseRun;
   let callCount = 0;

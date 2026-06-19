@@ -349,6 +349,27 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/operations/runbook/events') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.synthesizeRunbookNotificationEvents({
+      forum: body.forum,
+      sourceKey: body.sourceKey,
+      enabled: body.enabled,
+      execute: body.execute === true || body.dryRun === false,
+      limit: body.limit,
+      pipelineLimit: body.pipelineLimit,
+      taskLimit: body.taskLimit,
+      sourceRunStaleAfterMs: body.sourceRunStaleAfterMs,
+      sourceFailureRetryBackoffMs: body.sourceFailureRetryBackoffMs,
+      sourceFailureMaxRetryBackoffMs: body.sourceFailureMaxRetryBackoffMs,
+      includeRunbook: body.includeRunbook === true,
+      now: body.now,
+      storeDir: body.storeDir || context.storeDir
+    });
+    writeJson(response, 200, result);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/operations/worker-topology-plan') {
     const enabledParam = url.searchParams.get('enabled');
     const plan = await context.runtime.getWorkerTopologyPlan({

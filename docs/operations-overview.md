@@ -17,6 +17,7 @@ GET /api/operations/overview
 GET /api/operations/readiness
 GET /api/operations/trace-context
 GET /api/operations/runbook
+POST /api/operations/runbook/events
 POST /api/operations/rollout-manifest-plan
 POST /api/operations/resource-provisioning-plan
 POST /api/deployment/gate
@@ -36,6 +37,7 @@ Runtime:
 runtime.getOperationalOverview({ limit: 100 })
 runtime.getOperationalReadiness({ limit: 100 })
 runtime.getOperationsRunbook({ limit: 100 })
+runtime.synthesizeRunbookNotificationEvents({ execute: false })
 runtime.getRolloutManifestPlan({ manifest })
 runtime.getResourceProvisioningPlan({ manifest })
 runtime.getDeploymentGateReport({ manifest })
@@ -49,7 +51,7 @@ npm run worker:operations-once
 npm run worker:operations-loop
 ```
 
-The operations worker runs due-source work, notification event dispatch, and overview logging in one non-overlapping loop. By default the source step is ingest-only. Set `--source-task-mode insight-pipeline` or `THREADTRACE_SOURCE_TASK_MODE=insight-pipeline` to run the full source insight pipeline for due sources. Set `THREADTRACE_SOURCE_RUN_STALE_AFTER_MS` or `--source-run-stale-after-ms` to control stuck source-run recovery. Failed sources use exponential retry backoff by default: first retry after 60 seconds, capped at one hour. Tune this with `THREADTRACE_SOURCE_FAILURE_RETRY_BACKOFF_MS`, `THREADTRACE_SOURCE_FAILURE_MAX_RETRY_BACKOFF_MS`, `--source-failure-retry-backoff-ms`, or set the first value to `0` to disable failure backoff. This is useful for local deployments or a single background service process. Larger deployments can still run the due-source and event workers separately.
+The operations worker runs due-source work, optional runbook event synthesis, notification event dispatch, and overview logging in one non-overlapping loop. By default the source step is ingest-only and runbook synthesis is off. Set `--source-task-mode insight-pipeline` or `THREADTRACE_SOURCE_TASK_MODE=insight-pipeline` to run the full source insight pipeline for due sources. Set `--runbook-events true` to dry-run synthesis during a worker run, or `--runbook-events-execute true` to persist runbook events before dispatch. Set `THREADTRACE_SOURCE_RUN_STALE_AFTER_MS` or `--source-run-stale-after-ms` to control stuck source-run recovery. Failed sources use exponential retry backoff by default: first retry after 60 seconds, capped at one hour. Tune this with `THREADTRACE_SOURCE_FAILURE_RETRY_BACKOFF_MS`, `THREADTRACE_SOURCE_FAILURE_MAX_RETRY_BACKOFF_MS`, `--source-failure-retry-backoff-ms`, or set the first value to `0` to disable failure backoff. This is useful for local deployments or a single background service process. Larger deployments can still run the due-source and event workers separately.
 
 Use the worker topology plan before choosing a deployment shape:
 
@@ -145,3 +147,5 @@ The HTTP endpoint returns `503` only for `fail`; `warn` still returns `200` so d
 Each action includes an area, title, evidence, a primary CLI command, and optional related commands. Runbook actions prefer the highest-leverage next step: connector issues point to `connector-rollout-plan`, source ingest configuration issues point to `source-ingest-dry-run`, worker issues point to `worker-topology-plan`, and duplicate idempotency records point to `trace-context --idempotency-key`. Related commands keep lower-level diagnostics such as `connector-readiness`, `source-diagnostics`, `runtime-diagnostics`, and `operations-readiness` close at hand.
 
 Source lifecycle actions point operators to `source-lifecycle-report` when a source disable is blocked by an active run or when a failed source is still waiting for retry backoff. If an operator has reviewed a failed source and wants to bypass the remaining backoff window, the runbook also links to `reset-source-failure --retry-now true --execute true`.
+
+Runbook notification synthesis promotes critical and warning runbook actions into the notification outbox as `runbook-action` events. It defaults to dry-run through CLI and HTTP, uses stable IDs based on action keys to avoid duplicate alerts, preserves pending/failed delivery state when an action is refreshed, and skips acknowledged or delivered actions so operator decisions remain durable.

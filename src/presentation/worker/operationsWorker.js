@@ -67,16 +67,18 @@ function createOperationsWorker(options) {
       workerRun = await tracker.heartbeat(workerRun, { step: stepForSourceTaskMode(sourceTaskMode) });
       await leaseGuard.renew();
       const dueSources = await runDueSourceTasks(runtime, sourceTaskMode, withWorkerTrace(sourcesRequest, workerRun));
+      const runbookEvents = await synthesizeRunbookEvents(runtime, safeRequest, leaseGuard, tracker, workerRun);
       workerRun = await tracker.heartbeat(workerRun, { step: 'dispatch-events' });
       await leaseGuard.renew();
       const events = await runtime.dispatchNotificationEvents(safeRequest.events || {});
       workerRun = await tracker.heartbeat(workerRun, { step: 'overview' });
       await leaseGuard.renew();
       const overview = await runtime.getOperationalOverview(safeRequest.overview || {});
-      await tracker.complete(workerRun, summarizeOperationsResult(dueSources, events, overview));
-      logger.log('[worker] operations run completed: due=' + dueSources.dueCount + ', sourceFailed=' + dueSources.failedCount + ', eventDelivered=' + events.dispatchedCount + ', eventFailed=' + events.failedCount + ', openEvents=' + overview.events.unacknowledged);
+      await tracker.complete(workerRun, summarizeOperationsResult(dueSources, runbookEvents, events, overview));
+      logger.log('[worker] operations run completed: due=' + dueSources.dueCount + ', sourceFailed=' + dueSources.failedCount + ', runbookEvents=' + (runbookEvents ? runbookEvents.eventCount : 0) + ', eventDelivered=' + events.dispatchedCount + ', eventFailed=' + events.failedCount + ', openEvents=' + overview.events.unacknowledged);
       return {
         dueSources,
+        runbookEvents,
         events,
         overview
       };
@@ -119,6 +121,16 @@ function createOperationsWorker(options) {
   };
 }
 
+async function synthesizeRunbookEvents(runtime, request, leaseGuard, tracker, workerRun) {
+  if (!request.runbookEvents) return undefined;
+  if (typeof runtime.synthesizeRunbookNotificationEvents !== 'function') {
+    throw new Error('OperationsWorker requires runtime.synthesizeRunbookNotificationEvents(request) when runbookEvents is enabled.');
+  }
+  await tracker.heartbeat(workerRun, { step: 'runbook-events' });
+  await leaseGuard.renew();
+  return runtime.synthesizeRunbookNotificationEvents(request.runbookEvents);
+}
+
 function runDueSourceTasks(runtime, sourceTaskMode, request) {
   if (sourceTaskMode === 'insight-pipeline') {
     if (typeof runtime.runDueSourceInsightPipelineTasks !== 'function') {
@@ -148,7 +160,7 @@ function stepForSourceTaskMode(sourceTaskMode) {
   return 'ingest-due-sources';
 }
 
-function summarizeOperationsResult(dueSources, events, overview) {
+function summarizeOperationsResult(dueSources, runbookEvents, events, overview) {
   return {
     dueSources: {
       sourceTaskMode: dueSources.task && dueSources.task.type === 'source-insight-pipeline-due-sources' ? 'insight-pipeline' : 'ingest',
@@ -157,6 +169,13 @@ function summarizeOperationsResult(dueSources, events, overview) {
       failedCount: dueSources.failedCount,
       skippedCount: dueSources.skippedCount
     },
+    runbookEvents: runbookEvents ? {
+      actionCount: runbookEvents.actionCount,
+      eventCount: runbookEvents.eventCount,
+      createdCount: runbookEvents.createdCount,
+      updatedCount: runbookEvents.updatedCount,
+      skippedCount: runbookEvents.skippedCount
+    } : undefined,
     events: {
       channelKey: events.channelKey,
       dispatchedCount: events.dispatchedCount,

@@ -36,6 +36,7 @@
     "operations:trace-context": "node src/presentation/cli/threadtrace.js trace-context",
     "operations:worker-topology-plan": "node src/presentation/cli/threadtrace.js worker-topology-plan",
     "operations:runbook": "node src/presentation/cli/threadtrace.js operations-runbook",
+    "operations:synthesize-runbook-events": "node src/presentation/cli/threadtrace.js synthesize-runbook-events",
     "operations:resource-provisioning-plan": "node src/presentation/cli/threadtrace.js resource-provisioning-plan",
     "operations:rollout-manifest-apply": "node src/presentation/cli/threadtrace.js rollout-manifest-apply --manifest-file docs/examples/rollout-manifest.sample.json",
     "test:unit": "node --test test"
