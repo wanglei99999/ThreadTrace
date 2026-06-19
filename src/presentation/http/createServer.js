@@ -338,6 +338,10 @@ async function routeRequest(request, response, context) {
       enabled: enabledParam === null ? undefined : enabledParam === 'true',
       limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,
       pipelineLimit: url.searchParams.get('pipelineLimit') ? Number(url.searchParams.get('pipelineLimit')) : 20,
+      taskLimit: url.searchParams.get('taskLimit') ? Number(url.searchParams.get('taskLimit')) : undefined,
+      sourceRunStaleAfterMs: url.searchParams.get('sourceRunStaleAfterMs') ? Number(url.searchParams.get('sourceRunStaleAfterMs')) : undefined,
+      sourceFailureRetryBackoffMs: url.searchParams.get('sourceFailureRetryBackoffMs') ? Number(url.searchParams.get('sourceFailureRetryBackoffMs')) : undefined,
+      sourceFailureMaxRetryBackoffMs: url.searchParams.get('sourceFailureMaxRetryBackoffMs') ? Number(url.searchParams.get('sourceFailureMaxRetryBackoffMs')) : undefined,
       now: url.searchParams.get('now') || undefined,
       storeDir: url.searchParams.get('storeDir') || undefined
     });

@@ -239,7 +239,7 @@ Returns `summary`, `blockedDisables`, per-source `disableGuard`, `failureRetry`,
 
 ### `GET /api/operations/runbook`
 
-查询可执行运维 Runbook。它把 deployment checklist 和最近来源洞察流水线运行转换成行动项，包括严重级别、区域、建议命令和证据。
+查询可执行运维 Runbook。它把 deployment checklist、来源生命周期信号和最近来源洞察流水线运行转换成行动项，包括严重级别、区域、建议命令和证据。
 
 查询参数：
 
@@ -247,6 +247,10 @@ Returns `summary`, `blockedDisables`, per-source `disableGuard`, `failureRetry`,
 - `sourceId`: 可选，按来源过滤最近流水线。
 - `limit`: 可选，默认 100。
 - `pipelineLimit`: 可选，默认 20。
+- `taskLimit`: 可选，来源生命周期任务审计窗口。
+- `sourceRunStaleAfterMs`: 可选，运行中来源恢复窗口。
+- `sourceFailureRetryBackoffMs`: 可选，失败来源首次重试退避窗口。
+- `sourceFailureMaxRetryBackoffMs`: 可选，失败来源最大重试退避窗口。
 - `now`: 可选，用于测试或固定探测时间。
 
 返回：整体 `status`、`actionCount` 和行动项。存在 critical 行动时 HTTP 状态码为 503，响应体仍包含完整 Runbook。

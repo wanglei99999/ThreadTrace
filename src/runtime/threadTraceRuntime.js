@@ -837,8 +837,21 @@ function createThreadTraceRuntime(options) {
         limit: safeRequest.pipelineLimit || 20,
         storeDir: safeRequest.storeDir
       });
+      const sourceLifecycleReport = await this.getSourceLifecycleReport({
+        forum: safeRequest.forum,
+        sourceKey: safeRequest.sourceKey,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 100,
+        taskLimit: safeRequest.taskLimit || safeRequest.limit || 100,
+        sourceRunStaleAfterMs: safeRequest.sourceRunStaleAfterMs,
+        sourceFailureRetryBackoffMs: safeRequest.sourceFailureRetryBackoffMs,
+        sourceFailureMaxRetryBackoffMs: safeRequest.sourceFailureMaxRetryBackoffMs,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir
+      });
       return getOperationsRunbook({
         checklist,
+        sourceLifecycleReport,
         pipelineRuns,
         now: safeRequest.now
       });

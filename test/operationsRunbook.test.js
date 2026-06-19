@@ -92,6 +92,55 @@ test('operations runbook flags duplicate idempotency task risk', function () {
   assert.match(runbook.actions[0].recommendedCommand, /trace-context --idempotency-key idem-1/);
 });
 
+test('operations runbook turns source lifecycle signals into actions', function () {
+  const runbook = getOperationsRunbook({
+    now: '2026-06-19T10:00:00.000Z',
+    checklist: {
+      generatedAt: '2026-06-19T10:00:00.000Z',
+      items: []
+    },
+    sourceLifecycleReport: {
+      status: 'warn',
+      blockedDisables: [
+        {
+          sourceId: 'source-running',
+          displayName: 'Running source',
+          lastStartedAt: '2026-06-19T09:59:00.000Z',
+          staleAfterMs: 600000,
+          nextAction: 'wait-for-run-or-force-disable'
+        }
+      ],
+      sources: [
+        {
+          id: 'source-failed',
+          displayName: 'Failed source',
+          failureRetry: {
+            active: true,
+            elapsed: false,
+            retryAt: '2026-06-19T10:01:00.000Z',
+            failureCount: 2,
+            backoffMs: 120000
+          },
+          nextAction: 'wait-for-failure-backoff'
+        }
+      ]
+    },
+    pipelineRuns: {
+      runs: []
+    }
+  });
+
+  assert.equal(runbook.status, 'warn');
+  assert.equal(runbook.actionCount, 2);
+  assert.equal(runbook.actions[0].key, 'sourceLifecycle.disableBlocked.source-running');
+  assert.equal(runbook.actions[0].severity, 'warning');
+  assert.match(runbook.actions[0].recommendedCommand, /source-lifecycle-report/);
+  assert.match(runbook.actions[0].relatedCommands[1], /--force true/);
+  assert.equal(runbook.actions[1].key, 'sourceLifecycle.failureRetry.source-failed');
+  assert.equal(runbook.actions[1].evidence.retryAt, '2026-06-19T10:01:00.000Z');
+  assert.match(runbook.actions[1].summary, /Failed source/);
+});
+
 test('operations runbook flags connector module load failures', function () {
   const runbook = getOperationsRunbook({
     now: '2026-06-19T10:00:00.000Z',

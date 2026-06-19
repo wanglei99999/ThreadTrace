@@ -21,6 +21,7 @@ function getOperationsRunbook(options) {
     [];
   const actions = checklistActions(checklist)
     .concat(connectorModuleActions(checklist))
+    .concat(sourceLifecycleActions(safeOptions.sourceLifecycleReport))
     .concat(idempotencyActions(recentTasks))
     .concat(pipelineRunActions(pipelineRuns.runs || []));
 
@@ -30,6 +31,7 @@ function getOperationsRunbook(options) {
     actionCount: actions.length,
     actions,
     checklist,
+    sourceLifecycleReport: safeOptions.sourceLifecycleReport,
     pipelineRuns
   };
 }
@@ -100,6 +102,54 @@ function pipelineRunActions(runs) {
       }
     });
   });
+}
+
+function sourceLifecycleActions(report) {
+  if (!report) return [];
+  const blockedDisableActions = (report.blockedDisables || []).slice(0, 10).map(function (source) {
+    return action({
+      key: 'sourceLifecycle.disableBlocked.' + safeActionKey(source.sourceId),
+      severity: 'warning',
+      area: 'sources',
+      title: 'Wait for active source run before disabling.',
+      summary: (source.displayName || source.sourceId || 'Unknown source') + ' is still running and normal disable is blocked until the run finishes or becomes stale.',
+      recommendedCommand: 'node src/presentation/cli/threadtrace.js source-lifecycle-report',
+      relatedCommands: [
+        'node src/presentation/cli/threadtrace.js list-sources',
+        'node src/presentation/cli/threadtrace.js disable-source --source-id ' + quoteCommandValue(source.sourceId) + ' --execute true --force true'
+      ],
+      evidence: {
+        sourceId: source.sourceId,
+        lastStartedAt: source.lastStartedAt,
+        staleAfterMs: source.staleAfterMs,
+        nextAction: source.nextAction
+      }
+    });
+  });
+  const retryWaitingActions = (report.sources || []).filter(function (source) {
+    return source.failureRetry && source.failureRetry.active && !source.failureRetry.elapsed;
+  }).slice(0, 10).map(function (source) {
+    return action({
+      key: 'sourceLifecycle.failureRetry.' + safeActionKey(source.id),
+      severity: 'warning',
+      area: 'sources',
+      title: 'Wait for failed source retry backoff.',
+      summary: (source.displayName || source.id || 'Unknown source') + ' failed recently and will be skipped until ' + (source.failureRetry.retryAt || 'the retry window elapses') + '.',
+      recommendedCommand: 'node src/presentation/cli/threadtrace.js source-lifecycle-report',
+      relatedCommands: [
+        'node src/presentation/cli/threadtrace.js source-diagnostics',
+        'node src/presentation/cli/threadtrace.js run-due-sources-task'
+      ],
+      evidence: {
+        sourceId: source.id,
+        retryAt: source.failureRetry.retryAt,
+        failureCount: source.failureRetry.failureCount,
+        backoffMs: source.failureRetry.backoffMs,
+        nextAction: source.nextAction
+      }
+    });
+  });
+  return blockedDisableActions.concat(retryWaitingActions);
 }
 
 function idempotencyActions(tasks) {

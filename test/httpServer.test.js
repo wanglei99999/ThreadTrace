@@ -492,7 +492,11 @@ test('http server exposes operations runbook API', async function () {
     assert.equal(runbook.status, 'ok');
     assert.equal(runbook.generatedAt, '2026-06-19T10:00:00.000Z');
     assert.equal(runbook.actionCount, 0);
+    assert.equal(runbook.sourceLifecycleReport.summary.total, 0);
     assert.ok(openApi.paths['/api/operations/runbook']);
+    assert.ok(openApi.paths['/api/operations/runbook'].get.parameters.some(function (parameter) {
+      return parameter.name === 'sourceFailureRetryBackoffMs';
+    }));
   } finally {
     await close(server);
   }
