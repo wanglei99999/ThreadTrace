@@ -252,6 +252,45 @@ test('due source batch can recover stale running source state', async function (
   assert.equal(repositories.savedSources.at(-1).runState.status, 'completed');
 });
 
+test('due source batch waits for failed source retry backoff', async function () {
+  let handlerCalls = 0;
+  const source = createSource({
+    schedule: {
+      enabled: true,
+      nextRunAt: '2026-06-19T09:00:00.000Z'
+    },
+    runState: {
+      status: 'failed',
+      failureCount: 2,
+      lastFinishedAt: '2026-06-19T09:59:00.000Z'
+    }
+  });
+  const repositories = createRepositoriesForSources([source]);
+
+  const result = await runDueSourcesIngestTasks({
+    sourceRepository: repositories.sourceRepository,
+    threadRepository: repositories.threadRepository,
+    reportRepository: repositories.reportRepository,
+    taskRepository: repositories.taskRepository,
+    sourceIngestHandlerRegistry: createHandlerRegistry(function () {
+      handlerCalls += 1;
+      return createHandlerResult();
+    }),
+    getAdapter() {},
+    now: '2026-06-19T10:00:00.000Z',
+    sourceFailureRetryBackoffMs: 60 * 1000,
+    sourceFailureMaxRetryBackoffMs: 60 * 60 * 1000
+  });
+
+  assert.equal(handlerCalls, 0);
+  assert.equal(result.dueCount, 0);
+  assert.equal(result.skippedCount, 1);
+  assert.equal(result.skipped[0].reason, 'waiting-failure-backoff');
+  assert.equal(result.skipped[0].retryAt, '2026-06-19T10:01:00.000Z');
+  assert.equal(result.skipped[0].backoffMs, 120000);
+  assert.equal(result.skipped[0].baseReason, 'next-run-at');
+});
+
 function createSource(overrides) {
   return Object.assign({
     id: 'source-1',

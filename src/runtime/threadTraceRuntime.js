@@ -1101,6 +1101,8 @@ function createThreadTraceRuntime(options) {
         limit: safeRequest.limit || 50,
         now: safeRequest.now,
         sourceRunStaleAfterMs: resolveSourceRunStaleAfterMs(safeRequest, runtimeConfig),
+        sourceFailureRetryBackoffMs: resolveSourceFailureRetryBackoffMs(safeRequest, runtimeConfig),
+        sourceFailureMaxRetryBackoffMs: resolveSourceFailureMaxRetryBackoffMs(safeRequest, runtimeConfig),
         getAdapter: forumAdapterRegistry.get,
         sourceIngestHandlerRegistry,
         requestId: safeRequest.requestId,
@@ -1136,6 +1138,8 @@ function createThreadTraceRuntime(options) {
         limit: safeRequest.limit,
         now: safeRequest.now,
         sourceRunStaleAfterMs: resolveSourceRunStaleAfterMs(safeRequest, runtimeConfig),
+        sourceFailureRetryBackoffMs: resolveSourceFailureRetryBackoffMs(safeRequest, runtimeConfig),
+        sourceFailureMaxRetryBackoffMs: resolveSourceFailureMaxRetryBackoffMs(safeRequest, runtimeConfig),
         sourceRepository: repositories.sourceRepository,
         getAdapter: forumAdapterRegistry.get,
         crawler: safeOptions.crawler || createHttpForumCrawler(safeOptions.crawlerOptions),
@@ -1372,6 +1376,16 @@ function resolveStoreDir(defaults, storeDir) {
 function resolveSourceRunStaleAfterMs(request, config) {
   if (request && request.sourceRunStaleAfterMs !== undefined) return request.sourceRunStaleAfterMs;
   return config && config.workers ? config.workers.sourceRunStaleAfterMs : undefined;
+}
+
+function resolveSourceFailureRetryBackoffMs(request, config) {
+  if (request && request.sourceFailureRetryBackoffMs !== undefined) return request.sourceFailureRetryBackoffMs;
+  return config && config.workers ? config.workers.sourceFailureRetryBackoffMs : undefined;
+}
+
+function resolveSourceFailureMaxRetryBackoffMs(request, config) {
+  if (request && request.sourceFailureMaxRetryBackoffMs !== undefined) return request.sourceFailureMaxRetryBackoffMs;
+  return config && config.workers ? config.workers.sourceFailureMaxRetryBackoffMs : undefined;
 }
 
 function shouldRunSourceOnboardingPreflight(request) {

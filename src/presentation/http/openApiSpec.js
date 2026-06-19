@@ -1329,6 +1329,8 @@ function createOpenApiSpec() {
                     limit: { type: 'number', example: 50 },
                     now: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
                     sourceRunStaleAfterMs: { type: 'number', example: 600000 },
+                    sourceFailureRetryBackoffMs: { type: 'number', example: 60000 },
+                    sourceFailureMaxRetryBackoffMs: { type: 'number', example: 3600000 },
                     storeDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/data/store' }
                   }
                 }
@@ -1356,6 +1358,8 @@ function createOpenApiSpec() {
                     limit: { type: 'number', example: 50 },
                     now: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
                     sourceRunStaleAfterMs: { type: 'number', example: 600000 },
+                    sourceFailureRetryBackoffMs: { type: 'number', example: 60000 },
+                    sourceFailureMaxRetryBackoffMs: { type: 'number', example: 3600000 },
                     provider: { type: 'string', example: 'mock' },
                     traceId: { type: 'string' },
                     baseReportType: { type: 'string', example: 'basic-history' },

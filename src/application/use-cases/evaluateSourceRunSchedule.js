@@ -4,10 +4,10 @@ const { evaluateTrackedSourceSchedule } = require('../../domain/scheduling/track
 const { isStaleSourceRun } = require('./runTrackedSourceIngestTask');
 
 function evaluateSourceRunSchedule(source, checkedAt, options) {
-  const decision = evaluateTrackedSourceSchedule(source, checkedAt);
+  const safeOptions = options || {};
+  const decision = evaluateTrackedSourceSchedule(source, checkedAt, safeOptions);
   if (decision.reason !== 'source-running') return decision;
 
-  const safeOptions = options || {};
   if (!isStaleSourceRun(source.runState || {}, {
     now: checkedAt,
     staleAfterMs: safeOptions.sourceRunStaleAfterMs
@@ -20,7 +20,7 @@ function evaluateSourceRunSchedule(source, checkedAt, options) {
       status: 'recovering-stale-running'
     })
   });
-  const recoveredDecision = evaluateTrackedSourceSchedule(recoverableSource, checkedAt);
+  const recoveredDecision = evaluateTrackedSourceSchedule(recoverableSource, checkedAt, safeOptions);
   if (!recoveredDecision.due) return recoveredDecision;
   return Object.assign({}, recoveredDecision, {
     reason: 'stale-source-running-' + recoveredDecision.reason

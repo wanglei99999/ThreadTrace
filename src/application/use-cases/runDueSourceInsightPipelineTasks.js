@@ -31,7 +31,10 @@ async function runDueSourceInsightPipelineTasks(options) {
     sourceKey: safeOptions.sourceKey,
     limit: safeOptions.limit || 50,
     checkedAt,
-    semanticEnrichment
+    semanticEnrichment,
+    sourceRunStaleAfterMs: safeOptions.sourceRunStaleAfterMs,
+    sourceFailureRetryBackoffMs: safeOptions.sourceFailureRetryBackoffMs,
+    sourceFailureMaxRetryBackoffMs: safeOptions.sourceFailureMaxRetryBackoffMs
   }, safeOptions);
   await taskRepository.saveTask(batchTask);
 
@@ -49,7 +52,9 @@ async function runDueSourceInsightPipelineTasks(options) {
 
     sources.forEach(function (source) {
       const decision = evaluateSourceRunSchedule(source, checkedAt, {
-        sourceRunStaleAfterMs: safeOptions.sourceRunStaleAfterMs
+        sourceRunStaleAfterMs: safeOptions.sourceRunStaleAfterMs,
+        sourceFailureRetryBackoffMs: safeOptions.sourceFailureRetryBackoffMs,
+        sourceFailureMaxRetryBackoffMs: safeOptions.sourceFailureMaxRetryBackoffMs
       });
       if (decision.due) {
         dueSources.push({
@@ -60,7 +65,11 @@ async function runDueSourceInsightPipelineTasks(options) {
         skipped.push({
           source,
           reason: decision.reason,
-          nextRunAt: decision.nextRunAt
+          nextRunAt: decision.nextRunAt,
+          retryAt: decision.retryAt,
+          failureCount: decision.failureCount,
+          backoffMs: decision.backoffMs,
+          baseReason: decision.baseReason
         });
       }
     });
@@ -135,7 +144,11 @@ async function runDueSourceInsightPipelineTasks(options) {
           sourceId: item.source.id,
           sourceKey: item.source.sourceKey,
           reason: item.reason,
-          nextRunAt: item.nextRunAt
+          nextRunAt: item.nextRunAt,
+          retryAt: item.retryAt,
+          failureCount: item.failureCount,
+          backoffMs: item.backoffMs,
+          baseReason: item.baseReason
         };
       })
     });

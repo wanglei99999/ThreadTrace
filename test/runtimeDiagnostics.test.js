@@ -29,6 +29,8 @@ test('runtime diagnostics redacts sensitive LLM configuration', async function (
   assert.equal(diagnostics.generatedAt, '2026-06-18T10:00:00.000Z');
   assert.equal(diagnostics.configuration.llm.provider, 'openai-compatible');
   assert.equal(diagnostics.configuration.llm.apiKeyConfigured, true);
+  assert.equal(diagnostics.configuration.workers.sourceFailureRetryBackoffMs, 60000);
+  assert.equal(diagnostics.configuration.workers.sourceFailureMaxRetryBackoffMs, 3600000);
   assert.equal(diagnostics.configuration.connectors.moduleCount, 0);
   assert.equal(JSON.stringify(diagnostics), JSON.stringify(diagnostics).replace('secret-key', ''));
   assert.equal(diagnostics.checks.find(function (item) {

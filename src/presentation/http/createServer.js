@@ -781,6 +781,8 @@ async function routeRequest(request, response, context) {
       limit: body.limit,
       now: body.now,
       sourceRunStaleAfterMs: body.sourceRunStaleAfterMs,
+      sourceFailureRetryBackoffMs: body.sourceFailureRetryBackoffMs,
+      sourceFailureMaxRetryBackoffMs: body.sourceFailureMaxRetryBackoffMs,
       storeDir: body.storeDir || context.storeDir,
       requestId: context.requestId,
       idempotencyKey: context.idempotencyKey
@@ -796,6 +798,8 @@ async function routeRequest(request, response, context) {
       limit: body.limit,
       now: body.now,
       sourceRunStaleAfterMs: body.sourceRunStaleAfterMs,
+      sourceFailureRetryBackoffMs: body.sourceFailureRetryBackoffMs,
+      sourceFailureMaxRetryBackoffMs: body.sourceFailureMaxRetryBackoffMs,
       provider: body.provider || 'mock',
       traceId: body.traceId,
       baseReportType: body.baseReportType,

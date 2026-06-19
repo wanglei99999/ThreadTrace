@@ -19,6 +19,8 @@ async function main(argv) {
     sourceTaskMode: options.sourceTaskMode,
     llmProvider: options.provider,
     sourceRunStaleAfterMs: options.sourceRunStaleAfterMs,
+    sourceFailureRetryBackoffMs: options.sourceFailureRetryBackoffMs,
+    sourceFailureMaxRetryBackoffMs: options.sourceFailureMaxRetryBackoffMs,
     workerIntervalMs: options.intervalMs,
     workerLeaseTtlMs: options.leaseTtlMs
   });
@@ -47,6 +49,8 @@ async function main(argv) {
     semanticEnrichmentEnabled: parseOptionalBoolean(options.semanticEnrichmentEnabled),
     semanticSkipIfUnchanged: parseOptionalBoolean(options.semanticSkipIfUnchanged),
     sourceRunStaleAfterMs: config.workers.sourceRunStaleAfterMs,
+    sourceFailureRetryBackoffMs: config.workers.sourceFailureRetryBackoffMs,
+    sourceFailureMaxRetryBackoffMs: config.workers.sourceFailureMaxRetryBackoffMs,
     storeDir
   };
 
@@ -119,6 +123,12 @@ function parseArgs(args) {
       index += 1;
     } else if (item === '--source-run-stale-after-ms') {
       options.sourceRunStaleAfterMs = args[index + 1];
+      index += 1;
+    } else if (item === '--source-failure-retry-backoff-ms') {
+      options.sourceFailureRetryBackoffMs = args[index + 1];
+      index += 1;
+    } else if (item === '--source-failure-max-retry-backoff-ms') {
+      options.sourceFailureMaxRetryBackoffMs = args[index + 1];
       index += 1;
     }
   }

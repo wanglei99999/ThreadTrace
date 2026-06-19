@@ -35,6 +35,8 @@ async function getRuntimeDiagnostics(options) {
         operationsIntervalMs: workers.operationsIntervalMs,
         eventIntervalMs: workers.eventIntervalMs,
         sourceRunStaleAfterMs: workers.sourceRunStaleAfterMs,
+        sourceFailureRetryBackoffMs: workers.sourceFailureRetryBackoffMs,
+        sourceFailureMaxRetryBackoffMs: workers.sourceFailureMaxRetryBackoffMs,
         leaseTtlMs: workers.leaseTtlMs
       },
       notifications: {

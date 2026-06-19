@@ -1304,6 +1304,8 @@ function main(argv) {
       limit: options.limit ? Number(options.limit) : 50,
       now: options.now,
       sourceRunStaleAfterMs: options.sourceRunStaleAfterMs ? Number(options.sourceRunStaleAfterMs) : undefined,
+      sourceFailureRetryBackoffMs: options.sourceFailureRetryBackoffMs ? Number(options.sourceFailureRetryBackoffMs) : undefined,
+      sourceFailureMaxRetryBackoffMs: options.sourceFailureMaxRetryBackoffMs ? Number(options.sourceFailureMaxRetryBackoffMs) : undefined,
       traceId: options.traceId,
       storeDir
     }).then(function (result) {
@@ -1329,6 +1331,8 @@ function main(argv) {
       limit: options.limit ? Number(options.limit) : 50,
       now: options.now,
       sourceRunStaleAfterMs: options.sourceRunStaleAfterMs ? Number(options.sourceRunStaleAfterMs) : undefined,
+      sourceFailureRetryBackoffMs: options.sourceFailureRetryBackoffMs ? Number(options.sourceFailureRetryBackoffMs) : undefined,
+      sourceFailureMaxRetryBackoffMs: options.sourceFailureMaxRetryBackoffMs ? Number(options.sourceFailureMaxRetryBackoffMs) : undefined,
       provider: options.provider || defaultLlmProvider,
       traceId: options.traceId,
       baseReportType: options.baseReportType,
@@ -1481,6 +1485,12 @@ function parseArgs(args) {
       index += 1;
     } else if (item === '--source-run-stale-after-ms') {
       options.sourceRunStaleAfterMs = args[index + 1];
+      index += 1;
+    } else if (item === '--source-failure-retry-backoff-ms') {
+      options.sourceFailureRetryBackoffMs = args[index + 1];
+      index += 1;
+    } else if (item === '--source-failure-max-retry-backoff-ms') {
+      options.sourceFailureMaxRetryBackoffMs = args[index + 1];
       index += 1;
     } else if (item === '--force') {
       options.force = args[index + 1];
@@ -1777,8 +1787,8 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js run-source-task --source-id id [--trace-id id] [--source-run-stale-after-ms ms] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-source-insight-pipeline --source-id id [--provider mock] [--trace-id id] [--semantic-enrichment-enabled true|false] [--semantic-skip-if-unchanged true|false] [--source-run-stale-after-ms ms] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-sources-task [--forum nga] [--limit n] [--trace-id id] [--source-run-stale-after-ms ms] [--store-dir dir]');
-  console.log('  node src/presentation/cli/threadtrace.js run-due-sources-task [--forum nga] [--now iso] [--trace-id id] [--source-run-stale-after-ms ms] [--store-dir dir]');
-  console.log('  node src/presentation/cli/threadtrace.js run-due-source-insight-pipelines [--forum nga] [--provider mock] [--trace-id id] [--now iso] [--source-run-stale-after-ms ms] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js run-due-sources-task [--forum nga] [--now iso] [--trace-id id] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js run-due-source-insight-pipelines [--forum nga] [--provider mock] [--trace-id id] [--now iso] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js index-html-dir [--forum nga] [--input dir] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js search-index --text text [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js interpret-text-dir [--forum nga] [--input dir] --text text [--author-id id] [--output file] [--markdown-output file]');

@@ -352,13 +352,15 @@ Set `execute: true` or `dryRun: false` to persist `enabled=true`.
   "forum": "nga",
   "limit": 50,
   "now": "2026-06-18T10:00:00.000Z",
-  "sourceRunStaleAfterMs": 600000
+  "sourceRunStaleAfterMs": 600000,
+  "sourceFailureRetryBackoffMs": 60000,
+  "sourceFailureMaxRetryBackoffMs": 3600000
 }
 ```
 
 返回：父任务记录、到期数量、跳过数量、成功/失败数量和每个来源的调度原因。父任务类型为 `ingest-due-sources`。
 
-批量入口会对每个来源应用同一套重复运行保护；单个来源重复运行会记录为该来源失败，不会中断整个父任务。
+批量入口会对每个来源应用同一套重复运行保护；单个来源重复运行会记录为该来源失败，不会中断整个父任务。失败来源默认采用指数退避重试，跳过项会返回 `retryAt`、`backoffMs` 和原始调度原因；将 `sourceFailureRetryBackoffMs` 设为 `0` 可关闭额外失败退避。
 
 ### `GET /api/operations/worker-topology-plan`
 

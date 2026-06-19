@@ -27,6 +27,8 @@ Process entry points load a local `.env` file from the current working directory
 | `THREADTRACE_EVENT_WORKER_INTERVAL_MS` | `60000` | Notification event worker loop interval. |
 | `THREADTRACE_WORKER_LEASE_TTL_MS` | `300000` | Cross-process worker lease TTL. |
 | `THREADTRACE_SOURCE_RUN_STALE_AFTER_MS` | `600000` | Recovery window before a stuck source `running` state can be retried. |
+| `THREADTRACE_SOURCE_FAILURE_RETRY_BACKOFF_MS` | `60000` | First retry delay after a source run failure. Set `0` to disable failure backoff. |
+| `THREADTRACE_SOURCE_FAILURE_MAX_RETRY_BACKOFF_MS` | `3600000` | Maximum retry delay for exponential source failure backoff. |
 
 Use `THREADTRACE_SOURCE_TASK_MODE=insight-pipeline` when background workers should run tracked source ingest plus semantic enrichment for due sources.
 
