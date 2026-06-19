@@ -233,6 +233,12 @@ function bindForms() {
   document.getElementById('sourceOperationsResult').addEventListener('click', async function (event) {
     const button = event.target.closest('button[data-action]');
     if (!button) return;
+    if (button.dataset.action === 'synthesize-runbook-events') {
+      const execute = button.dataset.execute === 'true';
+      if (execute && !window.confirm('Create notification events from current runbook actions?')) return;
+      await synthesizeRunbookEventsFromButton(button, execute);
+      return;
+    }
     if (button.dataset.action === 'reset-source-failure') {
       const execute = button.dataset.execute === 'true';
       if (execute && !window.confirm('Reset this source failure state and retry now?')) return;
@@ -623,6 +629,18 @@ async function resetSourceFailureFromButton(button, execute) {
   await loadTasks();
   await loadSources();
   await loadSourceOperations();
+}
+
+async function synthesizeRunbookEventsFromButton(button, execute) {
+  await renderAsync('sourceOperationActionResult', function () {
+    return requestJson('/api/operations/runbook/events', {
+      execute,
+      limit: Number(button.dataset.limit) || 100
+    });
+  }, renderRunbookNotificationEventResult);
+  await loadSystemStatus();
+  await loadSourceOperations();
+  await loadEvents();
 }
 
 async function dispatchEvents() {
@@ -1080,6 +1098,7 @@ function renderSourceOperations(result) {
   const sourceActions = actions.filter(function (action) {
     return action.area === 'sources';
   });
+  const alertableCount = countAlertableRunbookActions(actions);
   const panels = [
     panel('Source operations', [
       '<div class="summary-strip">',
@@ -1090,11 +1109,13 @@ function renderSourceOperations(result) {
       summaryTile('Skipped', String(scheduleSummary.skipped || 0)),
       summaryTile('Retry wait', String(lifecycleSummary.failureRetryWaiting || 0), lifecycleSummary.failureRetryWaiting > 0 ? 'warn' : 'ok'),
       summaryTile('Disable blocked', String(lifecycleSummary.disableBlocked || 0), lifecycleSummary.disableBlocked > 0 ? 'warn' : 'ok'),
+      summaryTile('Alertable', String(alertableCount), alertableCount > 0 ? 'warn' : 'ok'),
       summaryTile('Runbook', String(runbook.actionCount || actions.length || 0), statusVariant(runbook.status)),
       '</div>',
       '<div class="tag-list reason-tags">',
       renderReasonTags(scheduleSummary.byReason),
-      '</div>'
+      '</div>',
+      renderRunbookEventControls(alertableCount)
     ].join(''), 'wide'),
     panel('Due sources', renderScheduleDecisionRows(schedule.dueSources || [], 'No due sources.'), 'wide'),
     panel('Skipped sources', renderScheduleDecisionRows((schedule.skippedSources || []).slice(0, 10), 'No skipped sources.'), 'wide'),
@@ -1104,6 +1125,24 @@ function renderSourceOperations(result) {
     panels.push(panel('Source runbook actions', renderRunbookActionRows(sourceActions), 'wide'));
   }
   return panels.join('');
+}
+
+function renderRunbookEventControls(alertableCount) {
+  const disabled = alertableCount > 0 ? '' : ' disabled';
+  return '<div class="action-row ops-row"><span>' +
+    '<strong>Runbook alerts</strong>' +
+    '<small>' + escapeHtml('alertable=' + alertableCount) + '</small>' +
+    '</span>' +
+    '<span class="button-group source-op-buttons">' +
+    '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-runbook-events" data-execute="false" data-limit="100">Runbook check</button>' +
+    '<button class="inline-button warning-inline-button" type="button" data-action="synthesize-runbook-events" data-execute="true" data-limit="100"' + disabled + '>Create alerts</button>' +
+    '</span></div>';
+}
+
+function countAlertableRunbookActions(actions) {
+  return (actions || []).filter(function (action) {
+    return action.severity === 'critical' || action.severity === 'warning';
+  }).length;
 }
 
 function renderReasonTags(byReason) {
@@ -1249,6 +1288,24 @@ function renderSourceFailureResetResult(result) {
     metric('Run state', runState.status || 'unknown'),
     metric('Failure count', runState.failureCount === undefined ? 'unknown' : runState.failureCount),
     metric('Next run', schedule.nextRunAt || reset.nextRunAt || 'unchanged')
+  ].join(''), 'wide');
+}
+
+function renderRunbookNotificationEventResult(result) {
+  const items = result.results || [];
+  return panel('Runbook notification events', [
+    metric('Status', result.status || 'unknown'),
+    metric('Mode', result.dryRun ? 'dry-run' : 'execute'),
+    metric('Actions', result.actionCount || 0),
+    metric('Events', result.eventCount || 0),
+    metric('Created', result.createdCount || 0),
+    metric('Updated', result.updatedCount || 0),
+    metric('Skipped', result.skippedCount || 0),
+    evidenceList(items.map(function (item) {
+      const event = item.event || {};
+      const reason = item.reason ? ' / ' + item.reason : '';
+      return item.status + ' | ' + (item.actionKey || 'unknown') + ' | ' + (event.id || 'no-event') + ' | ' + (event.severity || 'unknown') + reason;
+    }))
   ].join(''), 'wide');
 }
 
