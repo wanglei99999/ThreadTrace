@@ -2,12 +2,16 @@
 
 const { extractMarketEntities } = require('./ruleBasedMarketEntityExtractor');
 const { extractOpinionCandidates } = require('./ruleBasedOpinionExtractor');
+const { extractImplicitReferenceCandidates } = require('./implicitReferenceExtractor');
 
 function restoreContextForNewPost(threadSnapshot, newPostInput) {
   const syntheticPost = createSyntheticPost(newPostInput);
   const newEntities = extractMarketEntities([syntheticPost]);
   const newOpinions = extractOpinionCandidates([syntheticPost]);
-  const relatedEvidence = rankRelatedHistoricalPosts(threadSnapshot.posts || [], newEntities, newOpinions, syntheticPost);
+  const newImplicitReferences = extractImplicitReferenceCandidates([syntheticPost], {
+    opinionCandidates: newOpinions
+  });
+  const relatedEvidence = rankRelatedHistoricalPosts(threadSnapshot.posts || [], newEntities, newOpinions, newImplicitReferences, syntheticPost);
 
   return {
     reportType: 'new-post-context',
@@ -24,6 +28,7 @@ function restoreContextForNewPost(threadSnapshot, newPostInput) {
     },
     newEntities,
     newOpinions,
+    newImplicitReferences,
     relatedEvidence,
     interpretationSlots: [
       'explicit-entity-links',
@@ -36,7 +41,7 @@ function restoreContextForNewPost(threadSnapshot, newPostInput) {
   };
 }
 
-function rankRelatedHistoricalPosts(posts, newEntities, newOpinions, syntheticPost) {
+function rankRelatedHistoricalPosts(posts, newEntities, newOpinions, newImplicitReferences, syntheticPost) {
   const entityKeys = new Set(newEntities.map(function (entity) {
     return entity.type + ':' + entity.normalized;
   }));
@@ -49,7 +54,7 @@ function rankRelatedHistoricalPosts(posts, newEntities, newOpinions, syntheticPo
 
   return posts
     .map(function (post) {
-      return scoreHistoricalPost(post, entityKeys, opinionKeywords, syntheticPost);
+      return scoreHistoricalPost(post, entityKeys, opinionKeywords, newImplicitReferences, syntheticPost);
     })
     .filter(function (item) {
       return item.score > 0;
@@ -60,11 +65,12 @@ function rankRelatedHistoricalPosts(posts, newEntities, newOpinions, syntheticPo
     .slice(0, 12);
 }
 
-function scoreHistoricalPost(post, entityKeys, opinionKeywords, syntheticPost) {
+function scoreHistoricalPost(post, entityKeys, opinionKeywords, newImplicitReferences, syntheticPost) {
   const reasons = [];
   let score = 0;
 
   const postEntities = extractMarketEntities([post]);
+  const postOpinions = extractOpinionCandidates([post]);
   postEntities.forEach(function (entity) {
     const key = entity.type + ':' + entity.normalized;
     if (entityKeys.has(key)) {
@@ -83,6 +89,20 @@ function scoreHistoricalPost(post, entityKeys, opinionKeywords, syntheticPost) {
   if (post.author && syntheticPost.author && post.author.sourceAuthorId === syntheticPost.author.sourceAuthorId) {
     score += 1;
     reasons.push('same_author');
+  }
+
+  if ((newImplicitReferences || []).length > 0 && post.author && syntheticPost.author && post.author.sourceAuthorId === syntheticPost.author.sourceAuthorId) {
+    if (postEntities.length > 0) {
+      score += 2.5;
+      reasons.push('implicit_reference_context:author_entity_history');
+    }
+    if (postOpinions.length > 0) {
+      score += 1.5;
+      reasons.push('implicit_reference_context:author_opinion_history');
+    }
+    newImplicitReferences.slice(0, 3).forEach(function (candidate) {
+      reasons.push('new_implicit_reference:' + candidate.category + ':' + candidate.phrase);
+    });
   }
 
   if ((post.links || []).length > 0) {

@@ -21,6 +21,26 @@ test('context restoration finds historical evidence for a new post', function ()
   assert.equal(report.reportType, 'new-post-context');
   assert.ok(report.newEntities.length >= 1);
   assert.ok(report.newOpinions.length >= 1);
+  assert.ok(report.newImplicitReferences.length >= 1);
   assert.ok(report.relatedEvidence.length >= 1);
   assert.ok(report.relatedEvidence[0].reasons.length >= 1);
+});
+
+test('context restoration uses implicit references when a new post omits entities', function () {
+  const snapshot = parseSavedThreadDirectory({
+    adapter: getForumAdapter('nga'),
+    inputDir: path.resolve(__dirname, '..', 'example')
+  });
+  const report = restoreContextForNewPost(snapshot, {
+    authorId: '150058',
+    author: '-阿狼-',
+    contentText: '前面说的方向先别追，后面看量确认'
+  });
+
+  assert.equal(report.newEntities.length, 0);
+  assert.ok(report.newImplicitReferences.length >= 2);
+  assert.ok(report.relatedEvidence.length >= 1);
+  assert.ok(report.relatedEvidence[0].reasons.some(function (reason) {
+    return reason.indexOf('implicit_reference_context:') === 0;
+  }));
 });

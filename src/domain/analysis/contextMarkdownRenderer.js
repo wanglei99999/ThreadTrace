@@ -22,6 +22,11 @@ function renderNewPostContextMarkdown(report) {
   appendOpinions(lines, report.newOpinions || []);
 
   lines.push('');
+  lines.push('## 新发言隐晦表达候选');
+  lines.push('');
+  appendImplicitReferences(lines, report.newImplicitReferences || []);
+
+  lines.push('');
   lines.push('## 相关历史证据');
   lines.push('');
   appendEvidence(lines, report.relatedEvidence || []);
@@ -53,6 +58,16 @@ function appendOpinions(lines, opinions) {
     if (opinion.conditionSignals && opinion.conditionSignals.length > 0) {
       lines.push('  条件：' + opinion.conditionSignals.join(' / '));
     }
+  });
+}
+
+function appendImplicitReferences(lines, candidates) {
+  if (candidates.length === 0) {
+    lines.push('暂无。');
+    return;
+  }
+  candidates.forEach(function (candidate) {
+    lines.push('- #' + candidate.floor + ' ' + candidate.label + '：`' + safeInline(candidate.phrase) + '`；置信度：' + candidate.confidence);
   });
 }
 

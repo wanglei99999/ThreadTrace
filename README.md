@@ -159,6 +159,7 @@ These commands use the same runtime composition as the HTTP API and Web console.
 - 支持可跟踪来源注册、运行状态记录、增量水位线、变化事件、事件投递 outbox、文件/Webhook 通知通道、调度到期判断、按来源触发导入和批量导入，为多论坛、多主题和定时采集打基础。
 - 支持本地历史证据检索索引，为后续 RAG 和语境召回打基础。
 - 支持新发言语境还原 MVP，按实体、观点关键词和作者线索召回历史证据。
+- 新发言语境还原会识别隐晦表达候选，即使新发言未直接点名实体，也会优先召回同作者历史实体/观点楼层。
 - 提供无依赖 HTTP API，供后续前端工作台和定时任务调用。
 - 提供无依赖 Web 工作台原型，可直接调用本地 HTTP API。
 - 输出统一 `ThreadSnapshot`。
