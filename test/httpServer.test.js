@@ -142,6 +142,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(homeHtml, /rolloutApplyResult/);
     assert.match(homeHtml, /runbookResult/);
     assert.match(homeHtml, /eventFilterForm/);
+    assert.match(homeHtml, /contextReviewResultForm/);
+    assert.match(homeHtml, /contextReviewResultOverview/);
+    assert.match(homeHtml, /contextReviewResultResult/);
     assert.match(homeHtml, /deliveryStatus/);
     assert.match(homeHtml, /refreshSourceOperationsButton/);
     assert.match(homeHtml, /sourceOperationsResult/);
@@ -165,6 +168,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /renderContextReviewHandoff/);
     assert.match(webAppJs, /renderContextMatchSummary/);
     assert.match(webAppJs, /renderInterpretationSummary/);
+    assert.match(webAppJs, /loadContextReviewResults/);
+    assert.match(webAppJs, /renderContextReviewResultOverview/);
+    assert.match(webAppJs, /api\/context-review-results/);
     assert.equal(adapters.adapters[0].sourceKey, 'nga');
     assert.equal(adapterDiagnostics.status, 'ok');
     assert.equal(adapterDiagnostics.adapterCount, 1);

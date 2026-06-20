@@ -234,6 +234,43 @@
           </label>
           <button type="submit">筛选事件</button>
         </form>
+        <form id="contextReviewResultForm" class="control-strip">
+          <label class="full">
+            <span>Context review result JSON</span>
+            <textarea name="resultJson" rows="10" spellcheck="false">{
+  "version": "1.0.0",
+  "handoffVersion": "1.0.0",
+  "handoffId": "context-review-web-sample",
+  "status": "partially-accepted",
+  "reviewer": {
+    "type": "human",
+    "id": "web-operator",
+    "displayName": "Web operator"
+  },
+  "reviewedAt": "2026-06-21T10:00:00.000Z",
+  "decisions": [
+    {
+      "taskId": "web-review-task-1",
+      "decision": "confirmed",
+      "confidence": 0.82,
+      "evidenceRefs": []
+    },
+    {
+      "taskId": "web-review-task-2",
+      "decision": "needs-more-evidence",
+      "confidence": 0.52,
+      "evidenceRefs": []
+    }
+  ],
+  "resolvedTasks": ["web-review-task-1"],
+  "remainingTasks": ["web-review-task-2"],
+  "confidence": 0.7,
+  "evidenceRefs": []
+}</textarea>
+          </label>
+          <button type="submit">Store review result</button>
+          <button id="refreshReviewResultsButton" class="secondary-button" type="button">Review overview</button>
+        </form>
         <form id="connectorModuleValidationForm" class="control-strip">
           <label class="grow">
             <span>Connector 模块路径</span>
@@ -446,6 +483,8 @@
         <div class="result-grid task-grid" id="sourceResult"></div>
         <div class="result-grid task-grid" id="rawPageResult"></div>
         <div class="result-grid task-grid" id="eventResult"></div>
+        <div class="result-grid task-grid" id="contextReviewResultOverview"></div>
+        <div class="result-grid task-grid" id="contextReviewResultResult"></div>
         <div class="result-grid task-grid" id="taskResult"></div>
       </section>
     </main>

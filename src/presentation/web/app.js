@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshSourcesButton').addEventListener('click', loadSources);
   document.getElementById('refreshSourceOperationsButton').addEventListener('click', loadSourceOperations);
   document.getElementById('refreshEventsButton').addEventListener('click', loadEvents);
+  document.getElementById('refreshReviewResultsButton').addEventListener('click', loadContextReviewResults);
   document.getElementById('refreshRawPagesButton').addEventListener('click', loadRawPages);
   document.getElementById('dispatchEventsButton').addEventListener('click', dispatchEvents);
   document.getElementById('runSourcesButton').addEventListener('click', runAllSources);
@@ -229,6 +230,19 @@ function bindForms() {
     await loadEvents();
   });
 
+  document.getElementById('contextReviewResultForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    await renderAsync('contextReviewResultResult', function () {
+      return requestJson('/api/context-review-results', {
+        result: parseContextReviewResultJson(form.get('resultJson'))
+      }, {
+        acceptErrorStatus: true
+      });
+    }, renderContextReviewResultSubmission);
+    await loadContextReviewResults();
+  });
+
   document.getElementById('sourceResult').addEventListener('click', async function (event) {
     const button = event.target.closest('button[data-action="run-source"],button[data-action="run-source-pipeline"]');
     if (!button) return;
@@ -362,6 +376,18 @@ function parseManifestJson(value) {
   return parsed;
 }
 
+function parseContextReviewResultJson(value) {
+  const text = String(value || '').trim();
+  if (!text) {
+    throw new Error('Context review result JSON is required.');
+  }
+  const parsed = JSON.parse(text);
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('Context review result JSON must be an object.');
+  }
+  return parsed;
+}
+
 function setView(viewName) {
   state.currentView = viewName;
   document.querySelectorAll('.nav-item').forEach(function (button) {
@@ -377,6 +403,7 @@ function setView(viewName) {
   if (viewName === 'system') loadSources();
   if (viewName === 'system') loadSourceOperations();
   if (viewName === 'system') loadEvents();
+  if (viewName === 'system') loadContextReviewResults();
   if (viewName === 'system') loadRawPages();
 }
 
@@ -531,6 +558,20 @@ async function loadEvents() {
     const query = buildEventQuery();
     return fetchJson('/api/events?' + query.toString());
   }, renderEventList);
+}
+
+async function loadContextReviewResults() {
+  await renderAsync('contextReviewResultOverview', function () {
+    return Promise.all([
+      fetchJson('/api/context-review-results/overview?limit=50'),
+      fetchJson('/api/context-review-results?limit=10')
+    ]).then(function (results) {
+      return {
+        overview: results[0],
+        reviewResults: results[1].reviewResults || []
+      };
+    });
+  }, renderContextReviewResultOverview);
 }
 
 function buildEventQuery() {
@@ -1536,6 +1577,89 @@ function renderPipelineRunSummary(run) {
   const semanticLabel = semantic.status ? ' · semantic ' + semantic.status + (semantic.reason ? '/' + semantic.reason : '') : '';
   const timestamp = run.finishedAt || run.updatedAt || run.createdAt || '';
   return run.status + ' · ' + sourceName + ' · ' + changed + newPosts + semanticLabel + ' · ' + timestamp;
+}
+
+function renderContextReviewResultSubmission(result) {
+  if (result.valid === false) {
+    const checks = result.validation && result.validation.checks ? result.validation.checks : [];
+    return panel('Review result rejected', [
+      metric('Status', result.status || 'invalid'),
+      metric('Validation', result.validation ? result.validation.status : 'fail'),
+      evidenceList(checks.filter(function (check) {
+        return check.status === 'fail';
+      }).slice(0, 8).map(function (check) {
+        return check.key + ' | ' + check.summary;
+      }))
+    ].join(''), 'wide');
+  }
+  const record = result.record || {};
+  const summary = record.summary || {};
+  return panel('Review result stored', [
+    metric('Record', record.id || 'unknown'),
+    metric('Status', record.status || 'unknown'),
+    metric('Handoff', record.handoffId || 'none'),
+    metric('Severity', summary.notification ? summary.notification.severity : 'unknown'),
+    metric('Remaining tasks', summary.remainingCount || 0),
+    metric('Next action', summary.recommendedNextAction || 'none')
+  ].join(''), 'wide');
+}
+
+function renderContextReviewResultOverview(result) {
+  const overview = result.overview || {};
+  const records = result.reviewResults || [];
+  const attention = overview.attention || {};
+  const tiles = '<div class="summary-strip event-summary-strip">' + [
+    summaryTile('Reviews', String(overview.count || 0)),
+    summaryTile('Warnings', String(attention.warningCount || 0), (attention.warningCount || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('Critical', String(attention.criticalCount || 0), (attention.criticalCount || 0) > 0 ? 'fail' : 'ok'),
+    summaryTile('Remaining tasks', String(overview.remainingTaskCount || 0), (overview.remainingTaskCount || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('Merge candidates', String(overview.mergeCandidateCount || 0), (overview.mergeCandidateCount || 0) > 0 ? 'ok' : 'muted')
+  ].join('') + '</div>';
+  return [
+    panel('Review result overview', [
+      tiles,
+      metric('Generated', overview.generatedAt || 'unknown'),
+      metric('Next action', overview.recommendedNextAction || 'none')
+    ].join(''), 'wide'),
+    panel('Review attention', renderContextReviewAttentionRows(attention.topRecords || []), 'wide'),
+    panel('Recent review results', renderContextReviewResultRows(records), 'wide')
+  ].join('');
+}
+
+function renderContextReviewAttentionRows(records) {
+  if (records.length === 0) return '<div class="muted">No review attention needed.</div>';
+  return records.map(function (record) {
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(record.status || 'unknown') + ' | ' + escapeHtml(record.handoffId || record.id || 'unknown') + '</strong>' +
+      '<small>' + escapeHtml(record.reason || 'attention') + '</small>' +
+      '<small>' + escapeHtml(record.recommendedNextAction || '') + '</small>' +
+      '</span>' +
+      statusBadge(record.severity || 'info', statusVariant(record.severity)) +
+      '</div>';
+  }).join('');
+}
+
+function renderContextReviewResultRows(records) {
+  if (records.length === 0) return '<div class="muted">No submitted review results.</div>';
+  return records.map(function (record) {
+    const summary = record.summary || {};
+    const notification = summary.notification || {};
+    const reviewer = record.reviewer || {};
+    const details = [
+      record.id,
+      record.submittedAt,
+      reviewer.id ? 'reviewer=' + reviewer.id : undefined,
+      'remaining=' + (summary.remainingCount || 0),
+      'merge=' + (Array.isArray(summary.mergeCandidates) ? summary.mergeCandidates.length : 0)
+    ].filter(Boolean).join(' | ');
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml((record.status || 'unknown') + ' | ' + (record.handoffId || 'no-handoff')) + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '<small>' + escapeHtml(summary.recommendedNextAction || '') + '</small>' +
+      '</span>' +
+      statusBadge(notification.severity || 'info', statusVariant(notification.severity)) +
+      '</div>';
+  }).join('');
 }
 
 function renderEventList(result) {
