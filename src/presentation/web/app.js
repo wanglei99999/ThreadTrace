@@ -696,6 +696,7 @@ function renderHistoryReport(report) {
       metric('作者数', report.authorStats.length),
       metric('页数', report.thread.totalPages || '未知')
     ].join('')),
+    renderPrimaryAuthorProfile(report.primaryAuthorProfile),
     panel('实体线索', tagList((report.entityCandidates || []).slice(0, 12).map(function (entity) {
       return entity.displayName + ' · ' + entity.mentions.length;
     }))),
@@ -714,6 +715,32 @@ function renderHistoryReport(report) {
     panels.push(renderSemanticInsights(report.semanticInsights));
   }
   return panels.join('');
+}
+
+function renderPrimaryAuthorProfile(profile) {
+  if (!profile) {
+    return panel('主作者画像', '<div class="muted">暂无</div>');
+  }
+  return panel('主作者画像', [
+    metric('作者', profile.author.displayName),
+    metric('楼层', profile.postCount + ' · #' + profile.firstFloor + ' - #' + profile.lastFloor),
+    metric('观点', profile.opinionCount),
+    metric('态度', formatStanceSummary(profile.stanceSummary)),
+    '<div class="reason-tags tag-list">' + (profile.focusEntities || []).slice(0, 6).map(function (item) {
+      return '<span class="tag">' + escapeHtml(item.entity.displayName + ' · ' + item.mentionCount + ' · ' + item.latestAttitude) + '</span>';
+    }).join('') + '</div>',
+    evidenceList((profile.evidenceGaps || []).slice(0, 4).map(function (gap) {
+      return gap.entity.displayName + ' · ' + gap.reason + ' · #' + gap.firstFloor + '-' + gap.lastFloor;
+    }))
+  ].join(''));
+}
+
+function formatStanceSummary(summary) {
+  const keys = Object.keys(summary || {});
+  if (keys.length === 0) return '暂无';
+  return keys.sort().map(function (key) {
+    return key + ' ' + summary[key];
+  }).join(' / ');
 }
 
 function formatOpinionChainSummary(chain) {

@@ -48,6 +48,8 @@ test('basic historical analyzer identifies primary author and evidence candidate
 
   assert.equal(report.primaryAuthor.displayName, '-阿狼-');
   assert.ok(report.authorStats.length >= 10);
+  assert.equal(report.primaryAuthorProfile.author.displayName, '-阿狼-');
+  assert.ok(report.primaryAuthorProfile.focusEntities.length >= 1);
   assert.ok(report.entityCandidates.length >= 1);
   assert.ok(report.relationCandidates.length >= 1);
   assert.ok(report.opinionCandidates.length >= 1);

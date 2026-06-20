@@ -26,6 +26,11 @@ function renderBasicHistoryMarkdown(report) {
   });
 
   lines.push('');
+  lines.push('## 主作者历史画像');
+  lines.push('');
+  appendPrimaryAuthorProfile(lines, report.primaryAuthorProfile);
+
+  lines.push('');
   lines.push('## 实体与线索候选');
   lines.push('');
   appendEntityCandidates(lines, report.entityCandidates || []);
@@ -92,6 +97,48 @@ function appendEntityCandidates(lines, entities) {
       lines.push('  - #' + mention.floor + ' ' + mention.author + '：' + safeInline(mention.excerpt));
     });
   });
+}
+
+function appendPrimaryAuthorProfile(lines, profile) {
+  if (!profile) {
+    lines.push('暂无。');
+    return;
+  }
+
+  lines.push('- 作者：' + profile.author.displayName + '（' + profile.author.sourceAuthorId + '）');
+  lines.push('- 发言楼层：' + profile.postCount + ' 楼，范围 #' + profile.firstFloor + ' - #' + profile.lastFloor);
+  lines.push('- 观点候选：' + profile.opinionCount + ' 条');
+  lines.push('- 态度分布：' + stanceSummaryText(profile.stanceSummary));
+  lines.push('');
+  lines.push('### 关注对象');
+  if (!profile.focusEntities || profile.focusEntities.length === 0) {
+    lines.push('暂无。');
+  } else {
+    profile.focusEntities.slice(0, 8).forEach(function (item) {
+      lines.push('- ' + safeInline(item.entity.displayName) +
+        '：提及 ' + item.mentionCount +
+        ' 次，主作者观点 ' + item.primaryAuthorOpinionCount +
+        ' 条，最新态度 ' + (item.latestAttitude || 'unknown') +
+        '，置信度 ' + item.confidence);
+    });
+  }
+  lines.push('');
+  lines.push('### 证据缺口');
+  if (!profile.evidenceGaps || profile.evidenceGaps.length === 0) {
+    lines.push('暂无。');
+  } else {
+    profile.evidenceGaps.forEach(function (gap) {
+      lines.push('- ' + safeInline(gap.entity.displayName) + '：' + gap.summary + '（#' + gap.firstFloor + ' - #' + gap.lastFloor + '）');
+    });
+  }
+}
+
+function stanceSummaryText(summary) {
+  const keys = Object.keys(summary || {});
+  if (keys.length === 0) return '暂无';
+  return keys.sort().map(function (key) {
+    return key + ' ' + summary[key];
+  }).join(' / ');
 }
 
 function appendOpinionCandidates(lines, opinions) {

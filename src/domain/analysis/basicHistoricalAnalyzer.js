@@ -3,6 +3,7 @@
 const { extractMarketEntities } = require('./ruleBasedMarketEntityExtractor');
 const { extractOpinionCandidates } = require('./ruleBasedOpinionExtractor');
 const { buildOpinionChains } = require('./opinionChainBuilder');
+const { buildPrimaryAuthorProfile } = require('./authorHistoricalProfile');
 
 function analyzeThreadHistory(threadSnapshot) {
   const posts = threadSnapshot.posts || [];
@@ -15,6 +16,13 @@ function analyzeThreadHistory(threadSnapshot) {
     entityCandidates,
     opinionCandidates,
     primaryAuthor
+  });
+  const primaryAuthorProfile = buildPrimaryAuthorProfile({
+    primaryAuthor,
+    authorStats,
+    entityCandidates,
+    opinionCandidates,
+    opinionChains
   });
 
   return {
@@ -30,6 +38,7 @@ function analyzeThreadHistory(threadSnapshot) {
       parsedPostCount: posts.length
     },
     primaryAuthor,
+    primaryAuthorProfile,
     authorStats,
     entityCandidates,
     relationCandidates: collectRelations(posts),
