@@ -820,9 +820,12 @@ function formatContextChainMatch(match) {
   return [
     entity.displayName || chain.key,
     match.relationType,
+    match.relationFamily || 'unknown',
+    '证据 ' + (match.relationEvidenceLevel || 'unknown'),
     '置信度 ' + match.confidence,
     chain.latestAttitude || 'unknown',
-    match.relationSummary
+    match.relationSummary,
+    match.reviewRequired ? '需复核 ' + (match.reviewReasons || []).join(',') : '无需复核'
   ].join(' · ');
 }
 

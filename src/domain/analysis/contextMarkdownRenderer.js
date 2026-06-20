@@ -102,10 +102,15 @@ function appendContextChainMatches(lines, matches) {
     const entity = chain.entity || {};
     lines.push('- ' + safeInline(entity.displayName || chain.key) +
       '：' + match.relationType +
+      '；关系族：' + (match.relationFamily || 'unknown') +
+      '；证据级别：' + (match.relationEvidenceLevel || 'unknown') +
       '；置信度：' + match.confidence +
       '；最新态度：' + (chain.latestAttitude || 'unknown'));
     lines.push('  判断：' + safeInline(match.relationSummary));
     lines.push('  理由：' + (match.reasons || []).join(', '));
+    if (match.reviewRequired) {
+      lines.push('  复核：' + (match.reviewReasons || []).join(', '));
+    }
   });
 }
 
