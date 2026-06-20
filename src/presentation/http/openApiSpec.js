@@ -276,6 +276,40 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/context-review-results/action-tasks/apply': {
+        post: {
+          summary: 'Create an audited dry-run task for applying ContextReviewResult closure and merge actions',
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    execute: { type: 'boolean', example: false },
+                    dryRun: { type: 'boolean', example: true },
+                    handoffId: { type: 'string' },
+                    status: { type: 'string', example: 'partially-accepted' },
+                    reviewerId: { type: 'string', example: 'operator-1' },
+                    limit: { type: 'number', example: 100 },
+                    now: { type: 'string', example: '2026-06-21T10:00:00.000Z' },
+                    storeDir: { type: 'string' },
+                    traceId: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Context review action task completed in dry-run mode or executor-backed execution mode'
+            },
+            503: {
+              description: 'Review action gate failed or execution was requested without configured executors'
+            }
+          }
+        }
+      },
       '/api/context-review-results/events': {
         post: {
           summary: 'Dry-run or execute synthesis of attention-worthy ContextReviewResult records into notification events',

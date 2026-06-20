@@ -74,6 +74,10 @@ Builds a read-only closure and merge plan from submitted review results. Optiona
 
 Evaluates the action plan as a worker preflight gate. Optional filters match the action-plan endpoint. The response includes readiness gates for available review results, risk, task conflicts, blockers, and execution scope, plus executable flags for task closure and context merge workers. `fail` means downstream workers should not execute; `warn` means manual review or dry-run-only execution is recommended.
 
+### `POST /api/context-review-results/action-tasks/apply`
+
+Creates a durable `context-review-action-apply` task audit record for applying review-result closure and merge actions. The endpoint defaults to dry-run and does not mutate task or context records. The task stores the evaluated action gate, planned task closure ids, merge candidates, step statuses, and follow-up actions. `execute: true` is reserved for executor-backed deployments; without configured task-closure and context-merge executors, execution reports `fail` instead of silently changing data.
+
 ### `POST /api/context-review-results/events`
 
 Dry-runs or executes synthesis of attention-worthy review results into notification outbox events. Only `warning` and `critical` review summaries generate events. The endpoint defaults to dry-run; set `execute: true` or `dryRun: false` to persist `context-review-result` events. Optional filters: `handoffId`, `status`, `reviewerId`, `limit`, `now`, and `storeDir`.

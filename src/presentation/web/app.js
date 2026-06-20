@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshReviewResultsButton').addEventListener('click', loadContextReviewResults);
   document.getElementById('refreshReviewActionPlanButton').addEventListener('click', loadContextReviewResultActionPlan);
   document.getElementById('refreshReviewActionGateButton').addEventListener('click', loadContextReviewResultActionGate);
+  document.getElementById('runReviewActionApplyButton').addEventListener('click', runContextReviewActionApply);
   document.getElementById('synthesizeReviewResultEventsButton').addEventListener('click', synthesizeReviewResultEvents);
   document.getElementById('refreshRawPagesButton').addEventListener('click', loadRawPages);
   document.getElementById('dispatchEventsButton').addEventListener('click', dispatchEvents);
@@ -591,6 +592,20 @@ async function loadContextReviewResultActionGate() {
   await renderAsync('contextReviewResultResult', function () {
     return fetchJson('/api/context-review-results/action-gate?limit=50');
   }, renderContextReviewResultActionGate);
+}
+
+async function runContextReviewActionApply() {
+  await renderAsync('contextReviewResultResult', function () {
+    return requestJson('/api/context-review-results/action-tasks/apply', {
+      execute: false,
+      limit: 50
+    }, {
+      acceptErrorStatus: true
+    });
+  }, renderContextReviewActionApplyResult);
+  await loadSystemStatus();
+  await loadTasks();
+  await loadContextReviewResults();
 }
 
 function buildEventQuery() {
@@ -1699,6 +1714,22 @@ function renderContextReviewResultActionGate(gateReport) {
   ].join(''), 'wide');
 }
 
+function renderContextReviewActionApplyResult(result) {
+  const task = result.task || {};
+  const report = result.report || {};
+  return panel('Review action apply task', [
+    metric('Task', task.id || 'none'),
+    metric('Task status', task.status || 'unknown'),
+    metric('Report', report.status || 'unknown'),
+    metric('Mode', report.dryRun ? 'dry-run' : 'execute'),
+    metric('Executed', report.executed ? 'yes' : 'no'),
+    metric('Applied', report.applied ? 'yes' : 'no'),
+    metric('Close tasks', report.closeTaskCount || 0),
+    metric('Merge candidates', report.mergeCandidateCount || 0),
+    renderReviewActionApplyStepRows(report.steps || [])
+  ].join(''), 'wide');
+}
+
 function renderContextReviewResultEventSynthesis(result) {
   const rows = result.results || [];
   return panel('Review alert synthesis', [
@@ -1804,6 +1835,18 @@ function renderReviewActionGateRows(gates) {
       '<small>' + escapeHtml(details) + '</small>' +
       '</span>' +
       statusBadge(gate.status || 'warn', statusVariant(gate.status)) +
+      '</div>';
+  }).join('');
+}
+
+function renderReviewActionApplyStepRows(steps) {
+  if (steps.length === 0) return '<div class="muted">No apply steps.</div>';
+  return steps.map(function (step) {
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(step.key || 'unknown-step') + '</strong>' +
+      '<small>' + escapeHtml(step.summary || '') + '</small>' +
+      '</span>' +
+      statusBadge(step.status || 'warn', statusVariant(step.status)) +
       '</div>';
   }).join('');
 }

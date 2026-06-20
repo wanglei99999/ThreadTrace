@@ -192,6 +192,24 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/context-review-results/action-tasks/apply') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.runContextReviewActionTask({
+      handoffId: body.handoffId,
+      status: body.status,
+      reviewerId: body.reviewerId,
+      execute: body.execute === true || body.dryRun === false,
+      limit: body.limit,
+      now: body.now,
+      storeDir: body.storeDir || context.storeDir,
+      requestId: context.requestId,
+      traceId: body.traceId,
+      idempotencyKey: context.idempotencyKey
+    });
+    writeJson(response, result.report && result.report.status === 'fail' ? 503 : 200, result);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/context-review-results') {
     const result = await context.runtime.listContextReviewResults({
       handoffId: url.searchParams.get('handoffId') || undefined,

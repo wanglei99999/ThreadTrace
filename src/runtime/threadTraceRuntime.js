@@ -67,6 +67,7 @@ const { listContextReviewResults } = require('../application/use-cases/listConte
 const { getContextReviewResultOverview } = require('../application/use-cases/getContextReviewResultOverview');
 const { getContextReviewResultActionPlan } = require('../application/use-cases/getContextReviewResultActionPlan');
 const { getContextReviewResultActionGate } = require('../application/use-cases/getContextReviewResultActionGate');
+const { runContextReviewActionTask } = require('../application/use-cases/runContextReviewActionTask');
 const { validateConnectorModuleLoad } = require('../application/use-cases/validateConnectorModuleLoad');
 const { indexSavedThreadDirectory } = require('../application/use-cases/indexSavedThreadDirectory');
 const { searchEvidence } = require('../application/use-cases/searchEvidence');
@@ -268,6 +269,30 @@ function createThreadTraceRuntime(options) {
         reviewerId: safeRequest.reviewerId,
         limit: safeRequest.limit || 100,
         now: safeRequest.now
+      });
+    },
+
+    async runContextReviewActionTask(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      const runtime = this;
+      return runContextReviewActionTask({
+        taskRepository: repositories.taskRepository,
+        getContextReviewResultActionGate(gateRequest) {
+          return runtime.getContextReviewResultActionGate(Object.assign({}, gateRequest, {
+            storeDir: safeRequest.storeDir
+          }));
+        },
+        handoffId: safeRequest.handoffId,
+        status: safeRequest.status,
+        reviewerId: safeRequest.reviewerId,
+        execute: safeRequest.execute,
+        limit: safeRequest.limit || 100,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir,
+        requestId: safeRequest.requestId,
+        traceId: safeRequest.traceId,
+        idempotencyKey: safeRequest.idempotencyKey
       });
     },
 

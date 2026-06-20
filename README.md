@@ -66,6 +66,7 @@ node src/presentation/cli/threadtrace.js dispatch-events --channel webhook --web
 node src/presentation/cli/threadtrace.js ack-event --event-id <id>
 node src/presentation/cli/threadtrace.js review-action-plan
 node src/presentation/cli/threadtrace.js review-action-gate
+node src/presentation/cli/threadtrace.js review-action-apply
 node src/presentation/cli/threadtrace.js run-sources-task
 node src/presentation/cli/threadtrace.js run-due-sources-task
 node src/presentation/cli/threadtrace.js interpret-text-dir --forum nga --input example --text 科技后面看量确认
@@ -106,6 +107,7 @@ These commands use the same runtime composition as the HTTP API and Web console.
 - `GET /api/context-review-results/overview`
 - `GET /api/context-review-results/action-plan`
 - `GET /api/context-review-results/action-gate`
+- `POST /api/context-review-results/action-tasks/apply`
 - `POST /api/context-review-results/events`
 - `GET /api/deployment/checklist`
 - `POST /api/deployment/gate`

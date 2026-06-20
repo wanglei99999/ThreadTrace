@@ -467,6 +467,33 @@ function main(argv) {
     return;
   }
 
+  if (command === 'review-action-apply') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.runContextReviewActionTask(Object.assign(buildReviewResultQuery(options, storeDir), {
+      execute: options.execute === 'true' || options.dryRun === 'false',
+      traceId: options.traceId,
+      idempotencyKey: options.idempotencyKey
+    })).then(function (result) {
+      const report = result.report || {};
+      console.log('Review action task: ' + (result.task && result.task.status));
+      console.log('Report: ' + report.status + '\tdryRun=' + report.dryRun + '\texecuted=' + report.executed + '\tapplied=' + report.applied);
+      console.log('Actions: close=' + report.closeTaskCount + '\tmerge=' + report.mergeCandidateCount);
+      (report.steps || []).forEach(function (step) {
+        console.log(step.status + '\t' + step.key + '\t' + step.summary);
+      });
+      if (result.idempotency && result.idempotency.reused) {
+        console.log('Idempotency: reused ' + result.idempotency.taskId);
+      }
+      if (report.status === 'fail') {
+        process.exitCode = 2;
+      }
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'worker-topology-plan') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.getWorkerTopologyPlan({
@@ -1916,6 +1943,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js synthesize-runbook-events [--execute true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-plan [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-gate [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js review-action-apply [--execute true] [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js worker-topology-plan [--topology operations-worker|split-workers] [--source-task-mode ingest|insight-pipeline] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js runtime-diagnostics [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js adapter-diagnostics [--now iso]');
