@@ -132,6 +132,86 @@ test('operations worker can synthesize runbook notification events before dispat
   assert.equal(result.runbookEvents.eventCount, 1);
 });
 
+test('operations worker can run review action dry-run before dispatch', async function () {
+  const calls = [];
+  const workerRuns = [];
+  const worker = createOperationsWorker({
+    logger: silentLogger(),
+    workerRunRepository: {
+      async saveWorkerRun(run) {
+        workerRuns.push(Object.assign({}, run));
+      },
+      async findWorkerRun() {},
+      async listWorkerRuns() {
+        return workerRuns;
+      }
+    },
+    runtime: {
+      async runDueSourcesIngestTasks() {
+        calls.push(['sources']);
+        return {
+          dueCount: 0,
+          completedCount: 0,
+          failedCount: 0,
+          skippedCount: 0
+        };
+      },
+      async runContextReviewActionTask(request) {
+        calls.push(['review-action', request.execute, request.traceId]);
+        return {
+          task: {
+            id: 'review-action-task-1'
+          },
+          report: {
+            status: 'warn',
+            dryRun: true,
+            closeTaskCount: 1,
+            mergeCandidateCount: 1
+          }
+        };
+      },
+      async dispatchNotificationEvents() {
+        calls.push(['events']);
+        return {
+          dispatchedCount: 0,
+          failedCount: 0,
+          skippedCount: 0
+        };
+      },
+      async getOperationalOverview() {
+        calls.push(['overview']);
+        return {
+          events: {
+            unacknowledged: 0
+          },
+          workers: {
+            stale: 0
+          },
+          tasks: {
+            failed: 0
+          }
+        };
+      }
+    }
+  });
+
+  const result = await worker.runOnce({
+    reviewAction: {
+      execute: false
+    }
+  });
+
+  assert.deepEqual(calls, [
+    ['sources'],
+    ['review-action', false, workerRuns[0].id],
+    ['events'],
+    ['overview']
+  ]);
+  assert.equal(result.reviewActionTask.report.status, 'warn');
+  assert.equal(workerRuns.at(-1).output.reviewActionTask.taskId, 'review-action-task-1');
+  assert.equal(workerRuns.at(-1).output.reviewActionTask.closeTaskCount, 1);
+});
+
 test('operations worker skips overlapping runs', async function () {
   let releaseRun;
   let callCount = 0;

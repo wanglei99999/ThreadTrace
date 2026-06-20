@@ -60,6 +60,9 @@ async function main(argv) {
     console.log('Due sources: ' + result.dueSources.dueCount);
     console.log('Source completed: ' + result.dueSources.completedCount);
     console.log('Source failed: ' + result.dueSources.failedCount);
+    if (result.reviewActionTask) {
+      console.log('Review action: ' + result.reviewActionTask.report.status + ', dryRun=' + result.reviewActionTask.report.dryRun);
+    }
     console.log('Events delivered: ' + result.events.dispatchedCount);
     console.log('Events failed: ' + result.events.failedCount);
     console.log('Open events: ' + result.overview.events.unacknowledged);
@@ -104,6 +107,16 @@ function buildRequest(options, storeDir, config) {
         sourceRunStaleAfterMs: config.workers.sourceRunStaleAfterMs,
         sourceFailureRetryBackoffMs: config.workers.sourceFailureRetryBackoffMs,
         sourceFailureMaxRetryBackoffMs: config.workers.sourceFailureMaxRetryBackoffMs,
+        storeDir
+      }
+      : undefined,
+    reviewAction: options.reviewAction === 'true' || options.reviewActionExecute === 'true'
+      ? {
+        execute: options.reviewActionExecute === 'true',
+        handoffId: options.handoffId,
+        status: options.reviewStatus,
+        reviewerId: options.reviewerId,
+        limit: options.limit ? Number(options.limit) : undefined,
         storeDir
       }
       : undefined,
@@ -181,6 +194,21 @@ function parseArgs(args) {
       index += 1;
     } else if (item === '--runbook-events-execute') {
       options.runbookEventsExecute = args[index + 1];
+      index += 1;
+    } else if (item === '--review-action') {
+      options.reviewAction = args[index + 1];
+      index += 1;
+    } else if (item === '--review-action-execute') {
+      options.reviewActionExecute = args[index + 1];
+      index += 1;
+    } else if (item === '--handoff-id') {
+      options.handoffId = args[index + 1];
+      index += 1;
+    } else if (item === '--review-status') {
+      options.reviewStatus = args[index + 1];
+      index += 1;
+    } else if (item === '--reviewer-id') {
+      options.reviewerId = args[index + 1];
       index += 1;
     } else if (item === '--interval-ms') {
       options.intervalMs = args[index + 1];

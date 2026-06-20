@@ -171,6 +171,7 @@ function reviewActionGateActions(gateReport) {
       summary: gateReport.recommendedNextAction || 'Review result action gate requires attention before downstream workers execute.',
       recommendedCommand: 'node src/presentation/cli/threadtrace.js review-action-gate',
       relatedCommands: [
+        'node src/presentation/cli/threadtrace.js review-action-apply',
         'node src/presentation/cli/threadtrace.js review-action-plan'
       ],
       evidence: {

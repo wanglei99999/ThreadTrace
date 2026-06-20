@@ -67,6 +67,7 @@ function createOperationsWorker(options) {
       workerRun = await tracker.heartbeat(workerRun, { step: stepForSourceTaskMode(sourceTaskMode) });
       await leaseGuard.renew();
       const dueSources = await runDueSourceTasks(runtime, sourceTaskMode, withWorkerTrace(sourcesRequest, workerRun));
+      const reviewActionTask = await runReviewActionTask(runtime, safeRequest, leaseGuard, tracker, workerRun);
       const runbookEvents = await synthesizeRunbookEvents(runtime, safeRequest, leaseGuard, tracker, workerRun);
       workerRun = await tracker.heartbeat(workerRun, { step: 'dispatch-events' });
       await leaseGuard.renew();
@@ -74,10 +75,11 @@ function createOperationsWorker(options) {
       workerRun = await tracker.heartbeat(workerRun, { step: 'overview' });
       await leaseGuard.renew();
       const overview = await runtime.getOperationalOverview(safeRequest.overview || {});
-      await tracker.complete(workerRun, summarizeOperationsResult(dueSources, runbookEvents, events, overview));
-      logger.log('[worker] operations run completed: due=' + dueSources.dueCount + ', sourceFailed=' + dueSources.failedCount + ', runbookEvents=' + (runbookEvents ? runbookEvents.eventCount : 0) + ', eventDelivered=' + events.dispatchedCount + ', eventFailed=' + events.failedCount + ', openEvents=' + overview.events.unacknowledged);
+      await tracker.complete(workerRun, summarizeOperationsResult(dueSources, reviewActionTask, runbookEvents, events, overview));
+      logger.log('[worker] operations run completed: due=' + dueSources.dueCount + ', sourceFailed=' + dueSources.failedCount + ', reviewAction=' + (reviewActionTask ? reviewActionTask.report.status : 'skipped') + ', runbookEvents=' + (runbookEvents ? runbookEvents.eventCount : 0) + ', eventDelivered=' + events.dispatchedCount + ', eventFailed=' + events.failedCount + ', openEvents=' + overview.events.unacknowledged);
       return {
         dueSources,
+        reviewActionTask,
         runbookEvents,
         events,
         overview
@@ -131,6 +133,16 @@ async function synthesizeRunbookEvents(runtime, request, leaseGuard, tracker, wo
   return runtime.synthesizeRunbookNotificationEvents(request.runbookEvents);
 }
 
+async function runReviewActionTask(runtime, request, leaseGuard, tracker, workerRun) {
+  if (!request.reviewAction) return undefined;
+  if (typeof runtime.runContextReviewActionTask !== 'function') {
+    throw new Error('OperationsWorker requires runtime.runContextReviewActionTask(request) when reviewAction is enabled.');
+  }
+  await tracker.heartbeat(workerRun, { step: 'review-action-apply' });
+  await leaseGuard.renew();
+  return runtime.runContextReviewActionTask(withWorkerTrace(request.reviewAction, workerRun));
+}
+
 function runDueSourceTasks(runtime, sourceTaskMode, request) {
   if (sourceTaskMode === 'insight-pipeline') {
     if (typeof runtime.runDueSourceInsightPipelineTasks !== 'function') {
@@ -160,7 +172,7 @@ function stepForSourceTaskMode(sourceTaskMode) {
   return 'ingest-due-sources';
 }
 
-function summarizeOperationsResult(dueSources, runbookEvents, events, overview) {
+function summarizeOperationsResult(dueSources, reviewActionTask, runbookEvents, events, overview) {
   return {
     dueSources: {
       sourceTaskMode: dueSources.task && dueSources.task.type === 'source-insight-pipeline-due-sources' ? 'insight-pipeline' : 'ingest',
@@ -175,6 +187,13 @@ function summarizeOperationsResult(dueSources, runbookEvents, events, overview) 
       createdCount: runbookEvents.createdCount,
       updatedCount: runbookEvents.updatedCount,
       skippedCount: runbookEvents.skippedCount
+    } : undefined,
+    reviewActionTask: reviewActionTask ? {
+      taskId: reviewActionTask.task && reviewActionTask.task.id,
+      status: reviewActionTask.report && reviewActionTask.report.status,
+      dryRun: reviewActionTask.report && reviewActionTask.report.dryRun,
+      closeTaskCount: reviewActionTask.report && reviewActionTask.report.closeTaskCount,
+      mergeCandidateCount: reviewActionTask.report && reviewActionTask.report.mergeCandidateCount
     } : undefined,
     events: {
       channelKey: events.channelKey,

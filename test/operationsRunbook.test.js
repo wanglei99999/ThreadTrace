@@ -205,7 +205,8 @@ test('operations runbook turns review action gate warnings into actions', functi
   assert.equal(runbook.actions[0].key, 'reviewResults.actionGate');
   assert.equal(runbook.actions[0].area, 'review-results');
   assert.match(runbook.actions[0].recommendedCommand, /review-action-gate/);
-  assert.match(runbook.actions[0].relatedCommands[0], /review-action-plan/);
+  assert.match(runbook.actions[0].relatedCommands[0], /review-action-apply/);
+  assert.match(runbook.actions[0].relatedCommands[1], /review-action-plan/);
   assert.equal(runbook.actions[0].evidence.reviewResultCount, 1);
   assert.deepEqual(runbook.actions[0].evidence.warningGates, ['reviewResults.blockers']);
 });
