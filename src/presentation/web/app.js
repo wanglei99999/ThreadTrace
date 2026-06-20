@@ -697,6 +697,7 @@ function renderHistoryReport(report) {
       metric('页数', report.thread.totalPages || '未知')
     ].join('')),
     renderPrimaryAuthorProfile(report.primaryAuthorProfile),
+    renderEvidenceReliability(report.evidenceReliability),
     panel('实体线索', tagList((report.entityCandidates || []).slice(0, 12).map(function (entity) {
       return entity.displayName + ' · ' + entity.mentions.length;
     }))),
@@ -733,6 +734,19 @@ function renderPrimaryAuthorProfile(profile) {
     evidenceList((profile.evidenceGaps || []).slice(0, 4).map(function (gap) {
       return gap.entity.displayName + ' · ' + gap.reason + ' · #' + gap.firstFloor + '-' + gap.lastFloor;
     }))
+  ].join(''));
+}
+
+function renderEvidenceReliability(reliability) {
+  if (!reliability) {
+    return panel('证据可靠性', '<div class="muted">暂无</div>');
+  }
+  return panel('证据可靠性', [
+    metric('状态', reliability.status),
+    metric('明确/推断', reliability.explicitCount + ' / ' + reliability.inferredCount),
+    metric('隐晦表达', reliability.implicitReferenceCount),
+    metric('明确占比', reliability.explicitRatio),
+    evidenceList((reliability.cautions || []).slice(0, 4))
   ].join(''));
 }
 

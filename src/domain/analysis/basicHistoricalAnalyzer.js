@@ -5,6 +5,7 @@ const { extractOpinionCandidates } = require('./ruleBasedOpinionExtractor');
 const { buildOpinionChains } = require('./opinionChainBuilder');
 const { buildPrimaryAuthorProfile } = require('./authorHistoricalProfile');
 const { extractImplicitReferenceCandidates } = require('./implicitReferenceExtractor');
+const { summarizeEvidenceReliability } = require('./evidenceReliabilitySummarizer');
 
 function analyzeThreadHistory(threadSnapshot) {
   const posts = threadSnapshot.posts || [];
@@ -29,6 +30,10 @@ function analyzeThreadHistory(threadSnapshot) {
     opinionCandidates,
     opinionChains
   });
+  const evidenceReliability = summarizeEvidenceReliability({
+    opinionChains,
+    implicitReferenceCandidates
+  });
 
   return {
     reportType: 'basic-history',
@@ -44,6 +49,7 @@ function analyzeThreadHistory(threadSnapshot) {
     },
     primaryAuthor,
     primaryAuthorProfile,
+    evidenceReliability,
     authorStats,
     entityCandidates,
     relationCandidates: collectRelations(posts),

@@ -31,6 +31,11 @@ function renderBasicHistoryMarkdown(report) {
   appendPrimaryAuthorProfile(lines, report.primaryAuthorProfile);
 
   lines.push('');
+  lines.push('## 证据可靠性');
+  lines.push('');
+  appendEvidenceReliability(lines, report.evidenceReliability);
+
+  lines.push('');
   lines.push('## 实体与线索候选');
   lines.push('');
   appendEntityCandidates(lines, report.entityCandidates || []);
@@ -135,6 +140,21 @@ function appendPrimaryAuthorProfile(lines, profile) {
     profile.evidenceGaps.forEach(function (gap) {
       lines.push('- ' + safeInline(gap.entity.displayName) + '：' + gap.summary + '（#' + gap.firstFloor + ' - #' + gap.lastFloor + '）');
     });
+  }
+}
+
+function appendEvidenceReliability(lines, reliability) {
+  if (!reliability) {
+    lines.push('暂无。');
+    return;
+  }
+
+  lines.push('- 状态：' + reliability.status);
+  lines.push('- 明确证据：' + reliability.explicitCount + '；推断关联：' + reliability.inferredCount + '；隐晦表达：' + reliability.implicitReferenceCount);
+  lines.push('- 明确证据占比：' + reliability.explicitRatio);
+  lines.push('- 摘要：' + safeInline(reliability.summary));
+  if (reliability.cautions && reliability.cautions.length > 0) {
+    lines.push('- 核验提醒：' + reliability.cautions.map(safeInline).join(' / '));
   }
 }
 
