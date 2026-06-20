@@ -62,6 +62,10 @@ Validates, summarizes, and stores a `ContextReviewResult` in the durable review 
 
 Lists submitted review result records. Optional filters: `handoffId`, `status`, `reviewerId`, `limit`, and `storeDir`. This endpoint is the read side for review audit trails, task closure dashboards, and future merge workers.
 
+### `GET /api/context-review-results/overview`
+
+Aggregates submitted review result records for dashboards and worker planning. Optional filters mirror the list endpoint and add `now` for repeatable reports. The response includes counts by review status and notification severity, resolved and remaining task totals, merge candidate totals, blocked task totals, attention records, recent records, and a recommended next action.
+
 ### `POST /api/analyze-directory`
 
 分析一个保存页目录。

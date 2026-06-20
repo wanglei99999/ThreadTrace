@@ -197,6 +197,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
       now: '2026-06-21T10:00:00.000Z'
     }, 201);
     const listedContextReviewResults = await getJson(baseUrl + '/api/context-review-results?handoffId=' + encodeURIComponent(contextReviewResultContract.example.handoffId));
+    const contextReviewResultOverview = await getJson(baseUrl + '/api/context-review-results/overview?now=2026-06-21T11:00:00.000Z');
     const invalidContextReviewResult = await postJsonWithStatus(baseUrl + '/api/contracts/context-review-result/validate', {
       result: {
         version: '1.0.0',
@@ -263,6 +264,10 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(submittedContextReviewResult.record.summary.notification.severity, 'warning');
     assert.equal(listedContextReviewResults.count, 1);
     assert.equal(listedContextReviewResults.reviewResults[0].id, 'http-review-result-1');
+    assert.equal(contextReviewResultOverview.generatedAt, '2026-06-21T11:00:00.000Z');
+    assert.equal(contextReviewResultOverview.count, 1);
+    assert.equal(contextReviewResultOverview.bySeverity.warning, 1);
+    assert.equal(contextReviewResultOverview.remainingTaskCount, 1);
     assert.equal(openApi.openapi, '3.0.3');
     assert.ok(openApi.paths['/api/interpret-text']);
     assert.match(openApi.paths['/api/interpret-text'].post.responses[200].description, /contextReviewHandoff/);
@@ -275,6 +280,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/contracts/context-review-result/validate']);
     assert.ok(openApi.paths['/api/context-review-results/summarize']);
     assert.ok(openApi.paths['/api/context-review-results']);
+    assert.ok(openApi.paths['/api/context-review-results/overview']);
     assert.ok(openApi.paths['/api/connectors/catalog']);
     assert.ok(openApi.paths['/api/connectors/readiness']);
     assert.ok(openApi.paths['/api/connectors/modules/validate']);
