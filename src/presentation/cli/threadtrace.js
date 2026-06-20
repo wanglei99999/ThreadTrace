@@ -419,6 +419,54 @@ function main(argv) {
     return;
   }
 
+  if (command === 'review-action-plan') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.getContextReviewResultActionPlan(buildReviewResultQuery(options, storeDir)).then(function (plan) {
+      const attention = plan.attention || {};
+      const risk = plan.risk || {};
+      console.log('Review action plan: ' + plan.status);
+      console.log('Risk: ' + (risk.level || 'unknown') + '\treasons=' + (risk.reasons || []).join(','));
+      console.log('Reviews: ' + plan.count + '\tclose=' + plan.closeTaskIds.length + '\tkeepOpen=' + plan.keepOpenTaskIds.length + '\tmerge=' + plan.mergeCandidates.length + '\tblocked=' + plan.blockedTasks.length + '\tconflicts=' + (attention.conflictTaskIds || []).length);
+      console.log('Next action: ' + plan.recommendedNextAction);
+      plan.closeTaskIds.slice(0, 20).forEach(function (taskId) {
+        console.log('close\t' + taskId);
+      });
+      plan.keepOpenTaskIds.slice(0, 20).forEach(function (taskId) {
+        console.log('keep-open\t' + taskId);
+      });
+      plan.mergeCandidates.slice(0, 20).forEach(function (candidate) {
+        console.log('merge\t' + candidate.taskId + '\t' + (candidate.decision || '') + '\t' + (candidate.recordId || ''));
+      });
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
+  if (command === 'review-action-gate') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.getContextReviewResultActionGate(buildReviewResultQuery(options, storeDir)).then(function (gateReport) {
+      const executable = gateReport.executable || {};
+      console.log('Review action gate: ' + gateReport.status);
+      console.log('Executable: close=' + executable.canCloseTasks + '\tmerge=' + executable.canMergeContext + '\thumanReview=' + executable.requiresHumanReview);
+      console.log('Next action: ' + gateReport.recommendedNextAction);
+      gateReport.gates.forEach(function (gate) {
+        console.log(gate.status + '\t' + gate.key + '\t' + gate.summary);
+      });
+      gateReport.nextActions.forEach(function (action) {
+        console.log('action\t' + action.severity + '\t' + action.key + '\t' + action.summary);
+      });
+      if (gateReport.status === 'fail') {
+        process.exitCode = 2;
+      }
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'worker-topology-plan') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.getWorkerTopologyPlan({
@@ -1544,6 +1592,12 @@ function parseArgs(args) {
     } else if (item === '--source-key') {
       options.sourceKey = args[index + 1];
       index += 1;
+    } else if (item === '--handoff-id') {
+      options.handoffId = args[index + 1];
+      index += 1;
+    } else if (item === '--reviewer-id') {
+      options.reviewerId = args[index + 1];
+      index += 1;
     } else if (item === '--report-type') {
       options.reportType = args[index + 1];
       index += 1;
@@ -1746,6 +1800,17 @@ function parseOptionalBoolean(value) {
   return value !== 'false';
 }
 
+function buildReviewResultQuery(options, storeDir) {
+  return {
+    storeDir,
+    handoffId: options.handoffId,
+    status: options.status,
+    reviewerId: options.reviewerId,
+    limit: options.limit ? Number(options.limit) : 100,
+    now: options.now
+  };
+}
+
 function parseManifestOption(options) {
   const safeOptions = options || {};
   if (!safeOptions.manifestFile) {
@@ -1849,6 +1914,8 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js trace-context [--request-id id | --trace-id id | --idempotency-key key] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-runbook [--forum nga] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js synthesize-runbook-events [--execute true] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js review-action-plan [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js review-action-gate [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js worker-topology-plan [--topology operations-worker|split-workers] [--source-task-mode ingest|insight-pipeline] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js runtime-diagnostics [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js adapter-diagnostics [--now iso]');

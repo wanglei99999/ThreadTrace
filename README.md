@@ -64,6 +64,8 @@ node src/presentation/cli/threadtrace.js list-events
 node src/presentation/cli/threadtrace.js dispatch-events
 node src/presentation/cli/threadtrace.js dispatch-events --channel webhook --webhook-url http://127.0.0.1:9000/threadtrace-events
 node src/presentation/cli/threadtrace.js ack-event --event-id <id>
+node src/presentation/cli/threadtrace.js review-action-plan
+node src/presentation/cli/threadtrace.js review-action-gate
 node src/presentation/cli/threadtrace.js run-sources-task
 node src/presentation/cli/threadtrace.js run-due-sources-task
 node src/presentation/cli/threadtrace.js interpret-text-dir --forum nga --input example --text 科技后面看量确认

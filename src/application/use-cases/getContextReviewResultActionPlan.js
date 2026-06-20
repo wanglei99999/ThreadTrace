@@ -32,7 +32,7 @@ async function getContextReviewResultActionPlan(options) {
 
   return {
     generatedAt: now,
-    status: attention.risk.level === 'critical' ? 'warn' : 'ok',
+    status: attention.risk.level === 'ok' ? 'ok' : 'warn',
     windowLimit: safeOptions.limit || 100,
     count: records.length,
     closeTaskIds,
