@@ -97,7 +97,7 @@ See `docs/rollout-manifest-apply.md` for the apply contract.
 
 - Sources: total, enabled, disabled, due, running, failed, and due source samples.
 - Tasks: recent task totals grouped by status and last failure.
-- Events: pending, failed, unacknowledged, delivery-due count, and next delivery time.
+- Events: unacknowledged pending/failed delivery counts, total unacknowledged events, delivery-due count, and next delivery time.
 - Workers: recent run totals, running/stale counts, latest heartbeat time, active/expired leases, and stale run samples.
 - Raw pages: recent raw evidence count and latest fetch time.
 - Storage mode and generation time.

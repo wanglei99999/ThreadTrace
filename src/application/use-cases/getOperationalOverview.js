@@ -25,8 +25,8 @@ async function getOperationalOverview(options) {
 
   const sources = await sourceRepository.listSources({ limit });
   const recentTasks = await taskRepository.listTasks({ limit });
-  const pendingEvents = await notificationEventRepository.listEvents({ deliveryStatus: 'pending', limit });
-  const failedEvents = await notificationEventRepository.listEvents({ deliveryStatus: 'failed', limit });
+  const pendingEvents = await notificationEventRepository.listEvents({ deliveryStatus: 'pending', acknowledged: false, limit });
+  const failedEvents = await notificationEventRepository.listEvents({ deliveryStatus: 'failed', acknowledged: false, limit });
   const unacknowledgedEvents = await notificationEventRepository.listEvents({ acknowledged: false, limit });
   const rawPages = await rawThreadPageRepository.listRawThreadPages({ limit });
   const workerRuns = workerRunRepository ? await workerRunRepository.listWorkerRuns({ limit }) : [];
@@ -138,15 +138,22 @@ function summarizeTaskOutput(output) {
 }
 
 function summarizeEvents(pendingEvents, failedEvents, unacknowledgedEvents, now) {
+  const openPendingEvents = pendingEvents.filter(isUnacknowledgedEvent);
+  const openFailedEvents = failedEvents.filter(isUnacknowledgedEvent);
+  const deliveryEvents = openPendingEvents.concat(openFailedEvents);
   return {
-    pending: pendingEvents.length,
-    failed: failedEvents.length,
+    pending: openPendingEvents.length,
+    failed: openFailedEvents.length,
     unacknowledged: unacknowledgedEvents.length,
-    dueForDelivery: pendingEvents.concat(failedEvents).filter(function (event) {
+    dueForDelivery: deliveryEvents.filter(function (event) {
       return isEventDue(event, now);
     }).length,
-    nextDeliveryAt: nextDeliveryAt(pendingEvents.concat(failedEvents))
+    nextDeliveryAt: nextDeliveryAt(deliveryEvents)
   };
+}
+
+function isUnacknowledgedEvent(event) {
+  return !event.acknowledgedAt;
 }
 
 function summarizeRawPages(rawPages) {

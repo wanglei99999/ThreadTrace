@@ -5,6 +5,14 @@ const test = require('node:test');
 const { getOperationalOverview } = require('../src/application/use-cases/getOperationalOverview');
 
 test('operational overview summarizes sources, tasks, events, and raw pages', async function () {
+  const notificationEvents = [
+    { id: 'event-1', deliveryStatus: 'pending', nextDeliveryAt: '2026-06-18T09:59:00.000Z' },
+    { id: 'event-2', deliveryStatus: 'failed', nextDeliveryAt: '2026-06-18T11:00:00.000Z' },
+    { id: 'event-3', deliveryStatus: 'pending', nextDeliveryAt: '2026-06-18T09:59:00.000Z', acknowledgedAt: '2026-06-18T09:58:00.000Z' },
+    { id: 'event-4', deliveryStatus: 'failed', nextDeliveryAt: '2026-06-18T09:59:00.000Z', acknowledgedAt: '2026-06-18T09:58:00.000Z' },
+    { id: 'event-5', deliveryStatus: 'delivered', lastDeliveredAt: '2026-06-18T09:57:00.000Z' }
+  ];
+  const eventQueries = [];
   const overview = await getOperationalOverview({
     now: '2026-06-18T10:00:00.000Z',
     sourceRepository: {
@@ -46,16 +54,12 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
       async saveEvent() {},
       async findEvent() {},
       async listEvents(query) {
-        if (query.deliveryStatus === 'pending') {
-          return [{ id: 'event-1', deliveryStatus: 'pending', nextDeliveryAt: '2026-06-18T09:59:00.000Z' }];
-        }
-        if (query.deliveryStatus === 'failed') {
-          return [{ id: 'event-2', deliveryStatus: 'failed', nextDeliveryAt: '2026-06-18T11:00:00.000Z' }];
-        }
-        if (query.acknowledged === false) {
-          return [{ id: 'event-1' }, { id: 'event-2' }];
-        }
-        return [];
+        eventQueries.push(query);
+        return notificationEvents.filter(function (event) {
+          if (query.deliveryStatus && event.deliveryStatus !== query.deliveryStatus) return false;
+          if (typeof query.acknowledged === 'boolean' && Boolean(event.acknowledgedAt) !== query.acknowledged) return false;
+          return true;
+        });
       }
     },
     rawThreadPageRepository: {
@@ -127,8 +131,14 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
   assert.equal(overview.tasks.failed, 1);
   assert.equal(overview.events.pending, 1);
   assert.equal(overview.events.failed, 1);
-  assert.equal(overview.events.unacknowledged, 2);
+  assert.equal(overview.events.unacknowledged, 3);
   assert.equal(overview.events.dueForDelivery, 1);
+  assert.ok(eventQueries.some(function (query) {
+    return query.deliveryStatus === 'pending' && query.acknowledged === false;
+  }));
+  assert.ok(eventQueries.some(function (query) {
+    return query.deliveryStatus === 'failed' && query.acknowledged === false;
+  }));
   assert.equal(overview.workers.running, 1);
   assert.equal(overview.workers.stale, 1);
   assert.equal(overview.workers.completed, 1);
