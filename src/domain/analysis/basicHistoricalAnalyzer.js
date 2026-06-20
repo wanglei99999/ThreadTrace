@@ -4,6 +4,7 @@ const { extractMarketEntities } = require('./ruleBasedMarketEntityExtractor');
 const { extractOpinionCandidates } = require('./ruleBasedOpinionExtractor');
 const { buildOpinionChains } = require('./opinionChainBuilder');
 const { buildPrimaryAuthorProfile } = require('./authorHistoricalProfile');
+const { extractImplicitReferenceCandidates } = require('./implicitReferenceExtractor');
 
 function analyzeThreadHistory(threadSnapshot) {
   const posts = threadSnapshot.posts || [];
@@ -16,6 +17,10 @@ function analyzeThreadHistory(threadSnapshot) {
     entityCandidates,
     opinionCandidates,
     primaryAuthor
+  });
+  const implicitReferenceCandidates = extractImplicitReferenceCandidates(posts, {
+    entityCandidates,
+    opinionCandidates
   });
   const primaryAuthorProfile = buildPrimaryAuthorProfile({
     primaryAuthor,
@@ -44,6 +49,7 @@ function analyzeThreadHistory(threadSnapshot) {
     relationCandidates: collectRelations(posts),
     opinionCandidates,
     opinionChains,
+    implicitReferenceCandidates,
     evidenceCandidates: {
       highSignalPosts: pickHighSignalPosts(posts),
       externalLinks: collectExternalLinks(posts),

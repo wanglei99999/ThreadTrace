@@ -51,6 +51,11 @@ function renderBasicHistoryMarkdown(report) {
   appendOpinionChains(lines, report.opinionChains || []);
 
   lines.push('');
+  lines.push('## 隐晦表达候选');
+  lines.push('');
+  appendImplicitReferenceCandidates(lines, report.implicitReferenceCandidates || []);
+
+  lines.push('');
   lines.push('## 高信号楼层候选');
   lines.push('');
   appendEvidenceList(lines, report.evidenceCandidates.highSignalPosts);
@@ -193,6 +198,31 @@ function appendOpinionChains(lines, chains) {
         lines.push('    条件：' + event.conditionSignals.join(' / '));
       }
     });
+  });
+}
+
+function appendImplicitReferenceCandidates(lines, candidates) {
+  if (!candidates || candidates.length === 0) {
+    lines.push('暂无。');
+    return;
+  }
+
+  candidates.slice(0, 16).forEach(function (candidate) {
+    lines.push('- #' + candidate.floor + ' ' + candidate.author +
+      '：' + candidate.label +
+      ' `' + safeInline(candidate.phrase) + '`' +
+      '，置信度 ' + candidate.confidence);
+    if (candidate.nearbyEntities && candidate.nearbyEntities.length > 0) {
+      lines.push('  附近对象：' + candidate.nearbyEntities.map(function (entity) {
+        return entity.displayName + '/' + entity.evidenceLevel + '/#' + entity.floor;
+      }).join('，'));
+    }
+    if (candidate.sameFloorOpinions && candidate.sameFloorOpinions.length > 0) {
+      lines.push('  同楼层观点：' + candidate.sameFloorOpinions.map(function (opinion) {
+        return opinion.attitude + ' ' + opinion.confidence;
+      }).join('，'));
+    }
+    lines.push('  证据：' + safeInline(candidate.evidenceText));
   });
 }
 
