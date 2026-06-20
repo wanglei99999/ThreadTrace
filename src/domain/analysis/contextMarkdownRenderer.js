@@ -39,6 +39,11 @@ function renderNewPostContextMarkdown(report) {
   appendContextChainMatches(lines, report.contextChainMatches || []);
 
   lines.push('');
+  lines.push('## 核验任务');
+  lines.push('');
+  appendContextReviewTasks(lines, report.contextReviewTasks || []);
+
+  lines.push('');
   lines.push('## 相关历史证据');
   lines.push('');
   appendEvidence(lines, report.relatedEvidence || []);
@@ -128,6 +133,25 @@ function appendContextChainMatches(lines, matches) {
     lines.push('  理由：' + (match.reasons || []).join(', '));
     if (match.reviewRequired) {
       lines.push('  复核：' + (match.reviewReasons || []).join(', '));
+    }
+  });
+}
+
+function appendContextReviewTasks(lines, tasks) {
+  if (tasks.length === 0) {
+    lines.push('暂无。');
+    return;
+  }
+  tasks.forEach(function (item) {
+    lines.push('- [' + item.priority + '] ' + item.title +
+      '：' + safeInline(item.question) +
+      '；对象：' + (item.targetEntity || '暂无') +
+      '；状态：' + item.status);
+    if (item.evidenceFloors && item.evidenceFloors.length > 0) {
+      lines.push('  楼层：#' + item.evidenceFloors.join(' / #'));
+    }
+    if (item.reasons && item.reasons.length > 0) {
+      lines.push('  原因：' + item.reasons.join(', '));
     }
   });
 }

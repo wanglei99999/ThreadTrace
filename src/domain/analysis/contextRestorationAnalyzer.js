@@ -6,6 +6,7 @@ const { extractImplicitReferenceCandidates } = require('./implicitReferenceExtra
 const { buildOpinionChains } = require('./opinionChainBuilder');
 const { classifyNewPostChainRelation } = require('./contextChainRelationClassifier');
 const { summarizeContextMatches } = require('./contextMatchSummarizer');
+const { planContextReviewTasks } = require('./contextReviewPlanner');
 
 function restoreContextForNewPost(threadSnapshot, newPostInput) {
   const syntheticPost = createSyntheticPost(newPostInput);
@@ -23,6 +24,10 @@ function restoreContextForNewPost(threadSnapshot, newPostInput) {
     syntheticPost
   });
   const contextMatchSummary = summarizeContextMatches(contextChainMatches);
+  const contextReviewTasks = planContextReviewTasks({
+    contextChainMatches,
+    relatedEvidence
+  });
   const interpretationSummary = summarizeInterpretation({
     newEntities,
     newOpinions,
@@ -49,6 +54,7 @@ function restoreContextForNewPost(threadSnapshot, newPostInput) {
     newImplicitReferences,
     contextChainMatches,
     contextMatchSummary,
+    contextReviewTasks,
     interpretationSummary,
     relatedEvidence,
     interpretationSlots: [

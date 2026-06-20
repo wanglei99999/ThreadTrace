@@ -797,6 +797,7 @@ function renderContextReport(report) {
     ].join('')),
     renderContextMatchSummary(report.contextMatchSummary),
     panel('承接观点链', evidenceList((report.contextChainMatches || []).map(formatContextChainMatch)), 'wide'),
+    panel('核验任务', evidenceList((report.contextReviewTasks || []).map(formatContextReviewTask)), 'wide'),
     panel('相关历史证据', evidenceList((report.relatedEvidence || []).map(function (item) {
       return '#' + item.floor + ' ' + item.author + ' · ' + item.confidence + '：' + item.reasons.join(', ');
     })), 'wide')
@@ -842,6 +843,17 @@ function formatContextChainMatch(match) {
     chain.latestAttitude || 'unknown',
     match.relationSummary,
     match.reviewRequired ? '需复核 ' + (match.reviewReasons || []).join(',') : '无需复核'
+  ].join(' · ');
+}
+
+function formatContextReviewTask(task) {
+  const floors = (task.evidenceFloors || []).length > 0 ? '楼层 #' + task.evidenceFloors.join('/#') : '暂无楼层';
+  return [
+    '[' + task.priority + ']',
+    task.title,
+    task.targetEntity || '暂无对象',
+    floors,
+    task.question
   ].join(' · ');
 }
 
