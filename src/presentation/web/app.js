@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshSourceOperationsButton').addEventListener('click', loadSourceOperations);
   document.getElementById('refreshEventsButton').addEventListener('click', loadEvents);
   document.getElementById('refreshReviewResultsButton').addEventListener('click', loadContextReviewResults);
+  document.getElementById('refreshReviewActionPlanButton').addEventListener('click', loadContextReviewResultActionPlan);
   document.getElementById('synthesizeReviewResultEventsButton').addEventListener('click', synthesizeReviewResultEvents);
   document.getElementById('refreshRawPagesButton').addEventListener('click', loadRawPages);
   document.getElementById('dispatchEventsButton').addEventListener('click', dispatchEvents);
@@ -565,14 +566,22 @@ async function loadContextReviewResults() {
   await renderAsync('contextReviewResultOverview', function () {
     return Promise.all([
       fetchJson('/api/context-review-results/overview?limit=50'),
-      fetchJson('/api/context-review-results?limit=10')
+      fetchJson('/api/context-review-results?limit=10'),
+      fetchJson('/api/context-review-results/action-plan?limit=50')
     ]).then(function (results) {
       return {
         overview: results[0],
-        reviewResults: results[1].reviewResults || []
+        reviewResults: results[1].reviewResults || [],
+        actionPlan: results[2]
       };
     });
   }, renderContextReviewResultOverview);
+}
+
+async function loadContextReviewResultActionPlan() {
+  await renderAsync('contextReviewResultResult', function () {
+    return fetchJson('/api/context-review-results/action-plan?limit=50');
+  }, renderContextReviewResultActionPlan);
 }
 
 function buildEventQuery() {
@@ -1619,6 +1628,7 @@ function renderContextReviewResultOverview(result) {
   const overview = result.overview || {};
   const records = result.reviewResults || [];
   const attention = overview.attention || {};
+  const actionPlan = result.actionPlan || {};
   const tiles = '<div class="summary-strip event-summary-strip">' + [
     summaryTile('Reviews', String(overview.count || 0)),
     summaryTile('Warnings', String(attention.warningCount || 0), (attention.warningCount || 0) > 0 ? 'warn' : 'ok'),
@@ -1632,9 +1642,32 @@ function renderContextReviewResultOverview(result) {
       metric('Generated', overview.generatedAt || 'unknown'),
       metric('Next action', overview.recommendedNextAction || 'none')
     ].join(''), 'wide'),
+    renderContextReviewResultActionPlan(actionPlan),
     panel('Review attention', renderContextReviewAttentionRows(attention.topRecords || []), 'wide'),
     panel('Recent review results', renderContextReviewResultRows(records), 'wide')
   ].join('');
+}
+
+function renderContextReviewResultActionPlan(plan) {
+  const risk = plan.risk || {};
+  const attention = plan.attention || {};
+  const tiles = '<div class="summary-strip event-summary-strip">' + [
+    summaryTile('Close tasks', String((plan.closeTaskIds || []).length), (plan.closeTaskIds || []).length > 0 ? 'ok' : 'muted'),
+    summaryTile('Keep open', String((plan.keepOpenTaskIds || []).length), (plan.keepOpenTaskIds || []).length > 0 ? 'warn' : 'ok'),
+    summaryTile('Merge candidates', String((plan.mergeCandidates || []).length), (plan.mergeCandidates || []).length > 0 ? 'ok' : 'muted'),
+    summaryTile('Blocked', String((plan.blockedTasks || []).length), (plan.blockedTasks || []).length > 0 ? 'warn' : 'ok'),
+    summaryTile('Conflicts', String((attention.conflictTaskIds || []).length), (attention.conflictTaskIds || []).length > 0 ? 'fail' : 'ok')
+  ].join('') + '</div>';
+  return panel('Review action plan', [
+    tiles,
+    metric('Generated', plan.generatedAt || 'unknown'),
+    metric('Risk', risk.level || 'unknown'),
+    metric('Next action', plan.recommendedNextAction || 'none'),
+    '<h4>Merge candidates</h4>',
+    renderReviewMergeCandidateRows(plan.mergeCandidates || []),
+    '<h4>Blocked tasks</h4>',
+    renderReviewBlockedTaskRows(plan.blockedTasks || [])
+  ].join(''), 'wide');
 }
 
 function renderContextReviewResultEventSynthesis(result) {
@@ -1686,6 +1719,44 @@ function renderContextReviewResultRows(records) {
       '<small>' + escapeHtml(summary.recommendedNextAction || '') + '</small>' +
       '</span>' +
       statusBadge(notification.severity || 'info', statusVariant(notification.severity)) +
+      '</div>';
+  }).join('');
+}
+
+function renderReviewMergeCandidateRows(candidates) {
+  if (candidates.length === 0) return '<div class="muted">No merge candidates.</div>';
+  return candidates.slice(0, 10).map(function (candidate) {
+    const details = [
+      candidate.recordId,
+      candidate.taskType,
+      candidate.decision,
+      candidate.confidence === undefined ? undefined : 'confidence=' + candidate.confidence
+    ].filter(Boolean).join(' | ');
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(candidate.taskId || 'unknown-task') + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '<small>' + escapeHtml(candidate.rationale || '') + '</small>' +
+      '</span>' +
+      statusBadge(candidate.severity || 'info', statusVariant(candidate.severity)) +
+      '</div>';
+  }).join('');
+}
+
+function renderReviewBlockedTaskRows(tasks) {
+  if (tasks.length === 0) return '<div class="muted">No blocked tasks.</div>';
+  return tasks.slice(0, 10).map(function (task) {
+    const details = [
+      task.recordId,
+      task.taskType,
+      task.decision,
+      task.confidence === undefined ? undefined : 'confidence=' + task.confidence
+    ].filter(Boolean).join(' | ');
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(task.taskId || 'unknown-task') + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '<small>' + escapeHtml(task.reason || '') + '</small>' +
+      '</span>' +
+      statusBadge(task.severity || 'warning', statusVariant(task.severity || 'warning')) +
       '</div>';
   }).join('');
 }

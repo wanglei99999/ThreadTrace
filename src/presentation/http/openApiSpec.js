@@ -240,6 +240,24 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/context-review-results/action-plan': {
+        get: {
+          summary: 'Build a read-only closure and merge action plan from submitted ContextReviewResult records',
+          parameters: [
+            { name: 'handoffId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'status', in: 'query', required: false, schema: { type: 'string', example: 'partially-accepted' } },
+            { name: 'reviewerId', in: 'query', required: false, schema: { type: 'string', example: 'operator-1' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number', example: 100 } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-21T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Read-only review result action plan with close, keep-open, merge, blocked, attention, and risk sections'
+            }
+          }
+        }
+      },
       '/api/context-review-results/events': {
         post: {
           summary: 'Dry-run or execute synthesis of attention-worthy ContextReviewResult records into notification events',
