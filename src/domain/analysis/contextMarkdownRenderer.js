@@ -41,6 +41,8 @@ function renderNewPostContextMarkdown(report) {
   lines.push('');
   lines.push('## 核验任务');
   lines.push('');
+  appendContextReviewHandoff(lines, report.contextReviewHandoff);
+  lines.push('');
   appendContextReviewTasks(lines, report.contextReviewTasks || []);
 
   lines.push('');
@@ -154,6 +156,19 @@ function appendContextReviewTasks(lines, tasks) {
       lines.push('  原因：' + item.reasons.join(', '));
     }
   });
+}
+
+function appendContextReviewHandoff(lines, handoff) {
+  if (!handoff) {
+    lines.push('交接摘要：暂无。');
+    return;
+  }
+  lines.push('- 交接状态：' + handoff.status);
+  lines.push('- 任务数量：' + handoff.taskCount + '；高优先级：' + handoff.highPriorityTaskCount);
+  lines.push('- 下一步：' + safeInline(handoff.recommendedNextAction));
+  if (handoff.evidencePackage && handoff.evidencePackage.floors.length > 0) {
+    lines.push('- 证据楼层：#' + handoff.evidencePackage.floors.join(' / #'));
+  }
 }
 
 function appendEvidence(lines, evidenceItems) {

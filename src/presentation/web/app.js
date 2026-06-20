@@ -797,11 +797,26 @@ function renderContextReport(report) {
     ].join('')),
     renderContextMatchSummary(report.contextMatchSummary),
     panel('承接观点链', evidenceList((report.contextChainMatches || []).map(formatContextChainMatch)), 'wide'),
+    renderContextReviewHandoff(report.contextReviewHandoff),
     panel('核验任务', evidenceList((report.contextReviewTasks || []).map(formatContextReviewTask)), 'wide'),
     panel('相关历史证据', evidenceList((report.relatedEvidence || []).map(function (item) {
       return '#' + item.floor + ' ' + item.author + ' · ' + item.confidence + '：' + item.reasons.join(', ');
     })), 'wide')
   ].join('');
+}
+
+function renderContextReviewHandoff(handoff) {
+  if (!handoff) {
+    return panel('核验交接', '<div class="muted">暂无</div>', 'wide');
+  }
+  const evidencePackage = handoff.evidencePackage || {};
+  const floors = (evidencePackage.floors || []).length > 0 ? '#' + evidencePackage.floors.join(' / #') : '暂无';
+  return panel('核验交接', [
+    metric('状态', handoff.status),
+    metric('任务/高优', handoff.taskCount + ' / ' + handoff.highPriorityTaskCount),
+    metric('证据楼层', floors),
+    metric('下一步', handoff.recommendedNextAction)
+  ].join(''), 'wide');
 }
 
 function renderContextMatchSummary(summary) {

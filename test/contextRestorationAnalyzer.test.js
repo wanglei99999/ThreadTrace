@@ -40,6 +40,9 @@ test('context restoration finds historical evidence for a new post', function ()
   assert.ok(report.contextReviewTasks.some(function (task) {
     return task.taskType === 'latest_attitude_confirmation';
   }));
+  assert.equal(report.contextReviewHandoff.status, 'action-required');
+  assert.equal(report.contextReviewHandoff.taskCount, report.contextReviewTasks.length);
+  assert.ok(report.contextReviewHandoff.evidencePackage.floors.length >= 1);
   assert.ok(report.relatedEvidence.length >= 1);
   assert.ok(report.relatedEvidence[0].reasons.length >= 1);
 });
@@ -70,6 +73,7 @@ test('context restoration uses implicit references when a new post omits entitie
   assert.ok(report.contextReviewTasks.some(function (task) {
     return task.taskType === 'implicit_reference_resolution';
   }));
+  assert.equal(report.contextReviewHandoff.highPriorityTaskCount >= 1, true);
   assert.ok(report.relatedEvidence.length >= 1);
   assert.ok(report.relatedEvidence[0].reasons.some(function (reason) {
     return reason.indexOf('implicit_reference_context:') === 0;

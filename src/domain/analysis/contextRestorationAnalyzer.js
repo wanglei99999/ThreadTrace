@@ -7,6 +7,7 @@ const { buildOpinionChains } = require('./opinionChainBuilder');
 const { classifyNewPostChainRelation } = require('./contextChainRelationClassifier');
 const { summarizeContextMatches } = require('./contextMatchSummarizer');
 const { planContextReviewTasks } = require('./contextReviewPlanner');
+const { buildContextReviewHandoff } = require('./contextReviewHandoffBuilder');
 
 function restoreContextForNewPost(threadSnapshot, newPostInput) {
   const syntheticPost = createSyntheticPost(newPostInput);
@@ -26,6 +27,10 @@ function restoreContextForNewPost(threadSnapshot, newPostInput) {
   const contextMatchSummary = summarizeContextMatches(contextChainMatches);
   const contextReviewTasks = planContextReviewTasks({
     contextChainMatches,
+    relatedEvidence
+  });
+  const contextReviewHandoff = buildContextReviewHandoff({
+    contextReviewTasks,
     relatedEvidence
   });
   const interpretationSummary = summarizeInterpretation({
@@ -55,6 +60,7 @@ function restoreContextForNewPost(threadSnapshot, newPostInput) {
     contextChainMatches,
     contextMatchSummary,
     contextReviewTasks,
+    contextReviewHandoff,
     interpretationSummary,
     relatedEvidence,
     interpretationSlots: [

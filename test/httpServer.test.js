@@ -162,6 +162,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /formatImplicitReferenceSummary/);
     assert.match(webAppJs, /formatContextChainMatch/);
     assert.match(webAppJs, /formatContextReviewTask/);
+    assert.match(webAppJs, /renderContextReviewHandoff/);
     assert.match(webAppJs, /renderContextMatchSummary/);
     assert.match(webAppJs, /renderInterpretationSummary/);
     assert.equal(adapters.adapters[0].sourceKey, 'nga');
@@ -214,6 +215,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(connectorModuleContract.sourceIngestHandler.required.includes('sourceType'));
     assert.equal(openApi.openapi, '3.0.3');
     assert.ok(openApi.paths['/api/interpret-text']);
+    assert.match(openApi.paths['/api/interpret-text'].post.responses[200].description, /contextReviewHandoff/);
     assert.ok(openApi.paths['/api/adapters/diagnostics']);
     assert.ok(openApi.paths['/api/contracts/thread-snapshot-json']);
     assert.ok(openApi.paths['/api/contracts/connector-module']);

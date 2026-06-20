@@ -182,7 +182,7 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'New post context report'
+              description: 'New post context report with interpretationSummary, contextMatchSummary, contextReviewTasks, and contextReviewHandoff'
             },
             400: {
               description: 'Invalid request'
