@@ -70,6 +70,10 @@ Aggregates submitted review result records for dashboards and worker planning. O
 
 Builds a read-only closure and merge plan from submitted review results. Optional filters: `handoffId`, `status`, `reviewerId`, `limit`, `now`, and `storeDir`. The response separates tasks that can be closed, tasks that must stay open, merge candidates, blocked tasks, conflicts, risk reasons, and the recommended next action. This endpoint is intentionally non-mutating so future task-closure or context-merge workers can consume it first in dry-run mode.
 
+### `GET /api/context-review-results/action-gate`
+
+Evaluates the action plan as a worker preflight gate. Optional filters match the action-plan endpoint. The response includes readiness gates for available review results, risk, task conflicts, blockers, and execution scope, plus executable flags for task closure and context merge workers. `fail` means downstream workers should not execute; `warn` means manual review or dry-run-only execution is recommended.
+
 ### `POST /api/context-review-results/events`
 
 Dry-runs or executes synthesis of attention-worthy review results into notification outbox events. Only `warning` and `critical` review summaries generate events. The endpoint defaults to dry-run; set `execute: true` or `dryRun: false` to persist `context-review-result` events. Optional filters: `handoffId`, `status`, `reviewerId`, `limit`, `now`, and `storeDir`.

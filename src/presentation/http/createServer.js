@@ -179,6 +179,19 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/context-review-results/action-gate') {
+    const result = await context.runtime.getContextReviewResultActionGate({
+      handoffId: url.searchParams.get('handoffId') || undefined,
+      status: url.searchParams.get('status') || undefined,
+      reviewerId: url.searchParams.get('reviewerId') || undefined,
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,
+      now: url.searchParams.get('now') || undefined,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, 200, result);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/context-review-results') {
     const result = await context.runtime.listContextReviewResults({
       handoffId: url.searchParams.get('handoffId') || undefined,

@@ -146,6 +146,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(homeHtml, /contextReviewResultOverview/);
     assert.match(homeHtml, /contextReviewResultResult/);
     assert.match(homeHtml, /refreshReviewActionPlanButton/);
+    assert.match(homeHtml, /refreshReviewActionGateButton/);
     assert.match(homeHtml, /synthesizeReviewResultEventsButton/);
     assert.match(homeHtml, /deliveryStatus/);
     assert.match(homeHtml, /refreshSourceOperationsButton/);
@@ -172,8 +173,10 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /renderInterpretationSummary/);
     assert.match(webAppJs, /loadContextReviewResults/);
     assert.match(webAppJs, /loadContextReviewResultActionPlan/);
+    assert.match(webAppJs, /loadContextReviewResultActionGate/);
     assert.match(webAppJs, /renderContextReviewResultOverview/);
     assert.match(webAppJs, /renderContextReviewResultActionPlan/);
+    assert.match(webAppJs, /renderContextReviewResultActionGate/);
     assert.match(webAppJs, /synthesizeReviewResultEvents/);
     assert.match(webAppJs, /renderContextReviewResultEventSynthesis/);
     assert.match(webAppJs, /api\/context-review-results/);
@@ -211,6 +214,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     const listedContextReviewResults = await getJson(baseUrl + '/api/context-review-results?handoffId=' + encodeURIComponent(contextReviewResultContract.example.handoffId));
     const contextReviewResultOverview = await getJson(baseUrl + '/api/context-review-results/overview?now=2026-06-21T11:00:00.000Z');
     const contextReviewResultActionPlan = await getJson(baseUrl + '/api/context-review-results/action-plan?now=2026-06-21T11:00:00.000Z');
+    const contextReviewResultActionGate = await getJson(baseUrl + '/api/context-review-results/action-gate?now=2026-06-21T11:00:00.000Z');
     const contextReviewResultEventDryRun = await postJson(baseUrl + '/api/context-review-results/events', {
       now: '2026-06-21T11:05:00.000Z'
     });
@@ -295,6 +299,13 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.deepEqual(contextReviewResultActionPlan.keepOpenTaskIds, contextReviewResultContract.example.remainingTasks);
     assert.equal(contextReviewResultActionPlan.mergeCandidates.length, 1);
     assert.equal(contextReviewResultActionPlan.blockedTasks.length, 1);
+    assert.equal(contextReviewResultActionGate.generatedAt, '2026-06-21T11:00:00.000Z');
+    assert.equal(contextReviewResultActionGate.status, 'warn');
+    assert.equal(contextReviewResultActionGate.executable.canCloseTasks, true);
+    assert.equal(contextReviewResultActionGate.executable.canMergeContext, true);
+    assert.ok(contextReviewResultActionGate.gates.some(function (gate) {
+      return gate.key === 'reviewResults.blockers' && gate.status === 'warn';
+    }));
     assert.equal(contextReviewResultEventDryRun.dryRun, true);
     assert.equal(contextReviewResultEventDryRun.createdCount, 1);
     assert.equal(contextReviewResultEventExecute.executed, true);
@@ -315,6 +326,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/context-review-results']);
     assert.ok(openApi.paths['/api/context-review-results/overview']);
     assert.ok(openApi.paths['/api/context-review-results/action-plan']);
+    assert.ok(openApi.paths['/api/context-review-results/action-gate']);
     assert.ok(openApi.paths['/api/context-review-results/events']);
     assert.ok(openApi.paths['/api/connectors/catalog']);
     assert.ok(openApi.paths['/api/connectors/readiness']);

@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshEventsButton').addEventListener('click', loadEvents);
   document.getElementById('refreshReviewResultsButton').addEventListener('click', loadContextReviewResults);
   document.getElementById('refreshReviewActionPlanButton').addEventListener('click', loadContextReviewResultActionPlan);
+  document.getElementById('refreshReviewActionGateButton').addEventListener('click', loadContextReviewResultActionGate);
   document.getElementById('synthesizeReviewResultEventsButton').addEventListener('click', synthesizeReviewResultEvents);
   document.getElementById('refreshRawPagesButton').addEventListener('click', loadRawPages);
   document.getElementById('dispatchEventsButton').addEventListener('click', dispatchEvents);
@@ -567,12 +568,14 @@ async function loadContextReviewResults() {
     return Promise.all([
       fetchJson('/api/context-review-results/overview?limit=50'),
       fetchJson('/api/context-review-results?limit=10'),
-      fetchJson('/api/context-review-results/action-plan?limit=50')
+      fetchJson('/api/context-review-results/action-plan?limit=50'),
+      fetchJson('/api/context-review-results/action-gate?limit=50')
     ]).then(function (results) {
       return {
         overview: results[0],
         reviewResults: results[1].reviewResults || [],
-        actionPlan: results[2]
+        actionPlan: results[2],
+        actionGate: results[3]
       };
     });
   }, renderContextReviewResultOverview);
@@ -582,6 +585,12 @@ async function loadContextReviewResultActionPlan() {
   await renderAsync('contextReviewResultResult', function () {
     return fetchJson('/api/context-review-results/action-plan?limit=50');
   }, renderContextReviewResultActionPlan);
+}
+
+async function loadContextReviewResultActionGate() {
+  await renderAsync('contextReviewResultResult', function () {
+    return fetchJson('/api/context-review-results/action-gate?limit=50');
+  }, renderContextReviewResultActionGate);
 }
 
 function buildEventQuery() {
@@ -1629,6 +1638,7 @@ function renderContextReviewResultOverview(result) {
   const records = result.reviewResults || [];
   const attention = overview.attention || {};
   const actionPlan = result.actionPlan || {};
+  const actionGate = result.actionGate || {};
   const tiles = '<div class="summary-strip event-summary-strip">' + [
     summaryTile('Reviews', String(overview.count || 0)),
     summaryTile('Warnings', String(attention.warningCount || 0), (attention.warningCount || 0) > 0 ? 'warn' : 'ok'),
@@ -1643,6 +1653,7 @@ function renderContextReviewResultOverview(result) {
       metric('Next action', overview.recommendedNextAction || 'none')
     ].join(''), 'wide'),
     renderContextReviewResultActionPlan(actionPlan),
+    renderContextReviewResultActionGate(actionGate),
     panel('Review attention', renderContextReviewAttentionRows(attention.topRecords || []), 'wide'),
     panel('Recent review results', renderContextReviewResultRows(records), 'wide')
   ].join('');
@@ -1667,6 +1678,24 @@ function renderContextReviewResultActionPlan(plan) {
     renderReviewMergeCandidateRows(plan.mergeCandidates || []),
     '<h4>Blocked tasks</h4>',
     renderReviewBlockedTaskRows(plan.blockedTasks || [])
+  ].join(''), 'wide');
+}
+
+function renderContextReviewResultActionGate(gateReport) {
+  const executable = gateReport.executable || {};
+  const gates = gateReport.gates || [];
+  const tiles = '<div class="summary-strip event-summary-strip">' + [
+    summaryTile('Gate status', gateReport.status || 'unknown', statusVariant(gateReport.status)),
+    summaryTile('Can close', executable.canCloseTasks ? 'yes' : 'no', executable.canCloseTasks ? 'ok' : 'muted'),
+    summaryTile('Can merge', executable.canMergeContext ? 'yes' : 'no', executable.canMergeContext ? 'ok' : 'muted'),
+    summaryTile('Human review', executable.requiresHumanReview ? 'yes' : 'no', executable.requiresHumanReview ? 'warn' : 'ok'),
+    summaryTile('Next actions', String((gateReport.nextActions || []).length), (gateReport.nextActions || []).length > 0 ? 'warn' : 'ok')
+  ].join('') + '</div>';
+  return panel('Review action gate', [
+    tiles,
+    metric('Generated', gateReport.generatedAt || 'unknown'),
+    metric('Next action', gateReport.recommendedNextAction || 'none'),
+    renderReviewActionGateRows(gates)
   ].join(''), 'wide');
 }
 
@@ -1757,6 +1786,24 @@ function renderReviewBlockedTaskRows(tasks) {
       '<small>' + escapeHtml(task.reason || '') + '</small>' +
       '</span>' +
       statusBadge(task.severity || 'warning', statusVariant(task.severity || 'warning')) +
+      '</div>';
+  }).join('');
+}
+
+function renderReviewActionGateRows(gates) {
+  if (gates.length === 0) return '<div class="muted">No review gates.</div>';
+  return gates.map(function (gate) {
+    const evidence = gate.evidence || {};
+    const details = Object.keys(evidence).slice(0, 4).map(function (key) {
+      const value = Array.isArray(evidence[key]) ? evidence[key].length : evidence[key];
+      return key + '=' + value;
+    }).join(' | ');
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(gate.key || 'unknown-gate') + '</strong>' +
+      '<small>' + escapeHtml(gate.summary || '') + '</small>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '</span>' +
+      statusBadge(gate.status || 'warn', statusVariant(gate.status)) +
       '</div>';
   }).join('');
 }

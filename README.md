@@ -103,6 +103,7 @@ These commands use the same runtime composition as the HTTP API and Web console.
 - `POST /api/context-review-results`
 - `GET /api/context-review-results/overview`
 - `GET /api/context-review-results/action-plan`
+- `GET /api/context-review-results/action-gate`
 - `POST /api/context-review-results/events`
 - `GET /api/deployment/checklist`
 - `POST /api/deployment/gate`
