@@ -50,6 +50,10 @@ Returns the `ContextReviewResult` JSON contract used by human reviewers, LLM wor
 
 Validates a review result before it is merged back into analysis, persisted, or used to close review tasks. The request body can use `{ "result": { ... } }`, `{ "payload": { ... } }`, or the result object directly. Valid payloads return 200; invalid payloads return 400 with detailed `checks`.
 
+### `POST /api/context-review-results/summarize`
+
+Validates a `ContextReviewResult` and returns an operational summary for task closure, context merge, and notification planning. The summary includes decision counts, confidence band, evidence ref count, task ids to close or keep open, merge candidates, blocked tasks, notification severity, and a recommended next action. Invalid payloads return 400 with validation details and no summary.
+
 ### `POST /api/analyze-directory`
 
 分析一个保存页目录。

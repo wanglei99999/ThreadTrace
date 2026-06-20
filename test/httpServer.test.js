@@ -188,6 +188,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     const validContextReviewResult = await postJson(baseUrl + '/api/contracts/context-review-result/validate', {
       result: contextReviewResultContract.example
     });
+    const contextReviewResultSummary = await postJson(baseUrl + '/api/context-review-results/summarize', {
+      result: contextReviewResultContract.example
+    });
     const invalidContextReviewResult = await postJsonWithStatus(baseUrl + '/api/contracts/context-review-result/validate', {
       result: {
         version: '1.0.0',
@@ -246,6 +249,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(contextReviewResultContract.downstreamHooks.taskClosure);
     assert.equal(validContextReviewResult.valid, true);
     assert.equal(invalidContextReviewResult.valid, false);
+    assert.equal(contextReviewResultSummary.valid, true);
+    assert.equal(contextReviewResultSummary.summary.notification.severity, 'warning');
+    assert.equal(contextReviewResultSummary.summary.taskClosure.closeTaskIds.length, 1);
     assert.equal(openApi.openapi, '3.0.3');
     assert.ok(openApi.paths['/api/interpret-text']);
     assert.match(openApi.paths['/api/interpret-text'].post.responses[200].description, /contextReviewHandoff/);
@@ -256,6 +262,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/contracts/context-review-handoff/validate']);
     assert.ok(openApi.paths['/api/contracts/context-review-result']);
     assert.ok(openApi.paths['/api/contracts/context-review-result/validate']);
+    assert.ok(openApi.paths['/api/context-review-results/summarize']);
     assert.ok(openApi.paths['/api/connectors/catalog']);
     assert.ok(openApi.paths['/api/connectors/readiness']);
     assert.ok(openApi.paths['/api/connectors/modules/validate']);

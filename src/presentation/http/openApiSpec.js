@@ -149,6 +149,33 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/context-review-results/summarize': {
+        post: {
+          summary: 'Validate and summarize a ContextReviewResult for task closure, merge, and notification planning',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    result: { type: 'object' },
+                    payload: { type: 'object' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'ContextReviewResult is valid and summary is available'
+            },
+            400: {
+              description: 'ContextReviewResult payload is invalid'
+            }
+          }
+        }
+      },
       '/api/connectors/catalog': {
         get: {
           summary: 'List source connector catalog',
