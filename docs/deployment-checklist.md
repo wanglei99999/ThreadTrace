@@ -35,7 +35,7 @@ The checklist returns `ok`, `warn`, or `fail`. HTTP returns `503` when the check
 | `sources.ingestConfiguration` | sources | Source locations, ingest handlers, and adapters. |
 | `workers.readiness` | workers | Stale/failed worker runs and expired leases. |
 | `notifications.channel` | notifications | File delivery directory or webhook URL configuration. |
-| `notifications.outbox` | notifications | Recent notification delivery failures. |
+| `notifications.outbox` | notifications | Unacknowledged notification delivery failures or due delivery backlog. |
 | `llm.configuration` | llm | Provider-specific LLM configuration checks. |
 
 ## Resource Preparation

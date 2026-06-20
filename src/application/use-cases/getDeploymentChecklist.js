@@ -35,7 +35,7 @@ function getDeploymentChecklist(options) {
       channel: notificationDiagnostics.channel,
       checks: selectCheckKeys(notificationDiagnostics.checks, /^notifications\./)
     }),
-    item('notifications.outbox', 'notifications', aggregateChecks(readiness.checks, /^events\./), 'Notification outbox has no recent delivery failures.', {
+    item('notifications.outbox', 'notifications', aggregateChecks(readiness.checks, /^events\./), 'Notification outbox has no unacknowledged failures or due delivery backlog.', {
       checks: selectCheckKeys(readiness.checks, /^events\./)
     }),
     item('llm.configuration', 'llm', aggregateChecks(diagnostics.checks, /^config\.llm\./), 'LLM provider configuration is ready for the selected provider.', {

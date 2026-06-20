@@ -8,7 +8,7 @@ const COMMANDS_BY_KEY = {
   'sources.ingestConfiguration': 'node src/presentation/cli/threadtrace.js source-ingest-dry-run',
   'workers.readiness': 'node src/presentation/cli/threadtrace.js worker-topology-plan',
   'notifications.channel': 'node src/presentation/cli/threadtrace.js notification-diagnostics',
-  'notifications.outbox': 'node src/presentation/cli/threadtrace.js list-events --delivery-status failed',
+  'notifications.outbox': 'node src/presentation/cli/threadtrace.js operations-overview',
   'llm.configuration': 'node src/presentation/cli/threadtrace.js runtime-diagnostics'
 };
 
@@ -232,6 +232,10 @@ function relatedCommandsForChecklistItem(item) {
     'workers.readiness': [
       'node src/presentation/cli/threadtrace.js operations-readiness',
       'node src/presentation/worker/operationsWorkerMain.js --once'
+    ],
+    'notifications.outbox': [
+      'node src/presentation/cli/threadtrace.js list-events --acknowledged false --delivery-status failed',
+      'node src/presentation/cli/threadtrace.js dispatch-events'
     ]
   };
   return commands[item.key] || [];

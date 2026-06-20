@@ -10,7 +10,7 @@ test('operational readiness aggregates warning and failure checks', async functi
       generatedAt: '2026-06-18T10:00:00.000Z',
       sources: { failed: 1 },
       tasks: { failed: 0 },
-      events: { failed: 2 },
+      events: { failed: 2, dueForDelivery: 3 },
       workers: {
         stale: 1,
         failed: 0,
@@ -28,6 +28,9 @@ test('operational readiness aggregates warning and failure checks', async functi
   assert.equal(readiness.checks.find(function (item) {
     return item.key === 'events.failed';
   }).status, 'warn');
+  assert.equal(readiness.checks.find(function (item) {
+    return item.key === 'events.dueForDelivery';
+  }).count, 3);
 });
 
 test('operational readiness reports ok when overview has no signals', async function () {
@@ -36,7 +39,7 @@ test('operational readiness reports ok when overview has no signals', async func
       generatedAt: '2026-06-18T10:00:00.000Z',
       sources: { failed: 0 },
       tasks: { failed: 0 },
-      events: { failed: 0 },
+      events: { failed: 0, dueForDelivery: 0 },
       workers: {
         stale: 0,
         failed: 0,
@@ -59,7 +62,7 @@ test('operational readiness includes runtime diagnostic checks', async function 
       generatedAt: '2026-06-18T10:00:00.000Z',
       sources: { failed: 0 },
       tasks: { failed: 0 },
-      events: { failed: 0 },
+      events: { failed: 0, dueForDelivery: 0 },
       workers: {
         stale: 0,
         failed: 0,

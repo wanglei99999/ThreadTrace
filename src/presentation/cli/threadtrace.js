@@ -1854,7 +1854,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js adapter-diagnostics [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js deployment-checklist [--forum nga] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js migrate-store --from-store-dir dir [--to-store-dir dir] [--dry-run true|false] [--limit n]');
-  console.log('  node src/presentation/cli/threadtrace.js list-events [--source-id id] [--type type] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js list-events [--source-id id] [--type type] [--acknowledged true|false] [--delivery-status status] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js fetch-thread-page [--forum nga] [--url url | --source-id id] [--source-thread-id id] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-raw-pages [--forum nga] [--source-thread-id id] [--limit n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js ingest-raw-page [--forum nga] --content-sha1 sha1 [--store-dir dir]');

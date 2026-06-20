@@ -34,6 +34,7 @@ function buildReadinessChecks(overview) {
     check('sources.failed', sources.failed > 0 ? 'warn' : 'ok', sources.failed || 0, 'Tracked sources have failed runs.'),
     check('tasks.failed', tasks.failed > 0 ? 'warn' : 'ok', tasks.failed || 0, 'Recent task records include failures.'),
     check('events.failed', events.failed > 0 ? 'warn' : 'ok', events.failed || 0, 'Notification events failed delivery.'),
+    check('events.dueForDelivery', events.dueForDelivery > 0 ? 'warn' : 'ok', events.dueForDelivery || 0, 'Notification events are due for delivery.'),
     check('workers.stale', workers.stale > 0 ? 'fail' : 'ok', workers.stale || 0, 'Worker runs are stale.'),
     check('workers.failed', workers.failed > 0 ? 'warn' : 'ok', workers.failed || 0, 'Recent worker runs failed.'),
     check('workerLeases.expired', leases.expired > 0 ? 'warn' : 'ok', leases.expired || 0, 'Worker leases are expired.')

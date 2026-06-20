@@ -132,7 +132,7 @@ File storage writes lease JSON under `worker-leases` for local deployments. Post
 `operations-readiness` turns overview signals into probe-friendly status:
 
 - `ok`: no warning or failure signals in the bounded overview window.
-- `warn`: failed tasks, failed sources, failed event delivery, failed worker runs, or expired leases need attention.
+- `warn`: failed tasks, failed sources, failed event delivery, due notification delivery backlog, failed worker runs, or expired leases need attention.
 - `fail`: stale worker runs indicate a likely stuck background process.
 
 The HTTP endpoint returns `503` only for `fail`; `warn` still returns `200` so dashboards can alert without forcing a service restart loop.
@@ -144,7 +144,7 @@ The HTTP endpoint returns `503` only for `fail`; `warn` still returns `200` so d
 - `critical`: blocks production traffic or needs immediate investigation.
 - `warning`: deployment can keep serving, but the operator should review the area.
 
-Each action includes an area, title, evidence, a primary CLI command, and optional related commands. Runbook actions prefer the highest-leverage next step: connector issues point to `connector-rollout-plan`, source ingest configuration issues point to `source-ingest-dry-run`, worker issues point to `worker-topology-plan`, and duplicate idempotency records point to `trace-context --idempotency-key`. Related commands keep lower-level diagnostics such as `connector-readiness`, `source-diagnostics`, `runtime-diagnostics`, and `operations-readiness` close at hand.
+Each action includes an area, title, evidence, a primary CLI command, and optional related commands. Runbook actions prefer the highest-leverage next step: connector issues point to `connector-rollout-plan`, source ingest configuration issues point to `source-ingest-dry-run`, worker issues point to `worker-topology-plan`, notification outbox issues point to `operations-overview`, and duplicate idempotency records point to `trace-context --idempotency-key`. Related commands keep lower-level diagnostics such as `connector-readiness`, `source-diagnostics`, `runtime-diagnostics`, `operations-readiness`, event listing, and event dispatch close at hand.
 
 Source lifecycle actions point operators to `source-lifecycle-report` when a source disable is blocked by an active run or when a failed source is still waiting for retry backoff. If an operator has reviewed a failed source and wants to bypass the remaining backoff window, the runbook also links to `reset-source-failure --retry-now true --execute true`.
 

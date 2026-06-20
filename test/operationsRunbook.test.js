@@ -60,6 +60,35 @@ test('operations runbook turns diagnostics and pipeline failures into actions', 
   assert.match(runbook.actions[2].relatedCommands[0], /source-ingest-dry-run/);
 });
 
+test('operations runbook points notification outbox warnings to overview and dispatch tools', function () {
+  const runbook = getOperationsRunbook({
+    now: '2026-06-19T10:00:00.000Z',
+    checklist: {
+      generatedAt: '2026-06-19T10:00:00.000Z',
+      items: [
+        {
+          key: 'notifications.outbox',
+          area: 'notifications',
+          status: 'warn',
+          summary: 'Notification outbox has no unacknowledged failures or due delivery backlog.',
+          evidence: {
+            checks: [
+              { key: 'events.dueForDelivery', status: 'warn' }
+            ]
+          }
+        }
+      ]
+    }
+  });
+
+  assert.equal(runbook.status, 'warn');
+  assert.equal(runbook.actionCount, 1);
+  assert.equal(runbook.actions[0].key, 'checklist.notifications.outbox');
+  assert.match(runbook.actions[0].recommendedCommand, /operations-overview/);
+  assert.match(runbook.actions[0].relatedCommands[0], /list-events --acknowledged false --delivery-status failed/);
+  assert.match(runbook.actions[0].relatedCommands[1], /dispatch-events/);
+});
+
 test('operations runbook flags duplicate idempotency task risk', function () {
   const runbook = getOperationsRunbook({
     now: '2026-06-19T10:00:00.000Z',

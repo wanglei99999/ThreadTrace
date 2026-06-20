@@ -74,7 +74,8 @@ test('deployment checklist aggregates runtime, source, readiness, notification, 
       status: 'fail',
       checks: [
         { key: 'workers.stale', status: 'fail', summary: 'Worker runs are stale.' },
-        { key: 'events.failed', status: 'warn', summary: 'Notification events failed delivery.' }
+        { key: 'events.failed', status: 'warn', summary: 'Notification events failed delivery.' },
+        { key: 'events.dueForDelivery', status: 'warn', summary: 'Notification events are due for delivery.' }
       ]
     }
   });
@@ -107,6 +108,9 @@ test('deployment checklist aggregates runtime, source, readiness, notification, 
   assert.equal(checklist.items.find(function (item) {
     return item.key === 'notifications.outbox';
   }).status, 'warn');
+  assert.equal(checklist.items.find(function (item) {
+    return item.key === 'notifications.outbox';
+  }).evidence.checks.length, 2);
   assert.equal(checklist.items.find(function (item) {
     return item.key === 'notifications.channel';
   }).status, 'ok');
