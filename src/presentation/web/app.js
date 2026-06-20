@@ -795,11 +795,27 @@ function renderContextReport(report) {
       metric('观点', (report.newOpinions || []).map(function (opinion) { return opinion.attitude + ' · ' + opinion.confidence; }).join(', ') || '暂无'),
       metric('隐晦表达', (report.newImplicitReferences || []).map(function (item) { return item.label + ' · ' + item.phrase; }).join(', ') || '暂无')
     ].join('')),
+    renderContextMatchSummary(report.contextMatchSummary),
     panel('承接观点链', evidenceList((report.contextChainMatches || []).map(formatContextChainMatch)), 'wide'),
     panel('相关历史证据', evidenceList((report.relatedEvidence || []).map(function (item) {
       return '#' + item.floor + ' ' + item.author + ' · ' + item.confidence + '：' + item.reasons.join(', ');
     })), 'wide')
   ].join('');
+}
+
+function renderContextMatchSummary(summary) {
+  if (!summary) {
+    return panel('承接概览', '<div class="muted">暂无</div>');
+  }
+  return panel('承接概览', [
+    metric('状态', summary.status),
+    metric('匹配/复核', summary.total + ' / ' + summary.reviewRequiredCount),
+    metric('Top 对象', summary.topEntity || '暂无'),
+    metric('Top 关系', summary.topRelationType || '暂无'),
+    evidenceList((summary.reviewReasons || []).slice(0, 4).map(function (item) {
+      return item.reason + ' · ' + item.count;
+    }))
+  ].join(''));
 }
 
 function renderInterpretationSummary(summary) {

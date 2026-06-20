@@ -34,6 +34,8 @@ function renderNewPostContextMarkdown(report) {
   lines.push('');
   lines.push('## 可能承接的历史观点链');
   lines.push('');
+  appendContextMatchSummary(lines, report.contextMatchSummary);
+  lines.push('');
   appendContextChainMatches(lines, report.contextChainMatches || []);
 
   lines.push('');
@@ -90,6 +92,22 @@ function appendImplicitReferences(lines, candidates) {
   candidates.forEach(function (candidate) {
     lines.push('- #' + candidate.floor + ' ' + candidate.label + '：`' + safeInline(candidate.phrase) + '`；置信度：' + candidate.confidence);
   });
+}
+
+function appendContextMatchSummary(lines, summary) {
+  if (!summary) {
+    lines.push('匹配摘要：暂无。');
+    return;
+  }
+  lines.push('- 匹配状态：' + summary.status);
+  lines.push('- 匹配数量：' + summary.total + '；需复核：' + summary.reviewRequiredCount);
+  lines.push('- Top 对象：' + (summary.topEntity || '暂无'));
+  lines.push('- 摘要：' + safeInline(summary.summary));
+  if (summary.reviewReasons && summary.reviewReasons.length > 0) {
+    lines.push('- 复核原因：' + summary.reviewReasons.map(function (item) {
+      return item.reason + ' ' + item.count;
+    }).join(' / '));
+  }
 }
 
 function appendContextChainMatches(lines, matches) {

@@ -161,6 +161,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /renderEvidenceReliability/);
     assert.match(webAppJs, /formatImplicitReferenceSummary/);
     assert.match(webAppJs, /formatContextChainMatch/);
+    assert.match(webAppJs, /renderContextMatchSummary/);
     assert.match(webAppJs, /renderInterpretationSummary/);
     assert.equal(adapters.adapters[0].sourceKey, 'nga');
     assert.equal(adapterDiagnostics.status, 'ok');

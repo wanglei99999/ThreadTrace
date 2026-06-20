@@ -33,6 +33,9 @@ test('context restoration finds historical evidence for a new post', function ()
   assert.equal(report.contextChainMatches[0].relationType, 'explicit_entity_attitude_candidate');
   assert.equal(report.contextChainMatches[0].relationEvidenceLevel, 'mixed');
   assert.ok(report.contextChainMatches[0].relationFamily);
+  assert.equal(report.contextMatchSummary.status, 'review-required');
+  assert.equal(report.contextMatchSummary.total, report.contextChainMatches.length);
+  assert.equal(report.contextMatchSummary.topEntity, '科技');
   assert.ok(report.relatedEvidence.length >= 1);
   assert.ok(report.relatedEvidence[0].reasons.length >= 1);
 });
@@ -58,6 +61,8 @@ test('context restoration uses implicit references when a new post omits entitie
   assert.ok(report.interpretationSummary.summary.includes('隐晦表达'));
   assert.equal(report.contextChainMatches[0].relationEvidenceLevel, 'mixed');
   assert.equal(report.contextChainMatches[0].reviewRequired, true);
+  assert.equal(report.contextMatchSummary.reviewRequiredCount >= 1, true);
+  assert.equal(report.contextMatchSummary.topEntity, '科技');
   assert.ok(report.relatedEvidence.length >= 1);
   assert.ok(report.relatedEvidence[0].reasons.some(function (reason) {
     return reason.indexOf('implicit_reference_context:') === 0;
