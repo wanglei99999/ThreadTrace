@@ -27,6 +27,11 @@ function renderNewPostContextMarkdown(report) {
   appendImplicitReferences(lines, report.newImplicitReferences || []);
 
   lines.push('');
+  lines.push('## 可能承接的历史观点链');
+  lines.push('');
+  appendContextChainMatches(lines, report.contextChainMatches || []);
+
+  lines.push('');
   lines.push('## 相关历史证据');
   lines.push('');
   appendEvidence(lines, report.relatedEvidence || []);
@@ -68,6 +73,23 @@ function appendImplicitReferences(lines, candidates) {
   }
   candidates.forEach(function (candidate) {
     lines.push('- #' + candidate.floor + ' ' + candidate.label + '：`' + safeInline(candidate.phrase) + '`；置信度：' + candidate.confidence);
+  });
+}
+
+function appendContextChainMatches(lines, matches) {
+  if (matches.length === 0) {
+    lines.push('暂无。');
+    return;
+  }
+  matches.forEach(function (match) {
+    const chain = match.chain || {};
+    const entity = chain.entity || {};
+    lines.push('- ' + safeInline(entity.displayName || chain.key) +
+      '：' + match.relationType +
+      '；置信度：' + match.confidence +
+      '；最新态度：' + (chain.latestAttitude || 'unknown'));
+    lines.push('  判断：' + safeInline(match.relationSummary));
+    lines.push('  理由：' + (match.reasons || []).join(', '));
   });
 }
 

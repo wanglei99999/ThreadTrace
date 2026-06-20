@@ -3,6 +3,7 @@
 const { extractMarketEntities } = require('./ruleBasedMarketEntityExtractor');
 const { extractOpinionCandidates } = require('./ruleBasedOpinionExtractor');
 const { extractImplicitReferenceCandidates } = require('./implicitReferenceExtractor');
+const { buildOpinionChains } = require('./opinionChainBuilder');
 
 function restoreContextForNewPost(threadSnapshot, newPostInput) {
   const syntheticPost = createSyntheticPost(newPostInput);
@@ -12,6 +13,13 @@ function restoreContextForNewPost(threadSnapshot, newPostInput) {
     opinionCandidates: newOpinions
   });
   const relatedEvidence = rankRelatedHistoricalPosts(threadSnapshot.posts || [], newEntities, newOpinions, newImplicitReferences, syntheticPost);
+  const contextChainMatches = matchHistoricalOpinionChains({
+    posts: threadSnapshot.posts || [],
+    newEntities,
+    newOpinions,
+    newImplicitReferences,
+    syntheticPost
+  });
 
   return {
     reportType: 'new-post-context',
@@ -29,6 +37,7 @@ function restoreContextForNewPost(threadSnapshot, newPostInput) {
     newEntities,
     newOpinions,
     newImplicitReferences,
+    contextChainMatches,
     relatedEvidence,
     interpretationSlots: [
       'explicit-entity-links',
@@ -38,6 +47,131 @@ function restoreContextForNewPost(threadSnapshot, newPostInput) {
       'risk-change',
       'confidence-calibration'
     ]
+  };
+}
+
+function matchHistoricalOpinionChains(options) {
+  const posts = options.posts || [];
+  const historicalEntities = extractMarketEntities(posts);
+  const historicalOpinions = extractOpinionCandidates(posts);
+  const chains = buildOpinionChains({
+    posts,
+    entityCandidates: historicalEntities,
+    opinionCandidates: historicalOpinions,
+    primaryAuthor: options.syntheticPost.author
+  });
+  const newEntityKeys = new Set((options.newEntities || []).map(function (entity) {
+    return entity.type + ':' + entity.normalized;
+  }));
+  const hasImplicitReference = (options.newImplicitReferences || []).length > 0;
+
+  return chains.map(function (chain) {
+    return scoreChainMatch({
+      chain,
+      newEntityKeys,
+      newOpinions: options.newOpinions || [],
+      newImplicitReferences: options.newImplicitReferences || [],
+      hasImplicitReference
+    });
+  }).filter(function (match) {
+    return match.score > 0;
+  }).sort(function (a, b) {
+    return b.score - a.score || b.confidence - a.confidence || a.chain.firstFloor - b.chain.firstFloor;
+  }).slice(0, 6);
+}
+
+function scoreChainMatch(options) {
+  const chain = options.chain;
+  const reasons = [];
+  let score = 0;
+
+  if (options.newEntityKeys.has(chain.key)) {
+    score += 8;
+    reasons.push('shared_entity_chain');
+  }
+
+  if (options.hasImplicitReference && chain.primaryAuthorOpinionCount > 0) {
+    score += Math.min(6, chain.primaryAuthorOpinionCount * 2 + chain.mentionCount);
+    reasons.push('implicit_reference_to_author_chain');
+  }
+
+  if (options.hasImplicitReference && chain.latestChange) {
+    score += 1.5;
+    reasons.push('chain_has_prior_change:' + chain.latestChange.changeType);
+  }
+
+  const relation = classifyNewPostChainRelation(chain, options.newOpinions, options.hasImplicitReference);
+  if (relation.relationType !== 'unrelated') {
+    score += relation.scoreBoost;
+    reasons.push('relation:' + relation.relationType);
+  }
+
+  return {
+    chain: compactChain(chain),
+    relationType: relation.relationType,
+    relationSummary: relation.summary,
+    score,
+    confidence: Math.min(0.95, Number((0.42 + score * 0.05 + (chain.confidence || 0) * 0.2).toFixed(2))),
+    reasons
+  };
+}
+
+function classifyNewPostChainRelation(chain, newOpinions, hasImplicitReference) {
+  const latestAttitude = normalizeComparableAttitude(chain.latestAttitude);
+  const newAttitudes = (newOpinions || []).map(function (opinion) {
+    return normalizeComparableAttitude(opinion.attitude);
+  }).filter(Boolean);
+
+  if (newAttitudes.length === 0 && hasImplicitReference) {
+    return relation('implicit_continuation', '新发言含隐晦延续信号，可能接在该历史观点链之后。', 2);
+  }
+  if (!latestAttitude || newAttitudes.length === 0) {
+    return hasImplicitReference
+      ? relation('implicit_reference_match', '新发言有隐晦表达，可作为待确认的历史链候选。', 1.5)
+      : relation('unrelated', '', 0);
+  }
+  if (newAttitudes.indexOf(latestAttitude) >= 0) {
+    return relation('attitude_continuation', '新发言态度与历史链最新态度一致。', 2.5);
+  }
+  if (latestAttitude === 'bullish' && newAttitudes.some(function (attitude) { return attitude === 'risk' || attitude === 'watch'; })) {
+    return relation('caution_after_bullish', '历史链偏强，新发言转为谨慎或等待确认。', 3);
+  }
+  if ((latestAttitude === 'risk' || latestAttitude === 'bearish') && newAttitudes.indexOf('bullish') >= 0) {
+    return relation('recovery_after_risk', '历史链偏风险，新发言出现恢复或走强信号。', 3);
+  }
+  if (newAttitudes.some(function (attitude) { return attitude !== latestAttitude; })) {
+    return relation('attitude_shift_candidate', '新发言态度与历史链最新态度不同，需要证据确认。', 2);
+  }
+  return relation('unrelated', '', 0);
+}
+
+function relation(relationType, summary, scoreBoost) {
+  return {
+    relationType,
+    summary,
+    scoreBoost
+  };
+}
+
+function normalizeComparableAttitude(value) {
+  if (value === 'bullish' || value === 'bearish' || value === 'risk' || value === 'watch') return value;
+  return undefined;
+}
+
+function compactChain(chain) {
+  return {
+    key: chain.key,
+    entity: chain.entity,
+    mentionCount: chain.mentionCount,
+    opinionCount: chain.opinionCount,
+    primaryAuthorOpinionCount: chain.primaryAuthorOpinionCount,
+    latestAttitude: chain.latestAttitude,
+    latestChange: chain.latestChange,
+    confidence: chain.confidence,
+    firstFloor: chain.firstFloor,
+    lastFloor: chain.lastFloor,
+    evidenceLevels: chain.evidenceLevels,
+    evidenceRefs: (chain.evidenceRefs || []).slice(0, 4)
   };
 }
 

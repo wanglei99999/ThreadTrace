@@ -780,10 +780,23 @@ function renderContextReport(report) {
       metric('观点', (report.newOpinions || []).map(function (opinion) { return opinion.attitude + ' · ' + opinion.confidence; }).join(', ') || '暂无'),
       metric('隐晦表达', (report.newImplicitReferences || []).map(function (item) { return item.label + ' · ' + item.phrase; }).join(', ') || '暂无')
     ].join('')),
+    panel('承接观点链', evidenceList((report.contextChainMatches || []).map(formatContextChainMatch)), 'wide'),
     panel('相关历史证据', evidenceList((report.relatedEvidence || []).map(function (item) {
       return '#' + item.floor + ' ' + item.author + ' · ' + item.confidence + '：' + item.reasons.join(', ');
     })), 'wide')
   ].join('');
+}
+
+function formatContextChainMatch(match) {
+  const chain = match.chain || {};
+  const entity = chain.entity || {};
+  return [
+    entity.displayName || chain.key,
+    match.relationType,
+    '置信度 ' + match.confidence,
+    chain.latestAttitude || 'unknown',
+    match.relationSummary
+  ].join(' · ');
 }
 
 function renderIndexResult(result) {

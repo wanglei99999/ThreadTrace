@@ -161,6 +161,7 @@ These commands use the same runtime composition as the HTTP API and Web console.
 - 支持本地历史证据检索索引，为后续 RAG 和语境召回打基础。
 - 支持新发言语境还原 MVP，按实体、观点关键词和作者线索召回历史证据。
 - 新发言语境还原会识别隐晦表达候选，即使新发言未直接点名实体，也会优先召回同作者历史实体/观点楼层。
+- 新发言语境还原会输出可能承接的历史观点链，并标注延续、转向或待确认关系。
 - 提供无依赖 HTTP API，供后续前端工作台和定时任务调用。
 - 提供无依赖 Web 工作台原型，可直接调用本地 HTTP API。
 - 输出统一 `ThreadSnapshot`。
