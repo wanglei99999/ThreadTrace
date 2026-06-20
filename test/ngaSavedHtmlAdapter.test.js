@@ -51,6 +51,8 @@ test('basic historical analyzer identifies primary author and evidence candidate
   assert.ok(report.entityCandidates.length >= 1);
   assert.ok(report.relationCandidates.length >= 1);
   assert.ok(report.opinionCandidates.length >= 1);
+  assert.ok(report.opinionChains.length >= 1);
+  assert.equal(report.opinionChains[0].timeline.length >= 1, true);
   assert.ok(report.evidenceCandidates.highSignalPosts.length >= 1);
   assert.ok(report.evidenceCandidates.lowSignalPosts.length >= 1);
 });

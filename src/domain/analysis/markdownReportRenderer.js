@@ -41,6 +41,11 @@ function renderBasicHistoryMarkdown(report) {
   appendOpinionCandidates(lines, report.opinionCandidates || []);
 
   lines.push('');
+  lines.push('## 观点链候选');
+  lines.push('');
+  appendOpinionChains(lines, report.opinionChains || []);
+
+  lines.push('');
   lines.push('## 高信号楼层候选');
   lines.push('');
   appendEvidenceList(lines, report.evidenceCandidates.highSignalPosts);
@@ -113,6 +118,34 @@ function appendOpinionCandidates(lines, opinions) {
       lines.push('  条件：' + opinion.conditionSignals.join(' / '));
     }
     lines.push('  证据：' + safeInline(opinion.evidence && opinion.evidence.text));
+  });
+}
+
+function appendOpinionChains(lines, chains) {
+  if (!chains || chains.length === 0) {
+    lines.push('暂无。');
+    return;
+  }
+
+  chains.slice(0, 12).forEach(function (chain) {
+    const entity = chain.entity || {};
+    lines.push('- ' + safeInline(entity.displayName || chain.key) +
+      '：观点 ' + chain.opinionCount +
+      ' 条，提及 ' + chain.mentionCount +
+      ' 次，主作者观点 ' + chain.primaryAuthorOpinionCount +
+      ' 条，最新态度 ' + (chain.latestAttitude || 'unknown') +
+      '，置信度 ' + chain.confidence);
+    lines.push('  证据级别：明确 ' + ((chain.evidenceLevels && chain.evidenceLevels.explicit) || 0) +
+      ' / 推断 ' + ((chain.evidenceLevels && chain.evidenceLevels.inferred) || 0));
+    (chain.timeline || []).slice(0, 5).forEach(function (event) {
+      const label = event.eventType === 'opinion'
+        ? '观点 ' + (event.attitude || 'unknown') + ' / ' + event.evidenceLevel
+        : '实体提及 / explicit';
+      lines.push('  - #' + event.floor + ' ' + event.author + '：' + label + '：' + safeInline(event.evidenceText || event.summary || ''));
+      if (event.conditionSignals && event.conditionSignals.length > 0) {
+        lines.push('    条件：' + event.conditionSignals.join(' / '));
+      }
+    });
   });
 }
 

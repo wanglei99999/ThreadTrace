@@ -702,6 +702,7 @@ function renderHistoryReport(report) {
     panel('观点候选', evidenceList((report.opinionCandidates || []).slice(0, 8).map(function (opinion) {
       return '#' + opinion.floor + ' ' + opinion.attitude + ' · ' + opinion.confidence;
     }))),
+    panel('观点链', evidenceList((report.opinionChains || []).slice(0, 8).map(formatOpinionChainSummary)), 'wide'),
     panel('关系候选', evidenceList((report.relationCandidates || []).slice(0, 8).map(function (relation) {
       return '#' + relation.sourceFloor + ' -> ' + (relation.targetFloor !== undefined ? '#' + relation.targetFloor : relation.targetPostId || relation.targetThreadId);
     }))),
@@ -713,6 +714,20 @@ function renderHistoryReport(report) {
     panels.push(renderSemanticInsights(report.semanticInsights));
   }
   return panels.join('');
+}
+
+function formatOpinionChainSummary(chain) {
+  const entity = chain.entity || {};
+  const levels = chain.evidenceLevels || {};
+  return [
+    entity.displayName || chain.key,
+    '观点 ' + chain.opinionCount,
+    '主作者 ' + chain.primaryAuthorOpinionCount,
+    '最新 ' + (chain.latestAttitude || 'unknown'),
+    '明确 ' + (levels.explicit || 0),
+    '推断 ' + (levels.inferred || 0),
+    '置信度 ' + chain.confidence
+  ].join(' · ');
 }
 
 function renderContextReport(report) {
