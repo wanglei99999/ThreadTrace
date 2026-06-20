@@ -298,6 +298,11 @@ form button[type="submit"]:hover {
   background: var(--accent-strong);
 }
 
+.inline-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 .button-group {
   display: flex;
   flex-wrap: wrap;
@@ -368,6 +373,10 @@ form button[type="submit"]:hover {
 .summary-tile strong {
   font-size: 18px;
   overflow-wrap: anywhere;
+}
+
+.event-summary-strip {
+  margin-bottom: 12px;
 }
 
 .reason-tags {

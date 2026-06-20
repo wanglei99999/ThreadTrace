@@ -224,6 +224,11 @@ function bindForms() {
     await loadSourceOperations();
   });
 
+  document.getElementById('eventFilterForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    await loadEvents();
+  });
+
   document.getElementById('sourceResult').addEventListener('click', async function (event) {
     const button = event.target.closest('button[data-action="run-source"],button[data-action="run-source-pipeline"]');
     if (!button) return;
@@ -523,8 +528,29 @@ async function loadSourceOperations() {
 
 async function loadEvents() {
   await renderAsync('eventResult', function () {
-    return fetchJson('/api/events?limit=10');
+    const query = buildEventQuery();
+    return fetchJson('/api/events?' + query.toString());
   }, renderEventList);
+}
+
+function buildEventQuery() {
+  const query = new URLSearchParams();
+  const formElement = document.getElementById('eventFilterForm');
+  const form = formElement ? new FormData(formElement) : undefined;
+  const acknowledged = form ? String(form.get('acknowledged') || '') : 'false';
+  const deliveryStatus = form ? String(form.get('deliveryStatus') || '').trim() : '';
+  const type = form ? String(form.get('type') || '').trim() : '';
+  query.set('limit', String(normalizeEventLimit(form ? form.get('limit') : 10)));
+  if (acknowledged === 'true' || acknowledged === 'false') query.set('acknowledged', acknowledged);
+  if (deliveryStatus) query.set('deliveryStatus', deliveryStatus);
+  if (type) query.set('type', type);
+  return query;
+}
+
+function normalizeEventLimit(value) {
+  const limit = Number(value);
+  if (!Number.isFinite(limit) || limit < 1) return 10;
+  return Math.min(Math.floor(limit), 100);
 }
 
 async function loadRawPages() {
@@ -1370,13 +1396,61 @@ function renderPipelineRunSummary(run) {
 
 function renderEventList(result) {
   const events = result.events || [];
-  if (events.length === 0) return panel('通知事件', '<div class="muted">暂无</div>', 'wide');
-  return panel('通知事件', events.map(function (event) {
-    const ackLabel = event.acknowledgedAt ? '已确认' : '确认';
-    const disabled = event.acknowledgedAt ? ' disabled' : '';
-    const delivery = event.deliveryStatus || 'pending';
-    return '<div class="action-row"><span>' + escapeHtml(event.createdAt + ' · ' + event.type + ' · ' + delivery + ' · ' + event.summary) + '</span><button class="inline-button" type="button" data-action="ack-event" data-event-id="' + escapeHtml(event.id) + '"' + disabled + '>' + ackLabel + '</button></div>';
-  }).join(''), 'wide');
+  const summary = renderEventListSummary(events);
+  const title = '通知事件 · ' + currentEventFilterSummary();
+  if (events.length === 0) return panel(title, summary + '<div class="muted">暂无</div>', 'wide');
+  return panel(title, summary + events.map(renderNotificationEventRow).join(''), 'wide');
+}
+
+function renderEventListSummary(events) {
+  const pending = events.filter(function (event) { return (event.deliveryStatus || 'pending') === 'pending'; }).length;
+  const failed = events.filter(function (event) { return event.deliveryStatus === 'failed'; }).length;
+  const resolved = events.filter(function (event) { return event.deliveryStatus === 'resolved'; }).length;
+  const open = events.filter(function (event) { return !event.acknowledgedAt; }).length;
+  return '<div class="summary-strip event-summary-strip">' + [
+    summaryTile('显示', String(events.length)),
+    summaryTile('未确认', String(open), open > 0 ? 'warn' : 'ok'),
+    summaryTile('待投递', String(pending), pending > 0 ? 'warn' : 'ok'),
+    summaryTile('失败', String(failed), failed > 0 ? 'fail' : 'ok'),
+    summaryTile('已解决', String(resolved), 'ok')
+  ].join('') + '</div>';
+}
+
+function renderNotificationEventRow(event) {
+  const ackLabel = event.acknowledgedAt ? '已确认' : '确认';
+  const disabled = event.acknowledgedAt ? ' disabled' : '';
+  const title = event.title || event.summary || event.id || 'untitled-event';
+  const summary = event.summary && event.summary !== title ? '<small>' + escapeHtml(event.summary) + '</small>' : '';
+  const meta = eventMetadata(event).join(' · ');
+  return '<div class="action-row event-row"><span><strong>' + escapeHtml(title) + '</strong>' + summary + '<small>' + escapeHtml(meta) + '</small></span><button class="inline-button" type="button" data-action="ack-event" data-event-id="' + escapeHtml(event.id) + '"' + disabled + '>' + ackLabel + '</button></div>';
+}
+
+function eventMetadata(event) {
+  const source = event.sourceKey || event.sourceId ? '来源 ' + [event.sourceKey, event.sourceId].filter(Boolean).join('/') : '';
+  const ack = event.acknowledgedAt ? '确认 ' + [event.acknowledgedBy, event.acknowledgedAt].filter(Boolean).join(' ') : '未确认';
+  return [
+    event.createdAt,
+    event.type,
+    event.severity,
+    event.deliveryStatus || 'pending',
+    source,
+    ack
+  ].filter(Boolean);
+}
+
+function currentEventFilterSummary() {
+  const formElement = document.getElementById('eventFilterForm');
+  if (!formElement) return '未确认 · 全部状态 · 全部类型';
+  const form = new FormData(formElement);
+  const acknowledged = String(form.get('acknowledged') || '');
+  const deliveryStatus = String(form.get('deliveryStatus') || '');
+  const type = String(form.get('type') || '');
+  const scope = acknowledged === 'true' ? '已确认' : (acknowledged === 'false' ? '未确认' : '全部');
+  return [
+    scope,
+    deliveryStatus || '全部状态',
+    type || '全部类型'
+  ].join(' · ');
 }
 
 function renderEventDispatchResult(result) {

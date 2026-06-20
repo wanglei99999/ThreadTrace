@@ -201,6 +201,39 @@
         <div class="result-grid task-grid" id="sourceOperationsResult"></div>
         <div class="result-grid task-grid" id="sourceOperationActionResult"></div>
         <div class="result-grid task-grid" id="runbookResult"></div>
+        <form id="eventFilterForm" class="control-strip">
+          <label class="compact">
+            <span>事件范围</span>
+            <select name="acknowledged">
+              <option value="false">未确认</option>
+              <option value="">全部</option>
+              <option value="true">已确认</option>
+            </select>
+          </label>
+          <label class="compact">
+            <span>投递状态</span>
+            <select name="deliveryStatus">
+              <option value="">全部</option>
+              <option value="pending">pending</option>
+              <option value="failed">failed</option>
+              <option value="delivered">delivered</option>
+              <option value="resolved">resolved</option>
+            </select>
+          </label>
+          <label class="compact">
+            <span>事件类型</span>
+            <select name="type">
+              <option value="">全部</option>
+              <option value="runbook-action">runbook-action</option>
+              <option value="source-changed">source-changed</option>
+            </select>
+          </label>
+          <label class="compact">
+            <span>数量</span>
+            <input name="limit" value="10" inputmode="numeric" autocomplete="off">
+          </label>
+          <button type="submit">筛选事件</button>
+        </form>
         <form id="connectorModuleValidationForm" class="control-strip">
           <label class="grow">
             <span>Connector 模块路径</span>
