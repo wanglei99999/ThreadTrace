@@ -57,6 +57,7 @@ const { createDefaultSourceIngestHandlerRegistry } = require('../application/sou
 const { migrateStoreRecords } = require('../application/use-cases/migrateStoreRecords');
 const { runIngestRawThreadPageTask } = require('../application/use-cases/runIngestRawThreadPageTask');
 const { validateNormalizedThreadJsonFile } = require('../application/use-cases/validateNormalizedThreadJsonFile');
+const { validateContextReviewHandoff } = require('../application/use-cases/validateContextReviewHandoff');
 const { validateConnectorModuleLoad } = require('../application/use-cases/validateConnectorModuleLoad');
 const { indexSavedThreadDirectory } = require('../application/use-cases/indexSavedThreadDirectory');
 const { searchEvidence } = require('../application/use-cases/searchEvidence');
@@ -177,6 +178,10 @@ function createThreadTraceRuntime(options) {
 
     getContextReviewHandoffContract() {
       return getContextReviewHandoffContract();
+    },
+
+    validateContextReviewHandoff(request) {
+      return validateContextReviewHandoff(request);
     },
 
     validateConnectorModule(request) {

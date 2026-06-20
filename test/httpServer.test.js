@@ -174,6 +174,16 @@ test('http server exposes health, adapters, and context APIs', async function ()
     const threadSnapshotContract = await getJson(baseUrl + '/api/contracts/thread-snapshot-json');
     const connectorModuleContract = await getJson(baseUrl + '/api/contracts/connector-module');
     const contextReviewHandoffContract = await getJson(baseUrl + '/api/contracts/context-review-handoff');
+    const validContextReviewHandoff = await postJson(baseUrl + '/api/contracts/context-review-handoff/validate', {
+      handoff: contextReviewHandoffContract.example
+    });
+    const invalidContextReviewHandoff = await postJsonWithStatus(baseUrl + '/api/contracts/context-review-handoff/validate', {
+      handoff: {
+        version: '1.0.0',
+        status: 'bad-status',
+        openTasks: []
+      }
+    }, 400);
     assert.equal(connectorCatalog.generatedAt, '2026-06-19T10:00:00.000Z');
     assert.ok(connectorCatalog.sourceTypes.some(function (sourceType) {
       return sourceType.sourceType === 'thread-url';
@@ -217,6 +227,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(contextReviewHandoffContract.version, '1.0.0');
     assert.ok(contextReviewHandoffContract.schema.required.includes('openTasks'));
     assert.ok(contextReviewHandoffContract.downstreamHooks.llmReview);
+    assert.equal(validContextReviewHandoff.valid, true);
+    assert.equal(invalidContextReviewHandoff.valid, false);
     assert.equal(openApi.openapi, '3.0.3');
     assert.ok(openApi.paths['/api/interpret-text']);
     assert.match(openApi.paths['/api/interpret-text'].post.responses[200].description, /contextReviewHandoff/);
@@ -224,6 +236,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/contracts/thread-snapshot-json']);
     assert.ok(openApi.paths['/api/contracts/connector-module']);
     assert.ok(openApi.paths['/api/contracts/context-review-handoff']);
+    assert.ok(openApi.paths['/api/contracts/context-review-handoff/validate']);
     assert.ok(openApi.paths['/api/connectors/catalog']);
     assert.ok(openApi.paths['/api/connectors/readiness']);
     assert.ok(openApi.paths['/api/connectors/modules/validate']);

@@ -95,6 +95,7 @@ These commands use the same runtime composition as the HTTP API and Web console.
 - `GET /openapi.json`
 - `GET /api/runtime/diagnostics`
 - `GET /api/contracts/context-review-handoff`
+- `POST /api/contracts/context-review-handoff/validate`
 - `GET /api/deployment/checklist`
 - `POST /api/deployment/gate`
 - `GET /api/notifications/diagnostics`

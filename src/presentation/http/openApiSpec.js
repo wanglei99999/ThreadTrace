@@ -85,6 +85,33 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/contracts/context-review-handoff/validate': {
+        post: {
+          summary: 'Validate a ContextReviewHandoff payload before review, persistence, or notification',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    handoff: { type: 'object' },
+                    payload: { type: 'object' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'ContextReviewHandoff payload is valid'
+            },
+            400: {
+              description: 'ContextReviewHandoff payload is invalid'
+            }
+          }
+        }
+      },
       '/api/connectors/catalog': {
         get: {
           summary: 'List source connector catalog',

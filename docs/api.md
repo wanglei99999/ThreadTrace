@@ -38,6 +38,10 @@ http://127.0.0.1:3017
 
 返回新发言语境还原报告中的 `contextReviewHandoff` JSON 契约，包括版本、状态、任务数量、高优先级任务数量、推荐下一步、证据包、开放任务列表和下游接入说明。这个契约面向人工复核、LLM 二次审核、证据持久化和通知队列。
 
+### `POST /api/contracts/context-review-handoff/validate`
+
+校验外部工具或下游 Worker 准备消费的 `contextReviewHandoff` JSON。请求体可以使用 `{ "handoff": { ... } }`、`{ "payload": { ... } }`，也可以直接提交 handoff 对象。有效时返回 200，无效时返回 400，并包含 `checks` 明细。
+
 ### `POST /api/analyze-directory`
 
 分析一个保存页目录。
