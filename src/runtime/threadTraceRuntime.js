@@ -292,7 +292,9 @@ function createThreadTraceRuntime(options) {
         storeDir: safeRequest.storeDir,
         requestId: safeRequest.requestId,
         traceId: safeRequest.traceId,
-        idempotencyKey: safeRequest.idempotencyKey
+        idempotencyKey: safeRequest.idempotencyKey,
+        taskClosureExecutor: safeOptions.contextReviewActionExecutors && safeOptions.contextReviewActionExecutors.taskClosureExecutor,
+        contextMergeExecutor: safeOptions.contextReviewActionExecutors && safeOptions.contextReviewActionExecutors.contextMergeExecutor
       });
     },
 

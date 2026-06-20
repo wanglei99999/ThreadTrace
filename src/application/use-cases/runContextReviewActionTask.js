@@ -52,12 +52,21 @@ async function runContextReviewActionTask(options) {
       now: safeOptions.now,
       storeDir: safeOptions.storeDir
     });
+    const executorResults = await runExecutors({
+      actionGate,
+      execute,
+      taskClosureExecutor: safeOptions.taskClosureExecutor,
+      contextMergeExecutor: safeOptions.contextMergeExecutor,
+      now: safeOptions.now,
+      storeDir: safeOptions.storeDir
+    });
     const report = buildContextReviewActionTaskReport({
       actionGate,
       execute,
       now: safeOptions.now,
       hasTaskClosureExecutor: typeof safeOptions.taskClosureExecutor === 'function',
-      hasContextMergeExecutor: typeof safeOptions.contextMergeExecutor === 'function'
+      hasContextMergeExecutor: typeof safeOptions.contextMergeExecutor === 'function',
+      executorResults
     });
 
     task = markTaskCompleted(task, {
@@ -87,6 +96,7 @@ function buildContextReviewActionTaskReport(options) {
   const actionGate = safeOptions.actionGate || {};
   const actionPlan = actionGate.actionPlan || {};
   const execute = safeOptions.execute === true;
+  const executorResults = safeOptions.executorResults || {};
   const closeTaskIds = actionPlan.closeTaskIds || [];
   const mergeCandidates = actionPlan.mergeCandidates || [];
   const gateFailed = actionGate.status === 'fail';
@@ -111,9 +121,10 @@ function buildContextReviewActionTaskReport(options) {
     status: aggregateStatus(steps.map(function (item) { return item.status; })),
     dryRun: !execute,
     executed: execute && !gateFailed && !missingExecutors,
-    applied: false,
+    applied: Boolean(executorResults.taskClosure || executorResults.contextMerge),
     closeTaskCount: closeTaskIds.length,
     mergeCandidateCount: mergeCandidates.length,
+    executorResults,
     steps,
     nextActions: nextActions({
       actionGate,
@@ -124,6 +135,32 @@ function buildContextReviewActionTaskReport(options) {
       mergeCandidates
     }),
     actionGate: compactActionGate(actionGate)
+  };
+}
+
+async function runExecutors(options) {
+  const safeOptions = options || {};
+  const actionGate = safeOptions.actionGate || {};
+  const actionPlan = actionGate.actionPlan || {};
+  if (safeOptions.execute !== true) return {};
+  if (actionGate.status === 'fail') return {};
+  if (typeof safeOptions.taskClosureExecutor !== 'function' || typeof safeOptions.contextMergeExecutor !== 'function') return {};
+
+  const taskClosure = await safeOptions.taskClosureExecutor({
+    closeTaskIds: actionPlan.closeTaskIds || [],
+    actionGate,
+    now: safeOptions.now,
+    storeDir: safeOptions.storeDir
+  });
+  const contextMerge = await safeOptions.contextMergeExecutor({
+    mergeCandidates: actionPlan.mergeCandidates || [],
+    actionGate,
+    now: safeOptions.now,
+    storeDir: safeOptions.storeDir
+  });
+  return {
+    taskClosure,
+    contextMerge
   };
 }
 

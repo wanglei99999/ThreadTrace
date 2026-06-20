@@ -76,7 +76,7 @@ Evaluates the action plan as a worker preflight gate. Optional filters match the
 
 ### `POST /api/context-review-results/action-tasks/apply`
 
-Creates a durable `context-review-action-apply` task audit record for applying review-result closure and merge actions. The endpoint defaults to dry-run and does not mutate task or context records. The task stores the evaluated action gate, planned task closure ids, merge candidates, step statuses, and follow-up actions. `execute: true` is reserved for executor-backed deployments; without configured task-closure and context-merge executors, execution reports `fail` instead of silently changing data.
+Creates a durable `context-review-action-apply` task audit record for applying review-result closure and merge actions. The endpoint defaults to dry-run and does not mutate task or context records. The task stores the evaluated action gate, planned task closure ids, merge candidates, step statuses, and follow-up actions. `execute: true` is reserved for executor-backed deployments; without configured task-closure and context-merge executors, execution reports `fail` instead of silently changing data. Runtime deployments can provide those executors through `contextReviewActionExecutors.taskClosureExecutor` and `contextReviewActionExecutors.contextMergeExecutor`.
 
 ### `POST /api/context-review-results/events`
 
