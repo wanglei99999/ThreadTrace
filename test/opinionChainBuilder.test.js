@@ -40,6 +40,12 @@ test('opinion chain builder links entity mentions to explicit and inferred opini
   assert.equal(chains[0].evidenceLevels.explicit, 2);
   assert.equal(chains[0].evidenceLevels.inferred, 1);
   assert.equal(chains[0].latestAttitude, 'risk');
+  assert.equal(chains[0].changeEvents.length, 1);
+  assert.equal(chains[0].changeEvents[0].changeType, 'bullish_to_risk');
+  assert.equal(chains[0].changeEvents[0].severity, 'caution');
+  assert.equal(chains[0].changeEvents[0].fromFloor, 10);
+  assert.equal(chains[0].changeEvents[0].toFloor, 12);
+  assert.equal(chains[0].latestChange.changeType, 'bullish_to_risk');
   assert.equal(chains[0].timeline.some(function (event) {
     return event.floor === 12 && event.evidenceLevel === 'inferred';
   }), true);

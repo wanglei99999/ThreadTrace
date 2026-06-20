@@ -189,6 +189,14 @@ function appendOpinionChains(lines, chains) {
       '，置信度 ' + chain.confidence);
     lines.push('  证据级别：明确 ' + ((chain.evidenceLevels && chain.evidenceLevels.explicit) || 0) +
       ' / 推断 ' + ((chain.evidenceLevels && chain.evidenceLevels.inferred) || 0));
+    if (chain.latestChange) {
+      lines.push('  最近变化：' + chain.latestChange.summary +
+        '（#' + chain.latestChange.fromFloor +
+        ' ' + chain.latestChange.fromAttitude +
+        ' -> #' + chain.latestChange.toFloor +
+        ' ' + chain.latestChange.toAttitude +
+        '，置信度 ' + chain.latestChange.confidence + '）');
+    }
     (chain.timeline || []).slice(0, 5).forEach(function (event) {
       const label = event.eventType === 'opinion'
         ? '观点 ' + (event.attitude || 'unknown') + ' / ' + event.evidenceLevel

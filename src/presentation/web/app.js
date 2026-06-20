@@ -752,6 +752,7 @@ function formatOpinionChainSummary(chain) {
     '观点 ' + chain.opinionCount,
     '主作者 ' + chain.primaryAuthorOpinionCount,
     '最新 ' + (chain.latestAttitude || 'unknown'),
+    '变化 ' + (chain.latestChange ? chain.latestChange.changeType : '暂无'),
     '明确 ' + (levels.explicit || 0),
     '推断 ' + (levels.inferred || 0),
     '置信度 ' + chain.confidence

@@ -47,6 +47,10 @@ function buildEntityOpinionChain(options) {
     postsByFloor: options.postsByFloor,
     primaryAuthorId: options.primaryAuthorId
   });
+  const changeEvents = buildOpinionChangeEvents({
+    timeline,
+    primaryAuthorId: options.primaryAuthorId
+  });
   const attitudeSummary = summarizeAttitudes(linkedOpinions);
   const firstFloor = timeline.length > 0 ? timeline[0].floor : mentions[0] && mentions[0].floor;
   const lastFloor = timeline.length > 0 ? timeline[timeline.length - 1].floor : mentions[mentions.length - 1] && mentions[mentions.length - 1].floor;
@@ -73,6 +77,8 @@ function buildEntityOpinionChain(options) {
     attitudeSummary,
     confidence: chainConfidence(linkedOpinions, mentions.length),
     evidenceLevels: summarizeEvidenceLevels(linkedOpinions),
+    latestChange: changeEvents[changeEvents.length - 1],
+    changeEvents,
     timeline: timeline.slice(0, 16),
     evidenceRefs: buildEvidenceRefs(linkedOpinions, mentions).slice(0, 12)
   };
@@ -212,6 +218,107 @@ function buildTimeline(options) {
 
 function eventOrder(eventType) {
   return eventType === 'entity-mention' ? 0 : 1;
+}
+
+function buildOpinionChangeEvents(options) {
+  const opinionEvents = opinionTimeline(options.timeline, options.primaryAuthorId);
+  const changes = [];
+  for (let index = 1; index < opinionEvents.length; index += 1) {
+    const previous = opinionEvents[index - 1];
+    const current = opinionEvents[index];
+    const change = classifyOpinionChange(previous, current);
+    if (change) {
+      changes.push(Object.assign(change, {
+        fromFloor: previous.floor,
+        toFloor: current.floor,
+        fromPublishedAt: previous.publishedAt,
+        toPublishedAt: current.publishedAt,
+        fromEvidenceLevel: previous.evidenceLevel,
+        toEvidenceLevel: current.evidenceLevel,
+        confidence: changeConfidence(previous, current),
+        evidenceRefs: [
+          eventEvidenceRef(previous),
+          eventEvidenceRef(current)
+        ]
+      }));
+    }
+  }
+  return changes;
+}
+
+function opinionTimeline(timeline, primaryAuthorId) {
+  const opinionEvents = (timeline || []).filter(function (event) {
+    return event.eventType === 'opinion' && event.attitude && event.attitude !== 'disclaimer';
+  });
+  const primaryAuthorEvents = primaryAuthorId
+    ? opinionEvents.filter(function (event) { return event.authorId === primaryAuthorId; })
+    : [];
+  return (primaryAuthorEvents.length >= 2 ? primaryAuthorEvents : opinionEvents)
+    .sort(function (a, b) { return a.floor - b.floor; });
+}
+
+function classifyOpinionChange(previous, current) {
+  const from = normalizeAttitude(previous.attitude);
+  const to = normalizeAttitude(current.attitude);
+  if (!from || !to || from === to) return undefined;
+
+  if (from === 'watch' && to === 'bullish') {
+    return change('watch_to_validation', 'positive', from, to, '观察信号转为验证或走强。');
+  }
+  if (from === 'bullish' && to === 'watch') {
+    return change('bullish_to_wait', 'caution', from, to, '看多后转为等待确认。');
+  }
+  if (from === 'bullish' && to === 'risk') {
+    return change('bullish_to_risk', 'caution', from, to, '看多后出现风险或不追提示。');
+  }
+  if (from === 'bullish' && to === 'bearish') {
+    return change('bullish_to_bearish', 'negative', from, to, '看多转为看空或放弃。');
+  }
+  if ((from === 'risk' || from === 'bearish') && to === 'bullish') {
+    return change('risk_to_recovery', 'positive', from, to, '风险或看空后重新出现走强信号。');
+  }
+  if (from === 'watch' && (to === 'risk' || to === 'bearish')) {
+    return change('watch_to_risk', 'caution', from, to, '观察状态转为风险提示。');
+  }
+  if (from === 'risk' && to === 'watch') {
+    return change('risk_to_wait', 'caution', from, to, '风险提示后转为等待确认。');
+  }
+
+  return change('attitude_shift', 'info', from, to, '观点态度发生变化。');
+}
+
+function change(changeType, severity, fromAttitude, toAttitude, summary) {
+  return {
+    changeType,
+    severity,
+    fromAttitude,
+    toAttitude,
+    summary
+  };
+}
+
+function normalizeAttitude(value) {
+  if (value === 'bullish' || value === 'bearish' || value === 'risk' || value === 'watch') return value;
+  return undefined;
+}
+
+function changeConfidence(previous, current) {
+  const base = ((previous.confidence || 0.5) + (current.confidence || 0.5)) / 2;
+  const evidenceBoost = previous.evidenceLevel === 'explicit' && current.evidenceLevel === 'explicit' ? 0.08 : 0;
+  return Math.min(0.95, Number((base + evidenceBoost).toFixed(2)));
+}
+
+function eventEvidenceRef(event) {
+  return {
+    floor: event.floor,
+    author: event.author,
+    authorId: event.authorId,
+    publishedAt: event.publishedAt,
+    attitude: event.attitude,
+    confidence: event.confidence,
+    evidenceLevel: event.evidenceLevel,
+    excerpt: event.evidenceText
+  };
 }
 
 function summarizeAttitudes(linkedOpinions) {
