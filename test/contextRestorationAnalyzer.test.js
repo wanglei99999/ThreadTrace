@@ -26,6 +26,10 @@ test('context restoration finds historical evidence for a new post', function ()
   assert.ok(report.contextChainMatches.some(function (match) {
     return match.chain && match.chain.entity && match.chain.entity.displayName === '科技';
   }));
+  assert.equal(report.interpretationSummary.status, 'matched');
+  assert.equal(report.interpretationSummary.evidenceLevel, 'explicit');
+  assert.equal(report.interpretationSummary.topEntity, '科技');
+  assert.equal(report.interpretationSummary.signals.contextChainMatchCount, report.contextChainMatches.length);
   assert.ok(report.relatedEvidence.length >= 1);
   assert.ok(report.relatedEvidence[0].reasons.length >= 1);
 });
@@ -45,6 +49,10 @@ test('context restoration uses implicit references when a new post omits entitie
   assert.ok(report.newImplicitReferences.length >= 2);
   assert.ok(report.contextChainMatches.length >= 1);
   assert.ok(report.contextChainMatches[0].reasons.includes('implicit_reference_to_author_chain'));
+  assert.equal(report.interpretationSummary.status, 'matched');
+  assert.equal(report.interpretationSummary.evidenceLevel, 'inferred');
+  assert.equal(report.interpretationSummary.topEntity, '科技');
+  assert.ok(report.interpretationSummary.summary.includes('隐晦表达'));
   assert.ok(report.relatedEvidence.length >= 1);
   assert.ok(report.relatedEvidence[0].reasons.some(function (reason) {
     return reason.indexOf('implicit_reference_context:') === 0;

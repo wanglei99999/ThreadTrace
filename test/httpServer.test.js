@@ -160,6 +160,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /renderPrimaryAuthorProfile/);
     assert.match(webAppJs, /formatImplicitReferenceSummary/);
     assert.match(webAppJs, /formatContextChainMatch/);
+    assert.match(webAppJs, /renderInterpretationSummary/);
     assert.equal(adapters.adapters[0].sourceKey, 'nga');
     assert.equal(adapterDiagnostics.status, 'ok');
     assert.equal(adapterDiagnostics.adapterCount, 1);
@@ -246,6 +247,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
       return parameter.name === 'sourceFailureRetryBackoffMs';
     }));
     assert.equal(context.reportType, 'new-post-context');
+    assert.equal(context.interpretationSummary.status, 'matched');
+    assert.equal(context.interpretationSummary.evidenceLevel, 'explicit');
     assert.ok(context.relatedEvidence.length >= 1);
   } finally {
     await close(server);

@@ -20,6 +20,13 @@ function restoreContextForNewPost(threadSnapshot, newPostInput) {
     newImplicitReferences,
     syntheticPost
   });
+  const interpretationSummary = summarizeInterpretation({
+    newEntities,
+    newOpinions,
+    newImplicitReferences,
+    contextChainMatches,
+    relatedEvidence
+  });
 
   return {
     reportType: 'new-post-context',
@@ -38,6 +45,7 @@ function restoreContextForNewPost(threadSnapshot, newPostInput) {
     newOpinions,
     newImplicitReferences,
     contextChainMatches,
+    interpretationSummary,
     relatedEvidence,
     interpretationSlots: [
       'explicit-entity-links',
@@ -48,6 +56,58 @@ function restoreContextForNewPost(threadSnapshot, newPostInput) {
       'confidence-calibration'
     ]
   };
+}
+
+function summarizeInterpretation(input) {
+  const topChainMatch = (input.contextChainMatches || [])[0];
+  const topEvidence = (input.relatedEvidence || [])[0];
+  const hasExplicitEntity = (input.newEntities || []).length > 0;
+  const hasImplicitReference = (input.newImplicitReferences || []).length > 0;
+  const confidence = summaryConfidence(topChainMatch, topEvidence, hasExplicitEntity, hasImplicitReference);
+  const evidenceLevel = hasExplicitEntity ? 'explicit' : hasImplicitReference ? 'inferred' : 'weak';
+  const topChain = topChainMatch && topChainMatch.chain;
+  const topEntity = topChain && topChain.entity ? topChain.entity.displayName : undefined;
+
+  return {
+    status: topChainMatch ? 'matched' : topEvidence ? 'evidence-only' : 'unmatched',
+    confidence,
+    evidenceLevel,
+    topEntity,
+    relationType: topChainMatch && topChainMatch.relationType,
+    relationSummary: topChainMatch && topChainMatch.relationSummary,
+    summary: interpretationSummaryText({
+      topEntity,
+      topChainMatch,
+      topEvidence,
+      hasExplicitEntity,
+      hasImplicitReference
+    }),
+    signals: {
+      explicitEntityCount: (input.newEntities || []).length,
+      opinionCount: (input.newOpinions || []).length,
+      implicitReferenceCount: (input.newImplicitReferences || []).length,
+      contextChainMatchCount: (input.contextChainMatches || []).length,
+      relatedEvidenceCount: (input.relatedEvidence || []).length
+    }
+  };
+}
+
+function summaryConfidence(topChainMatch, topEvidence, hasExplicitEntity, hasImplicitReference) {
+  let confidence = topChainMatch ? topChainMatch.confidence : topEvidence ? topEvidence.confidence : 0.35;
+  if (hasExplicitEntity) confidence += 0.05;
+  if (!hasExplicitEntity && hasImplicitReference) confidence -= 0.03;
+  return Math.max(0.1, Math.min(0.95, Number(confidence.toFixed(2))));
+}
+
+function interpretationSummaryText(input) {
+  if (input.topChainMatch && input.topEntity) {
+    const prefix = input.hasExplicitEntity ? '新发言直接命中' : '新发言通过隐晦表达可能承接';
+    return prefix + '“' + input.topEntity + '”历史观点链：' + input.topChainMatch.relationSummary;
+  }
+  if (input.topEvidence) {
+    return '未匹配到明确观点链，但找到了可参考的历史楼层 #' + input.topEvidence.floor + '。';
+  }
+  return '暂未找到足够历史证据，需要更多上下文。';
 }
 
 function matchHistoricalOpinionChains(options) {

@@ -774,6 +774,7 @@ function formatImplicitReferenceSummary(candidate) {
 
 function renderContextReport(report) {
   return [
+    renderInterpretationSummary(report.interpretationSummary),
     panel('新发言', [
       metric('内容', report.newPost.contentText),
       metric('实体', (report.newEntities || []).map(function (entity) { return entity.displayName; }).join(', ') || '暂无'),
@@ -785,6 +786,18 @@ function renderContextReport(report) {
       return '#' + item.floor + ' ' + item.author + ' · ' + item.confidence + '：' + item.reasons.join(', ');
     })), 'wide')
   ].join('');
+}
+
+function renderInterpretationSummary(summary) {
+  if (!summary) {
+    return panel('解读摘要', '<div class="muted">暂无</div>', 'wide');
+  }
+  return panel('解读摘要', [
+    metric('状态', summary.status),
+    metric('证据级别', summary.evidenceLevel),
+    metric('置信度', summary.confidence),
+    metric('结论', summary.summary)
+  ].join(''), 'wide');
 }
 
 function formatContextChainMatch(match) {

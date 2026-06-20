@@ -12,6 +12,11 @@ function renderNewPostContextMarkdown(report) {
   lines.push('- 内容：' + safeInline(report.newPost.contentText));
 
   lines.push('');
+  lines.push('## 解读摘要');
+  lines.push('');
+  appendInterpretationSummary(lines, report.interpretationSummary);
+
+  lines.push('');
   lines.push('## 新发言实体候选');
   lines.push('');
   appendEntities(lines, report.newEntities || []);
@@ -51,6 +56,17 @@ function appendEntities(lines, entities) {
   entities.forEach(function (entity) {
     lines.push('- ' + entity.displayName + '（' + entity.type + '）：出现 ' + entity.mentions.length + ' 次');
   });
+}
+
+function appendInterpretationSummary(lines, summary) {
+  if (!summary) {
+    lines.push('暂无。');
+    return;
+  }
+  lines.push('- 状态：' + summary.status);
+  lines.push('- 证据级别：' + summary.evidenceLevel);
+  lines.push('- 置信度：' + summary.confidence);
+  lines.push('- 摘要：' + safeInline(summary.summary));
 }
 
 function appendOpinions(lines, opinions) {
