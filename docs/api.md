@@ -42,6 +42,14 @@ http://127.0.0.1:3017
 
 校验外部工具或下游 Worker 准备消费的 `contextReviewHandoff` JSON。请求体可以使用 `{ "handoff": { ... } }`、`{ "payload": { ... } }`，也可以直接提交 handoff 对象。有效时返回 200，无效时返回 400，并包含 `checks` 明细。
 
+### `GET /api/contracts/context-review-result`
+
+Returns the `ContextReviewResult` JSON contract used by human reviewers, LLM workers, or downstream review systems after they process a `ContextReviewHandoff`. The contract covers reviewer metadata, per-task decisions, resolved and remaining task ids, cited evidence refs, aggregate confidence, and downstream merge/audit hooks.
+
+### `POST /api/contracts/context-review-result/validate`
+
+Validates a review result before it is merged back into analysis, persisted, or used to close review tasks. The request body can use `{ "result": { ... } }`, `{ "payload": { ... } }`, or the result object directly. Valid payloads return 200; invalid payloads return 400 with detailed `checks`.
+
 ### `POST /api/analyze-directory`
 
 分析一个保存页目录。

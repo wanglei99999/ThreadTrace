@@ -115,6 +115,20 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/contracts/context-review-result') {
+    writeJson(response, 200, context.runtime.getContextReviewResultContract());
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/contracts/context-review-result/validate') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = context.runtime.validateContextReviewResult({
+      payload: body.result || body.payload || body
+    });
+    writeJson(response, result.valid ? 200 : 400, result);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/connectors/catalog') {
     writeJson(response, 200, context.runtime.getSourceConnectorCatalog({
       now: url.searchParams.get('now') || undefined

@@ -174,6 +174,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     const threadSnapshotContract = await getJson(baseUrl + '/api/contracts/thread-snapshot-json');
     const connectorModuleContract = await getJson(baseUrl + '/api/contracts/connector-module');
     const contextReviewHandoffContract = await getJson(baseUrl + '/api/contracts/context-review-handoff');
+    const contextReviewResultContract = await getJson(baseUrl + '/api/contracts/context-review-result');
     const validContextReviewHandoff = await postJson(baseUrl + '/api/contracts/context-review-handoff/validate', {
       handoff: contextReviewHandoffContract.example
     });
@@ -182,6 +183,17 @@ test('http server exposes health, adapters, and context APIs', async function ()
         version: '1.0.0',
         status: 'bad-status',
         openTasks: []
+      }
+    }, 400);
+    const validContextReviewResult = await postJson(baseUrl + '/api/contracts/context-review-result/validate', {
+      result: contextReviewResultContract.example
+    });
+    const invalidContextReviewResult = await postJsonWithStatus(baseUrl + '/api/contracts/context-review-result/validate', {
+      result: {
+        version: '1.0.0',
+        handoffVersion: '1.0.0',
+        status: 'bad-status',
+        decisions: []
       }
     }, 400);
     assert.equal(connectorCatalog.generatedAt, '2026-06-19T10:00:00.000Z');
@@ -229,6 +241,11 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(contextReviewHandoffContract.downstreamHooks.llmReview);
     assert.equal(validContextReviewHandoff.valid, true);
     assert.equal(invalidContextReviewHandoff.valid, false);
+    assert.equal(contextReviewResultContract.version, '1.0.0');
+    assert.ok(contextReviewResultContract.schema.required.includes('decisions'));
+    assert.ok(contextReviewResultContract.downstreamHooks.taskClosure);
+    assert.equal(validContextReviewResult.valid, true);
+    assert.equal(invalidContextReviewResult.valid, false);
     assert.equal(openApi.openapi, '3.0.3');
     assert.ok(openApi.paths['/api/interpret-text']);
     assert.match(openApi.paths['/api/interpret-text'].post.responses[200].description, /contextReviewHandoff/);
@@ -237,6 +254,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/contracts/connector-module']);
     assert.ok(openApi.paths['/api/contracts/context-review-handoff']);
     assert.ok(openApi.paths['/api/contracts/context-review-handoff/validate']);
+    assert.ok(openApi.paths['/api/contracts/context-review-result']);
+    assert.ok(openApi.paths['/api/contracts/context-review-result/validate']);
     assert.ok(openApi.paths['/api/connectors/catalog']);
     assert.ok(openApi.paths['/api/connectors/readiness']);
     assert.ok(openApi.paths['/api/connectors/modules/validate']);

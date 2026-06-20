@@ -6,6 +6,7 @@ const { loadConnectorModulesReport } = require('./loadConnectorModules');
 const { getThreadSnapshotJsonContract } = require('../domain/contracts/threadSnapshotJsonContract');
 const { getConnectorModuleContract } = require('../domain/contracts/connectorModuleContract');
 const { getContextReviewHandoffContract } = require('../domain/contracts/contextReviewHandoffContract');
+const { getContextReviewResultContract } = require('../domain/contracts/contextReviewResultContract');
 const { createDefaultForumAdapterRegistry } = require('../infrastructure/forum-adapters/registry');
 const { analyzeSavedThreadDirectory } = require('../application/use-cases/analyzeSavedThreadDirectory');
 const { interpretNewPostFromSavedThreadDirectory } = require('../application/use-cases/interpretNewPostFromSavedThreadDirectory');
@@ -58,6 +59,7 @@ const { migrateStoreRecords } = require('../application/use-cases/migrateStoreRe
 const { runIngestRawThreadPageTask } = require('../application/use-cases/runIngestRawThreadPageTask');
 const { validateNormalizedThreadJsonFile } = require('../application/use-cases/validateNormalizedThreadJsonFile');
 const { validateContextReviewHandoff } = require('../application/use-cases/validateContextReviewHandoff');
+const { validateContextReviewResult } = require('../application/use-cases/validateContextReviewResult');
 const { validateConnectorModuleLoad } = require('../application/use-cases/validateConnectorModuleLoad');
 const { indexSavedThreadDirectory } = require('../application/use-cases/indexSavedThreadDirectory');
 const { searchEvidence } = require('../application/use-cases/searchEvidence');
@@ -182,6 +184,14 @@ function createThreadTraceRuntime(options) {
 
     validateContextReviewHandoff(request) {
       return validateContextReviewHandoff(request);
+    },
+
+    getContextReviewResultContract() {
+      return getContextReviewResultContract();
+    },
+
+    validateContextReviewResult(request) {
+      return validateContextReviewResult(request);
     },
 
     validateConnectorModule(request) {

@@ -112,6 +112,43 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/contracts/context-review-result': {
+        get: {
+          summary: 'Get the ContextReviewResult JSON contract for human or LLM review outputs',
+          responses: {
+            200: {
+              description: 'ContextReviewResult schema, example payload, and downstream hook guidance'
+            }
+          }
+        }
+      },
+      '/api/contracts/context-review-result/validate': {
+        post: {
+          summary: 'Validate a ContextReviewResult payload before merge, persistence, or task closure',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    result: { type: 'object' },
+                    payload: { type: 'object' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'ContextReviewResult payload is valid'
+            },
+            400: {
+              description: 'ContextReviewResult payload is invalid'
+            }
+          }
+        }
+      },
       '/api/connectors/catalog': {
         get: {
           summary: 'List source connector catalog',
