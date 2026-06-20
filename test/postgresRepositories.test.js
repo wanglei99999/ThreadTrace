@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 const { createThreadTraceRuntime } = require('../src/runtime/threadTraceRuntime');
 const { createPostgresConfig } = require('../src/infrastructure/postgres/postgresConfig');
+const { createPostgresContextReviewResultRepository } = require('../src/infrastructure/postgres/postgresContextReviewResultRepository');
 const { createPostgresNotificationEventRepository } = require('../src/infrastructure/postgres/postgresNotificationEventRepository');
 const { createPostgresSourceRepository } = require('../src/infrastructure/postgres/postgresSourceRepository');
 const { createPostgresTaskRepository } = require('../src/infrastructure/postgres/postgresTaskRepository');
@@ -230,6 +231,58 @@ test('postgres task repository filters by trace metadata', async function () {
   assert.match(queries[0].sql, /input -> '_trace' ->> 'idempotencyKey' = \$4/);
   assert.deepEqual(queries[0].params, ['ingest-saved-thread-directory', 'request-1', 'trace-1', 'idem-1', 5]);
   assert.equal(tasks[0].input._trace.requestId, 'request-1');
+});
+
+test('postgres context review result repository upserts and filters records', async function () {
+  const queries = [];
+  const repository = createPostgresContextReviewResultRepository({
+    client: {
+      async query(sql, params) {
+        queries.push({ sql, params });
+        if (sql.startsWith('select record from context_review_results')) {
+          return {
+            rows: [
+              {
+                record: {
+                  id: 'review-result-1',
+                  status: 'partially-accepted',
+                  handoffId: 'handoff-1',
+                  reviewer: { id: 'operator-1' },
+                  submittedAt: '2026-06-21T10:00:00.000Z'
+                }
+              }
+            ]
+          };
+        }
+        return { rows: [] };
+      }
+    }
+  });
+
+  await repository.saveReviewResult({
+    id: 'review-result-1',
+    status: 'partially-accepted',
+    handoffId: 'handoff-1',
+    handoffVersion: '1.0.0',
+    reviewer: { id: 'operator-1' },
+    submittedAt: '2026-06-21T10:00:00.000Z'
+  });
+  const records = await repository.listReviewResults({
+    handoffId: 'handoff-1',
+    status: 'partially-accepted',
+    reviewerId: 'operator-1',
+    limit: 5
+  });
+
+  assert.match(queries[0].sql, /insert into context_review_results/);
+  assert.match(queries[0].sql, /on conflict \(id\) do update/);
+  assert.equal(queries[0].params[0], 'review-result-1');
+  assert.equal(queries[0].params[4], 'operator-1');
+  assert.match(queries[1].sql, /handoff_id = \$1/);
+  assert.match(queries[1].sql, /status = \$2/);
+  assert.match(queries[1].sql, /reviewer_id = \$3/);
+  assert.deepEqual(queries[1].params, ['handoff-1', 'partially-accepted', 'operator-1', 5]);
+  assert.equal(records[0].id, 'review-result-1');
 });
 
 test('postgres worker run repository maps rows and filters runs', async function () {

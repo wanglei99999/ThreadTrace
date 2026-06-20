@@ -191,6 +191,12 @@ test('http server exposes health, adapters, and context APIs', async function ()
     const contextReviewResultSummary = await postJson(baseUrl + '/api/context-review-results/summarize', {
       result: contextReviewResultContract.example
     });
+    const submittedContextReviewResult = await postJsonWithStatus(baseUrl + '/api/context-review-results', {
+      id: 'http-review-result-1',
+      result: contextReviewResultContract.example,
+      now: '2026-06-21T10:00:00.000Z'
+    }, 201);
+    const listedContextReviewResults = await getJson(baseUrl + '/api/context-review-results?handoffId=' + encodeURIComponent(contextReviewResultContract.example.handoffId));
     const invalidContextReviewResult = await postJsonWithStatus(baseUrl + '/api/contracts/context-review-result/validate', {
       result: {
         version: '1.0.0',
@@ -252,6 +258,11 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(contextReviewResultSummary.valid, true);
     assert.equal(contextReviewResultSummary.summary.notification.severity, 'warning');
     assert.equal(contextReviewResultSummary.summary.taskClosure.closeTaskIds.length, 1);
+    assert.equal(submittedContextReviewResult.status, 'stored');
+    assert.equal(submittedContextReviewResult.record.id, 'http-review-result-1');
+    assert.equal(submittedContextReviewResult.record.summary.notification.severity, 'warning');
+    assert.equal(listedContextReviewResults.count, 1);
+    assert.equal(listedContextReviewResults.reviewResults[0].id, 'http-review-result-1');
     assert.equal(openApi.openapi, '3.0.3');
     assert.ok(openApi.paths['/api/interpret-text']);
     assert.match(openApi.paths['/api/interpret-text'].post.responses[200].description, /contextReviewHandoff/);
@@ -263,6 +274,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/contracts/context-review-result']);
     assert.ok(openApi.paths['/api/contracts/context-review-result/validate']);
     assert.ok(openApi.paths['/api/context-review-results/summarize']);
+    assert.ok(openApi.paths['/api/context-review-results']);
     assert.ok(openApi.paths['/api/connectors/catalog']);
     assert.ok(openApi.paths['/api/connectors/readiness']);
     assert.ok(openApi.paths['/api/connectors/modules/validate']);

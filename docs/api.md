@@ -54,6 +54,14 @@ Validates a review result before it is merged back into analysis, persisted, or 
 
 Validates a `ContextReviewResult` and returns an operational summary for task closure, context merge, and notification planning. The summary includes decision counts, confidence band, evidence ref count, task ids to close or keep open, merge candidates, blocked tasks, notification severity, and a recommended next action. Invalid payloads return 400 with validation details and no summary.
 
+### `POST /api/context-review-results`
+
+Validates, summarizes, and stores a `ContextReviewResult` in the durable review archive. File storage writes records under `context-review-results` inside the configured store directory. Each record preserves the original result, validation details, derived summary, reviewer metadata, handoff id, and trace metadata.
+
+### `GET /api/context-review-results`
+
+Lists submitted review result records. Optional filters: `handoffId`, `status`, `reviewerId`, `limit`, and `storeDir`. This endpoint is the read side for review audit trails, task closure dashboards, and future merge workers.
+
 ### `POST /api/analyze-directory`
 
 分析一个保存页目录。

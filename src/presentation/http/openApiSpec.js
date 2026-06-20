@@ -176,6 +176,52 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/context-review-results': {
+        get: {
+          summary: 'List submitted ContextReviewResult records from the durable review archive',
+          parameters: [
+            { name: 'handoffId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'status', in: 'query', required: false, schema: { type: 'string', example: 'partially-accepted' } },
+            { name: 'reviewerId', in: 'query', required: false, schema: { type: 'string', example: 'operator-1' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number', example: 50 } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Submitted review result records'
+            }
+          }
+        },
+        post: {
+          summary: 'Validate, summarize, and persist a ContextReviewResult into the durable review archive',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string' },
+                    result: { type: 'object' },
+                    payload: { type: 'object' },
+                    traceId: { type: 'string' },
+                    now: { type: 'string', example: '2026-06-21T10:00:00.000Z' },
+                    storeDir: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            201: {
+              description: 'ContextReviewResult was validated, summarized, and stored'
+            },
+            400: {
+              description: 'ContextReviewResult payload is invalid'
+            }
+          }
+        }
+      },
       '/api/connectors/catalog': {
         get: {
           summary: 'List source connector catalog',

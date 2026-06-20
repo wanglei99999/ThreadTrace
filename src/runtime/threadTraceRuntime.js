@@ -61,6 +61,8 @@ const { validateNormalizedThreadJsonFile } = require('../application/use-cases/v
 const { validateContextReviewHandoff } = require('../application/use-cases/validateContextReviewHandoff');
 const { validateContextReviewResult } = require('../application/use-cases/validateContextReviewResult');
 const { summarizeContextReviewResult } = require('../application/use-cases/summarizeContextReviewResult');
+const { submitContextReviewResult } = require('../application/use-cases/submitContextReviewResult');
+const { listContextReviewResults } = require('../application/use-cases/listContextReviewResults');
 const { validateConnectorModuleLoad } = require('../application/use-cases/validateConnectorModuleLoad');
 const { indexSavedThreadDirectory } = require('../application/use-cases/indexSavedThreadDirectory');
 const { searchEvidence } = require('../application/use-cases/searchEvidence');
@@ -73,6 +75,7 @@ const { createFileNotificationEventRepository } = require('../infrastructure/sto
 const { createFileRawThreadPageRepository } = require('../infrastructure/storage/fileRawThreadPageRepository');
 const { createFileWorkerRunRepository } = require('../infrastructure/storage/fileWorkerRunRepository');
 const { createFileWorkerLeaseRepository } = require('../infrastructure/storage/fileWorkerLeaseRepository');
+const { createFileContextReviewResultRepository } = require('../infrastructure/storage/fileContextReviewResultRepository');
 const { createFileNotificationChannel } = require('../infrastructure/notifications/fileNotificationChannel');
 const { createWebhookNotificationChannel } = require('../infrastructure/notifications/webhookNotificationChannel');
 const { inspectFileResources } = require('../infrastructure/diagnostics/fileResourceDiagnostics');
@@ -197,6 +200,32 @@ function createThreadTraceRuntime(options) {
 
     summarizeContextReviewResult(request) {
       return summarizeContextReviewResult(request);
+    },
+
+    async submitContextReviewResult(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return submitContextReviewResult({
+        contextReviewResultRepository: repositories.contextReviewResultRepository,
+        result: safeRequest.result || safeRequest.payload,
+        id: safeRequest.id,
+        now: safeRequest.now,
+        requestId: safeRequest.requestId,
+        traceId: safeRequest.traceId,
+        idempotencyKey: safeRequest.idempotencyKey
+      });
+    },
+
+    async listContextReviewResults(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return listContextReviewResults({
+        contextReviewResultRepository: repositories.contextReviewResultRepository,
+        handoffId: safeRequest.handoffId,
+        status: safeRequest.status,
+        reviewerId: safeRequest.reviewerId,
+        limit: safeRequest.limit || 50
+      });
     },
 
     validateConnectorModule(request) {
@@ -1409,6 +1438,9 @@ function createFileRepositories(storeDir) {
     }),
     workerLeaseRepository: createFileWorkerLeaseRepository({
       baseDir: path.join(storeDir, 'worker-leases')
+    }),
+    contextReviewResultRepository: createFileContextReviewResultRepository({
+      baseDir: path.join(storeDir, 'context-review-results')
     })
   };
 }

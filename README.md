@@ -99,6 +99,8 @@ These commands use the same runtime composition as the HTTP API and Web console.
 - `GET /api/contracts/context-review-result`
 - `POST /api/contracts/context-review-result/validate`
 - `POST /api/context-review-results/summarize`
+- `GET /api/context-review-results`
+- `POST /api/context-review-results`
 - `GET /api/deployment/checklist`
 - `POST /api/deployment/gate`
 - `GET /api/notifications/diagnostics`

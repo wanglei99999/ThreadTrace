@@ -138,6 +138,33 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/context-review-results') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.submitContextReviewResult({
+      result: body.result || body.payload || body,
+      id: body.id,
+      now: body.now,
+      storeDir: body.storeDir || context.storeDir,
+      requestId: context.requestId,
+      traceId: body.traceId,
+      idempotencyKey: context.idempotencyKey
+    });
+    writeJson(response, result.valid ? 201 : 400, result);
+    return;
+  }
+
+  if (request.method === 'GET' && url.pathname === '/api/context-review-results') {
+    const result = await context.runtime.listContextReviewResults({
+      handoffId: url.searchParams.get('handoffId') || undefined,
+      status: url.searchParams.get('status') || undefined,
+      reviewerId: url.searchParams.get('reviewerId') || undefined,
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 50,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, 200, result);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/connectors/catalog') {
     writeJson(response, 200, context.runtime.getSourceConnectorCatalog({
       now: url.searchParams.get('now') || undefined

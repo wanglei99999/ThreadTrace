@@ -52,6 +52,20 @@ create table if not exists analysis_reports (
 create index if not exists idx_analysis_reports_thread on analysis_reports(source_key, source_thread_id);
 create index if not exists idx_analysis_reports_type_time on analysis_reports(report_type, generated_at desc);
 
+create table if not exists context_review_results (
+  id text primary key,
+  status text not null,
+  handoff_id text,
+  handoff_version text,
+  reviewer_id text,
+  submitted_at timestamptz not null,
+  record jsonb not null
+);
+
+create index if not exists idx_context_review_results_handoff on context_review_results(handoff_id);
+create index if not exists idx_context_review_results_status_time on context_review_results(status, submitted_at desc);
+create index if not exists idx_context_review_results_reviewer on context_review_results(reviewer_id);
+
 create table if not exists task_records (
   id uuid primary key,
   type text not null,
