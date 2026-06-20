@@ -240,6 +240,36 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/context-review-results/events': {
+        post: {
+          summary: 'Dry-run or execute synthesis of attention-worthy ContextReviewResult records into notification events',
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    execute: { type: 'boolean', example: false },
+                    dryRun: { type: 'boolean', example: true },
+                    handoffId: { type: 'string' },
+                    status: { type: 'string', example: 'partially-accepted' },
+                    reviewerId: { type: 'string', example: 'operator-1' },
+                    limit: { type: 'number', example: 50 },
+                    now: { type: 'string', example: '2026-06-21T10:00:00.000Z' },
+                    storeDir: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Context review result notification event synthesis result'
+            }
+          }
+        }
+      },
       '/api/connectors/catalog': {
         get: {
           summary: 'List source connector catalog',

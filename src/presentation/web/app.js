@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshSourceOperationsButton').addEventListener('click', loadSourceOperations);
   document.getElementById('refreshEventsButton').addEventListener('click', loadEvents);
   document.getElementById('refreshReviewResultsButton').addEventListener('click', loadContextReviewResults);
+  document.getElementById('synthesizeReviewResultEventsButton').addEventListener('click', synthesizeReviewResultEvents);
   document.getElementById('refreshRawPagesButton').addEventListener('click', loadRawPages);
   document.getElementById('dispatchEventsButton').addEventListener('click', dispatchEvents);
   document.getElementById('runSourcesButton').addEventListener('click', runAllSources);
@@ -708,6 +709,16 @@ async function synthesizeRunbookEventsFromButton(button, execute) {
   await loadSystemStatus();
   await loadSourceOperations();
   await loadEvents();
+}
+
+async function synthesizeReviewResultEvents() {
+  await renderAsync('contextReviewResultResult', function () {
+    return requestJson('/api/context-review-results/events', {
+      execute: false,
+      limit: 50
+    });
+  }, renderContextReviewResultEventSynthesis);
+  await loadContextReviewResults();
 }
 
 async function dispatchEvents() {
@@ -1624,6 +1635,23 @@ function renderContextReviewResultOverview(result) {
     panel('Review attention', renderContextReviewAttentionRows(attention.topRecords || []), 'wide'),
     panel('Recent review results', renderContextReviewResultRows(records), 'wide')
   ].join('');
+}
+
+function renderContextReviewResultEventSynthesis(result) {
+  const rows = result.results || [];
+  return panel('Review alert synthesis', [
+    metric('Mode', result.dryRun ? 'dry-run' : 'execute'),
+    metric('Review results', result.reviewResultCount || 0),
+    metric('Actions', result.actionCount || 0),
+    metric('Created', result.createdCount || 0),
+    metric('Updated', result.updatedCount || 0),
+    metric('Skipped', result.skippedCount || 0),
+    evidenceList(rows.map(function (item) {
+      const event = item.event || {};
+      const reason = item.reason ? ' | ' + item.reason : '';
+      return item.status + ' | ' + (item.recordId || 'unknown-record') + ' | ' + (event.id || 'no-event') + ' | ' + (event.severity || 'unknown') + reason;
+    }))
+  ].join(''), 'wide');
 }
 
 function renderContextReviewAttentionRows(records) {

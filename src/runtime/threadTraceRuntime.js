@@ -26,6 +26,7 @@ const { runDueSourceInsightPipelineTasks } = require('../application/use-cases/r
 const { acknowledgeNotificationEvent } = require('../application/use-cases/acknowledgeNotificationEvent');
 const { dispatchPendingNotificationEvents } = require('../application/use-cases/dispatchPendingNotificationEvents');
 const { synthesizeRunbookNotificationEvents } = require('../application/use-cases/synthesizeRunbookNotificationEvents');
+const { synthesizeContextReviewResultNotificationEvents } = require('../application/use-cases/synthesizeContextReviewResultNotificationEvents');
 const { fetchAndStoreThreadPage } = require('../application/use-cases/fetchAndStoreThreadPage');
 const { enrichAnalysisReportWithLlm } = require('../application/use-cases/enrichAnalysisReportWithLlm');
 const { runSemanticEnrichmentTask } = require('../application/use-cases/runSemanticEnrichmentTask');
@@ -1395,6 +1396,21 @@ function createThreadTraceRuntime(options) {
         limit: safeRequest.limit,
         now: safeRequest.now,
         includeRunbook: safeRequest.includeRunbook
+      });
+    },
+
+    async synthesizeContextReviewResultNotificationEvents(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return synthesizeContextReviewResultNotificationEvents({
+        contextReviewResultRepository: repositories.contextReviewResultRepository,
+        notificationEventRepository: repositories.notificationEventRepository,
+        handoffId: safeRequest.handoffId,
+        status: safeRequest.status,
+        reviewerId: safeRequest.reviewerId,
+        execute: safeRequest.execute,
+        limit: safeRequest.limit || 50,
+        now: safeRequest.now
       });
     },
 

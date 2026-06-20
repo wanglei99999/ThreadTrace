@@ -224,6 +224,7 @@
             <span>事件类型</span>
             <select name="type">
               <option value="">全部</option>
+              <option value="context-review-result">context-review-result</option>
               <option value="runbook-action">runbook-action</option>
               <option value="source-changed">source-changed</option>
             </select>
@@ -270,6 +271,7 @@
           </label>
           <button type="submit">Store review result</button>
           <button id="refreshReviewResultsButton" class="secondary-button" type="button">Review overview</button>
+          <button id="synthesizeReviewResultEventsButton" class="secondary-button" type="button">Create review alerts</button>
         </form>
         <form id="connectorModuleValidationForm" class="control-strip">
           <label class="grow">

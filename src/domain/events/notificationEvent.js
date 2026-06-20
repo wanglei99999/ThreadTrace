@@ -63,6 +63,41 @@ function createRunbookActionEvent(input) {
   };
 }
 
+function createContextReviewResultEvent(input) {
+  const safeInput = input || {};
+  const record = safeInput.record || {};
+  const summary = record.summary || {};
+  const notification = summary.notification || {};
+  const now = safeInput.createdAt || new Date().toISOString();
+  return {
+    id: safeInput.id || buildContextReviewResultEventId(record),
+    type: 'context-review-result',
+    severity: notification.severity || 'info',
+    sourceId: undefined,
+    sourceKey: undefined,
+    taskId: undefined,
+    createdAt: now,
+    title: 'Context review result: ' + (record.handoffId || record.id || 'unknown'),
+    summary: notification.reason || summary.recommendedNextAction || 'Context review result requires attention.',
+    payload: {
+      recordId: record.id,
+      handoffId: record.handoffId,
+      status: record.status,
+      reviewer: record.reviewer,
+      submittedAt: record.submittedAt,
+      summary
+    },
+    deliveryStatus: safeInput.deliveryStatus || 'pending',
+    deliveryAttempts: safeInput.deliveryAttempts || 0,
+    nextDeliveryAt: safeInput.nextDeliveryAt || now,
+    lastDeliveryError: safeInput.lastDeliveryError,
+    lastDeliveredAt: safeInput.lastDeliveredAt,
+    acknowledgedAt: safeInput.acknowledgedAt,
+    acknowledgedBy: safeInput.acknowledgedBy,
+    acknowledgementNote: safeInput.acknowledgementNote
+  };
+}
+
 function acknowledgeNotificationEvent(event, input) {
   const safeInput = input || {};
   const now = safeInput.acknowledgedAt || new Date().toISOString();
@@ -114,6 +149,16 @@ function buildRunbookActionEventId(action) {
   return 'runbook-action-' + digest;
 }
 
+function buildContextReviewResultEventId(record) {
+  const key = record && record.id ? record.id : JSON.stringify({
+    handoffId: record && record.handoffId,
+    submittedAt: record && record.submittedAt,
+    status: record && record.status
+  });
+  const digest = crypto.createHash('sha1').update(String(key)).digest('hex').slice(0, 12);
+  return 'context-review-result-' + digest;
+}
+
 function severityForRunbookAction(action) {
   if (action && action.severity === 'critical') return 'critical';
   if (action && action.severity === 'warning') return 'warning';
@@ -134,7 +179,9 @@ function buildSummary(source, cursorDiff, cursor) {
 module.exports = {
   createSourceChangedEvent,
   createRunbookActionEvent,
+  createContextReviewResultEvent,
   buildRunbookActionEventId,
+  buildContextReviewResultEventId,
   acknowledgeNotificationEvent,
   markNotificationEventDelivered,
   markNotificationEventDeliveryFailed

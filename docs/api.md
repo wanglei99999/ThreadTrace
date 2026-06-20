@@ -66,6 +66,10 @@ Lists submitted review result records. Optional filters: `handoffId`, `status`, 
 
 Aggregates submitted review result records for dashboards and worker planning. Optional filters mirror the list endpoint and add `now` for repeatable reports. The response includes counts by review status and notification severity, resolved and remaining task totals, merge candidate totals, blocked task totals, attention records, recent records, and a recommended next action.
 
+### `POST /api/context-review-results/events`
+
+Dry-runs or executes synthesis of attention-worthy review results into notification outbox events. Only `warning` and `critical` review summaries generate events. The endpoint defaults to dry-run; set `execute: true` or `dryRun: false` to persist `context-review-result` events. Optional filters: `handoffId`, `status`, `reviewerId`, `limit`, `now`, and `storeDir`.
+
 ### `POST /api/analyze-directory`
 
 分析一个保存页目录。
