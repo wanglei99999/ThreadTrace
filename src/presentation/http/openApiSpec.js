@@ -75,6 +75,16 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/contracts/context-review-handoff': {
+        get: {
+          summary: 'Get the ContextReviewHandoff JSON contract for new-post review handoff packages',
+          responses: {
+            200: {
+              description: 'ContextReviewHandoff schema, example payload, and downstream hook guidance'
+            }
+          }
+        }
+      },
       '/api/connectors/catalog': {
         get: {
           summary: 'List source connector catalog',

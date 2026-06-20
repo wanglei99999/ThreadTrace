@@ -34,6 +34,10 @@ http://127.0.0.1:3017
 
 返回 OpenAPI 3.0 契约，便于前端、测试工具或后续 SDK 生成器消费。
 
+### `GET /api/contracts/context-review-handoff`
+
+返回新发言语境还原报告中的 `contextReviewHandoff` JSON 契约，包括版本、状态、任务数量、高优先级任务数量、推荐下一步、证据包、开放任务列表和下游接入说明。这个契约面向人工复核、LLM 二次审核、证据持久化和通知队列。
+
 ### `POST /api/analyze-directory`
 
 分析一个保存页目录。

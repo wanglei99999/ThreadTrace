@@ -101,6 +101,11 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/contracts/context-review-handoff') {
+    writeJson(response, 200, context.runtime.getContextReviewHandoffContract());
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/connectors/catalog') {
     writeJson(response, 200, context.runtime.getSourceConnectorCatalog({
       now: url.searchParams.get('now') || undefined
