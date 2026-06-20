@@ -22,6 +22,7 @@ function getOperationsRunbook(options) {
   const actions = checklistActions(checklist)
     .concat(connectorModuleActions(checklist))
     .concat(sourceLifecycleActions(safeOptions.sourceLifecycleReport))
+    .concat(reviewActionGateActions(safeOptions.reviewActionGate))
     .concat(idempotencyActions(recentTasks))
     .concat(pipelineRunActions(pipelineRuns.runs || []));
 
@@ -32,6 +33,7 @@ function getOperationsRunbook(options) {
     actions,
     checklist,
     sourceLifecycleReport: safeOptions.sourceLifecycleReport,
+    reviewActionGate: safeOptions.reviewActionGate,
     pipelineRuns
   };
 }
@@ -151,6 +153,45 @@ function sourceLifecycleActions(report) {
     });
   });
   return blockedDisableActions.concat(retryWaitingActions);
+}
+
+function reviewActionGateActions(gateReport) {
+  if (!gateReport || gateReport.status === 'ok') return [];
+  const actionPlan = gateReport.actionPlan || {};
+  if (!actionPlan.count) return [];
+  const executable = gateReport.executable || {};
+  return [
+    action({
+      key: 'reviewResults.actionGate',
+      severity: gateReport.status === 'fail' ? 'critical' : 'warning',
+      area: 'review-results',
+      title: gateReport.status === 'fail'
+        ? 'Resolve blocked review result action gate.'
+        : 'Review pending context review closure actions.',
+      summary: gateReport.recommendedNextAction || 'Review result action gate requires attention before downstream workers execute.',
+      recommendedCommand: 'node src/presentation/cli/threadtrace.js review-action-gate',
+      relatedCommands: [
+        'node src/presentation/cli/threadtrace.js review-action-plan'
+      ],
+      evidence: {
+        gateStatus: gateReport.status,
+        reviewResultCount: actionPlan.count || 0,
+        closeTaskCount: executable.closeTaskCount || 0,
+        mergeCandidateCount: executable.mergeCandidateCount || 0,
+        nextActionCount: (gateReport.nextActions || []).length,
+        failingGates: (gateReport.gates || []).filter(function (gate) {
+          return gate.status === 'fail';
+        }).map(function (gate) {
+          return gate.key;
+        }),
+        warningGates: (gateReport.gates || []).filter(function (gate) {
+          return gate.status === 'warn';
+        }).map(function (gate) {
+          return gate.key;
+        })
+      }
+    })
+  ];
 }
 
 function idempotencyActions(tasks) {

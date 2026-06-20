@@ -171,6 +171,67 @@ test('operations runbook turns source lifecycle signals into actions', function 
   assert.match(runbook.actions[1].relatedCommands[2], /reset-source-failure --source-id source-failed/);
 });
 
+test('operations runbook turns review action gate warnings into actions', function () {
+  const runbook = getOperationsRunbook({
+    now: '2026-06-19T10:00:00.000Z',
+    checklist: {
+      generatedAt: '2026-06-19T10:00:00.000Z',
+      items: []
+    },
+    reviewActionGate: {
+      status: 'warn',
+      recommendedNextAction: 'Keep unresolved tasks open.',
+      executable: {
+        closeTaskCount: 1,
+        mergeCandidateCount: 1
+      },
+      gates: [
+        { key: 'reviewResults.blockers', status: 'warn' }
+      ],
+      nextActions: [
+        { key: 'reviewResults.blockers', severity: 'warning' }
+      ],
+      actionPlan: {
+        count: 1
+      }
+    },
+    pipelineRuns: {
+      runs: []
+    }
+  });
+
+  assert.equal(runbook.status, 'warn');
+  assert.equal(runbook.actionCount, 1);
+  assert.equal(runbook.actions[0].key, 'reviewResults.actionGate');
+  assert.equal(runbook.actions[0].area, 'review-results');
+  assert.match(runbook.actions[0].recommendedCommand, /review-action-gate/);
+  assert.match(runbook.actions[0].relatedCommands[0], /review-action-plan/);
+  assert.equal(runbook.actions[0].evidence.reviewResultCount, 1);
+  assert.deepEqual(runbook.actions[0].evidence.warningGates, ['reviewResults.blockers']);
+});
+
+test('operations runbook ignores empty review action gate warnings', function () {
+  const runbook = getOperationsRunbook({
+    now: '2026-06-19T10:00:00.000Z',
+    checklist: {
+      generatedAt: '2026-06-19T10:00:00.000Z',
+      items: []
+    },
+    reviewActionGate: {
+      status: 'warn',
+      actionPlan: {
+        count: 0
+      }
+    },
+    pipelineRuns: {
+      runs: []
+    }
+  });
+
+  assert.equal(runbook.status, 'ok');
+  assert.equal(runbook.actionCount, 0);
+});
+
 test('operations runbook flags connector module load failures', function () {
   const runbook = getOperationsRunbook({
     now: '2026-06-19T10:00:00.000Z',

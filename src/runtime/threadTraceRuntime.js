@@ -965,9 +965,18 @@ function createThreadTraceRuntime(options) {
         now: safeRequest.now,
         storeDir: safeRequest.storeDir
       });
+      const reviewActionGate = await this.getContextReviewResultActionGate({
+        handoffId: safeRequest.handoffId,
+        status: safeRequest.reviewStatus,
+        reviewerId: safeRequest.reviewerId,
+        limit: safeRequest.reviewLimit || safeRequest.limit || 100,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir
+      });
       return getOperationsRunbook({
         checklist,
         sourceLifecycleReport,
+        reviewActionGate,
         pipelineRuns,
         now: safeRequest.now
       });
