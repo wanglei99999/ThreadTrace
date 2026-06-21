@@ -124,7 +124,7 @@ Workers also use short-lived leases to avoid duplicate background execution acro
 - `worker:due-source`: the due-source ingestion worker.
 - `worker:notification-event`: the notification dispatch worker.
 
-Each run acquires its worker lease before executing, renews it between phases, and releases it at the end. If another process owns an unexpired lease, the run is skipped and recorded as `skipped` with reason `lease-held`.
+Each run acquires its worker lease before executing, renews it between phases, and releases it at the end. If another process owns an unexpired lease, the run is skipped and recorded as `skipped` with reason `lease-held`. If a running worker cannot renew its lease because ownership changed or the lease disappeared, it fails the current `worker_runs` record with `worker_lease_lost` and stops before the next guarded phase. This prevents an old process from continuing source ingest, review actions, or notification dispatch after another worker has taken over.
 
 File storage writes lease JSON under `worker-leases` for local deployments. PostgreSQL storage uses `worker_leases` and acquires leases with a conditional `on conflict` update, which is the preferred path for multi-process or multi-host deployments.
 

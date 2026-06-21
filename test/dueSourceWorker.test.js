@@ -75,6 +75,72 @@ test('due source worker can run due source insight pipeline mode', async functio
   assert.equal(calls[0].traceId, workerRuns[0].id);
 });
 
+test('due source worker fails before source work when lease renewal is lost', async function () {
+  let sourceRuns = 0;
+  const savedRuns = [];
+  const worker = createDueSourceWorker({
+    logger: silentLogger(),
+    workerId: 'worker-a',
+    workerLeaseRepository: {
+      async acquireWorkerLease() {
+        return {
+          acquired: true,
+          lease: {
+            leaseKey: 'worker:due-source',
+            workerType: 'due-source',
+            ownerId: 'worker-a',
+            expiresAt: '2026-06-18T10:05:00.000Z'
+          }
+        };
+      },
+      async renewWorkerLease() {
+        return {
+          renewed: false,
+          lease: {
+            leaseKey: 'worker:due-source',
+            workerType: 'due-source',
+            ownerId: 'worker-b',
+            expiresAt: '2026-06-18T10:06:00.000Z'
+          }
+        };
+      },
+      async releaseWorkerLease() {
+        return { released: false };
+      },
+      async listWorkerLeases() {
+        return [];
+      }
+    },
+    workerRunRepository: {
+      async saveWorkerRun(run) {
+        savedRuns.push(Object.assign({}, run));
+      },
+      async findWorkerRun() {},
+      async listWorkerRuns() {
+        return savedRuns;
+      }
+    },
+    runtime: {
+      async runDueSourcesIngestTasks() {
+        sourceRuns += 1;
+        return {};
+      }
+    }
+  });
+
+  await assert.rejects(function () {
+    return worker.runOnce({});
+  }, function (error) {
+    return error.code === 'worker_lease_lost' && error.details.currentOwnerId === 'worker-b';
+  });
+
+  assert.equal(sourceRuns, 0);
+  assert.equal(savedRuns.at(-1).status, 'failed');
+  assert.equal(savedRuns.at(-1).error.code, 'worker_lease_lost');
+  assert.equal(savedRuns.at(-1).error.details.currentOwnerId, 'worker-b');
+  assert.match(savedRuns.at(-1).error.message, /Worker lease lost/);
+});
+
 function silentLogger() {
   return {
     log() {},

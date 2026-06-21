@@ -13,7 +13,7 @@
  * @property {Object=} input
  * @property {Object=} progress
  * @property {Object=} output
- * @property {{ message: string, stack?: string }=} error
+ * @property {{ code?: string, message: string, stack?: string, details?: Object }=} error
  * @property {string} startedAt
  * @property {string} updatedAt
  * @property {string} heartbeatAt

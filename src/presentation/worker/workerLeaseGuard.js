@@ -41,11 +41,29 @@ function createWorkerLeaseGuard(options) {
 
   async function renew() {
     if (!repository) return { renewed: true, disabled: true };
-    return repository.renewWorkerLease({
+    let result;
+    try {
+      result = await repository.renewWorkerLease({
+        leaseKey,
+        ownerId,
+        ttlMs
+      });
+    } catch (error) {
+      if (logger && typeof logger.warn === 'function') {
+        logger.warn('[worker] worker lease renew failed: ' + (error && error.message ? error.message : error));
+      }
+      throw error;
+    }
+    if (result && result.renewed) return Object.assign({ leaseKey, ownerId }, result);
+    const error = createWorkerLeaseLostError({
       leaseKey,
       ownerId,
-      ttlMs
+      lease: result && result.lease
     });
+    if (logger && typeof logger.warn === 'function') {
+      logger.warn('[worker] worker lease lost: ' + error.message);
+    }
+    throw error;
   }
 
   async function release() {
@@ -72,10 +90,26 @@ function createWorkerLeaseGuard(options) {
   };
 }
 
+function createWorkerLeaseLostError(details) {
+  const safeDetails = details || {};
+  const lease = safeDetails.lease;
+  const owner = lease && lease.ownerId ? lease.ownerId : 'none';
+  const error = new Error('Worker lease lost for ' + safeDetails.leaseKey + '; current owner is ' + owner + '.');
+  error.code = 'worker_lease_lost';
+  error.details = {
+    leaseKey: safeDetails.leaseKey,
+    ownerId: safeDetails.ownerId,
+    currentOwnerId: lease && lease.ownerId,
+    expiresAt: lease && lease.expiresAt
+  };
+  return error;
+}
+
 function defaultWorkerId(workerType) {
   return [workerType || 'worker', os.hostname(), process.pid].join(':');
 }
 
 module.exports = {
+  createWorkerLeaseLostError,
   createWorkerLeaseGuard
 };

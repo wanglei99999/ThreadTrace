@@ -36,6 +36,72 @@ test('notification event worker skips overlapping runs', async function () {
   assert.equal(callCount, 1);
 });
 
+test('notification event worker fails before dispatch when lease renewal is lost', async function () {
+  let dispatches = 0;
+  const savedRuns = [];
+  const worker = createNotificationEventWorker({
+    logger: silentLogger(),
+    workerId: 'worker-a',
+    workerLeaseRepository: {
+      async acquireWorkerLease() {
+        return {
+          acquired: true,
+          lease: {
+            leaseKey: 'worker:notification-event',
+            workerType: 'notification-event',
+            ownerId: 'worker-a',
+            expiresAt: '2026-06-18T10:05:00.000Z'
+          }
+        };
+      },
+      async renewWorkerLease() {
+        return {
+          renewed: false,
+          lease: {
+            leaseKey: 'worker:notification-event',
+            workerType: 'notification-event',
+            ownerId: 'worker-b',
+            expiresAt: '2026-06-18T10:06:00.000Z'
+          }
+        };
+      },
+      async releaseWorkerLease() {
+        return { released: false };
+      },
+      async listWorkerLeases() {
+        return [];
+      }
+    },
+    workerRunRepository: {
+      async saveWorkerRun(run) {
+        savedRuns.push(Object.assign({}, run));
+      },
+      async findWorkerRun() {},
+      async listWorkerRuns() {
+        return savedRuns;
+      }
+    },
+    runtime: {
+      async dispatchNotificationEvents() {
+        dispatches += 1;
+        return {};
+      }
+    }
+  });
+
+  await assert.rejects(function () {
+    return worker.runOnce({});
+  }, function (error) {
+    return error.code === 'worker_lease_lost' && error.details.currentOwnerId === 'worker-b';
+  });
+
+  assert.equal(dispatches, 0);
+  assert.equal(savedRuns.at(-1).status, 'failed');
+  assert.equal(savedRuns.at(-1).error.code, 'worker_lease_lost');
+  assert.equal(savedRuns.at(-1).error.details.currentOwnerId, 'worker-b');
+  assert.match(savedRuns.at(-1).error.message, /Worker lease lost/);
+});
+
 function silentLogger() {
   return {
     log() {},

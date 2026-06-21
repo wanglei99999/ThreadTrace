@@ -44,8 +44,10 @@ function markWorkerRunFailed(run, error, now) {
   return Object.assign({}, run, {
     status: 'failed',
     error: {
+      code: error && error.code,
       message: error && error.message ? error.message : String(error),
-      stack: error && error.stack
+      stack: error && error.stack,
+      details: error && error.details
     },
     finishedAt: timestamp,
     updatedAt: timestamp,
