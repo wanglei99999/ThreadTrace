@@ -40,7 +40,10 @@ async function getOperationalOverview(options) {
     events: summarizeEvents(pendingEvents, failedEvents, unacknowledgedEvents, now),
     workers: summarizeWorkers(workerRuns, workerLeases, now, safeOptions.workerStaleAfterMs),
     rawPages: summarizeRawPages(rawPages),
-    reviewActions: summarizeReviewActions(safeOptions.reviewActionAuditOverview),
+    reviewActions: summarizeReviewActions({
+      auditOverview: safeOptions.reviewActionAuditOverview,
+      executions: safeOptions.reviewActionExecutions
+    }),
     recent: {
       tasks: recentTasks.slice(0, 10).map(summarizeRecentTask),
       events: unacknowledgedEvents.slice(0, 10),
@@ -51,7 +54,10 @@ async function getOperationalOverview(options) {
   };
 }
 
-function summarizeReviewActions(overview) {
+function summarizeReviewActions(options) {
+  const safeOptions = options || {};
+  const overview = safeOptions.auditOverview;
+  const executionOverview = summarizeReviewActionExecutions(safeOptions.executions);
   if (!overview) {
     return {
       auditCount: 0,
@@ -59,7 +65,8 @@ function summarizeReviewActions(overview) {
       plannedClosureCount: 0,
       plannedMergeCandidateCount: 0,
       latestGeneratedAt: undefined,
-      status: 'unknown'
+      status: 'unknown',
+      executions: executionOverview
     };
   }
   return {
@@ -71,7 +78,24 @@ function summarizeReviewActions(overview) {
     latestGeneratedAt: overview.latestGeneratedAt,
     byAction: overview.byAction || {},
     byAdapter: overview.byAdapter || {},
-    recommendedNextAction: overview.recommendedNextAction
+    recommendedNextAction: overview.recommendedNextAction,
+    executions: executionOverview
+  };
+}
+
+function summarizeReviewActionExecutions(result) {
+  const executions = result && Array.isArray(result.executions) ? result.executions : [];
+  return {
+    status: result && result.status || (result ? 'ok' : 'unknown'),
+    count: result && result.count !== undefined ? result.count : executions.length,
+    completed: executions.filter(function (execution) { return execution.status === 'completed'; }).length,
+    running: executions.filter(function (execution) { return execution.status === 'running'; }).length,
+    failed: executions.filter(function (execution) { return execution.status === 'failed'; }).length,
+    latestUpdatedAt: latestTimestamp(executions.map(function (execution) {
+      return execution.updatedAt || execution.completedAt || execution.failedAt || execution.createdAt;
+    })),
+    latestTaskId: executions[0] && executions[0].taskId,
+    message: result && result.message
   };
 }
 

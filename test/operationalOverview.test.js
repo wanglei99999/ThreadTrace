@@ -137,6 +137,26 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
       byAdapter: {
         'file-audit': 2
       }
+    },
+    reviewActionExecutions: {
+      status: 'ok',
+      count: 2,
+      executions: [
+        {
+          key: 'context-review-action:v1:tasks.closure:1',
+          action: 'tasks.closure',
+          status: 'completed',
+          taskId: 'review-action-task-1',
+          updatedAt: '2026-06-18T09:59:00.000Z'
+        },
+        {
+          key: 'context-review-action:v1:context.merge:1',
+          action: 'context.merge',
+          status: 'running',
+          taskId: 'review-action-task-2',
+          updatedAt: '2026-06-18T09:57:00.000Z'
+        }
+      ]
     }
   });
 
@@ -167,4 +187,9 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
   assert.equal(overview.reviewActions.plannedClosureCount, 1);
   assert.equal(overview.reviewActions.plannedMergeCandidateCount, 1);
   assert.equal(overview.reviewActions.latestGeneratedAt, '2026-06-18T09:58:00.000Z');
+  assert.equal(overview.reviewActions.executions.count, 2);
+  assert.equal(overview.reviewActions.executions.completed, 1);
+  assert.equal(overview.reviewActions.executions.running, 1);
+  assert.equal(overview.reviewActions.executions.failed, 0);
+  assert.equal(overview.reviewActions.executions.latestUpdatedAt, '2026-06-18T09:59:00.000Z');
 });

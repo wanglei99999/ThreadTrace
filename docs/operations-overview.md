@@ -100,7 +100,7 @@ See `docs/rollout-manifest-apply.md` for the apply contract.
 - Events: unacknowledged pending/failed delivery counts, total unacknowledged events, delivery-due count, and next delivery time.
 - Workers: recent run totals, running/stale counts, latest heartbeat time, active/expired leases, and stale run samples.
 - Raw pages: recent raw evidence count and latest fetch time.
-- Review actions: file-audit executor record count, unique task count, planned closure/merge totals, latest audit time, adapter counts, and action counts.
+- Review actions: file-audit executor record count, unique task count, planned closure/merge totals, latest audit time, adapter/action counts, and execution-ledger totals grouped by completed/running/failed.
 - Storage mode and generation time.
 
 The first implementation uses repository list operations with a bounded window. PostgreSQL deployments can later optimize the same use case with aggregate queries without changing API or Web contracts.

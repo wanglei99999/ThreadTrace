@@ -7,6 +7,7 @@ function getDeploymentChecklist(options) {
   const connectorReadiness = safeOptions.connectorReadiness || {};
   const notificationDiagnostics = safeOptions.notificationDiagnostics || {};
   const reviewActionExecutorDiagnostics = safeOptions.reviewActionExecutorDiagnostics || {};
+  const reviewActionExecutionSummary = summarizeReviewActionExecutions(safeOptions.reviewActionExecutions);
   const sourceDiagnostics = safeOptions.sourceDiagnostics || {};
   const readiness = safeOptions.readiness || {};
   const items = [
@@ -47,6 +48,15 @@ function getDeploymentChecklist(options) {
       audit: reviewActionExecutorDiagnostics.audit,
       checks: selectCheckKeys(reviewActionExecutorDiagnostics.checks, /^reviewActionExecutor\./)
     }),
+    item('reviewActions.executionLedger', 'review-actions', reviewActionExecutionStatus(reviewActionExecutionSummary), 'Review action execution ledger prevents duplicate downstream mutations.', {
+      status: reviewActionExecutionSummary.status,
+      count: reviewActionExecutionSummary.count,
+      completed: reviewActionExecutionSummary.completed,
+      running: reviewActionExecutionSummary.running,
+      failed: reviewActionExecutionSummary.failed,
+      latestUpdatedAt: reviewActionExecutionSummary.latestUpdatedAt,
+      message: reviewActionExecutionSummary.message
+    }),
     item('llm.configuration', 'llm', aggregateChecks(diagnostics.checks, /^config\.llm\./), 'LLM provider configuration is ready for the selected provider.', {
       provider: diagnostics.configuration && diagnostics.configuration.llm && diagnostics.configuration.llm.provider,
       checks: selectCheckKeys(diagnostics.checks, /^config\.llm\./)
@@ -62,9 +72,32 @@ function getDeploymentChecklist(options) {
     connectorReadiness,
     notificationDiagnostics,
     reviewActionExecutorDiagnostics,
+    reviewActionExecutions: reviewActionExecutionSummary,
     sourceDiagnostics,
     readiness
   };
+}
+
+function summarizeReviewActionExecutions(result) {
+  const executions = result && Array.isArray(result.executions) ? result.executions : [];
+  return {
+    status: result && result.status || (result ? 'ok' : 'warn'),
+    count: result && result.count !== undefined ? result.count : executions.length,
+    completed: executions.filter(function (execution) { return execution.status === 'completed'; }).length,
+    running: executions.filter(function (execution) { return execution.status === 'running'; }).length,
+    failed: executions.filter(function (execution) { return execution.status === 'failed'; }).length,
+    latestUpdatedAt: latestTimestamp(executions.map(function (execution) {
+      return execution.updatedAt || execution.completedAt || execution.failedAt || execution.createdAt;
+    })),
+    message: result && result.message
+  };
+}
+
+function reviewActionExecutionStatus(summary) {
+  if (!summary || summary.status === 'warn') return 'warn';
+  if (summary.failed > 0) return 'fail';
+  if (summary.running > 0) return 'warn';
+  return 'ok';
 }
 
 function item(key, area, status, summary, evidence) {
@@ -132,6 +165,13 @@ function aggregateStatuses(statuses) {
   if (statuses.some(function (status) { return status === 'fail'; })) return 'fail';
   if (statuses.some(function (status) { return status === 'warn'; })) return 'warn';
   return 'ok';
+}
+
+function latestTimestamp(values) {
+  return values
+    .filter(Boolean)
+    .sort()
+    .reverse()[0];
 }
 
 module.exports = {

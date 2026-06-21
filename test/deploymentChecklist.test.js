@@ -88,6 +88,26 @@ test('deployment checklist aggregates runtime, source, readiness, notification, 
         { key: 'reviewActionExecutor.mergeContext', status: 'ok', summary: 'Executor mergeContext(request) method is required for execute=true.' }
       ]
     },
+    reviewActionExecutions: {
+      status: 'ok',
+      count: 2,
+      executions: [
+        {
+          key: 'context-review-action:v1:tasks.closure:1',
+          action: 'tasks.closure',
+          status: 'completed',
+          taskId: 'task-1',
+          updatedAt: '2026-06-19T09:59:00.000Z'
+        },
+        {
+          key: 'context-review-action:v1:context.merge:1',
+          action: 'context.merge',
+          status: 'completed',
+          taskId: 'task-1',
+          updatedAt: '2026-06-19T09:58:00.000Z'
+        }
+      ]
+    },
     readiness: {
       status: 'fail',
       checks: [
@@ -139,7 +159,73 @@ test('deployment checklist aggregates runtime, source, readiness, notification, 
   assert.equal(reviewActionExecutorItem.evidence.mode, 'file-audit');
   assert.equal(reviewActionExecutorItem.evidence.audit.count, 2);
   assert.equal(reviewActionExecutorItem.evidence.checks.length, 3);
+  const reviewActionLedgerItem = checklist.items.find(function (item) {
+    return item.key === 'reviewActions.executionLedger';
+  });
+  assert.equal(reviewActionLedgerItem.status, 'ok');
+  assert.equal(reviewActionLedgerItem.evidence.count, 2);
+  assert.equal(reviewActionLedgerItem.evidence.completed, 2);
+  assert.equal(reviewActionLedgerItem.evidence.latestUpdatedAt, '2026-06-19T09:59:00.000Z');
   assert.equal(checklist.items.find(function (item) {
     return item.key === 'llm.configuration';
   }).status, 'warn');
+});
+
+test('deployment checklist fails when review action execution ledger has failed records', function () {
+  const checklist = getDeploymentChecklist({
+    now: '2026-06-19T10:00:00.000Z',
+    diagnostics: {
+      status: 'ok',
+      configuration: {
+        storageMode: 'file',
+        llm: {
+          provider: 'mock'
+        }
+      },
+      checks: [
+        { key: 'resources.storeDir', status: 'ok', summary: 'Store directory is writable.' },
+        { key: 'config.llm.provider', status: 'ok', summary: 'LLM provider is configured.' }
+      ]
+    },
+    adapterDiagnostics: { status: 'ok', adapterCount: 1 },
+    connectorReadiness: { status: 'ok', connectorCount: 1, sourceCount: 1 },
+    sourceDiagnostics: { status: 'ok', sourceCount: 1, sources: [] },
+    notificationDiagnostics: {
+      channel: 'file',
+      checks: [
+        { key: 'notifications.channel', status: 'ok', summary: 'Notification channel is supported.' }
+      ]
+    },
+    reviewActionExecutorDiagnostics: {
+      status: 'ok',
+      mode: 'file-audit',
+      ready: true,
+      checks: []
+    },
+    reviewActionExecutions: {
+      status: 'ok',
+      count: 1,
+      executions: [
+        {
+          key: 'context-review-action:v1:tasks.closure:failed',
+          action: 'tasks.closure',
+          status: 'failed',
+          taskId: 'task-failed',
+          updatedAt: '2026-06-19T09:59:00.000Z'
+        }
+      ]
+    },
+    readiness: {
+      status: 'ok',
+      checks: [
+        { key: 'workers.stale', status: 'ok', summary: 'Worker runs are stale.' },
+        { key: 'events.failed', status: 'ok', summary: 'Notification events failed delivery.' }
+      ]
+    }
+  });
+
+  assert.equal(checklist.status, 'fail');
+  assert.equal(checklist.items.find(function (item) {
+    return item.key === 'reviewActions.executionLedger';
+  }).status, 'fail');
 });

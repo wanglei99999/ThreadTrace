@@ -148,6 +148,27 @@ function createThreadTraceRuntime(options) {
     }
     return createFileRepositories(resolveStoreDir(defaults, storeDir));
   };
+  const listReviewActionExecutionsFor = function (request) {
+    const safeRequest = request || {};
+    const repositories = createRepositoriesFor(safeRequest.storeDir);
+    if (!repositories.contextReviewActionExecutionRepository) {
+      return {
+        generatedAt: safeRequest.now || new Date().toISOString(),
+        status: 'warn',
+        count: 0,
+        executions: [],
+        message: 'Context review action execution repository is not configured for this storage mode.'
+      };
+    }
+    return listContextReviewActionExecutions({
+      contextReviewActionExecutionRepository: repositories.contextReviewActionExecutionRepository,
+      action: safeRequest.action,
+      status: safeRequest.status,
+      taskId: safeRequest.taskId,
+      limit: safeRequest.limit || 50,
+      now: safeRequest.now
+    });
+  };
   const getPostgresClient = function () {
     if (!postgresClient) {
       postgresClient = createPostgresPool(safeOptions.postgres);
@@ -325,25 +346,7 @@ function createThreadTraceRuntime(options) {
     },
 
     async listContextReviewActionExecutions(request) {
-      const safeRequest = request || {};
-      const repositories = createRepositoriesFor(safeRequest.storeDir);
-      if (!repositories.contextReviewActionExecutionRepository) {
-        return {
-          generatedAt: safeRequest.now || new Date().toISOString(),
-          status: 'warn',
-          count: 0,
-          executions: [],
-          message: 'Context review action execution repository is not configured for this storage mode.'
-        };
-      }
-      return listContextReviewActionExecutions({
-        contextReviewActionExecutionRepository: repositories.contextReviewActionExecutionRepository,
-        action: safeRequest.action,
-        status: safeRequest.status,
-        taskId: safeRequest.taskId,
-        limit: safeRequest.limit || 50,
-        now: safeRequest.now
-      });
+      return listReviewActionExecutionsFor(request);
     },
 
     async getContextReviewActionAuditOverview(request) {
@@ -906,6 +909,11 @@ function createThreadTraceRuntime(options) {
         limit: safeRequest.limit || 100,
         now: safeRequest.now
       });
+      const reviewActionExecutions = await listReviewActionExecutionsFor({
+        limit: safeRequest.limit || 100,
+        now: safeRequest.now,
+        storeDir
+      });
       const overview = await getOperationalOverview({
         sourceRepository: repositories.sourceRepository,
         taskRepository: repositories.taskRepository,
@@ -914,6 +922,7 @@ function createThreadTraceRuntime(options) {
         workerRunRepository: repositories.workerRunRepository,
         workerLeaseRepository: repositories.workerLeaseRepository,
         reviewActionAuditOverview,
+        reviewActionExecutions,
         now: safeRequest.now,
         limit: safeRequest.limit || 100,
         workerStaleAfterMs: safeRequest.workerStaleAfterMs
@@ -1037,12 +1046,18 @@ function createThreadTraceRuntime(options) {
         now: safeRequest.now,
         storeDir: safeRequest.storeDir
       });
+      const reviewActionExecutions = await listReviewActionExecutionsFor({
+        limit: safeRequest.limit || 100,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir
+      });
       return getDeploymentChecklist({
         diagnostics,
         adapterDiagnostics,
         connectorReadiness,
         notificationDiagnostics,
         reviewActionExecutorDiagnostics,
+        reviewActionExecutions,
         sourceDiagnostics,
         readiness,
         now: safeRequest.now
