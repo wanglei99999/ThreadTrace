@@ -88,6 +88,7 @@ const { createFileWorkerRunRepository } = require('../infrastructure/storage/fil
 const { createFileWorkerLeaseRepository } = require('../infrastructure/storage/fileWorkerLeaseRepository');
 const { createFileContextReviewResultRepository } = require('../infrastructure/storage/fileContextReviewResultRepository');
 const { createFileContextReviewActionAuditRepository } = require('../infrastructure/storage/fileContextReviewActionAuditRepository');
+const { createFileContextReviewActionExecutionRepository } = require('../infrastructure/storage/fileContextReviewActionExecutionRepository');
 const { createFileNotificationChannel } = require('../infrastructure/notifications/fileNotificationChannel');
 const { createWebhookNotificationChannel } = require('../infrastructure/notifications/webhookNotificationChannel');
 const { createFileContextReviewActionExecutor } = require('../infrastructure/review-actions/fileContextReviewActionExecutor');
@@ -303,6 +304,7 @@ function createThreadTraceRuntime(options) {
         requestId: safeRequest.requestId,
         traceId: safeRequest.traceId,
         idempotencyKey: safeRequest.idempotencyKey,
+        contextReviewActionExecutionRepository: repositories.contextReviewActionExecutionRepository,
         contextReviewActionExecutor
       });
     },
@@ -1638,6 +1640,9 @@ function createFileRepositories(storeDir) {
     }),
     contextReviewResultRepository: createFileContextReviewResultRepository({
       baseDir: path.join(storeDir, 'context-review-results')
+    }),
+    contextReviewActionExecutionRepository: createFileContextReviewActionExecutionRepository({
+      baseDir: path.join(storeDir, 'review-action-executions')
     })
   };
 }

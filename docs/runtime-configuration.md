@@ -67,6 +67,8 @@ The same report is available at `GET /api/operations/worker-topology-plan`. See 
 
 `file-audit` composes the built-in local audit executor. It writes closure and merge requests under `THREADTRACE_STORE_DIR/review-action-audits` and returns `changed=false`, so operators can test the execution path without mutating a real task tracker or context store.
 
+File-backed execution also maintains an idempotency ledger under `THREADTRACE_STORE_DIR/review-action-executions` so repeated executor-backed runs can replay completed closure or merge calls instead of duplicating downstream work.
+
 ## Connectors
 
 | Variable | Default | Purpose |

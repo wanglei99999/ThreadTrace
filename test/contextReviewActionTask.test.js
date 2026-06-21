@@ -107,6 +107,52 @@ test('context review action task executes context review action executor port', 
   assert.deepEqual(result.report.executorResults.contextMerge.mergedTaskIds, ['task-1']);
 });
 
+test('context review action task replays completed executor actions through execution ledger', async function () {
+  const calls = [];
+  const executionRepository = memoryExecutionRepository();
+  const executor = {
+    closeTasks: async function (request) {
+      calls.push(['closure', request.closeTaskIds]);
+      return {
+        closedTaskIds: request.closeTaskIds
+      };
+    },
+    mergeContext: async function (request) {
+      calls.push(['merge', request.mergeCandidates.map(function (candidate) { return candidate.taskId; })]);
+      return {
+        mergedTaskIds: request.mergeCandidates.map(function (candidate) { return candidate.taskId; })
+      };
+    }
+  };
+
+  const first = await runContextReviewActionTask({
+    taskRepository: taskRepository([]),
+    getContextReviewResultActionGate,
+    execute: true,
+    contextReviewActionExecutor: executor,
+    contextReviewActionExecutionRepository: executionRepository,
+    now: '2026-06-21T10:00:00.000Z'
+  });
+  const second = await runContextReviewActionTask({
+    taskRepository: taskRepository([]),
+    getContextReviewResultActionGate,
+    execute: true,
+    contextReviewActionExecutor: executor,
+    contextReviewActionExecutionRepository: executionRepository,
+    now: '2026-06-21T10:05:00.000Z'
+  });
+
+  assert.deepEqual(calls, [
+    ['closure', ['task-1']],
+    ['merge', ['task-1']]
+  ]);
+  assert.equal(first.report.executorResults.taskClosure.executionLedger.replayed, false);
+  assert.equal(second.report.executorResults.taskClosure.executionLedger.replayed, true);
+  assert.equal(second.report.executorResults.contextMerge.executionLedger.replayed, true);
+  assert.deepEqual(second.report.executorResults.taskClosure.closedTaskIds, ['task-1']);
+  assert.deepEqual(second.report.executorResults.contextMerge.mergedTaskIds, ['task-1']);
+});
+
 test('context review action task keeps legacy function executor compatibility', async function () {
   const calls = [];
   const result = await runContextReviewActionTask({
@@ -140,6 +186,53 @@ function taskRepository(saved) {
     async findTask() {},
     async listTasks() {
       return saved;
+    }
+  };
+}
+
+function memoryExecutionRepository() {
+  const records = new Map();
+  return {
+    async claimExecution(record) {
+      const existing = records.get(record.key);
+      if (existing && (existing.status === 'completed' || existing.status === 'running')) {
+        return {
+          claimed: false,
+          record: existing
+        };
+      }
+      const next = Object.assign({}, existing || {}, record, {
+        status: 'running',
+        attemptCount: existing ? (existing.attemptCount || 1) + 1 : 1
+      });
+      records.set(record.key, next);
+      return {
+        claimed: true,
+        record: next
+      };
+    },
+    async completeExecution(key, result, metadata) {
+      const next = Object.assign({}, records.get(key) || {}, metadata || {}, {
+        key,
+        status: 'completed',
+        result
+      });
+      records.set(key, next);
+      return next;
+    },
+    async failExecution(key, error, metadata) {
+      const next = Object.assign({}, records.get(key) || {}, metadata || {}, {
+        key,
+        status: 'failed',
+        error: {
+          message: error.message
+        }
+      });
+      records.set(key, next);
+      return next;
+    },
+    async findExecution(key) {
+      return records.get(key);
     }
   };
 }

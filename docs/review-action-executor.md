@@ -47,7 +47,17 @@ Adapters should return compact audit-friendly objects. The task output stores th
 - `execute: true` requires both `closeTasks` and `mergeContext`.
 - A failing action gate prevents executor calls.
 - Missing executor methods produce a failed report with `executorReadiness.missing`.
+- File-backed runtimes keep an action execution ledger under `THREADTRACE_STORE_DIR/review-action-executions`. Each logical `tasks.closure` or `context.merge` call is claimed before the adapter runs; a completed ledger entry is replayed instead of calling the adapter again.
+- If another process has already claimed the same logical action and it is still running, the task fails fast instead of risking a duplicate downstream mutation. Retry after the first execution finishes or after an operator resolves the stale ledger entry.
 - The action plan is conservative: blocker, keep-open, and conflict signals win over closure or merge.
+
+## Idempotency Boundary
+
+Task-level idempotency protects repeated client calls with the same idempotency key. The execution ledger protects the downstream mutation boundary even when a task crashes after an adapter call but before the task record is marked completed.
+
+Ledger keys are derived from the logical action type and the conservative action-plan payload, not from the transient task id. Adapter results are stored in the ledger and surfaced back under `report.executorResults.*.executionLedger`.
+
+Future PostgreSQL deployments should implement the same `ContextReviewActionExecutionRepository` port with a unique execution key and conflict-aware claim operation. The file implementation is suitable for local and single-node deployments.
 
 ## Legacy Compatibility
 
@@ -79,6 +89,12 @@ THREADTRACE_STORE_DIR/review-action-audits
 ```
 
 The file executor returns `changed=false` and stores the planned closure ids, merge candidates, compact gate evidence, and task id. Use it for local demos, staging rehearsals, and downstream adapter contract tests before wiring a real task tracker or context store.
+
+When paired with file storage, executor calls are also tracked in:
+
+```text
+THREADTRACE_STORE_DIR/review-action-executions
+```
 
 Inspect audit records with:
 

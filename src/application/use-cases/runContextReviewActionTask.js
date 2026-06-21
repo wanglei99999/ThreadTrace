@@ -1,6 +1,10 @@
 'use strict';
 
+const crypto = require('crypto');
 const { assertTaskRepository } = require('../ports/taskRepository');
+const {
+  assertContextReviewActionExecutionRepository
+} = require('../ports/contextReviewActionExecutionRepository');
 const {
   getContextReviewActionExecutorReadiness
 } = require('../ports/contextReviewActionExecutor');
@@ -18,6 +22,7 @@ const {
 async function runContextReviewActionTask(options) {
   const safeOptions = options || {};
   const taskRepository = assertTaskRepository(safeOptions.taskRepository);
+  const executionRepository = assertContextReviewActionExecutionRepository(safeOptions.contextReviewActionExecutionRepository);
   if (typeof safeOptions.getContextReviewResultActionGate !== 'function') {
     throw new Error('runContextReviewActionTask requires getContextReviewResultActionGate(request).');
   }
@@ -61,6 +66,7 @@ async function runContextReviewActionTask(options) {
       execute,
       executor: executorReadiness.executor,
       executorReady: executorReadiness.ready,
+      executionRepository,
       taskId: task.id,
       now: safeOptions.now,
       storeDir: safeOptions.storeDir
@@ -155,24 +161,103 @@ async function runExecutors(options) {
   if (actionGate.status === 'fail') return {};
   if (!safeOptions.executorReady) return {};
 
-  const taskClosure = await safeOptions.executor.closeTasks({
+  const taskClosureRequest = {
     taskId: safeOptions.taskId,
     closeTaskIds: actionPlan.closeTaskIds || [],
     actionGate,
     now: safeOptions.now,
     storeDir: safeOptions.storeDir
-  });
-  const contextMerge = await safeOptions.executor.mergeContext({
+  };
+  const contextMergeRequest = {
     taskId: safeOptions.taskId,
     mergeCandidates: actionPlan.mergeCandidates || [],
     actionGate,
     now: safeOptions.now,
     storeDir: safeOptions.storeDir
+  };
+  const taskClosure = await runExecutorAction({
+    executionRepository: safeOptions.executionRepository,
+    action: 'tasks.closure',
+    request: taskClosureRequest,
+    logicalInput: {
+      closeTaskIds: taskClosureRequest.closeTaskIds,
+      actionPlan: compactActionPlanForLedger(actionPlan)
+    },
+    taskId: safeOptions.taskId,
+    now: safeOptions.now,
+    execute: function () {
+      return safeOptions.executor.closeTasks(taskClosureRequest);
+    }
+  });
+  const contextMerge = await runExecutorAction({
+    executionRepository: safeOptions.executionRepository,
+    action: 'context.merge',
+    request: contextMergeRequest,
+    logicalInput: {
+      mergeCandidates: contextMergeRequest.mergeCandidates,
+      actionPlan: compactActionPlanForLedger(actionPlan)
+    },
+    taskId: safeOptions.taskId,
+    now: safeOptions.now,
+    execute: function () {
+      return safeOptions.executor.mergeContext(contextMergeRequest);
+    }
   });
   return {
     taskClosure,
     contextMerge
   };
+}
+
+async function runExecutorAction(options) {
+  const safeOptions = options || {};
+  const repository = safeOptions.executionRepository;
+  if (!repository) {
+    return safeOptions.execute();
+  }
+
+  const key = buildExecutionKey(safeOptions.action, safeOptions.logicalInput);
+  const claimed = await repository.claimExecution({
+    key,
+    action: safeOptions.action,
+    taskId: safeOptions.taskId,
+    requestHash: hashStable(safeOptions.logicalInput),
+    request: safeOptions.request,
+    now: safeOptions.now
+  });
+
+  if (!claimed.claimed) {
+    if (claimed.record && claimed.record.status === 'completed') {
+      return withExecutionLedger(claimed.record.result, {
+        key,
+        status: 'completed',
+        replayed: true,
+        originalTaskId: claimed.record.taskId
+      });
+    }
+    const error = new Error('Context review action execution is already running: ' + key);
+    error.code = 'CONTEXT_REVIEW_ACTION_EXECUTION_RUNNING';
+    throw error;
+  }
+
+  try {
+    const result = await safeOptions.execute();
+    await repository.completeExecution(key, result, {
+      taskId: safeOptions.taskId,
+      now: safeOptions.now
+    });
+    return withExecutionLedger(result, {
+      key,
+      status: 'completed',
+      replayed: false
+    });
+  } catch (error) {
+    await repository.failExecution(key, error, {
+      taskId: safeOptions.taskId,
+      now: safeOptions.now
+    });
+    throw error;
+  }
 }
 
 function resolveExecutorCandidate(options) {
@@ -269,6 +354,51 @@ function compactActionGate(actionGate) {
       recommendedNextAction: actionGate.actionPlan.recommendedNextAction
     } : undefined
   };
+}
+
+function compactActionPlanForLedger(actionPlan) {
+  const safeActionPlan = actionPlan || {};
+  return {
+    closeTaskIds: safeActionPlan.closeTaskIds || [],
+    mergeCandidates: (safeActionPlan.mergeCandidates || []).map(function (candidate) {
+      return {
+        taskId: candidate.taskId,
+        decision: candidate.decision,
+        confidence: candidate.confidence,
+        recordId: candidate.recordId,
+        handoffId: candidate.handoffId
+      };
+    })
+  };
+}
+
+function buildExecutionKey(action, logicalInput) {
+  return 'context-review-action:v1:' + action + ':' + hashStable(logicalInput);
+}
+
+function hashStable(value) {
+  return crypto
+    .createHash('sha256')
+    .update(stableStringify(value))
+    .digest('hex');
+}
+
+function stableStringify(value) {
+  if (Array.isArray(value)) {
+    return '[' + value.map(stableStringify).join(',') + ']';
+  }
+  if (value && typeof value === 'object') {
+    return '{' + Object.keys(value).sort().map(function (key) {
+      return JSON.stringify(key) + ':' + stableStringify(value[key]);
+    }).join(',') + '}';
+  }
+  return JSON.stringify(value);
+}
+
+function withExecutionLedger(result, ledger) {
+  return Object.assign({}, result || {}, {
+    executionLedger: ledger
+  });
 }
 
 function step(key, status, summary, evidence) {
