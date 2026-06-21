@@ -10,6 +10,7 @@
  * @property {(key: string, result: Object, metadata?: Object) => Promise<Object>} completeExecution
  * @property {(key: string, error: Error, metadata?: Object) => Promise<Object>} failExecution
  * @property {(key: string) => Promise<Object | undefined>} findExecution
+ * @property {(query?: { action?: string, status?: string, taskId?: string, limit?: number }) => Promise<Object[]>} listExecutions
  */
 
 function assertContextReviewActionExecutionRepository(repository) {
@@ -25,6 +26,9 @@ function assertContextReviewActionExecutionRepository(repository) {
   }
   if (typeof repository.findExecution !== 'function') {
     throw new Error('ContextReviewActionExecutionRepository must implement findExecution(key).');
+  }
+  if (typeof repository.listExecutions !== 'function') {
+    throw new Error('ContextReviewActionExecutionRepository must implement listExecutions(query).');
   }
   return repository;
 }

@@ -233,6 +233,14 @@ function memoryExecutionRepository() {
     },
     async findExecution(key) {
       return records.get(key);
+    },
+    async listExecutions(query) {
+      const safeQuery = query || {};
+      return Array.from(records.values()).filter(function (record) {
+        return (!safeQuery.action || record.action === safeQuery.action) &&
+          (!safeQuery.status || record.status === safeQuery.status) &&
+          (!safeQuery.taskId || record.taskId === safeQuery.taskId);
+      }).slice(0, safeQuery.limit || records.size);
     }
   };
 }

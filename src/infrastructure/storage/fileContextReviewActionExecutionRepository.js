@@ -95,6 +95,28 @@ function createFileContextReviewActionExecutionRepository(options) {
         if (error && error.code === 'ENOENT') return undefined;
         throw error;
       }
+    },
+
+    async listExecutions(query) {
+      const safeQuery = query || {};
+      const files = await listExecutionFiles(baseDir);
+      const records = [];
+
+      for (const filePath of files) {
+        const record = JSON.parse(await fs.readFile(filePath, 'utf8'));
+        if (safeQuery.action && record.action !== safeQuery.action) continue;
+        if (safeQuery.status && record.status !== safeQuery.status) continue;
+        if (safeQuery.taskId && record.taskId !== safeQuery.taskId) continue;
+        records.push(Object.assign({}, record, {
+          filePath
+        }));
+      }
+
+      return records
+        .sort(function (a, b) {
+          return String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || ''));
+        })
+        .slice(0, safeQuery.limit || records.length);
     }
   };
 
@@ -108,6 +130,22 @@ async function readExecution(filePath) {
 async function writeExecution(filePath, payload) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(filePath, JSON.stringify(payload, null, 2) + '\n', 'utf8');
+}
+
+async function listExecutionFiles(baseDir) {
+  try {
+    const entries = await fs.readdir(baseDir, { withFileTypes: true });
+    return entries
+      .filter(function (entry) {
+        return entry.isFile() && /\.json$/i.test(entry.name);
+      })
+      .map(function (entry) {
+        return path.join(baseDir, entry.name);
+      });
+  } catch (error) {
+    if (error && error.code === 'ENOENT') return [];
+    throw error;
+  }
 }
 
 function executionPath(baseDir, key) {

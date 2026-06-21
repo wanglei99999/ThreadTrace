@@ -344,6 +344,27 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/context-review-results/action-executions': {
+        get: {
+          summary: 'List review action execution ledger records for idempotency and replay inspection',
+          parameters: [
+            { name: 'action', in: 'query', required: false, schema: { type: 'string', example: 'tasks.closure' } },
+            { name: 'status', in: 'query', required: false, schema: { type: 'string', example: 'completed' } },
+            { name: 'taskId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number', example: 50 } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-21T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Execution ledger records with action type, status, request hash, result, and file path when available'
+            },
+            503: {
+              description: 'Execution ledger repository is not configured for this storage mode'
+            }
+          }
+        }
+      },
       '/api/context-review-results/action-executor/diagnostics': {
         get: {
           summary: 'Report review action executor mode, readiness, and audit evidence before execute=true',

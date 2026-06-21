@@ -151,6 +151,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(homeHtml, /refreshReviewActionGateButton/);
     assert.match(homeHtml, /runReviewActionApplyButton/);
     assert.match(homeHtml, /synthesizeReviewResultEventsButton/);
+    assert.match(homeHtml, /refreshReviewActionExecutionsButton/);
     assert.match(homeHtml, /deliveryStatus/);
     assert.match(homeHtml, /refreshSourceOperationsButton/);
     assert.match(homeHtml, /sourceOperationsResult/);
@@ -178,12 +179,14 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /loadContextReviewResultActionPlan/);
     assert.match(webAppJs, /loadContextReviewResultActionGate/);
     assert.match(webAppJs, /loadContextReviewActionAudits/);
+    assert.match(webAppJs, /loadContextReviewActionExecutions/);
     assert.match(webAppJs, /loadContextReviewActionExecutorDiagnostics/);
     assert.match(webAppJs, /runContextReviewActionApply/);
     assert.match(webAppJs, /renderContextReviewResultOverview/);
     assert.match(webAppJs, /renderContextReviewResultActionPlan/);
     assert.match(webAppJs, /renderContextReviewResultActionGate/);
     assert.match(webAppJs, /renderContextReviewActionAuditPanel/);
+    assert.match(webAppJs, /renderContextReviewActionExecutionPanel/);
     assert.match(webAppJs, /renderContextReviewActionExecutorDiagnostics/);
     assert.match(webAppJs, /renderContextReviewActionApplyResult/);
     assert.match(webAppJs, /synthesizeReviewResultEvents/);
@@ -461,9 +464,13 @@ test('http server lists file-audit review action executor records', async functi
     const overview = await getJson(baseUrl + '/api/context-review-results/action-audits/overview?limit=10');
     const audits = await getJson(baseUrl + '/api/context-review-results/action-audits?limit=10');
     const closureAudits = await getJson(baseUrl + '/api/context-review-results/action-audits?action=tasks.closure');
+    const executions = await getJson(baseUrl + '/api/context-review-results/action-executions?limit=10');
+    const closureExecutions = await getJson(baseUrl + '/api/context-review-results/action-executions?action=tasks.closure&status=completed');
+    const openApi = await getJson(baseUrl + '/openapi.json');
 
     assert.equal(apply.report.executed, true);
     assert.equal(apply.report.executorResults.taskClosure.adapter, 'file-audit');
+    assert.equal(apply.report.executorResults.taskClosure.executionLedger.replayed, false);
     assert.equal(diagnostics.status, 'ok');
     assert.equal(diagnostics.mode, 'file-audit');
     assert.equal(diagnostics.ready, true);
@@ -476,6 +483,11 @@ test('http server lists file-audit review action executor records', async functi
     assert.equal(audits.count, 2);
     assert.equal(closureAudits.count, 1);
     assert.equal(closureAudits.audits[0].request.taskId, apply.task.id);
+    assert.equal(executions.status, 'ok');
+    assert.equal(executions.count, 2);
+    assert.equal(closureExecutions.count, 1);
+    assert.equal(closureExecutions.executions[0].taskId, apply.task.id);
+    assert.ok(openApi.paths['/api/context-review-results/action-executions']);
   } finally {
     await close(server);
   }

@@ -72,6 +72,7 @@ const { getContextReviewResultActionPlan } = require('../application/use-cases/g
 const { getContextReviewResultActionGate } = require('../application/use-cases/getContextReviewResultActionGate');
 const { runContextReviewActionTask } = require('../application/use-cases/runContextReviewActionTask');
 const { listContextReviewActionAudits } = require('../application/use-cases/listContextReviewActionAudits');
+const { listContextReviewActionExecutions } = require('../application/use-cases/listContextReviewActionExecutions');
 const { getContextReviewActionAuditOverview } = require('../application/use-cases/getContextReviewActionAuditOverview');
 const { getContextReviewActionExecutorDiagnostics } = require('../application/use-cases/getContextReviewActionExecutorDiagnostics');
 const { validateConnectorModuleLoad } = require('../application/use-cases/validateConnectorModuleLoad');
@@ -317,6 +318,28 @@ function createThreadTraceRuntime(options) {
           baseDir: path.join(storeDir, 'review-action-audits')
         }),
         action: safeRequest.action,
+        taskId: safeRequest.taskId,
+        limit: safeRequest.limit || 50,
+        now: safeRequest.now
+      });
+    },
+
+    async listContextReviewActionExecutions(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      if (!repositories.contextReviewActionExecutionRepository) {
+        return {
+          generatedAt: safeRequest.now || new Date().toISOString(),
+          status: 'warn',
+          count: 0,
+          executions: [],
+          message: 'Context review action execution repository is not configured for this storage mode.'
+        };
+      }
+      return listContextReviewActionExecutions({
+        contextReviewActionExecutionRepository: repositories.contextReviewActionExecutionRepository,
+        action: safeRequest.action,
+        status: safeRequest.status,
         taskId: safeRequest.taskId,
         limit: safeRequest.limit || 50,
         now: safeRequest.now

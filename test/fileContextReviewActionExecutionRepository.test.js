@@ -40,6 +40,15 @@ test('file context review action execution repository claims and replays complet
   assert.equal(replayClaim.claimed, false);
   assert.equal(replayClaim.record.status, 'completed');
   assert.deepEqual(replayClaim.record.result.closedTaskIds, ['task-a']);
+
+  const listed = await repository.listExecutions({
+    action: 'tasks.closure',
+    status: 'completed',
+    limit: 5
+  });
+  assert.equal(listed.length, 1);
+  assert.equal(listed[0].taskId, 'task-1');
+  assert.match(listed[0].filePath, /context-review-action/);
 });
 
 test('file context review action execution repository blocks duplicate running claims', async function () {

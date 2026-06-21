@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshReviewActionGateButton').addEventListener('click', loadContextReviewResultActionGate);
   document.getElementById('runReviewActionApplyButton').addEventListener('click', runContextReviewActionApply);
   document.getElementById('refreshReviewActionAuditsButton').addEventListener('click', loadContextReviewActionAudits);
+  document.getElementById('refreshReviewActionExecutionsButton').addEventListener('click', loadContextReviewActionExecutions);
   document.getElementById('refreshReviewActionExecutorDiagnosticsButton').addEventListener('click', loadContextReviewActionExecutorDiagnostics);
   document.getElementById('synthesizeReviewResultEventsButton').addEventListener('click', synthesizeReviewResultEvents);
   document.getElementById('refreshRawPagesButton').addEventListener('click', loadRawPages);
@@ -613,6 +614,14 @@ async function loadContextReviewActionAudits() {
       };
     });
   }, renderContextReviewActionAuditPanel);
+}
+
+async function loadContextReviewActionExecutions() {
+  await renderAsync('contextReviewResultResult', function () {
+    return fetchJson('/api/context-review-results/action-executions?limit=20', {
+      acceptErrorStatus: true
+    });
+  }, renderContextReviewActionExecutionPanel);
 }
 
 async function loadContextReviewActionExecutorDiagnostics() {
@@ -1783,6 +1792,26 @@ function renderContextReviewActionAuditPanel(result) {
   ].join(''), 'wide');
 }
 
+function renderContextReviewActionExecutionPanel(result) {
+  const executions = result.executions || [];
+  const completed = executions.filter(function (execution) { return execution.status === 'completed'; }).length;
+  const running = executions.filter(function (execution) { return execution.status === 'running'; }).length;
+  const failed = executions.filter(function (execution) { return execution.status === 'failed'; }).length;
+  const tiles = '<div class="summary-strip event-summary-strip">' + [
+    summaryTile('Status', result.status || 'ok', statusVariant(result.status || 'ok')),
+    summaryTile('Executions', String(result.count || executions.length || 0), executions.length > 0 ? 'ok' : 'muted'),
+    summaryTile('Completed', String(completed), completed > 0 ? 'ok' : 'muted'),
+    summaryTile('Running', String(running), running > 0 ? 'warn' : 'muted'),
+    summaryTile('Failed', String(failed), failed > 0 ? 'fail' : 'muted')
+  ].join('') + '</div>';
+  return panel('Review action executions', [
+    tiles,
+    metric('Generated', result.generatedAt || 'unknown'),
+    result.message ? '<div class="muted">' + escapeHtml(result.message) + '</div>' : '',
+    renderContextReviewActionExecutionRows(executions)
+  ].join(''), 'wide');
+}
+
 function renderContextReviewActionExecutorDiagnostics(result) {
   const methods = result.methods || {};
   const audit = result.audit || {};
@@ -1959,6 +1988,26 @@ function renderContextReviewActionAuditRows(audits) {
       '<small>' + escapeHtml(audit.filePath || '') + '</small>' +
       '</span>' +
       statusBadge(audit.adapter || 'file-audit', 'ok') +
+      '</div>';
+  }).join('');
+}
+
+function renderContextReviewActionExecutionRows(executions) {
+  if (executions.length === 0) return '<div class="muted">No review action executions.</div>';
+  return executions.map(function (execution) {
+    const details = [
+      execution.updatedAt || execution.createdAt,
+      execution.taskId ? 'task=' + execution.taskId : undefined,
+      execution.requestHash ? 'hash=' + String(execution.requestHash).slice(0, 12) : undefined,
+      execution.attemptCount ? 'attempts=' + execution.attemptCount : undefined
+    ].filter(Boolean).join(' | ');
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(execution.action || 'unknown-action') + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '<small>' + escapeHtml(execution.key || '') + '</small>' +
+      '<small>' + escapeHtml(execution.filePath || '') + '</small>' +
+      '</span>' +
+      statusBadge(execution.status || 'unknown', statusVariant(execution.status)) +
       '</div>';
   }).join('');
 }
