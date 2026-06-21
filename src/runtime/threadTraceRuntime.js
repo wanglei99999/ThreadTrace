@@ -853,7 +853,15 @@ function createThreadTraceRuntime(options) {
 
     async getOperationalOverview(request) {
       const safeRequest = request || {};
-      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      const storeDir = resolveStoreDir(defaults, safeRequest.storeDir);
+      const repositories = createRepositoriesFor(storeDir);
+      const reviewActionAuditOverview = await getContextReviewActionAuditOverview({
+        contextReviewActionAuditRepository: createFileContextReviewActionAuditRepository({
+          baseDir: path.join(storeDir, 'review-action-audits')
+        }),
+        limit: safeRequest.limit || 100,
+        now: safeRequest.now
+      });
       const overview = await getOperationalOverview({
         sourceRepository: repositories.sourceRepository,
         taskRepository: repositories.taskRepository,
@@ -861,6 +869,7 @@ function createThreadTraceRuntime(options) {
         rawThreadPageRepository: repositories.rawThreadPageRepository,
         workerRunRepository: repositories.workerRunRepository,
         workerLeaseRepository: repositories.workerLeaseRepository,
+        reviewActionAuditOverview,
         now: safeRequest.now,
         limit: safeRequest.limit || 100,
         workerStaleAfterMs: safeRequest.workerStaleAfterMs

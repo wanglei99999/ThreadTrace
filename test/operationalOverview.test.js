@@ -122,6 +122,21 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
           }
         ];
       }
+    },
+    reviewActionAuditOverview: {
+      status: 'ok',
+      count: 2,
+      taskCount: 1,
+      plannedClosureCount: 1,
+      plannedMergeCandidateCount: 1,
+      latestGeneratedAt: '2026-06-18T09:58:00.000Z',
+      byAction: {
+        'tasks.closure': 1,
+        'context.merge': 1
+      },
+      byAdapter: {
+        'file-audit': 2
+      }
     }
   });
 
@@ -147,4 +162,9 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
   assert.equal(overview.workers.leases.expired, 1);
   assert.equal(overview.rawPages.total, 1);
   assert.equal(overview.rawPages.latestFetchedAt, '2026-06-18T09:50:00.000Z');
+  assert.equal(overview.reviewActions.auditCount, 2);
+  assert.equal(overview.reviewActions.taskCount, 1);
+  assert.equal(overview.reviewActions.plannedClosureCount, 1);
+  assert.equal(overview.reviewActions.plannedMergeCandidateCount, 1);
+  assert.equal(overview.reviewActions.latestGeneratedAt, '2026-06-18T09:58:00.000Z');
 });

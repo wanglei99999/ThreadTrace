@@ -489,6 +489,7 @@ async function loadSystemStatus() {
       statusRow('来源', overview.sources.enabled + '/' + overview.sources.total + ' · due ' + overview.sources.due),
       statusRow('任务', 'running ' + overview.tasks.running + ' · failed ' + overview.tasks.failed),
       statusRow('事件', 'pending ' + overview.events.pending + ' · failed ' + overview.events.failed + ' · open ' + overview.events.unacknowledged),
+      statusRow('Review actions', 'audits ' + (overview.reviewActions ? overview.reviewActions.auditCount : 0) + ' · latest ' + ((overview.reviewActions && overview.reviewActions.latestGeneratedAt) || 'none')),
       statusRow('原始页', String(overview.rawPages.total)),
       statusRow('生成时间', overview.generatedAt)
     ]);

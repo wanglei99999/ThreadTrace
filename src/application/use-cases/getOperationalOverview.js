@@ -40,6 +40,7 @@ async function getOperationalOverview(options) {
     events: summarizeEvents(pendingEvents, failedEvents, unacknowledgedEvents, now),
     workers: summarizeWorkers(workerRuns, workerLeases, now, safeOptions.workerStaleAfterMs),
     rawPages: summarizeRawPages(rawPages),
+    reviewActions: summarizeReviewActions(safeOptions.reviewActionAuditOverview),
     recent: {
       tasks: recentTasks.slice(0, 10).map(summarizeRecentTask),
       events: unacknowledgedEvents.slice(0, 10),
@@ -47,6 +48,30 @@ async function getOperationalOverview(options) {
       workerRuns: workerRuns.slice(0, 10),
       workerLeases: workerLeases.slice(0, 10)
     }
+  };
+}
+
+function summarizeReviewActions(overview) {
+  if (!overview) {
+    return {
+      auditCount: 0,
+      taskCount: 0,
+      plannedClosureCount: 0,
+      plannedMergeCandidateCount: 0,
+      latestGeneratedAt: undefined,
+      status: 'unknown'
+    };
+  }
+  return {
+    status: overview.status,
+    auditCount: overview.count || 0,
+    taskCount: overview.taskCount || 0,
+    plannedClosureCount: overview.plannedClosureCount || 0,
+    plannedMergeCandidateCount: overview.plannedMergeCandidateCount || 0,
+    latestGeneratedAt: overview.latestGeneratedAt,
+    byAction: overview.byAction || {},
+    byAdapter: overview.byAdapter || {},
+    recommendedNextAction: overview.recommendedNextAction
   };
 }
 
