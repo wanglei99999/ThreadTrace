@@ -344,6 +344,24 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/context-review-results/action-executor/diagnostics': {
+        get: {
+          summary: 'Report review action executor mode, readiness, and audit evidence before execute=true',
+          parameters: [
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number', example: 100 } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-21T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Executor diagnostics with configured mode, method readiness, audit evidence, checks, and next actions'
+            },
+            503: {
+              description: 'Executor mode is configured but required methods are missing'
+            }
+          }
+        }
+      },
       '/api/context-review-results/events': {
         post: {
           summary: 'Dry-run or execute synthesis of attention-worthy ContextReviewResult records into notification events',

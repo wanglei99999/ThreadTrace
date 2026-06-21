@@ -216,6 +216,16 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/context-review-results/action-executor/diagnostics') {
+    const result = await context.runtime.getContextReviewActionExecutorDiagnostics({
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,
+      now: url.searchParams.get('now') || undefined,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, result.status === 'fail' ? 503 : 200, result);
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/context-review-results/action-tasks/apply') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     const result = await context.runtime.runContextReviewActionTask({

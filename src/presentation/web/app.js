@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshReviewActionGateButton').addEventListener('click', loadContextReviewResultActionGate);
   document.getElementById('runReviewActionApplyButton').addEventListener('click', runContextReviewActionApply);
   document.getElementById('refreshReviewActionAuditsButton').addEventListener('click', loadContextReviewActionAudits);
+  document.getElementById('refreshReviewActionExecutorDiagnosticsButton').addEventListener('click', loadContextReviewActionExecutorDiagnostics);
   document.getElementById('synthesizeReviewResultEventsButton').addEventListener('click', synthesizeReviewResultEvents);
   document.getElementById('refreshRawPagesButton').addEventListener('click', loadRawPages);
   document.getElementById('dispatchEventsButton').addEventListener('click', dispatchEvents);
@@ -612,6 +613,14 @@ async function loadContextReviewActionAudits() {
       };
     });
   }, renderContextReviewActionAuditPanel);
+}
+
+async function loadContextReviewActionExecutorDiagnostics() {
+  await renderAsync('contextReviewResultResult', function () {
+    return fetchJson('/api/context-review-results/action-executor/diagnostics?limit=100', {
+      acceptErrorStatus: true
+    });
+  }, renderContextReviewActionExecutorDiagnostics);
 }
 
 async function runContextReviewActionApply() {
@@ -1774,6 +1783,32 @@ function renderContextReviewActionAuditPanel(result) {
   ].join(''), 'wide');
 }
 
+function renderContextReviewActionExecutorDiagnostics(result) {
+  const methods = result.methods || {};
+  const audit = result.audit || {};
+  const tiles = '<div class="summary-strip event-summary-strip">' + [
+    summaryTile('Status', result.status || 'unknown', statusVariant(result.status)),
+    summaryTile('Mode', result.mode || 'none', result.ready ? 'ok' : 'warn'),
+    summaryTile('Ready', result.ready ? 'yes' : 'no', result.ready ? 'ok' : 'warn'),
+    summaryTile('Dry-run only', result.dryRunOnly ? 'yes' : 'no', result.dryRunOnly ? 'warn' : 'ok'),
+    summaryTile('Audits', String(audit.count || 0), (audit.count || 0) > 0 ? 'ok' : 'muted')
+  ].join('') + '</div>';
+  return panel('Review executor diagnostics', [
+    tiles,
+    metric('Source', result.source || 'unknown'),
+    metric('Mutates source truth', result.mutatesSourceTruth ? 'yes' : 'no'),
+    metric('closeTasks', methods.closeTasks ? 'available' : 'missing'),
+    metric('mergeContext', methods.mergeContext ? 'available' : 'missing'),
+    metric('Latest audit', audit.latestGeneratedAt || 'none'),
+    '<h4>Checks</h4>',
+    renderDiagnosticCheckRows(result.checks || []),
+    '<h4>Next actions</h4>',
+    evidenceList((result.nextActions || []).map(function (action) {
+      return action.severity + ' | ' + action.key + ' | ' + action.summary;
+    }))
+  ].join(''), 'wide');
+}
+
 function renderContextReviewResultEventSynthesis(result) {
   const rows = result.results || [];
   return panel('Review alert synthesis', [
@@ -1891,6 +1926,19 @@ function renderReviewActionApplyStepRows(steps) {
       '<small>' + escapeHtml(step.summary || '') + '</small>' +
       '</span>' +
       statusBadge(step.status || 'warn', statusVariant(step.status)) +
+      '</div>';
+  }).join('');
+}
+
+function renderDiagnosticCheckRows(checks) {
+  if (checks.length === 0) return '<div class="muted">No diagnostic checks.</div>';
+  return checks.map(function (check) {
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(check.key || 'unknown-check') + '</strong>' +
+      '<small>' + escapeHtml(check.summary || '') + '</small>' +
+      '<small>' + escapeHtml(check.value === undefined ? '' : String(check.value)) + '</small>' +
+      '</span>' +
+      statusBadge(check.status || 'warn', statusVariant(check.status)) +
       '</div>';
   }).join('');
 }

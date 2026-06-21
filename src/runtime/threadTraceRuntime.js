@@ -73,6 +73,7 @@ const { getContextReviewResultActionGate } = require('../application/use-cases/g
 const { runContextReviewActionTask } = require('../application/use-cases/runContextReviewActionTask');
 const { listContextReviewActionAudits } = require('../application/use-cases/listContextReviewActionAudits');
 const { getContextReviewActionAuditOverview } = require('../application/use-cases/getContextReviewActionAuditOverview');
+const { getContextReviewActionExecutorDiagnostics } = require('../application/use-cases/getContextReviewActionExecutorDiagnostics');
 const { validateConnectorModuleLoad } = require('../application/use-cases/validateConnectorModuleLoad');
 const { indexSavedThreadDirectory } = require('../application/use-cases/indexSavedThreadDirectory');
 const { searchEvidence } = require('../application/use-cases/searchEvidence');
@@ -159,7 +160,8 @@ function createThreadTraceRuntime(options) {
       openAiCompatible: safeOptions.openAiCompatibleLlm
     });
   };
-  const contextReviewActionExecutor = resolveContextReviewActionExecutor(safeOptions, runtimeConfig);
+  const contextReviewActionExecutorBinding = resolveContextReviewActionExecutorBinding(safeOptions, runtimeConfig);
+  const contextReviewActionExecutor = contextReviewActionExecutorBinding.executor;
 
   return {
     defaults,
@@ -329,6 +331,23 @@ function createThreadTraceRuntime(options) {
         action: safeRequest.action,
         taskId: safeRequest.taskId,
         limit: safeRequest.limit || 100,
+        now: safeRequest.now
+      });
+    },
+
+    async getContextReviewActionExecutorDiagnostics(request) {
+      const safeRequest = request || {};
+      const auditOverview = await this.getContextReviewActionAuditOverview({
+        limit: safeRequest.limit || 100,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir
+      });
+      return getContextReviewActionExecutorDiagnostics({
+        executor: contextReviewActionExecutor,
+        mode: contextReviewActionExecutorBinding.mode,
+        source: contextReviewActionExecutorBinding.source,
+        mutatesSourceTruth: contextReviewActionExecutorBinding.mutatesSourceTruth,
+        auditOverview,
         now: safeRequest.now
       });
     },
@@ -1551,15 +1570,38 @@ function createThreadTraceRuntime(options) {
   };
 }
 
-function resolveContextReviewActionExecutor(options, config) {
-  if (options.contextReviewActionExecutor || options.contextReviewActionExecutors) {
-    return options.contextReviewActionExecutor || options.contextReviewActionExecutors;
+function resolveContextReviewActionExecutorBinding(options, config) {
+  if (options.contextReviewActionExecutor) {
+    return {
+      executor: options.contextReviewActionExecutor,
+      mode: 'injected',
+      source: 'runtime.contextReviewActionExecutor',
+      mutatesSourceTruth: options.contextReviewActionExecutorMutatesSourceTruth === true
+    };
+  }
+  if (options.contextReviewActionExecutors) {
+    return {
+      executor: options.contextReviewActionExecutors,
+      mode: 'legacy-injected',
+      source: 'runtime.contextReviewActionExecutors',
+      mutatesSourceTruth: options.contextReviewActionExecutorMutatesSourceTruth === true
+    };
   }
   const executor = config && config.reviewActions && config.reviewActions.executor;
   if (executor === REVIEW_ACTION_EXECUTORS.FILE_AUDIT) {
-    return createFileContextReviewActionExecutor();
+    return {
+      executor: createFileContextReviewActionExecutor(),
+      mode: REVIEW_ACTION_EXECUTORS.FILE_AUDIT,
+      source: 'THREADTRACE_REVIEW_ACTION_EXECUTOR',
+      mutatesSourceTruth: false
+    };
   }
-  return undefined;
+  return {
+    executor: undefined,
+    mode: REVIEW_ACTION_EXECUTORS.NONE,
+    source: 'THREADTRACE_REVIEW_ACTION_EXECUTOR',
+    mutatesSourceTruth: false
+  };
 }
 
 function createFileRepositories(storeDir) {

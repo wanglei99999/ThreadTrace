@@ -86,6 +86,10 @@ Lists file-audit executor records written by `context-review-action-apply` when 
 
 Summarizes file-audit executor records for dashboards and operational checks. Optional filters mirror the audit list endpoint. The response includes total audit count, unique task count, counts by action and adapter, planned closure and merge-candidate totals, latest generated time, recent records, and the recommended next action.
 
+### `GET /api/context-review-results/action-executor/diagnostics`
+
+Reports the configured review action executor mode, source, required method readiness, dry-run-only status, mutating-source-truth flag, audit evidence, checks, and next actions. This endpoint is read-only and is intended for deployment preflight before using `execute: true`. A configured executor with missing required methods returns HTTP `503`; no executor returns `warn` with dry-run-only guidance.
+
 ### `POST /api/context-review-results/events`
 
 Dry-runs or executes synthesis of attention-worthy review results into notification outbox events. Only `warning` and `critical` review summaries generate events. The endpoint defaults to dry-run; set `execute: true` or `dryRun: false` to persist `context-review-result` events. Optional filters: `handoffId`, `status`, `reviewerId`, `limit`, `now`, and `storeDir`.

@@ -85,11 +85,13 @@ Inspect audit records with:
 ```powershell
 node src/presentation/cli/threadtrace.js review-action-audits
 node src/presentation/cli/threadtrace.js review-action-audit-overview
+node src/presentation/cli/threadtrace.js review-action-executor-diagnostics
 ```
 
 ```text
 GET /api/context-review-results/action-audits
 GET /api/context-review-results/action-audits/overview
+GET /api/context-review-results/action-executor/diagnostics
 ```
 
 ## Adapter Examples
