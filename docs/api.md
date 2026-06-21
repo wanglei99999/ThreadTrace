@@ -82,6 +82,10 @@ Creates a durable `context-review-action-apply` task audit record for applying r
 
 Lists file-audit executor records written by `context-review-action-apply` when `execute=true` and `THREADTRACE_REVIEW_ACTION_EXECUTOR=file-audit` are used. Optional filters: `action` (`tasks.closure` or `context.merge`), `taskId`, `limit`, `now`, and `storeDir`. The response returns generated time, action type, compact executor request payload, and audit file path.
 
+### `GET /api/context-review-results/action-audits/overview`
+
+Summarizes file-audit executor records for dashboards and operational checks. Optional filters mirror the audit list endpoint. The response includes total audit count, unique task count, counts by action and adapter, planned closure and merge-candidate totals, latest generated time, recent records, and the recommended next action.
+
 ### `POST /api/context-review-results/events`
 
 Dry-runs or executes synthesis of attention-worthy review results into notification outbox events. Only `warning` and `critical` review summaries generate events. The endpoint defaults to dry-run; set `execute: true` or `dryRun: false` to persist `context-review-result` events. Optional filters: `handoffId`, `status`, `reviewerId`, `limit`, `now`, and `storeDir`.

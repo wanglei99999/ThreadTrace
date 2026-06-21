@@ -327,6 +327,23 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/context-review-results/action-audits/overview': {
+        get: {
+          summary: 'Summarize file-audit executor records for operational monitoring',
+          parameters: [
+            { name: 'action', in: 'query', required: false, schema: { type: 'string', example: 'tasks.closure' } },
+            { name: 'taskId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number', example: 100 } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-21T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Review action audit counts by action and adapter, planned closure and merge totals, and recent records'
+            }
+          }
+        }
+      },
       '/api/context-review-results/events': {
         post: {
           summary: 'Dry-run or execute synthesis of attention-worthy ContextReviewResult records into notification events',

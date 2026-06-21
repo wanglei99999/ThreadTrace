@@ -572,6 +572,7 @@ async function loadContextReviewResults() {
       fetchJson('/api/context-review-results?limit=10'),
       fetchJson('/api/context-review-results/action-plan?limit=50'),
       fetchJson('/api/context-review-results/action-gate?limit=50'),
+      fetchJson('/api/context-review-results/action-audits/overview?limit=100'),
       fetchJson('/api/context-review-results/action-audits?limit=10')
     ]).then(function (results) {
       return {
@@ -579,7 +580,8 @@ async function loadContextReviewResults() {
         reviewResults: results[1].reviewResults || [],
         actionPlan: results[2],
         actionGate: results[3],
-        actionAudits: results[4]
+        actionAuditOverview: results[4],
+        actionAudits: results[5]
       };
     });
   }, renderContextReviewResultOverview);
@@ -599,8 +601,16 @@ async function loadContextReviewResultActionGate() {
 
 async function loadContextReviewActionAudits() {
   await renderAsync('contextReviewResultResult', function () {
-    return fetchJson('/api/context-review-results/action-audits?limit=20');
-  }, renderContextReviewActionAudits);
+    return Promise.all([
+      fetchJson('/api/context-review-results/action-audits/overview?limit=100'),
+      fetchJson('/api/context-review-results/action-audits?limit=20')
+    ]).then(function (results) {
+      return {
+        overview: results[0],
+        audits: results[1].audits || []
+      };
+    });
+  }, renderContextReviewActionAuditPanel);
 }
 
 async function runContextReviewActionApply() {
@@ -1663,6 +1673,7 @@ function renderContextReviewResultOverview(result) {
   const attention = overview.attention || {};
   const actionPlan = result.actionPlan || {};
   const actionGate = result.actionGate || {};
+  const actionAuditOverview = result.actionAuditOverview || {};
   const actionAudits = result.actionAudits || {};
   const tiles = '<div class="summary-strip event-summary-strip">' + [
     summaryTile('Reviews', String(overview.count || 0)),
@@ -1679,7 +1690,10 @@ function renderContextReviewResultOverview(result) {
     ].join(''), 'wide'),
     renderContextReviewResultActionPlan(actionPlan),
     renderContextReviewResultActionGate(actionGate),
-    renderContextReviewActionAudits(actionAudits),
+    renderContextReviewActionAuditPanel({
+      overview: actionAuditOverview,
+      audits: actionAudits.audits || []
+    }),
     panel('Review attention', renderContextReviewAttentionRows(attention.topRecords || []), 'wide'),
     panel('Recent review results', renderContextReviewResultRows(records), 'wide')
   ].join('');
@@ -1741,11 +1755,20 @@ function renderContextReviewActionApplyResult(result) {
   ].join(''), 'wide');
 }
 
-function renderContextReviewActionAudits(result) {
-  const audits = result.audits || [];
+function renderContextReviewActionAuditPanel(result) {
+  const overview = result.overview || {};
+  const audits = result.audits || overview.recentAudits || [];
+  const tiles = '<div class="summary-strip event-summary-strip">' + [
+    summaryTile('Audits', String(overview.count || audits.length || 0), (overview.count || audits.length || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('Tasks', String(overview.taskCount || 0), (overview.taskCount || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('Close planned', String(overview.plannedClosureCount || 0), (overview.plannedClosureCount || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('Merge planned', String(overview.plannedMergeCandidateCount || 0), (overview.plannedMergeCandidateCount || 0) > 0 ? 'ok' : 'muted')
+  ].join('') + '</div>';
   return panel('Review action audits', [
-    metric('Generated', result.generatedAt || 'unknown'),
-    metric('Audit records', result.count || 0),
+    tiles,
+    metric('Generated', overview.generatedAt || 'unknown'),
+    metric('Latest audit', overview.latestGeneratedAt || 'none'),
+    metric('Next action', overview.recommendedNextAction || 'none'),
     renderContextReviewActionAuditRows(audits)
   ].join(''), 'wide');
 }

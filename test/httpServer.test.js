@@ -182,7 +182,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /renderContextReviewResultOverview/);
     assert.match(webAppJs, /renderContextReviewResultActionPlan/);
     assert.match(webAppJs, /renderContextReviewResultActionGate/);
-    assert.match(webAppJs, /renderContextReviewActionAudits/);
+    assert.match(webAppJs, /renderContextReviewActionAuditPanel/);
     assert.match(webAppJs, /renderContextReviewActionApplyResult/);
     assert.match(webAppJs, /synthesizeReviewResultEvents/);
     assert.match(webAppJs, /renderContextReviewResultEventSynthesis/);
@@ -225,6 +225,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     const contextReviewActionApply = await postJson(baseUrl + '/api/context-review-results/action-tasks/apply', {
       now: '2026-06-21T11:00:00.000Z'
     });
+    const contextReviewActionAuditOverview = await getJson(baseUrl + '/api/context-review-results/action-audits/overview?now=2026-06-21T11:10:00.000Z');
     const contextReviewActionAudits = await getJson(baseUrl + '/api/context-review-results/action-audits?now=2026-06-21T11:10:00.000Z');
     const contextReviewResultEventDryRun = await postJson(baseUrl + '/api/context-review-results/events', {
       now: '2026-06-21T11:05:00.000Z'
@@ -322,6 +323,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(contextReviewActionApply.report.dryRun, true);
     assert.equal(contextReviewActionApply.report.applied, false);
     assert.equal(contextReviewActionApply.report.closeTaskCount, 1);
+    assert.equal(contextReviewActionAuditOverview.status, 'warn');
+    assert.equal(contextReviewActionAuditOverview.count, 0);
     assert.equal(contextReviewActionAudits.count, 0);
     assert.equal(contextReviewResultEventDryRun.dryRun, true);
     assert.equal(contextReviewResultEventDryRun.createdCount, 1);
@@ -346,6 +349,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/context-review-results/action-gate']);
     assert.ok(openApi.paths['/api/context-review-results/action-tasks/apply']);
     assert.ok(openApi.paths['/api/context-review-results/action-audits']);
+    assert.ok(openApi.paths['/api/context-review-results/action-audits/overview']);
     assert.ok(openApi.paths['/api/context-review-results/events']);
     assert.ok(openApi.paths['/api/connectors/catalog']);
     assert.ok(openApi.paths['/api/connectors/readiness']);
@@ -443,11 +447,17 @@ test('http server lists file-audit review action executor records', async functi
       execute: true,
       now: '2026-06-21T11:00:00.000Z'
     });
+    const overview = await getJson(baseUrl + '/api/context-review-results/action-audits/overview?limit=10');
     const audits = await getJson(baseUrl + '/api/context-review-results/action-audits?limit=10');
     const closureAudits = await getJson(baseUrl + '/api/context-review-results/action-audits?action=tasks.closure');
 
     assert.equal(apply.report.executed, true);
     assert.equal(apply.report.executorResults.taskClosure.adapter, 'file-audit');
+    assert.equal(overview.status, 'ok');
+    assert.equal(overview.count, 2);
+    assert.equal(overview.taskCount, 1);
+    assert.equal(overview.plannedClosureCount, 1);
+    assert.equal(overview.plannedMergeCandidateCount, 1);
     assert.equal(audits.count, 2);
     assert.equal(closureAudits.count, 1);
     assert.equal(closureAudits.audits[0].request.taskId, apply.task.id);

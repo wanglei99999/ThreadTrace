@@ -72,6 +72,7 @@ const { getContextReviewResultActionPlan } = require('../application/use-cases/g
 const { getContextReviewResultActionGate } = require('../application/use-cases/getContextReviewResultActionGate');
 const { runContextReviewActionTask } = require('../application/use-cases/runContextReviewActionTask');
 const { listContextReviewActionAudits } = require('../application/use-cases/listContextReviewActionAudits');
+const { getContextReviewActionAuditOverview } = require('../application/use-cases/getContextReviewActionAuditOverview');
 const { validateConnectorModuleLoad } = require('../application/use-cases/validateConnectorModuleLoad');
 const { indexSavedThreadDirectory } = require('../application/use-cases/indexSavedThreadDirectory');
 const { searchEvidence } = require('../application/use-cases/searchEvidence');
@@ -314,6 +315,20 @@ function createThreadTraceRuntime(options) {
         action: safeRequest.action,
         taskId: safeRequest.taskId,
         limit: safeRequest.limit || 50,
+        now: safeRequest.now
+      });
+    },
+
+    async getContextReviewActionAuditOverview(request) {
+      const safeRequest = request || {};
+      const storeDir = resolveStoreDir(defaults, safeRequest.storeDir);
+      return getContextReviewActionAuditOverview({
+        contextReviewActionAuditRepository: createFileContextReviewActionAuditRepository({
+          baseDir: path.join(storeDir, 'review-action-audits')
+        }),
+        action: safeRequest.action,
+        taskId: safeRequest.taskId,
+        limit: safeRequest.limit || 100,
         now: safeRequest.now
       });
     },

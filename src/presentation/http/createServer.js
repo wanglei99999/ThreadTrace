@@ -204,6 +204,18 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/context-review-results/action-audits/overview') {
+    const result = await context.runtime.getContextReviewActionAuditOverview({
+      action: url.searchParams.get('action') || undefined,
+      taskId: url.searchParams.get('taskId') || undefined,
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,
+      now: url.searchParams.get('now') || undefined,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, 200, result);
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/context-review-results/action-tasks/apply') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     const result = await context.runtime.runContextReviewActionTask({
