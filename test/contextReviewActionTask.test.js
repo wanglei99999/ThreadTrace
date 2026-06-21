@@ -67,25 +67,28 @@ test('context review action task reports missing executors for execute mode', as
   assert.equal(result.report.steps.find(function (step) {
     return step.key === 'tasks.closure';
   }).status, 'fail');
+  assert.deepEqual(result.report.executorReadiness.missing, ['closeTasks', 'mergeContext']);
 });
 
-test('context review action task executes injected closure and merge executors', async function () {
+test('context review action task executes context review action executor port', async function () {
   const calls = [];
   const result = await runContextReviewActionTask({
     taskRepository: taskRepository([]),
     getContextReviewResultActionGate,
     execute: true,
-    taskClosureExecutor: async function (request) {
-      calls.push(['closure', request.closeTaskIds, request.storeDir]);
-      return {
-        closedTaskIds: request.closeTaskIds
-      };
-    },
-    contextMergeExecutor: async function (request) {
-      calls.push(['merge', request.mergeCandidates.map(function (candidate) { return candidate.taskId; }), request.storeDir]);
-      return {
-        mergedTaskIds: request.mergeCandidates.map(function (candidate) { return candidate.taskId; })
-      };
+    contextReviewActionExecutor: {
+      closeTasks: async function (request) {
+        calls.push(['closure', request.closeTaskIds, request.storeDir]);
+        return {
+          closedTaskIds: request.closeTaskIds
+        };
+      },
+      mergeContext: async function (request) {
+        calls.push(['merge', request.mergeCandidates.map(function (candidate) { return candidate.taskId; }), request.storeDir]);
+        return {
+          mergedTaskIds: request.mergeCandidates.map(function (candidate) { return candidate.taskId; })
+        };
+      }
     },
     now: '2026-06-21T10:00:00.000Z',
     storeDir: 'store-execute'
@@ -99,8 +102,34 @@ test('context review action task executes injected closure and merge executors',
   assert.equal(result.report.dryRun, false);
   assert.equal(result.report.executed, true);
   assert.equal(result.report.applied, true);
+  assert.equal(result.report.executorReadiness.ready, true);
   assert.deepEqual(result.report.executorResults.taskClosure.closedTaskIds, ['task-1']);
   assert.deepEqual(result.report.executorResults.contextMerge.mergedTaskIds, ['task-1']);
+});
+
+test('context review action task keeps legacy function executor compatibility', async function () {
+  const calls = [];
+  const result = await runContextReviewActionTask({
+    taskRepository: taskRepository([]),
+    getContextReviewResultActionGate,
+    execute: true,
+    taskClosureExecutor: async function (request) {
+      calls.push(['legacy-closure', request.closeTaskIds]);
+      return { closedTaskIds: request.closeTaskIds };
+    },
+    contextMergeExecutor: async function (request) {
+      calls.push(['legacy-merge', request.mergeCandidates.length]);
+      return { mergedTaskCount: request.mergeCandidates.length };
+    },
+    now: '2026-06-21T10:00:00.000Z'
+  });
+
+  assert.deepEqual(calls, [
+    ['legacy-closure', ['task-1']],
+    ['legacy-merge', 1]
+  ]);
+  assert.equal(result.report.executorReadiness.ready, true);
+  assert.equal(result.report.executed, true);
 });
 
 function taskRepository(saved) {

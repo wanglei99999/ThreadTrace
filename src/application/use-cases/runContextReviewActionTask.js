@@ -2,6 +2,9 @@
 
 const { assertTaskRepository } = require('../ports/taskRepository');
 const {
+  getContextReviewActionExecutorReadiness
+} = require('../ports/contextReviewActionExecutor');
+const {
   createTaskRecord,
   markTaskCompleted,
   markTaskFailed,
@@ -18,6 +21,7 @@ async function runContextReviewActionTask(options) {
   if (typeof safeOptions.getContextReviewResultActionGate !== 'function') {
     throw new Error('runContextReviewActionTask requires getContextReviewResultActionGate(request).');
   }
+  const executorReadiness = getContextReviewActionExecutorReadiness(resolveExecutorCandidate(safeOptions));
 
   const execute = safeOptions.execute === true;
   let task = createTaskRecord('context-review-action-apply', {
@@ -55,8 +59,8 @@ async function runContextReviewActionTask(options) {
     const executorResults = await runExecutors({
       actionGate,
       execute,
-      taskClosureExecutor: safeOptions.taskClosureExecutor,
-      contextMergeExecutor: safeOptions.contextMergeExecutor,
+      executor: executorReadiness.executor,
+      executorReady: executorReadiness.ready,
       now: safeOptions.now,
       storeDir: safeOptions.storeDir
     });
@@ -64,8 +68,7 @@ async function runContextReviewActionTask(options) {
       actionGate,
       execute,
       now: safeOptions.now,
-      hasTaskClosureExecutor: typeof safeOptions.taskClosureExecutor === 'function',
-      hasContextMergeExecutor: typeof safeOptions.contextMergeExecutor === 'function',
+      executorReadiness,
       executorResults
     });
 
@@ -100,17 +103,18 @@ function buildContextReviewActionTaskReport(options) {
   const closeTaskIds = actionPlan.closeTaskIds || [];
   const mergeCandidates = actionPlan.mergeCandidates || [];
   const gateFailed = actionGate.status === 'fail';
-  const missingExecutors = execute && (!safeOptions.hasTaskClosureExecutor || !safeOptions.hasContextMergeExecutor);
+  const executorReadiness = reportExecutorReadiness(safeOptions);
+  const missingExecutors = execute && !executorReadiness.ready;
   const steps = [
     step('review.actionGate', gateFailed ? 'fail' : (actionGate.status || 'warn'), 'Review action gate was evaluated before task closure or context merge.', {
       gateStatus: actionGate.status,
       gateCount: actionGate.gateCount,
       nextActionCount: (actionGate.nextActions || []).length
     }),
-    step('tasks.closure', closureStepStatus({ gateFailed, closeTaskIds, execute, hasExecutor: safeOptions.hasTaskClosureExecutor }), closureStepSummary({ gateFailed, closeTaskIds, execute, hasExecutor: safeOptions.hasTaskClosureExecutor }), {
+    step('tasks.closure', closureStepStatus({ gateFailed, closeTaskIds, execute, hasExecutor: executorReadiness.hasCloseTasks }), closureStepSummary({ gateFailed, closeTaskIds, execute, hasExecutor: executorReadiness.hasCloseTasks }), {
       closeTaskIds
     }),
-    step('context.merge', mergeStepStatus({ gateFailed, mergeCandidates, execute, hasExecutor: safeOptions.hasContextMergeExecutor }), mergeStepSummary({ gateFailed, mergeCandidates, execute, hasExecutor: safeOptions.hasContextMergeExecutor }), {
+    step('context.merge', mergeStepStatus({ gateFailed, mergeCandidates, execute, hasExecutor: executorReadiness.hasMergeContext }), mergeStepSummary({ gateFailed, mergeCandidates, execute, hasExecutor: executorReadiness.hasMergeContext }), {
       mergeCandidateCount: mergeCandidates.length,
       mergeTaskIds: mergeCandidates.map(function (candidate) { return candidate.taskId; }).filter(Boolean)
     })
@@ -124,6 +128,10 @@ function buildContextReviewActionTaskReport(options) {
     applied: Boolean(executorResults.taskClosure || executorResults.contextMerge),
     closeTaskCount: closeTaskIds.length,
     mergeCandidateCount: mergeCandidates.length,
+    executorReadiness: {
+      ready: executorReadiness.ready,
+      missing: executorReadiness.missing
+    },
     executorResults,
     steps,
     nextActions: nextActions({
@@ -144,15 +152,15 @@ async function runExecutors(options) {
   const actionPlan = actionGate.actionPlan || {};
   if (safeOptions.execute !== true) return {};
   if (actionGate.status === 'fail') return {};
-  if (typeof safeOptions.taskClosureExecutor !== 'function' || typeof safeOptions.contextMergeExecutor !== 'function') return {};
+  if (!safeOptions.executorReady) return {};
 
-  const taskClosure = await safeOptions.taskClosureExecutor({
+  const taskClosure = await safeOptions.executor.closeTasks({
     closeTaskIds: actionPlan.closeTaskIds || [],
     actionGate,
     now: safeOptions.now,
     storeDir: safeOptions.storeDir
   });
-  const contextMerge = await safeOptions.contextMergeExecutor({
+  const contextMerge = await safeOptions.executor.mergeContext({
     mergeCandidates: actionPlan.mergeCandidates || [],
     actionGate,
     now: safeOptions.now,
@@ -162,6 +170,33 @@ async function runExecutors(options) {
     taskClosure,
     contextMerge
   };
+}
+
+function resolveExecutorCandidate(options) {
+  const safeOptions = options || {};
+  return safeOptions.contextReviewActionExecutor || safeOptions.contextReviewActionExecutors || {
+    taskClosureExecutor: safeOptions.taskClosureExecutor,
+    contextMergeExecutor: safeOptions.contextMergeExecutor
+  };
+}
+
+function reportExecutorReadiness(options) {
+  const safeOptions = options || {};
+  if (safeOptions.executorReadiness) return safeOptions.executorReadiness;
+  if (safeOptions.hasTaskClosureExecutor !== undefined || safeOptions.hasContextMergeExecutor !== undefined) {
+    const hasCloseTasks = safeOptions.hasTaskClosureExecutor === true;
+    const hasMergeContext = safeOptions.hasContextMergeExecutor === true;
+    const missing = [];
+    if (!hasCloseTasks) missing.push('closeTasks');
+    if (!hasMergeContext) missing.push('mergeContext');
+    return {
+      hasCloseTasks,
+      hasMergeContext,
+      ready: hasCloseTasks && hasMergeContext,
+      missing
+    };
+  }
+  return getContextReviewActionExecutorReadiness();
 }
 
 function closureStepStatus(input) {
