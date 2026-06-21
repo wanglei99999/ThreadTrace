@@ -7,6 +7,9 @@ const { assertSourceRepository } = require('../ports/sourceRepository');
 const { assertTaskRepository } = require('../ports/taskRepository');
 const { assertThreadRepository } = require('../ports/threadRepository');
 const { assertWorkerRunRepository } = require('../ports/workerRunRepository');
+const {
+  assertContextReviewActionExecutionRepository
+} = require('../ports/contextReviewActionExecutionRepository');
 
 async function migrateStoreRecords(options) {
   const safeOptions = options || {};
@@ -23,7 +26,8 @@ async function migrateStoreRecords(options) {
       tasks: 0,
       notificationEvents: 0,
       rawThreadPages: 0,
-      workerRuns: 0
+      workerRuns: 0,
+      reviewActionExecutions: 0
     }
   };
 
@@ -64,8 +68,50 @@ async function migrateStoreRecords(options) {
       count: function (count) { summary.migrated.workerRuns = count; }
     });
   }
+  if (source.contextReviewActionExecutionRepository) {
+    if (!dryRun && !target.contextReviewActionExecutionRepository) {
+      throw new Error('Target repository set must include contextReviewActionExecutionRepository when source executions are migrated.');
+    }
+    await migrateCollection({
+      items: await source.contextReviewActionExecutionRepository.listExecutions({ limit }),
+      save: dryRun ? undefined : function (execution) {
+        return migrateExecutionRecord(target.contextReviewActionExecutionRepository, execution);
+      },
+      count: function (count) { summary.migrated.reviewActionExecutions = count; }
+    });
+  }
 
   return summary;
+}
+
+async function migrateExecutionRecord(repository, execution) {
+  if (!repository) return;
+  const claimed = await repository.claimExecution({
+    key: execution.key,
+    action: execution.action,
+    taskId: execution.taskId,
+    requestHash: execution.requestHash,
+    request: execution.request,
+    createdAt: execution.createdAt,
+    updatedAt: execution.updatedAt,
+    now: execution.updatedAt || execution.createdAt
+  });
+  if (!claimed.claimed && claimed.record && claimed.record.status === 'completed') return;
+  if (execution.status === 'completed') {
+    await repository.completeExecution(execution.key, execution.result || {}, {
+      taskId: execution.taskId,
+      completedAt: execution.completedAt,
+      updatedAt: execution.updatedAt,
+      now: execution.updatedAt
+    });
+  } else if (execution.status === 'failed') {
+    await repository.failExecution(execution.key, executionError(execution), {
+      taskId: execution.taskId,
+      failedAt: execution.failedAt,
+      updatedAt: execution.updatedAt,
+      now: execution.updatedAt
+    });
+  }
 }
 
 async function migrateCollection(options) {
@@ -95,8 +141,19 @@ function assertRepositorySet(repositories, optional) {
   } else if (!safeOptional.workerRunRepository) {
     throw new Error('Repository set must include workerRunRepository.');
   }
+  if (safeRepositories.contextReviewActionExecutionRepository) {
+    result.contextReviewActionExecutionRepository = assertContextReviewActionExecutionRepository(safeRepositories.contextReviewActionExecutionRepository);
+  }
 
   return result;
+}
+
+function executionError(execution) {
+  const error = new Error(execution && execution.error && execution.error.message
+    ? execution.error.message
+    : 'Migrated failed context review action execution.');
+  if (execution && execution.error && execution.error.stack) error.stack = execution.error.stack;
+  return error;
 }
 
 module.exports = {

@@ -16,7 +16,21 @@ test('migrate store records supports dry-run and writes through repository ports
     tasks: [{ id: 'task-1' }],
     events: [{ id: 'event-1' }],
     rawPages: [{ sourceKey: 'nga', contentSha1: 'raw-1' }],
-    workerRuns: [{ id: 'worker-run-1' }]
+    workerRuns: [{ id: 'worker-run-1' }],
+    executions: [
+      {
+        key: 'context-review-action:v1:tasks.closure:migrate',
+        action: 'tasks.closure',
+        status: 'completed',
+        taskId: 'task-1',
+        requestHash: 'hash-1',
+        request: { closeTaskIds: ['task-a'] },
+        result: { closedTaskIds: ['task-a'] },
+        createdAt: '2026-06-21T10:00:00.000Z',
+        updatedAt: '2026-06-21T10:01:00.000Z',
+        completedAt: '2026-06-21T10:01:00.000Z'
+      }
+    ]
   });
   const targetRepositories = fakeRepositorySet({});
 
@@ -39,6 +53,8 @@ test('migrate store records supports dry-run and writes through repository ports
   assert.equal(targetRepositories.saved.events.length, 1);
   assert.equal(targetRepositories.saved.rawPages.length, 1);
   assert.equal(targetRepositories.saved.workerRuns.length, 1);
+  assert.equal(targetRepositories.saved.executions.length, 1);
+  assert.equal(dryRun.migrated.reviewActionExecutions, 1);
   assert.equal(migrated.dryRun, false);
 });
 
@@ -94,7 +110,8 @@ function fakeRepositorySet(records) {
     tasks: [],
     events: [],
     rawPages: [],
-    workerRuns: []
+    workerRuns: [],
+    executions: []
   };
 
   return {
@@ -133,6 +150,37 @@ function fakeRepositorySet(records) {
       async saveWorkerRun(run) { saved.workerRuns.push(run); },
       async findWorkerRun() {},
       async listWorkerRuns() { return safeRecords.workerRuns || []; }
+    },
+    contextReviewActionExecutionRepository: {
+      async claimExecution(record) {
+        saved.executions.push(Object.assign({}, record, {
+          status: 'running'
+        }));
+        return {
+          claimed: true,
+          record
+        };
+      },
+      async completeExecution(key, result, metadata) {
+        const execution = saved.executions.find(function (item) { return item.key === key; });
+        Object.assign(execution, metadata || {}, {
+          status: 'completed',
+          result
+        });
+        return execution;
+      },
+      async failExecution(key, error, metadata) {
+        const execution = saved.executions.find(function (item) { return item.key === key; });
+        Object.assign(execution, metadata || {}, {
+          status: 'failed',
+          error: { message: error.message }
+        });
+        return execution;
+      },
+      async findExecution(key) {
+        return saved.executions.find(function (item) { return item.key === key; });
+      },
+      async listExecutions() { return safeRecords.executions || []; }
     }
   };
 }

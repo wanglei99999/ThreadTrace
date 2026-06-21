@@ -32,7 +32,8 @@ node src/presentation/cli/threadtrace.js migrate-store --from-store-dir data/sto
 - notification events
 - raw thread pages
 - worker run records
+- review action execution ledger records
 
-Worker leases are intentionally not migrated because they are short-lived runtime coordination records.
+Worker leases are intentionally not migrated because they are short-lived runtime coordination records. Review action execution records are migrated so file-to-PostgreSQL cutovers preserve executor idempotency history and do not re-run completed downstream mutations.
 
 The migration use case depends on repository ports only, so the source is currently file storage and the target can be file or PostgreSQL through runtime composition.
