@@ -118,6 +118,37 @@ test('operations runbook points review action executor warnings to diagnostics a
   assert.match(runbook.actions[0].relatedCommands[1], /review-action-apply --execute true/);
 });
 
+test('operations runbook points review action ledger failures to execution inspection tools', function () {
+  const runbook = getOperationsRunbook({
+    now: '2026-06-21T10:00:00.000Z',
+    checklist: {
+      generatedAt: '2026-06-21T10:00:00.000Z',
+      items: [
+        {
+          key: 'reviewActions.executionLedger',
+          area: 'review-actions',
+          status: 'fail',
+          summary: 'Review action execution ledger prevents duplicate downstream mutations.',
+          evidence: {
+            count: 3,
+            completed: 1,
+            running: 1,
+            failed: 1
+          }
+        }
+      ]
+    }
+  });
+
+  assert.equal(runbook.status, 'fail');
+  assert.equal(runbook.actionCount, 1);
+  assert.equal(runbook.actions[0].key, 'checklist.reviewActions.executionLedger');
+  assert.equal(runbook.actions[0].severity, 'critical');
+  assert.match(runbook.actions[0].recommendedCommand, /review-action-executions --status failed/);
+  assert.match(runbook.actions[0].relatedCommands[0], /review-action-executions --status running/);
+  assert.match(runbook.actions[0].relatedCommands[1], /review-action-gate/);
+});
+
 test('operations runbook flags duplicate idempotency task risk', function () {
   const runbook = getOperationsRunbook({
     now: '2026-06-19T10:00:00.000Z',
