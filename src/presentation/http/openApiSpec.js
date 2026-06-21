@@ -317,6 +317,7 @@ function createOpenApiSpec() {
             { name: 'action', in: 'query', required: false, schema: { type: 'string', example: 'tasks.closure' } },
             { name: 'taskId', in: 'query', required: false, schema: { type: 'string' } },
             { name: 'limit', in: 'query', required: false, schema: { type: 'number', example: 50 } },
+            { name: 'runningStaleAfterMs', in: 'query', required: false, schema: { type: 'number', example: 600000 } },
             { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-21T10:00:00.000Z' } },
             { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
           ],

@@ -100,7 +100,7 @@ See `docs/rollout-manifest-apply.md` for the apply contract.
 - Events: unacknowledged pending/failed delivery counts, total unacknowledged events, delivery-due count, and next delivery time.
 - Workers: recent run totals, running/stale counts, latest heartbeat time, active/expired leases, and stale run samples.
 - Raw pages: recent raw evidence count and latest fetch time.
-- Review actions: file-audit executor record count, unique task count, planned closure/merge totals, latest audit time, adapter/action counts, and execution-ledger totals grouped by completed/running/failed.
+- Review actions: file-audit executor record count, unique task count, planned closure/merge totals, latest audit time, adapter/action counts, and execution-ledger totals grouped by completed/running/stale-running/failed.
 - Storage mode and generation time.
 
 The first implementation uses repository list operations with a bounded window. PostgreSQL deployments can later optimize the same use case with aggregate queries without changing API or Web contracts.
@@ -145,7 +145,7 @@ The HTTP endpoint returns `503` only for `fail`; `warn` still returns `200` so d
 - `critical`: blocks production traffic or needs immediate investigation.
 - `warning`: deployment can keep serving, but the operator should review the area.
 
-Each action includes an area, title, evidence, a primary CLI command, and optional related commands. Runbook actions prefer the highest-leverage next step: connector issues point to `connector-rollout-plan`, source ingest configuration issues point to `source-ingest-dry-run`, worker issues point to `worker-topology-plan`, notification outbox issues point to `operations-overview`, review-result closure issues point to `review-action-gate`, review action execution ledger issues point to `review-action-executions`, and duplicate idempotency records point to `trace-context --idempotency-key`. Related commands keep lower-level diagnostics such as `connector-readiness`, `source-diagnostics`, `runtime-diagnostics`, `operations-readiness`, review-action dry-runs, event listing, and event dispatch close at hand.
+Each action includes an area, title, evidence, a primary CLI command, and optional related commands. Runbook actions prefer the highest-leverage next step: connector issues point to `connector-rollout-plan`, source ingest configuration issues point to `source-ingest-dry-run`, worker issues point to `worker-topology-plan`, notification outbox issues point to `operations-overview`, review-result closure issues point to `review-action-gate`, review action execution ledger issues point to `review-action-executions`, and duplicate idempotency records point to `trace-context --idempotency-key`. Stale running ledger records are surfaced separately so operators can inspect blocked downstream mutations with `review-action-executions --status running`. Related commands keep lower-level diagnostics such as `connector-readiness`, `source-diagnostics`, `runtime-diagnostics`, `operations-readiness`, review-action dry-runs, event listing, and event dispatch close at hand.
 
 Source lifecycle actions point operators to `source-lifecycle-report` when a source disable is blocked by an active run or when a failed source is still waiting for retry backoff. If an operator has reviewed a failed source and wants to bypass the remaining backoff window, the runbook also links to `reset-source-failure --retry-now true --execute true`.
 

@@ -50,7 +50,7 @@ function checklistActions(checklist) {
       area: item.area,
       title: titleForChecklistItem(item),
       summary: item.summary,
-      recommendedCommand: COMMANDS_BY_KEY[item.key],
+      recommendedCommand: recommendedCommandForChecklistItem(item),
       relatedCommands: relatedCommandsForChecklistItem(item),
       evidence: item.evidence
     });
@@ -292,6 +292,16 @@ function relatedCommandsForChecklistItem(item) {
     ]
   };
   return commands[item.key] || [];
+}
+
+function recommendedCommandForChecklistItem(item) {
+  if (item.key === 'reviewActions.executionLedger') {
+    const evidence = item.evidence || {};
+    if ((evidence.staleRunning || 0) > 0 && !(evidence.failed > 0)) {
+      return 'node src/presentation/cli/threadtrace.js review-action-executions --status running';
+    }
+  }
+  return COMMANDS_BY_KEY[item.key];
 }
 
 function action(input) {

@@ -85,16 +85,25 @@ function summarizeReviewActions(options) {
 
 function summarizeReviewActionExecutions(result) {
   const executions = result && Array.isArray(result.executions) ? result.executions : [];
+  const staleRunningExecutions = result && Array.isArray(result.staleRunningExecutions)
+    ? result.staleRunningExecutions
+    : executions.filter(function (execution) { return execution.staleRunning; }).slice(0, 10);
   return {
     status: result && result.status || (result ? 'ok' : 'unknown'),
+    healthStatus: result && result.healthStatus,
     count: result && result.count !== undefined ? result.count : executions.length,
     completed: executions.filter(function (execution) { return execution.status === 'completed'; }).length,
     running: executions.filter(function (execution) { return execution.status === 'running'; }).length,
+    staleRunning: result && result.staleRunningCount !== undefined
+      ? result.staleRunningCount
+      : staleRunningExecutions.length,
     failed: executions.filter(function (execution) { return execution.status === 'failed'; }).length,
     latestUpdatedAt: latestTimestamp(executions.map(function (execution) {
       return execution.updatedAt || execution.completedAt || execution.failedAt || execution.createdAt;
     })),
     latestTaskId: executions[0] && executions[0].taskId,
+    runningStaleAfterMs: result && result.runningStaleAfterMs,
+    staleRunningExecutions,
     message: result && result.message
   };
 }

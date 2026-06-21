@@ -166,6 +166,7 @@ function createThreadTraceRuntime(options) {
       status: safeRequest.status,
       taskId: safeRequest.taskId,
       limit: safeRequest.limit || 50,
+      runningStaleAfterMs: safeRequest.runningStaleAfterMs,
       now: safeRequest.now
     });
   };
@@ -569,6 +570,7 @@ function createThreadTraceRuntime(options) {
         limit: safeRequest.limit || 100,
         now: safeRequest.now,
         storeDir: safeRequest.storeDir,
+        runningStaleAfterMs: safeRequest.runningStaleAfterMs,
         workerStaleAfterMs: safeRequest.workerStaleAfterMs
       });
 
@@ -597,6 +599,7 @@ function createThreadTraceRuntime(options) {
           now,
           storeDir: safeRequest.storeDir || deployment.storeDir,
           limit: safeRequest.limit || deployment.limit,
+          runningStaleAfterMs: firstDefined(safeRequest.runningStaleAfterMs, deployment.runningStaleAfterMs),
           workerStaleAfterMs: safeRequest.workerStaleAfterMs || deployment.workerStaleAfterMs
         }))
         : undefined;
@@ -607,6 +610,7 @@ function createThreadTraceRuntime(options) {
           now,
           storeDir: safeRequest.storeDir || deployment.storeDir,
           limit: safeRequest.limit || deployment.limit,
+          runningStaleAfterMs: firstDefined(safeRequest.runningStaleAfterMs, deployment.runningStaleAfterMs),
           workerStaleAfterMs: safeRequest.workerStaleAfterMs || deployment.workerStaleAfterMs
         }));
 
@@ -630,6 +634,7 @@ function createThreadTraceRuntime(options) {
         limit: safeRequest.limit || 100,
         now: safeRequest.now,
         storeDir: safeRequest.storeDir,
+        runningStaleAfterMs: safeRequest.runningStaleAfterMs,
         workerStaleAfterMs: safeRequest.workerStaleAfterMs
       });
       const rolloutManifestPlan = safeRequest.manifest
@@ -638,6 +643,7 @@ function createThreadTraceRuntime(options) {
           now: safeRequest.now,
           storeDir: safeRequest.storeDir,
           limit: safeRequest.limit,
+          runningStaleAfterMs: safeRequest.runningStaleAfterMs,
           workerStaleAfterMs: safeRequest.workerStaleAfterMs
         })
         : undefined;
@@ -660,6 +666,7 @@ function createThreadTraceRuntime(options) {
           now: safeRequest.now,
           storeDir: safeRequest.storeDir,
           limit: safeRequest.limit,
+          runningStaleAfterMs: safeRequest.runningStaleAfterMs,
           workerStaleAfterMs: safeRequest.workerStaleAfterMs
         })
         : undefined;
@@ -671,6 +678,7 @@ function createThreadTraceRuntime(options) {
         limit: safeRequest.limit || 100,
         now: safeRequest.now,
         storeDir: safeRequest.storeDir,
+        runningStaleAfterMs: safeRequest.runningStaleAfterMs,
         workerStaleAfterMs: safeRequest.workerStaleAfterMs
       });
       const deploymentChecklist = await this.getDeploymentChecklist({
@@ -680,6 +688,7 @@ function createThreadTraceRuntime(options) {
         limit: safeRequest.limit || 100,
         now: safeRequest.now,
         storeDir: safeRequest.storeDir,
+        runningStaleAfterMs: safeRequest.runningStaleAfterMs,
         workerStaleAfterMs: safeRequest.workerStaleAfterMs
       });
       const operationsRunbook = await this.getOperationsRunbook({
@@ -691,6 +700,7 @@ function createThreadTraceRuntime(options) {
         pipelineLimit: safeRequest.pipelineLimit || 20,
         now: safeRequest.now,
         storeDir: safeRequest.storeDir,
+        runningStaleAfterMs: safeRequest.runningStaleAfterMs,
         workerStaleAfterMs: safeRequest.workerStaleAfterMs
       });
 
@@ -718,6 +728,7 @@ function createThreadTraceRuntime(options) {
         pipelineLimit: safeRequest.pipelineLimit || 20,
         now: safeRequest.now,
         storeDir: safeRequest.storeDir,
+        runningStaleAfterMs: safeRequest.runningStaleAfterMs,
         workerStaleAfterMs: safeRequest.workerStaleAfterMs
       });
       let registration;
@@ -763,6 +774,7 @@ function createThreadTraceRuntime(options) {
         pipelineLimit: safeRequest.pipelineLimit,
         now: safeRequest.now,
         storeDir: safeRequest.storeDir,
+        runningStaleAfterMs: safeRequest.runningStaleAfterMs,
         workerStaleAfterMs: safeRequest.workerStaleAfterMs,
         requestId: safeRequest.requestId,
         traceId: safeRequest.traceId,
@@ -912,6 +924,7 @@ function createThreadTraceRuntime(options) {
       const reviewActionExecutions = await listReviewActionExecutionsFor({
         limit: safeRequest.limit || 100,
         now: safeRequest.now,
+        runningStaleAfterMs: safeRequest.runningStaleAfterMs,
         storeDir
       });
       const overview = await getOperationalOverview({
@@ -1049,6 +1062,7 @@ function createThreadTraceRuntime(options) {
       const reviewActionExecutions = await listReviewActionExecutionsFor({
         limit: safeRequest.limit || 100,
         now: safeRequest.now,
+        runningStaleAfterMs: safeRequest.runningStaleAfterMs,
         storeDir: safeRequest.storeDir
       });
       return getDeploymentChecklist({
@@ -1082,6 +1096,7 @@ function createThreadTraceRuntime(options) {
         limit: safeRequest.limit || 100,
         now: safeRequest.now,
         storeDir: safeRequest.storeDir,
+        runningStaleAfterMs: safeRequest.runningStaleAfterMs,
         workerStaleAfterMs: safeRequest.workerStaleAfterMs
       });
       const pipelineRuns = await this.listSourceInsightPipelineRuns({
@@ -1129,6 +1144,7 @@ function createThreadTraceRuntime(options) {
           limit: safeRequest.limit || 100,
           now: safeRequest.now,
           storeDir: safeRequest.storeDir,
+          runningStaleAfterMs: safeRequest.runningStaleAfterMs,
           workerStaleAfterMs: safeRequest.workerStaleAfterMs
         });
       const overview = safeRequest.includeOperationalOverview === false
@@ -1137,6 +1153,7 @@ function createThreadTraceRuntime(options) {
           limit: safeRequest.limit || 100,
           now: safeRequest.now,
           storeDir: safeRequest.storeDir,
+          runningStaleAfterMs: safeRequest.runningStaleAfterMs,
           workerStaleAfterMs: safeRequest.workerStaleAfterMs
         });
 
@@ -1703,6 +1720,7 @@ function buildManifestConnectorRolloutRequest(options) {
     limit: safeOptions.limit || deployment.limit,
     now: safeOptions.now,
     storeDir: safeOptions.storeDir || deployment.storeDir,
+    runningStaleAfterMs: firstDefined(safeOptions.runningStaleAfterMs, deployment.runningStaleAfterMs),
     workerStaleAfterMs: safeOptions.workerStaleAfterMs || deployment.workerStaleAfterMs
   });
 }
@@ -1722,8 +1740,13 @@ function buildManifestWorkerTopologyRequest(options) {
     limit: safeOptions.limit || deployment.limit,
     now: safeOptions.now,
     storeDir: safeOptions.storeDir || deployment.storeDir,
+    runningStaleAfterMs: firstDefined(safeOptions.runningStaleAfterMs, deployment.runningStaleAfterMs),
     workerStaleAfterMs: safeOptions.workerStaleAfterMs || deployment.workerStaleAfterMs
   };
+}
+
+function firstDefined(primary, fallback) {
+  return primary === undefined ? fallback : primary;
 }
 
 function buildManifestSourceRegistrationRequest(manifest) {

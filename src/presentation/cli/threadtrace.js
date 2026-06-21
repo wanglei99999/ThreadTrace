@@ -235,7 +235,8 @@ function main(argv) {
     runtime.getOperationalOverview({
       limit: options.limit ? Number(options.limit) : 100,
       now: options.now,
-      storeDir
+      storeDir,
+      runningStaleAfterMs: options.runningStaleAfterMs ? Number(options.runningStaleAfterMs) : undefined
     }).then(function (overview) {
       console.log('Storage: ' + overview.storageMode);
       console.log('Sources: total=' + overview.sources.total + ', enabled=' + overview.sources.enabled + ', due=' + overview.sources.due + ', failed=' + overview.sources.failed);
@@ -244,6 +245,7 @@ function main(argv) {
       console.log('Workers: running=' + overview.workers.running + ', stale=' + overview.workers.stale + ', failed=' + overview.workers.failed + ', latestHeartbeat=' + (overview.workers.latestHeartbeatAt || 'none'));
       console.log('Worker leases: active=' + overview.workers.leases.active + ', expired=' + overview.workers.leases.expired);
       console.log('Raw pages: total=' + overview.rawPages.total + ', latest=' + (overview.rawPages.latestFetchedAt || 'none'));
+      console.log('Review action executions: total=' + overview.reviewActions.executions.count + ', running=' + overview.reviewActions.executions.running + ', staleRunning=' + overview.reviewActions.executions.staleRunning + ', failed=' + overview.reviewActions.executions.failed);
     }).catch(function (error) {
       console.error(error && error.stack ? error.stack : error);
       process.exitCode = 1;
@@ -366,6 +368,7 @@ function main(argv) {
       sourceRunStaleAfterMs: options.sourceRunStaleAfterMs ? Number(options.sourceRunStaleAfterMs) : undefined,
       sourceFailureRetryBackoffMs: options.sourceFailureRetryBackoffMs ? Number(options.sourceFailureRetryBackoffMs) : undefined,
       sourceFailureMaxRetryBackoffMs: options.sourceFailureMaxRetryBackoffMs ? Number(options.sourceFailureMaxRetryBackoffMs) : undefined,
+      runningStaleAfterMs: options.runningStaleAfterMs ? Number(options.runningStaleAfterMs) : undefined,
       now: options.now,
       storeDir
     }).then(function (runbook) {
@@ -522,13 +525,14 @@ function main(argv) {
       status: options.status,
       taskId: options.taskId,
       limit: options.limit ? Number(options.limit) : 50,
+      runningStaleAfterMs: options.runningStaleAfterMs ? Number(options.runningStaleAfterMs) : undefined,
       now: options.now,
       storeDir
     }).then(function (result) {
-      console.log('Review action executions: ' + result.count + '\tstatus=' + (result.status || 'ok'));
+      console.log('Review action executions: ' + result.count + '\tstatus=' + (result.status || 'ok') + '\thealth=' + (result.healthStatus || 'unknown') + '\tstaleRunning=' + (result.staleRunningCount || 0));
       if (result.message) console.log(result.message);
       result.executions.forEach(function (execution) {
-        console.log((execution.updatedAt || execution.createdAt || '') + '\t' + (execution.status || '') + '\t' + (execution.action || '') + '\t' + (execution.taskId || '') + '\t' + (execution.key || '') + '\t' + (execution.filePath || ''));
+        console.log((execution.updatedAt || execution.createdAt || '') + '\t' + (execution.status || '') + '\t' + (execution.staleRunning ? 'stale' : 'fresh') + '\t' + (execution.runningAgeMs === undefined ? '' : execution.runningAgeMs) + '\t' + (execution.action || '') + '\t' + (execution.taskId || '') + '\t' + (execution.key || '') + '\t' + (execution.filePath || ''));
       });
       if (result.status === 'warn') {
         process.exitCode = 2;
@@ -685,7 +689,8 @@ function main(argv) {
       enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
       limit: options.limit ? Number(options.limit) : 100,
       now: options.now,
-      storeDir
+      storeDir,
+      runningStaleAfterMs: options.runningStaleAfterMs ? Number(options.runningStaleAfterMs) : undefined
     }).then(function (checklist) {
       console.log('Deployment checklist: ' + checklist.status);
       checklist.items.forEach(function (item) {
@@ -1759,6 +1764,9 @@ function parseArgs(args) {
     } else if (item === '--source-run-stale-after-ms') {
       options.sourceRunStaleAfterMs = args[index + 1];
       index += 1;
+    } else if (item === '--running-stale-after-ms') {
+      options.runningStaleAfterMs = args[index + 1];
+      index += 1;
     } else if (item === '--source-failure-retry-backoff-ms') {
       options.sourceFailureRetryBackoffMs = args[index + 1];
       index += 1;
@@ -2038,24 +2046,24 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js list-tasks [--store-dir dir] [--status status] [--type type] [--request-id id] [--trace-id id] [--idempotency-key key] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js list-reports [--source-key key] [--source-thread-id id] [--report-type type] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-semantic-enrichment-task --source-thread-id id [--source-key nga] [--provider mock] [--store-dir dir]');
-  console.log('  node src/presentation/cli/threadtrace.js operations-overview [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js operations-overview [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-readiness [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-lifecycle-report [--forum nga] [--enabled true] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-schedule-report [--forum nga] [--enabled true] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js trace-context [--request-id id | --trace-id id | --idempotency-key key] [--store-dir dir] [--limit n]');
-  console.log('  node src/presentation/cli/threadtrace.js operations-runbook [--forum nga] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js operations-runbook [--forum nga] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js synthesize-runbook-events [--execute true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-plan [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-gate [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-apply [--execute true] [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-audits [--action tasks.closure|context.merge] [--task-id id] [--store-dir dir] [--limit n]');
-  console.log('  node src/presentation/cli/threadtrace.js review-action-executions [--action tasks.closure|context.merge] [--status running|completed|failed] [--task-id id] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js review-action-executions [--action tasks.closure|context.merge] [--status running|completed|failed] [--task-id id] [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-audit-overview [--action tasks.closure|context.merge] [--task-id id] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-executor-diagnostics [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js worker-topology-plan [--topology operations-worker|split-workers] [--source-task-mode ingest|insight-pipeline] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js runtime-diagnostics [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js adapter-diagnostics [--now iso]');
-  console.log('  node src/presentation/cli/threadtrace.js deployment-checklist [--forum nga] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js deployment-checklist [--forum nga] [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js migrate-store --from-store-dir dir [--to-store-dir dir] [--dry-run true|false] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js list-events [--source-id id] [--type type] [--acknowledged true|false] [--delivery-status status] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js fetch-thread-page [--forum nga] [--url url | --source-id id] [--source-thread-id id] [--store-dir dir]');

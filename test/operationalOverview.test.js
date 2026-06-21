@@ -141,6 +141,18 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
     reviewActionExecutions: {
       status: 'ok',
       count: 2,
+      runningStaleAfterMs: 600000,
+      staleRunningCount: 1,
+      staleRunningExecutions: [
+        {
+          key: 'context-review-action:v1:context.merge:1',
+          action: 'context.merge',
+          status: 'running',
+          taskId: 'review-action-task-2',
+          updatedAt: '2026-06-18T09:40:00.000Z',
+          runningAgeMs: 1200000
+        }
+      ],
       executions: [
         {
           key: 'context-review-action:v1:tasks.closure:1',
@@ -154,7 +166,9 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
           action: 'context.merge',
           status: 'running',
           taskId: 'review-action-task-2',
-          updatedAt: '2026-06-18T09:57:00.000Z'
+          updatedAt: '2026-06-18T09:40:00.000Z',
+          runningAgeMs: 1200000,
+          staleRunning: true
         }
       ]
     }
@@ -190,6 +204,9 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
   assert.equal(overview.reviewActions.executions.count, 2);
   assert.equal(overview.reviewActions.executions.completed, 1);
   assert.equal(overview.reviewActions.executions.running, 1);
+  assert.equal(overview.reviewActions.executions.staleRunning, 1);
   assert.equal(overview.reviewActions.executions.failed, 0);
   assert.equal(overview.reviewActions.executions.latestUpdatedAt, '2026-06-18T09:59:00.000Z');
+  assert.equal(overview.reviewActions.executions.runningStaleAfterMs, 600000);
+  assert.equal(overview.reviewActions.executions.staleRunningExecutions[0].taskId, 'review-action-task-2');
 });

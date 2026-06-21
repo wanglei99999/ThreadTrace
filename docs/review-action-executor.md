@@ -49,6 +49,7 @@ Adapters should return compact audit-friendly objects. The task output stores th
 - Missing executor methods produce a failed report with `executorReadiness.missing`.
 - File-backed runtimes keep an action execution ledger under `THREADTRACE_STORE_DIR/review-action-executions`. Each logical `tasks.closure` or `context.merge` call is claimed before the adapter runs; a completed ledger entry is replayed instead of calling the adapter again.
 - If another process has already claimed the same logical action and it is still running, the task fails fast instead of risking a duplicate downstream mutation. Retry after the first execution finishes or after an operator resolves the stale ledger entry.
+- Ledger inspection marks running records as stale when their `updatedAt` or `createdAt` timestamp is older than the stale-running window. The default is 10 minutes and can be adjusted with `--running-stale-after-ms` or the `runningStaleAfterMs` API query parameter. This is a read-side operational signal; ThreadTrace does not automatically delete or overwrite stale running ledger entries.
 - The action plan is conservative: blocker, keep-open, and conflict signals win over closure or merge.
 
 ## Idempotency Boundary
@@ -102,6 +103,7 @@ Inspect audit records with:
 node src/presentation/cli/threadtrace.js review-action-audits
 node src/presentation/cli/threadtrace.js review-action-audit-overview
 node src/presentation/cli/threadtrace.js review-action-executions
+node src/presentation/cli/threadtrace.js review-action-executions --status running --running-stale-after-ms 600000
 node src/presentation/cli/threadtrace.js review-action-executor-diagnostics
 ```
 

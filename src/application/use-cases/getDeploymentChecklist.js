@@ -53,8 +53,11 @@ function getDeploymentChecklist(options) {
       count: reviewActionExecutionSummary.count,
       completed: reviewActionExecutionSummary.completed,
       running: reviewActionExecutionSummary.running,
+      staleRunning: reviewActionExecutionSummary.staleRunning,
       failed: reviewActionExecutionSummary.failed,
       latestUpdatedAt: reviewActionExecutionSummary.latestUpdatedAt,
+      runningStaleAfterMs: reviewActionExecutionSummary.runningStaleAfterMs,
+      staleRunningExecutions: reviewActionExecutionSummary.staleRunningExecutions,
       message: reviewActionExecutionSummary.message
     }),
     item('llm.configuration', 'llm', aggregateChecks(diagnostics.checks, /^config\.llm\./), 'LLM provider configuration is ready for the selected provider.', {
@@ -80,15 +83,24 @@ function getDeploymentChecklist(options) {
 
 function summarizeReviewActionExecutions(result) {
   const executions = result && Array.isArray(result.executions) ? result.executions : [];
+  const staleRunningExecutions = result && Array.isArray(result.staleRunningExecutions)
+    ? result.staleRunningExecutions
+    : executions.filter(function (execution) { return execution.staleRunning; }).slice(0, 10);
   return {
     status: result && result.status || (result ? 'ok' : 'warn'),
+    healthStatus: result && result.healthStatus,
     count: result && result.count !== undefined ? result.count : executions.length,
     completed: executions.filter(function (execution) { return execution.status === 'completed'; }).length,
     running: executions.filter(function (execution) { return execution.status === 'running'; }).length,
+    staleRunning: result && result.staleRunningCount !== undefined
+      ? result.staleRunningCount
+      : staleRunningExecutions.length,
     failed: executions.filter(function (execution) { return execution.status === 'failed'; }).length,
     latestUpdatedAt: latestTimestamp(executions.map(function (execution) {
       return execution.updatedAt || execution.completedAt || execution.failedAt || execution.createdAt;
     })),
+    runningStaleAfterMs: result && result.runningStaleAfterMs,
+    staleRunningExecutions,
     message: result && result.message
   };
 }
@@ -96,6 +108,7 @@ function summarizeReviewActionExecutions(result) {
 function reviewActionExecutionStatus(summary) {
   if (!summary || summary.status === 'warn') return 'warn';
   if (summary.failed > 0) return 'fail';
+  if (summary.staleRunning > 0) return 'fail';
   if (summary.running > 0) return 'warn';
   return 'ok';
 }

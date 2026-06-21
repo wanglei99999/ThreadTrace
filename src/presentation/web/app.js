@@ -1796,17 +1796,22 @@ function renderContextReviewActionExecutionPanel(result) {
   const executions = result.executions || [];
   const completed = executions.filter(function (execution) { return execution.status === 'completed'; }).length;
   const running = executions.filter(function (execution) { return execution.status === 'running'; }).length;
+  const staleRunning = result.staleRunningCount === undefined
+    ? executions.filter(function (execution) { return execution.staleRunning; }).length
+    : result.staleRunningCount;
   const failed = executions.filter(function (execution) { return execution.status === 'failed'; }).length;
   const tiles = '<div class="summary-strip event-summary-strip">' + [
     summaryTile('Status', result.status || 'ok', statusVariant(result.status || 'ok')),
     summaryTile('Executions', String(result.count || executions.length || 0), executions.length > 0 ? 'ok' : 'muted'),
     summaryTile('Completed', String(completed), completed > 0 ? 'ok' : 'muted'),
     summaryTile('Running', String(running), running > 0 ? 'warn' : 'muted'),
+    summaryTile('Stale running', String(staleRunning), staleRunning > 0 ? 'fail' : 'muted'),
     summaryTile('Failed', String(failed), failed > 0 ? 'fail' : 'muted')
   ].join('') + '</div>';
   return panel('Review action executions', [
     tiles,
     metric('Generated', result.generatedAt || 'unknown'),
+    metric('Stale window', result.runningStaleAfterMs === undefined ? 'unknown' : result.runningStaleAfterMs + ' ms'),
     result.message ? '<div class="muted">' + escapeHtml(result.message) + '</div>' : '',
     renderContextReviewActionExecutionRows(executions)
   ].join(''), 'wide');
@@ -1999,7 +2004,8 @@ function renderContextReviewActionExecutionRows(executions) {
       execution.updatedAt || execution.createdAt,
       execution.taskId ? 'task=' + execution.taskId : undefined,
       execution.requestHash ? 'hash=' + String(execution.requestHash).slice(0, 12) : undefined,
-      execution.attemptCount ? 'attempts=' + execution.attemptCount : undefined
+      execution.attemptCount ? 'attempts=' + execution.attemptCount : undefined,
+      execution.runningAgeMs === undefined ? undefined : 'ageMs=' + execution.runningAgeMs
     ].filter(Boolean).join(' | ');
     return '<div class="action-row ops-row"><span>' +
       '<strong>' + escapeHtml(execution.action || 'unknown-action') + '</strong>' +
@@ -2007,7 +2013,7 @@ function renderContextReviewActionExecutionRows(executions) {
       '<small>' + escapeHtml(execution.key || '') + '</small>' +
       '<small>' + escapeHtml(execution.filePath || '') + '</small>' +
       '</span>' +
-      statusBadge(execution.status || 'unknown', statusVariant(execution.status)) +
+      statusBadge(execution.staleRunning ? 'stale running' : execution.status || 'unknown', execution.staleRunning ? 'fail' : statusVariant(execution.status)) +
       '</div>';
   }).join('');
 }

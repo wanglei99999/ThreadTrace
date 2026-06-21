@@ -229,3 +229,80 @@ test('deployment checklist fails when review action execution ledger has failed 
     return item.key === 'reviewActions.executionLedger';
   }).status, 'fail');
 });
+
+test('deployment checklist fails when review action execution ledger has stale running records', function () {
+  const checklist = getDeploymentChecklist({
+    now: '2026-06-21T10:00:00.000Z',
+    diagnostics: {
+      status: 'ok',
+      configuration: {
+        storageMode: 'file',
+        llm: {
+          provider: 'mock'
+        }
+      },
+      checks: [
+        { key: 'resources.storeDir', status: 'ok', summary: 'Store directory is writable.' },
+        { key: 'config.llm.provider', status: 'ok', summary: 'LLM provider is configured.' }
+      ]
+    },
+    adapterDiagnostics: { status: 'ok', adapterCount: 1 },
+    connectorReadiness: { status: 'ok', connectorCount: 1, sourceCount: 1 },
+    sourceDiagnostics: { status: 'ok', sourceCount: 1, sources: [] },
+    notificationDiagnostics: {
+      channel: 'file',
+      checks: [
+        { key: 'notifications.channel', status: 'ok', summary: 'Notification channel is supported.' }
+      ]
+    },
+    reviewActionExecutorDiagnostics: {
+      status: 'ok',
+      mode: 'file-audit',
+      ready: true,
+      checks: []
+    },
+    reviewActionExecutions: {
+      status: 'ok',
+      healthStatus: 'warn',
+      count: 1,
+      runningStaleAfterMs: 600000,
+      staleRunningCount: 1,
+      staleRunningExecutions: [
+        {
+          key: 'context-review-action:v1:context.merge:stale',
+          action: 'context.merge',
+          status: 'running',
+          taskId: 'task-stale',
+          updatedAt: '2026-06-21T09:40:00.000Z',
+          runningAgeMs: 1200000
+        }
+      ],
+      executions: [
+        {
+          key: 'context-review-action:v1:context.merge:stale',
+          action: 'context.merge',
+          status: 'running',
+          taskId: 'task-stale',
+          updatedAt: '2026-06-21T09:40:00.000Z',
+          runningAgeMs: 1200000,
+          staleRunning: true
+        }
+      ]
+    },
+    readiness: {
+      status: 'ok',
+      checks: [
+        { key: 'workers.stale', status: 'ok', summary: 'Worker runs are stale.' },
+        { key: 'events.failed', status: 'ok', summary: 'Notification events failed delivery.' }
+      ]
+    }
+  });
+
+  const item = checklist.items.find(function (check) {
+    return check.key === 'reviewActions.executionLedger';
+  });
+  assert.equal(checklist.status, 'fail');
+  assert.equal(item.status, 'fail');
+  assert.equal(item.evidence.staleRunning, 1);
+  assert.equal(item.evidence.staleRunningExecutions[0].taskId, 'task-stale');
+});

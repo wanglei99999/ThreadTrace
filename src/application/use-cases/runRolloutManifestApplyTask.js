@@ -51,6 +51,7 @@ async function runRolloutManifestApplyTask(options) {
       pipelineLimit: safeOptions.pipelineLimit,
       now: safeOptions.now,
       storeDir: safeOptions.storeDir,
+      runningStaleAfterMs: safeOptions.runningStaleAfterMs,
       workerStaleAfterMs: safeOptions.workerStaleAfterMs
     });
     task = markTaskCompleted(task, {

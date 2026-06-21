@@ -197,6 +197,7 @@ async function routeRequest(request, response, context) {
       action: url.searchParams.get('action') || undefined,
       taskId: url.searchParams.get('taskId') || undefined,
       limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 50,
+      runningStaleAfterMs: url.searchParams.get('runningStaleAfterMs') ? Number(url.searchParams.get('runningStaleAfterMs')) : undefined,
       now: url.searchParams.get('now') || undefined,
       storeDir: url.searchParams.get('storeDir') || undefined
     });
@@ -328,6 +329,7 @@ async function routeRequest(request, response, context) {
       limit: body.limit,
       now: body.now,
       storeDir: body.storeDir || context.storeDir,
+      runningStaleAfterMs: body.runningStaleAfterMs,
       workerStaleAfterMs: body.workerStaleAfterMs
     });
     writeJson(response, result.status === 'fail' ? 503 : 200, result);
@@ -510,6 +512,7 @@ async function routeRequest(request, response, context) {
       sourceRunStaleAfterMs: url.searchParams.get('sourceRunStaleAfterMs') ? Number(url.searchParams.get('sourceRunStaleAfterMs')) : undefined,
       sourceFailureRetryBackoffMs: url.searchParams.get('sourceFailureRetryBackoffMs') ? Number(url.searchParams.get('sourceFailureRetryBackoffMs')) : undefined,
       sourceFailureMaxRetryBackoffMs: url.searchParams.get('sourceFailureMaxRetryBackoffMs') ? Number(url.searchParams.get('sourceFailureMaxRetryBackoffMs')) : undefined,
+      runningStaleAfterMs: url.searchParams.get('runningStaleAfterMs') ? Number(url.searchParams.get('runningStaleAfterMs')) : undefined,
       now: url.searchParams.get('now') || undefined,
       storeDir: url.searchParams.get('storeDir') || undefined
     });
@@ -532,6 +535,7 @@ async function routeRequest(request, response, context) {
       sourceFailureMaxRetryBackoffMs: body.sourceFailureMaxRetryBackoffMs,
       includeRunbook: body.includeRunbook === true,
       now: body.now,
+      runningStaleAfterMs: body.runningStaleAfterMs,
       storeDir: body.storeDir || context.storeDir
     });
     writeJson(response, 200, result);
@@ -564,6 +568,7 @@ async function routeRequest(request, response, context) {
       limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,
       now: url.searchParams.get('now') || undefined,
       storeDir: url.searchParams.get('storeDir') || undefined,
+      runningStaleAfterMs: url.searchParams.get('runningStaleAfterMs') ? Number(url.searchParams.get('runningStaleAfterMs')) : undefined,
       workerStaleAfterMs: url.searchParams.get('workerStaleAfterMs') ? Number(url.searchParams.get('workerStaleAfterMs')) : undefined
     });
     writeJson(response, plan.status === 'fail' ? 503 : 200, plan);
@@ -577,6 +582,7 @@ async function routeRequest(request, response, context) {
       limit: body.limit,
       now: body.now,
       storeDir: body.storeDir || context.storeDir,
+      runningStaleAfterMs: body.runningStaleAfterMs,
       workerStaleAfterMs: body.workerStaleAfterMs
     });
     writeJson(response, plan.status === 'fail' ? 503 : 200, plan);
@@ -594,6 +600,7 @@ async function routeRequest(request, response, context) {
       limit: body.limit,
       now: body.now,
       storeDir: body.storeDir || context.storeDir,
+      runningStaleAfterMs: body.runningStaleAfterMs,
       workerStaleAfterMs: body.workerStaleAfterMs
     });
     writeJson(response, plan.status === 'fail' ? 503 : 200, plan);
@@ -613,6 +620,7 @@ async function routeRequest(request, response, context) {
       pipelineLimit: body.pipelineLimit,
       now: body.now,
       storeDir: body.storeDir || context.storeDir,
+      runningStaleAfterMs: body.runningStaleAfterMs,
       workerStaleAfterMs: body.workerStaleAfterMs
     });
     writeJson(response, report.status === 'fail' ? 503 : 200, report);
@@ -633,6 +641,7 @@ async function routeRequest(request, response, context) {
       pipelineLimit: body.pipelineLimit,
       now: body.now,
       storeDir: body.storeDir || context.storeDir,
+      runningStaleAfterMs: body.runningStaleAfterMs,
       workerStaleAfterMs: body.workerStaleAfterMs,
       requestId: context.requestId,
       idempotencyKey: context.idempotencyKey
