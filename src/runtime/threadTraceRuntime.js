@@ -71,6 +71,7 @@ const { getContextReviewResultOverview } = require('../application/use-cases/get
 const { getContextReviewResultActionPlan } = require('../application/use-cases/getContextReviewResultActionPlan');
 const { getContextReviewResultActionGate } = require('../application/use-cases/getContextReviewResultActionGate');
 const { runContextReviewActionTask } = require('../application/use-cases/runContextReviewActionTask');
+const { listContextReviewActionAudits } = require('../application/use-cases/listContextReviewActionAudits');
 const { validateConnectorModuleLoad } = require('../application/use-cases/validateConnectorModuleLoad');
 const { indexSavedThreadDirectory } = require('../application/use-cases/indexSavedThreadDirectory');
 const { searchEvidence } = require('../application/use-cases/searchEvidence');
@@ -84,6 +85,7 @@ const { createFileRawThreadPageRepository } = require('../infrastructure/storage
 const { createFileWorkerRunRepository } = require('../infrastructure/storage/fileWorkerRunRepository');
 const { createFileWorkerLeaseRepository } = require('../infrastructure/storage/fileWorkerLeaseRepository');
 const { createFileContextReviewResultRepository } = require('../infrastructure/storage/fileContextReviewResultRepository');
+const { createFileContextReviewActionAuditRepository } = require('../infrastructure/storage/fileContextReviewActionAuditRepository');
 const { createFileNotificationChannel } = require('../infrastructure/notifications/fileNotificationChannel');
 const { createWebhookNotificationChannel } = require('../infrastructure/notifications/webhookNotificationChannel');
 const { createFileContextReviewActionExecutor } = require('../infrastructure/review-actions/fileContextReviewActionExecutor');
@@ -299,6 +301,20 @@ function createThreadTraceRuntime(options) {
         traceId: safeRequest.traceId,
         idempotencyKey: safeRequest.idempotencyKey,
         contextReviewActionExecutor
+      });
+    },
+
+    async listContextReviewActionAudits(request) {
+      const safeRequest = request || {};
+      const storeDir = resolveStoreDir(defaults, safeRequest.storeDir);
+      return listContextReviewActionAudits({
+        contextReviewActionAuditRepository: createFileContextReviewActionAuditRepository({
+          baseDir: path.join(storeDir, 'review-action-audits')
+        }),
+        action: safeRequest.action,
+        taskId: safeRequest.taskId,
+        limit: safeRequest.limit || 50,
+        now: safeRequest.now
       });
     },
 

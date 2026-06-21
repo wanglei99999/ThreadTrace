@@ -310,6 +310,23 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/context-review-results/action-audits': {
+        get: {
+          summary: 'List file-audit executor records for ContextReviewResult action execution',
+          parameters: [
+            { name: 'action', in: 'query', required: false, schema: { type: 'string', example: 'tasks.closure' } },
+            { name: 'taskId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number', example: 50 } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-21T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Review action audit records with action type, compact executor request, and audit file path'
+            }
+          }
+        }
+      },
       '/api/context-review-results/events': {
         post: {
           summary: 'Dry-run or execute synthesis of attention-worthy ContextReviewResult records into notification events',

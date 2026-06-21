@@ -7,6 +7,8 @@ const path = require('node:path');
 const test = require('node:test');
 const { createApplicationError } = require('../src/application/errors/applicationError');
 const { createThreadTraceServer } = require('../src/presentation/http/createServer');
+const { createThreadTraceConfig } = require('../src/runtime/threadTraceConfig');
+const { createThreadTraceRuntime } = require('../src/runtime/threadTraceRuntime');
 
 test('http server exposes health, adapters, and context APIs', async function () {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-http-core-'));
@@ -175,10 +177,12 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /loadContextReviewResults/);
     assert.match(webAppJs, /loadContextReviewResultActionPlan/);
     assert.match(webAppJs, /loadContextReviewResultActionGate/);
+    assert.match(webAppJs, /loadContextReviewActionAudits/);
     assert.match(webAppJs, /runContextReviewActionApply/);
     assert.match(webAppJs, /renderContextReviewResultOverview/);
     assert.match(webAppJs, /renderContextReviewResultActionPlan/);
     assert.match(webAppJs, /renderContextReviewResultActionGate/);
+    assert.match(webAppJs, /renderContextReviewActionAudits/);
     assert.match(webAppJs, /renderContextReviewActionApplyResult/);
     assert.match(webAppJs, /synthesizeReviewResultEvents/);
     assert.match(webAppJs, /renderContextReviewResultEventSynthesis/);
@@ -221,6 +225,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     const contextReviewActionApply = await postJson(baseUrl + '/api/context-review-results/action-tasks/apply', {
       now: '2026-06-21T11:00:00.000Z'
     });
+    const contextReviewActionAudits = await getJson(baseUrl + '/api/context-review-results/action-audits?now=2026-06-21T11:10:00.000Z');
     const contextReviewResultEventDryRun = await postJson(baseUrl + '/api/context-review-results/events', {
       now: '2026-06-21T11:05:00.000Z'
     });
@@ -317,6 +322,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(contextReviewActionApply.report.dryRun, true);
     assert.equal(contextReviewActionApply.report.applied, false);
     assert.equal(contextReviewActionApply.report.closeTaskCount, 1);
+    assert.equal(contextReviewActionAudits.count, 0);
     assert.equal(contextReviewResultEventDryRun.dryRun, true);
     assert.equal(contextReviewResultEventDryRun.createdCount, 1);
     assert.equal(contextReviewResultEventExecute.executed, true);
@@ -339,6 +345,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/context-review-results/action-plan']);
     assert.ok(openApi.paths['/api/context-review-results/action-gate']);
     assert.ok(openApi.paths['/api/context-review-results/action-tasks/apply']);
+    assert.ok(openApi.paths['/api/context-review-results/action-audits']);
     assert.ok(openApi.paths['/api/context-review-results/events']);
     assert.ok(openApi.paths['/api/connectors/catalog']);
     assert.ok(openApi.paths['/api/connectors/readiness']);
@@ -400,6 +407,50 @@ test('http server exposes semantic enrichment API', async function () {
     assert.equal(enriched.semanticInsights.provider, 'mock');
     assert.equal(enriched.semanticInsights.traceId, 'http-trace');
     assert.ok(enriched.semanticInsights.entityInsights.length >= 1);
+  } finally {
+    await close(server);
+  }
+});
+
+test('http server lists file-audit review action executor records', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-http-review-audits-'));
+  const storeDir = path.join(tempDir, 'store');
+  const config = createThreadTraceConfig({
+    cwd: path.resolve(__dirname, '..'),
+    env: {
+      THREADTRACE_STORE_DIR: storeDir,
+      THREADTRACE_REVIEW_ACTION_EXECUTOR: 'file-audit'
+    }
+  });
+  const runtime = createThreadTraceRuntime({
+    config
+  });
+  const server = createThreadTraceServer({
+    runtime,
+    storeDir
+  });
+  await listen(server, 0);
+  const baseUrl = 'http://127.0.0.1:' + server.address().port;
+
+  try {
+    const contract = await getJson(baseUrl + '/api/contracts/context-review-result');
+    await postJsonWithStatus(baseUrl + '/api/context-review-results', {
+      id: 'http-review-audit-result-1',
+      result: contract.example,
+      now: '2026-06-21T10:00:00.000Z'
+    }, 201);
+    const apply = await postJson(baseUrl + '/api/context-review-results/action-tasks/apply', {
+      execute: true,
+      now: '2026-06-21T11:00:00.000Z'
+    });
+    const audits = await getJson(baseUrl + '/api/context-review-results/action-audits?limit=10');
+    const closureAudits = await getJson(baseUrl + '/api/context-review-results/action-audits?action=tasks.closure');
+
+    assert.equal(apply.report.executed, true);
+    assert.equal(apply.report.executorResults.taskClosure.adapter, 'file-audit');
+    assert.equal(audits.count, 2);
+    assert.equal(closureAudits.count, 1);
+    assert.equal(closureAudits.audits[0].request.taskId, apply.task.id);
   } finally {
     await close(server);
   }

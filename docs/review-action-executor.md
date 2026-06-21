@@ -80,6 +80,16 @@ THREADTRACE_STORE_DIR/review-action-audits
 
 The file executor returns `changed=false` and stores the planned closure ids, merge candidates, compact gate evidence, and task id. Use it for local demos, staging rehearsals, and downstream adapter contract tests before wiring a real task tracker or context store.
 
+Inspect audit records with:
+
+```powershell
+node src/presentation/cli/threadtrace.js review-action-audits
+```
+
+```text
+GET /api/context-review-results/action-audits
+```
+
 ## Adapter Examples
 
 Good adapter boundaries:

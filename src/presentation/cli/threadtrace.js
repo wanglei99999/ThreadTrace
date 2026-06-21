@@ -494,6 +494,27 @@ function main(argv) {
     return;
   }
 
+  if (command === 'review-action-audits') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.listContextReviewActionAudits({
+      action: options.action,
+      taskId: options.taskId,
+      limit: options.limit ? Number(options.limit) : 50,
+      now: options.now,
+      storeDir
+    }).then(function (result) {
+      console.log('Review action audits: ' + result.count);
+      result.audits.forEach(function (audit) {
+        const request = audit.request || {};
+        console.log((audit.generatedAt || '') + '\t' + (audit.action || '') + '\t' + (request.taskId || '') + '\t' + (audit.filePath || ''));
+      });
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'worker-topology-plan') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.getWorkerTopologyPlan({
@@ -1700,6 +1721,12 @@ function parseArgs(args) {
     } else if (item === '--type') {
       options.type = args[index + 1];
       index += 1;
+    } else if (item === '--action') {
+      options.action = args[index + 1];
+      index += 1;
+    } else if (item === '--task-id') {
+      options.taskId = args[index + 1];
+      index += 1;
     } else if (item === '--limit') {
       options.limit = args[index + 1];
       index += 1;
@@ -1944,6 +1971,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js review-action-plan [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-gate [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-apply [--execute true] [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js review-action-audits [--action tasks.closure|context.merge] [--task-id id] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js worker-topology-plan [--topology operations-worker|split-workers] [--source-task-mode ingest|insight-pipeline] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js runtime-diagnostics [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js adapter-diagnostics [--now iso]');

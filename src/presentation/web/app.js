@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshReviewActionPlanButton').addEventListener('click', loadContextReviewResultActionPlan);
   document.getElementById('refreshReviewActionGateButton').addEventListener('click', loadContextReviewResultActionGate);
   document.getElementById('runReviewActionApplyButton').addEventListener('click', runContextReviewActionApply);
+  document.getElementById('refreshReviewActionAuditsButton').addEventListener('click', loadContextReviewActionAudits);
   document.getElementById('synthesizeReviewResultEventsButton').addEventListener('click', synthesizeReviewResultEvents);
   document.getElementById('refreshRawPagesButton').addEventListener('click', loadRawPages);
   document.getElementById('dispatchEventsButton').addEventListener('click', dispatchEvents);
@@ -570,13 +571,15 @@ async function loadContextReviewResults() {
       fetchJson('/api/context-review-results/overview?limit=50'),
       fetchJson('/api/context-review-results?limit=10'),
       fetchJson('/api/context-review-results/action-plan?limit=50'),
-      fetchJson('/api/context-review-results/action-gate?limit=50')
+      fetchJson('/api/context-review-results/action-gate?limit=50'),
+      fetchJson('/api/context-review-results/action-audits?limit=10')
     ]).then(function (results) {
       return {
         overview: results[0],
         reviewResults: results[1].reviewResults || [],
         actionPlan: results[2],
-        actionGate: results[3]
+        actionGate: results[3],
+        actionAudits: results[4]
       };
     });
   }, renderContextReviewResultOverview);
@@ -592,6 +595,12 @@ async function loadContextReviewResultActionGate() {
   await renderAsync('contextReviewResultResult', function () {
     return fetchJson('/api/context-review-results/action-gate?limit=50');
   }, renderContextReviewResultActionGate);
+}
+
+async function loadContextReviewActionAudits() {
+  await renderAsync('contextReviewResultResult', function () {
+    return fetchJson('/api/context-review-results/action-audits?limit=20');
+  }, renderContextReviewActionAudits);
 }
 
 async function runContextReviewActionApply() {
@@ -1654,6 +1663,7 @@ function renderContextReviewResultOverview(result) {
   const attention = overview.attention || {};
   const actionPlan = result.actionPlan || {};
   const actionGate = result.actionGate || {};
+  const actionAudits = result.actionAudits || {};
   const tiles = '<div class="summary-strip event-summary-strip">' + [
     summaryTile('Reviews', String(overview.count || 0)),
     summaryTile('Warnings', String(attention.warningCount || 0), (attention.warningCount || 0) > 0 ? 'warn' : 'ok'),
@@ -1669,6 +1679,7 @@ function renderContextReviewResultOverview(result) {
     ].join(''), 'wide'),
     renderContextReviewResultActionPlan(actionPlan),
     renderContextReviewResultActionGate(actionGate),
+    renderContextReviewActionAudits(actionAudits),
     panel('Review attention', renderContextReviewAttentionRows(attention.topRecords || []), 'wide'),
     panel('Recent review results', renderContextReviewResultRows(records), 'wide')
   ].join('');
@@ -1727,6 +1738,15 @@ function renderContextReviewActionApplyResult(result) {
     metric('Close tasks', report.closeTaskCount || 0),
     metric('Merge candidates', report.mergeCandidateCount || 0),
     renderReviewActionApplyStepRows(report.steps || [])
+  ].join(''), 'wide');
+}
+
+function renderContextReviewActionAudits(result) {
+  const audits = result.audits || [];
+  return panel('Review action audits', [
+    metric('Generated', result.generatedAt || 'unknown'),
+    metric('Audit records', result.count || 0),
+    renderContextReviewActionAuditRows(audits)
   ].join(''), 'wide');
 }
 
@@ -1847,6 +1867,26 @@ function renderReviewActionApplyStepRows(steps) {
       '<small>' + escapeHtml(step.summary || '') + '</small>' +
       '</span>' +
       statusBadge(step.status || 'warn', statusVariant(step.status)) +
+      '</div>';
+  }).join('');
+}
+
+function renderContextReviewActionAuditRows(audits) {
+  if (audits.length === 0) return '<div class="muted">No review action audits.</div>';
+  return audits.map(function (audit) {
+    const request = audit.request || {};
+    const details = [
+      audit.generatedAt,
+      request.taskId ? 'task=' + request.taskId : undefined,
+      request.closeTaskIds ? 'close=' + request.closeTaskIds.length : undefined,
+      request.mergeCandidates ? 'merge=' + request.mergeCandidates.length : undefined
+    ].filter(Boolean).join(' | ');
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(audit.action || 'unknown-action') + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '<small>' + escapeHtml(audit.filePath || '') + '</small>' +
+      '</span>' +
+      statusBadge(audit.adapter || 'file-audit', 'ok') +
       '</div>';
   }).join('');
 }

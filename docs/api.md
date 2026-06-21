@@ -78,6 +78,10 @@ Evaluates the action plan as a worker preflight gate. Optional filters match the
 
 Creates a durable `context-review-action-apply` task audit record for applying review-result closure and merge actions. The endpoint defaults to dry-run and does not mutate task or context records. The task stores the evaluated action gate, planned task closure ids, merge candidates, step statuses, executor readiness, and follow-up actions. `execute: true` is reserved for executor-backed deployments; without configured task-closure and context-merge executors, execution reports `fail` instead of silently changing data. Runtime deployments can provide those executors through `contextReviewActionExecutor.closeTasks` and `contextReviewActionExecutor.mergeContext`; the older `contextReviewActionExecutors.taskClosureExecutor` and `contextReviewActionExecutors.contextMergeExecutor` shape remains supported for compatibility. See `docs/review-action-executor.md`.
 
+### `GET /api/context-review-results/action-audits`
+
+Lists file-audit executor records written by `context-review-action-apply` when `execute=true` and `THREADTRACE_REVIEW_ACTION_EXECUTOR=file-audit` are used. Optional filters: `action` (`tasks.closure` or `context.merge`), `taskId`, `limit`, `now`, and `storeDir`. The response returns generated time, action type, compact executor request payload, and audit file path.
+
 ### `POST /api/context-review-results/events`
 
 Dry-runs or executes synthesis of attention-worthy review results into notification outbox events. Only `warning` and `critical` review summaries generate events. The endpoint defaults to dry-run; set `execute: true` or `dryRun: false` to persist `context-review-result` events. Optional filters: `handoffId`, `status`, `reviewerId`, `limit`, `now`, and `storeDir`.
