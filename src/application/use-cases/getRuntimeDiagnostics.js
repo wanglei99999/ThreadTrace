@@ -6,6 +6,7 @@ async function getRuntimeDiagnostics(options) {
   const llm = config.llm || {};
   const workers = config.workers || {};
   const notifications = config.notifications || {};
+  const reviewActions = config.reviewActions || {};
   const connectors = config.connectors || {};
   const connectorModuleErrors = safeOptions.connectorModuleErrors || [];
   const resources = safeOptions.inspectResources
@@ -42,6 +43,9 @@ async function getRuntimeDiagnostics(options) {
       notifications: {
         webhookConfigured: Boolean(notifications.webhookUrl)
       },
+      reviewActions: {
+        executor: reviewActions.executor || 'none'
+      },
       connectors: {
         moduleCount: (connectors.modules || []).length,
         modules: connectors.modules || [],
@@ -58,11 +62,13 @@ function buildRuntimeDiagnosticChecks(config, connectorModuleErrors) {
   const safeConfig = config || {};
   const llm = safeConfig.llm || {};
   const workers = safeConfig.workers || {};
+  const reviewActions = safeConfig.reviewActions || {};
   const safeConnectorModuleErrors = connectorModuleErrors || [];
   const checks = [
     check('config.storageMode', safeConfig.storageMode ? 'ok' : 'fail', safeConfig.storageMode || 'missing', 'Storage mode is configured.'),
     check('config.storeDir', safeConfig.storeDir ? 'ok' : 'fail', safeConfig.storeDir || 'missing', 'Store directory is configured.'),
     check('config.sourceTaskMode', workers.sourceTaskMode ? 'ok' : 'fail', workers.sourceTaskMode || 'missing', 'Worker source task mode is configured.'),
+    check('config.reviewActions.executor', reviewActions.executor ? 'ok' : 'fail', reviewActions.executor || 'missing', 'Review action executor mode is configured.'),
     check('config.connectorModules', safeConnectorModuleErrors.length > 0 ? 'fail' : 'ok', ((safeConfig.connectors && safeConfig.connectors.modules) || []).length, 'External connector module configuration is parsed and loadable.')
   ];
 
