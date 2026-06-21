@@ -57,7 +57,7 @@ Task-level idempotency protects repeated client calls with the same idempotency 
 
 Ledger keys are derived from the logical action type and the conservative action-plan payload, not from the transient task id. Adapter results are stored in the ledger and surfaced back under `report.executorResults.*.executionLedger`.
 
-Future PostgreSQL deployments should implement the same `ContextReviewActionExecutionRepository` port with a unique execution key and conflict-aware claim operation. The file implementation is suitable for local and single-node deployments.
+PostgreSQL deployments use the same `ContextReviewActionExecutionRepository` port with a unique `execution_key` and conflict-aware claim operation. The file implementation is suitable for local and single-node deployments; PostgreSQL is the preferred ledger store for multi-process or multi-host execution.
 
 ## Legacy Compatibility
 

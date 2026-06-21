@@ -66,6 +66,26 @@ create index if not exists idx_context_review_results_handoff on context_review_
 create index if not exists idx_context_review_results_status_time on context_review_results(status, submitted_at desc);
 create index if not exists idx_context_review_results_reviewer on context_review_results(reviewer_id);
 
+create table if not exists context_review_action_executions (
+  execution_key text primary key,
+  action text not null,
+  status text not null,
+  task_id text,
+  request_hash text not null,
+  request jsonb not null default '{}'::jsonb,
+  result jsonb,
+  error jsonb,
+  attempt_count integer not null default 1,
+  created_at timestamptz not null,
+  updated_at timestamptz not null,
+  completed_at timestamptz,
+  failed_at timestamptz
+);
+
+create index if not exists idx_context_review_action_executions_action_status on context_review_action_executions(action, status);
+create index if not exists idx_context_review_action_executions_task on context_review_action_executions(task_id);
+create index if not exists idx_context_review_action_executions_updated on context_review_action_executions(updated_at desc);
+
 create table if not exists task_records (
   id uuid primary key,
   type text not null,

@@ -1,6 +1,7 @@
 'use strict';
 
 const { createPostgresAnalysisReportRepository } = require('./postgresAnalysisReportRepository');
+const { createPostgresContextReviewActionExecutionRepository } = require('./postgresContextReviewActionExecutionRepository');
 const { createPostgresContextReviewResultRepository } = require('./postgresContextReviewResultRepository');
 const { createPostgresNotificationEventRepository } = require('./postgresNotificationEventRepository');
 const { createPostgresRawThreadPageRepository } = require('./postgresRawThreadPageRepository');
@@ -22,7 +23,8 @@ function createPostgresRepositories(options) {
     rawThreadPageRepository: createPostgresRawThreadPageRepository({ client }),
     workerRunRepository: createPostgresWorkerRunRepository({ client }),
     workerLeaseRepository: createPostgresWorkerLeaseRepository({ client }),
-    contextReviewResultRepository: createPostgresContextReviewResultRepository({ client })
+    contextReviewResultRepository: createPostgresContextReviewResultRepository({ client }),
+    contextReviewActionExecutionRepository: createPostgresContextReviewActionExecutionRepository({ client })
   };
 }
 
