@@ -61,6 +61,7 @@ async function runContextReviewActionTask(options) {
       execute,
       executor: executorReadiness.executor,
       executorReady: executorReadiness.ready,
+      taskId: task.id,
       now: safeOptions.now,
       storeDir: safeOptions.storeDir
     });
@@ -155,12 +156,14 @@ async function runExecutors(options) {
   if (!safeOptions.executorReady) return {};
 
   const taskClosure = await safeOptions.executor.closeTasks({
+    taskId: safeOptions.taskId,
     closeTaskIds: actionPlan.closeTaskIds || [],
     actionGate,
     now: safeOptions.now,
     storeDir: safeOptions.storeDir
   });
   const contextMerge = await safeOptions.executor.mergeContext({
+    taskId: safeOptions.taskId,
     mergeCandidates: actionPlan.mergeCandidates || [],
     actionGate,
     now: safeOptions.now,

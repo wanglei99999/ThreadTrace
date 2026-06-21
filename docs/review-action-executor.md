@@ -25,6 +25,7 @@ const runtime = createThreadTraceRuntime({
 
 `closeTasks(request)` receives:
 
+- `taskId`: the durable `context-review-action-apply` task id.
 - `closeTaskIds`: conservative task ids approved by the review action plan.
 - `actionGate`: the evaluated gate, including risk, blockers, and compact action plan evidence.
 - `now`: optional fixed timestamp.
@@ -32,6 +33,7 @@ const runtime = createThreadTraceRuntime({
 
 `mergeContext(request)` receives:
 
+- `taskId`: the durable `context-review-action-apply` task id.
 - `mergeCandidates`: candidate context updates approved by the review action plan.
 - `actionGate`: the same evaluated gate.
 - `now`: optional fixed timestamp.
@@ -61,6 +63,22 @@ createThreadTraceRuntime({
 ```
 
 The runtime use case adapts it to the port shape internally. New integrations should prefer `contextReviewActionExecutor.closeTasks` and `contextReviewActionExecutor.mergeContext`.
+
+## Built-in File Audit Executor
+
+Set this environment variable to exercise the real execution path without mutating a task tracker or context store:
+
+```powershell
+$env:THREADTRACE_REVIEW_ACTION_EXECUTOR='file-audit'
+```
+
+When `review-action-apply --execute true` or `POST /api/context-review-results/action-tasks/apply` with `execute: true` passes the action gate, ThreadTrace writes two audit files under:
+
+```text
+THREADTRACE_STORE_DIR/review-action-audits
+```
+
+The file executor returns `changed=false` and stores the planned closure ids, merge candidates, compact gate evidence, and task id. Use it for local demos, staging rehearsals, and downstream adapter contract tests before wiring a real task tracker or context store.
 
 ## Adapter Examples
 

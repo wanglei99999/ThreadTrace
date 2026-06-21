@@ -6,8 +6,8 @@
  * workflow APIs without coupling those details to the review action use case.
  *
  * @typedef {Object} ContextReviewActionExecutor
- * @property {(request: { closeTaskIds: string[], actionGate: Object, now?: string, storeDir?: string }) => Promise<Object>} closeTasks
- * @property {(request: { mergeCandidates: Object[], actionGate: Object, now?: string, storeDir?: string }) => Promise<Object>} mergeContext
+ * @property {(request: { taskId?: string, closeTaskIds: string[], actionGate: Object, now?: string, storeDir?: string }) => Promise<Object>} closeTasks
+ * @property {(request: { taskId?: string, mergeCandidates: Object[], actionGate: Object, now?: string, storeDir?: string }) => Promise<Object>} mergeContext
  */
 
 function normalizeContextReviewActionExecutor(candidate) {

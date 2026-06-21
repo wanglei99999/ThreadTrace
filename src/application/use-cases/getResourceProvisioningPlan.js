@@ -12,6 +12,7 @@ function getResourceProvisioningPlan(options) {
     sourceInputResource(manifest),
     connectorModuleResource(config, diagnostics, manifestPlan),
     workerResource(config, checklist, manifestPlan),
+    reviewActionExecutorResource(config),
     notificationResource(config, checklist),
     llmResource(config, checklist),
     httpResource(config)
@@ -24,6 +25,7 @@ function getResourceProvisioningPlan(options) {
       storageMode: config.storageMode || 'file',
       sourceTaskMode: config.workers && config.workers.sourceTaskMode,
       notificationChannel: notificationChannel(config),
+      reviewActionExecutor: reviewActionExecutor(config),
       llmProvider: config.llm && config.llm.provider,
       manifestName: manifest.name,
       sourceKey: manifest.source && (manifest.source.sourceKey || manifest.source.forum),
@@ -197,6 +199,30 @@ function workerResource(config, checklist, manifestPlan) {
   });
 }
 
+function reviewActionExecutorResource(config) {
+  const executor = reviewActionExecutor(config);
+  return resource({
+    key: 'reviewActions.executor',
+    area: 'review-actions',
+    required: false,
+    status: executor === 'none' ? 'warn' : 'ok',
+    summary: executor === 'none'
+      ? 'Review action execution is dry-run-only unless an executor is injected at runtime.'
+      : 'Review action execution has a configured executor adapter.',
+    evidence: {
+      executor
+    },
+    env: ['THREADTRACE_REVIEW_ACTION_EXECUTOR'],
+    commands: ['node src/presentation/cli/threadtrace.js review-action-apply --execute true'],
+    provisioning: executor === 'file-audit'
+      ? ['File audit executor writes closure and merge requests under THREADTRACE_STORE_DIR/review-action-audits without changing source truth.']
+      : [
+          'Use THREADTRACE_REVIEW_ACTION_EXECUTOR=file-audit for local execution rehearsals.',
+          'Inject a real ContextReviewActionExecutor before mutating task trackers or context stores.'
+        ]
+  });
+}
+
 function notificationResource(config, checklist) {
   const notifications = config.notifications || {};
   const checklistItem = findChecklistItem(checklist, 'notifications.channel');
@@ -335,6 +361,10 @@ function findChecklistItem(checklist, key) {
 
 function notificationChannel(config) {
   return config && config.notifications && config.notifications.webhookUrl ? 'webhook' : 'file';
+}
+
+function reviewActionExecutor(config) {
+  return (config && config.reviewActions && config.reviewActions.executor) || 'none';
 }
 
 module.exports = {

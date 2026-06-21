@@ -1,10 +1,13 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 const {
   createThreadTraceConfig,
+  normalizeReviewActionExecutor,
   normalizeSourceTaskMode,
   normalizeStorageMode
 } = require('../src/runtime/threadTraceConfig');
@@ -32,6 +35,7 @@ test('threadtrace config resolves defaults and environment overrides', function 
       THREADTRACE_SOURCE_RUN_STALE_AFTER_MS: '5000',
       THREADTRACE_SOURCE_FAILURE_RETRY_BACKOFF_MS: '6000',
       THREADTRACE_SOURCE_FAILURE_MAX_RETRY_BACKOFF_MS: '7000',
+      THREADTRACE_REVIEW_ACTION_EXECUTOR: 'file-audit',
       THREADTRACE_WEBHOOK_URL: 'https://example.test/hook',
       THREADTRACE_CONNECTOR_MODULES: ['connectors/a.cjs', 'connectors/b.cjs'].join(path.delimiter)
     }
@@ -54,6 +58,7 @@ test('threadtrace config resolves defaults and environment overrides', function 
   assert.equal(config.workers.sourceRunStaleAfterMs, 5000);
   assert.equal(config.workers.sourceFailureRetryBackoffMs, 6000);
   assert.equal(config.workers.sourceFailureMaxRetryBackoffMs, 7000);
+  assert.equal(config.reviewActions.executor, 'file-audit');
   assert.equal(config.notifications.webhookUrl, 'https://example.test/hook');
   assert.deepEqual(config.connectors.modules, [
     path.join(cwd, 'connectors', 'a.cjs'),
@@ -66,12 +71,17 @@ test('threadtrace config validates known modes', function () {
   assert.equal(normalizeStorageMode('postgres'), 'postgres');
   assert.equal(normalizeSourceTaskMode('INGEST'), 'ingest');
   assert.equal(normalizeSourceTaskMode('insight-pipeline'), 'insight-pipeline');
+  assert.equal(normalizeReviewActionExecutor('NONE'), 'none');
+  assert.equal(normalizeReviewActionExecutor('file-audit'), 'file-audit');
   assert.throws(function () {
     normalizeStorageMode('sqlite');
   }, /Unknown ThreadTrace storage mode/);
   assert.throws(function () {
     normalizeSourceTaskMode('unknown');
   }, /Unknown ThreadTrace source task mode/);
+  assert.throws(function () {
+    normalizeReviewActionExecutor('webhook');
+  }, /Unknown ThreadTrace review action executor/);
 });
 
 test('runtime consumes threadtrace config defaults', function () {
@@ -93,4 +103,40 @@ test('runtime consumes threadtrace config defaults', function () {
   assert.equal(runtime.defaults.defaultInputDir, path.join(cwd, 'example'));
   assert.equal(runtime.defaults.storeDir, path.join(cwd, 'configured-store'));
   assert.equal(runtime.defaults.storageMode, 'file');
+});
+
+test('runtime can compose file-audit review action executor from config', async function () {
+  const cwd = path.resolve(__dirname, '..');
+  const storeDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-review-action-runtime-'));
+  const config = createThreadTraceConfig({
+    cwd,
+    env: {
+      THREADTRACE_STORE_DIR: storeDir,
+      THREADTRACE_REVIEW_ACTION_EXECUTOR: 'file-audit'
+    }
+  });
+  const runtime = createThreadTraceRuntime({
+    config
+  });
+  const contract = runtime.getContextReviewResultContract();
+
+  await runtime.submitContextReviewResult({
+    id: 'review-action-runtime-result-1',
+    result: contract.example,
+    storeDir,
+    now: '2026-06-21T10:00:00.000Z'
+  });
+  const result = await runtime.runContextReviewActionTask({
+    execute: true,
+    storeDir,
+    now: '2026-06-21T11:00:00.000Z'
+  });
+  const auditFiles = await fs.readdir(path.join(storeDir, 'review-action-audits'));
+
+  assert.equal(result.report.executed, true);
+  assert.equal(result.report.applied, true);
+  assert.equal(result.report.executorReadiness.ready, true);
+  assert.equal(result.report.executorResults.taskClosure.adapter, 'file-audit');
+  assert.equal(result.report.executorResults.contextMerge.adapter, 'file-audit');
+  assert.equal(auditFiles.length, 2);
 });

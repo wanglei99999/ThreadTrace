@@ -1,7 +1,10 @@
 'use strict';
 
 const path = require('path');
-const { createThreadTraceConfig } = require('./threadTraceConfig');
+const {
+  REVIEW_ACTION_EXECUTORS,
+  createThreadTraceConfig
+} = require('./threadTraceConfig');
 const { loadConnectorModulesReport } = require('./loadConnectorModules');
 const { getThreadSnapshotJsonContract } = require('../domain/contracts/threadSnapshotJsonContract');
 const { getConnectorModuleContract } = require('../domain/contracts/connectorModuleContract');
@@ -83,6 +86,7 @@ const { createFileWorkerLeaseRepository } = require('../infrastructure/storage/f
 const { createFileContextReviewResultRepository } = require('../infrastructure/storage/fileContextReviewResultRepository');
 const { createFileNotificationChannel } = require('../infrastructure/notifications/fileNotificationChannel');
 const { createWebhookNotificationChannel } = require('../infrastructure/notifications/webhookNotificationChannel');
+const { createFileContextReviewActionExecutor } = require('../infrastructure/review-actions/fileContextReviewActionExecutor');
 const { inspectFileResources } = require('../infrastructure/diagnostics/fileResourceDiagnostics');
 const { inspectPostgresResources } = require('../infrastructure/diagnostics/postgresResourceDiagnostics');
 const { inspectNotificationChannelResources } = require('../infrastructure/diagnostics/notificationChannelDiagnostics');
@@ -152,6 +156,7 @@ function createThreadTraceRuntime(options) {
       openAiCompatible: safeOptions.openAiCompatibleLlm
     });
   };
+  const contextReviewActionExecutor = resolveContextReviewActionExecutor(safeOptions, runtimeConfig);
 
   return {
     defaults,
@@ -293,7 +298,7 @@ function createThreadTraceRuntime(options) {
         requestId: safeRequest.requestId,
         traceId: safeRequest.traceId,
         idempotencyKey: safeRequest.idempotencyKey,
-        contextReviewActionExecutor: safeOptions.contextReviewActionExecutor || safeOptions.contextReviewActionExecutors
+        contextReviewActionExecutor
       });
     },
 
@@ -1504,6 +1509,17 @@ function createThreadTraceRuntime(options) {
       });
     }
   };
+}
+
+function resolveContextReviewActionExecutor(options, config) {
+  if (options.contextReviewActionExecutor || options.contextReviewActionExecutors) {
+    return options.contextReviewActionExecutor || options.contextReviewActionExecutors;
+  }
+  const executor = config && config.reviewActions && config.reviewActions.executor;
+  if (executor === REVIEW_ACTION_EXECUTORS.FILE_AUDIT) {
+    return createFileContextReviewActionExecutor();
+  }
+  return undefined;
 }
 
 function createFileRepositories(storeDir) {

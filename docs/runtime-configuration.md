@@ -57,6 +57,16 @@ The same report is available at `GET /api/operations/worker-topology-plan`. See 
 | --- | --- | --- |
 | `THREADTRACE_WEBHOOK_URL` |  | Default webhook URL for notification dispatch. |
 
+## Review Actions
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `THREADTRACE_REVIEW_ACTION_EXECUTOR` | `none` | Executor used when `context-review-action-apply` runs with `execute=true`. Supported: `none`, `file-audit`. |
+
+`none` keeps execution disabled unless the embedding process injects a `contextReviewActionExecutor` through `createThreadTraceRuntime`.
+
+`file-audit` composes the built-in local audit executor. It writes closure and merge requests under `THREADTRACE_STORE_DIR/review-action-audits` and returns `changed=false`, so operators can test the execution path without mutating a real task tracker or context store.
+
 ## Connectors
 
 | Variable | Default | Purpose |

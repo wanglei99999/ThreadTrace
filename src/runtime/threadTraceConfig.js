@@ -16,6 +16,11 @@ const STORAGE_MODES = {
   POSTGRES: 'postgres'
 };
 
+const REVIEW_ACTION_EXECUTORS = {
+  NONE: 'none',
+  FILE_AUDIT: 'file-audit'
+};
+
 function createThreadTraceConfig(options) {
   const safeOptions = options || {};
   const env = safeOptions.env || process.env;
@@ -68,10 +73,23 @@ function createThreadTraceConfig(options) {
     notifications: {
       webhookUrl: firstValue(safeOptions.webhookUrl, env.THREADTRACE_WEBHOOK_URL, undefined)
     },
+    reviewActions: {
+      executor: normalizeReviewActionExecutor(firstValue(
+        safeOptions.reviewActionExecutor,
+        env.THREADTRACE_REVIEW_ACTION_EXECUTOR,
+        REVIEW_ACTION_EXECUTORS.NONE
+      ))
+    },
     connectors: {
       modules: connectorModules(cwd, firstValue(safeOptions.connectorModules, env.THREADTRACE_CONNECTOR_MODULES, undefined))
     }
   };
+}
+
+function normalizeReviewActionExecutor(value) {
+  const normalized = String(value || REVIEW_ACTION_EXECUTORS.NONE).trim().toLowerCase();
+  if (normalized === REVIEW_ACTION_EXECUTORS.NONE || normalized === REVIEW_ACTION_EXECUTORS.FILE_AUDIT) return normalized;
+  throw new Error('Unknown ThreadTrace review action executor: ' + value);
 }
 
 function normalizeStorageMode(value) {
@@ -125,10 +143,12 @@ function numberOrUndefined(value) {
 }
 
 module.exports = {
+  REVIEW_ACTION_EXECUTORS,
   SOURCE_TASK_MODES,
   STORAGE_MODES,
   createThreadTraceConfig,
   connectorModules,
+  normalizeReviewActionExecutor,
   normalizeSourceTaskMode,
   normalizeStorageMode
 };
