@@ -12,7 +12,7 @@ function getResourceProvisioningPlan(options) {
     sourceInputResource(manifest),
     connectorModuleResource(config, diagnostics, manifestPlan),
     workerResource(config, checklist, manifestPlan),
-    reviewActionExecutorResource(config),
+    reviewActionExecutorResource(config, checklist),
     notificationResource(config, checklist),
     llmResource(config, checklist),
     httpResource(config)
@@ -199,21 +199,31 @@ function workerResource(config, checklist, manifestPlan) {
   });
 }
 
-function reviewActionExecutorResource(config) {
+function reviewActionExecutorResource(config, checklist) {
   const executor = reviewActionExecutor(config);
+  const checklistItem = findChecklistItem(checklist, 'reviewActions.executor');
+  const status = checklistItem ? checklistItem.status : (executor === 'none' ? 'warn' : 'ok');
+  const dryRunOnly = checklistItem && checklistItem.evidence
+    ? checklistItem.evidence.dryRunOnly
+    : executor === 'none';
   return resource({
     key: 'reviewActions.executor',
     area: 'review-actions',
     required: false,
-    status: executor === 'none' ? 'warn' : 'ok',
-    summary: executor === 'none'
+    status,
+    summary: dryRunOnly
       ? 'Review action execution is dry-run-only unless an executor is injected at runtime.'
       : 'Review action execution has a configured executor adapter.',
     evidence: {
-      executor
+      executor,
+      checklist: checklistItem && checklistItem.status,
+      diagnostics: checklistItem && checklistItem.evidence
     },
     env: ['THREADTRACE_REVIEW_ACTION_EXECUTOR'],
-    commands: ['node src/presentation/cli/threadtrace.js review-action-apply --execute true'],
+    commands: [
+      'node src/presentation/cli/threadtrace.js review-action-executor-diagnostics',
+      'node src/presentation/cli/threadtrace.js review-action-apply --execute true'
+    ],
     provisioning: executor === 'file-audit'
       ? ['File audit executor writes closure and merge requests under THREADTRACE_STORE_DIR/review-action-audits without changing source truth.']
       : [

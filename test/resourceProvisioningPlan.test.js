@@ -75,6 +75,7 @@ test('resource provisioning plan lists required postgres resources and actions',
   assert.equal(reviewActions.required, false);
   assert.equal(reviewActions.status, 'warn');
   assert.ok(reviewActions.env.includes('THREADTRACE_REVIEW_ACTION_EXECUTOR'));
+  assert.match(reviewActions.commands[0], /review-action-executor-diagnostics/);
   assert.equal(plan.nextActions[0].key, 'storage.postgres');
 });
 
@@ -143,6 +144,15 @@ test('resource provisioning plan includes source and connector requirements from
         {
           key: 'llm.configuration',
           status: 'ok'
+        },
+        {
+          key: 'reviewActions.executor',
+          status: 'ok',
+          evidence: {
+            mode: 'file-audit',
+            ready: true,
+            dryRunOnly: false
+          }
         }
       ]
     }
@@ -159,9 +169,12 @@ test('resource provisioning plan includes source and connector requirements from
   assert.equal(connector.required, true);
   assert.equal(connector.status, 'ok');
   assert.equal(plan.environment.reviewActionExecutor, 'file-audit');
-  assert.equal(plan.resources.find(function (item) {
+  const reviewActions = plan.resources.find(function (item) {
     return item.key === 'reviewActions.executor';
-  }).status, 'ok');
+  });
+  assert.equal(reviewActions.status, 'ok');
+  assert.equal(reviewActions.evidence.checklist, 'ok');
+  assert.equal(reviewActions.evidence.diagnostics.mode, 'file-audit');
 });
 
 test('runtime resource provisioning plan composes diagnostics and manifest planning', async function () {
@@ -193,7 +206,7 @@ test('runtime resource provisioning plan composes diagnostics and manifest plann
   });
 
   assert.equal(plan.generatedAt, '2026-06-19T10:00:00.000Z');
-  assert.equal(plan.status, 'ok');
+  assert.equal(plan.status, 'warn');
   assert.equal(plan.environment.manifestName, 'resource-rollout');
   assert.equal(plan.resources.find(function (item) {
     return item.key === 'storage.file';

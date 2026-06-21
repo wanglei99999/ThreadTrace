@@ -32,6 +32,7 @@ The body can be a rollout manifest directly, or an object with a `manifest` prop
 - `source.*`: source-specific input path, JSON file, URL, or connector location object.
 - `connectors.modules`: optional or required connector module packaging via `THREADTRACE_CONNECTOR_MODULES`.
 - `workers.runtime`: worker commands, topology, leases, intervals, and source task mode.
+- `reviewActions.executor`: review action execution mode, diagnostics command, audit rehearsal, and future source-truth mutation adapter.
 - `notifications.channel`: file delivery for local use or webhook delivery for external alerting.
 - `llm.provider`: mock/local mode for development or remote model credentials for semantic enrichment.
 - `http.service`: API host and port entrypoint.
