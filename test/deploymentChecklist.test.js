@@ -70,6 +70,24 @@ test('deployment checklist aggregates runtime, source, readiness, notification, 
         { key: 'notifications.fileDeliveryDir', status: 'ok', summary: 'File notification delivery directory is writable.' }
       ]
     },
+    reviewActionExecutorDiagnostics: {
+      status: 'ok',
+      mode: 'file-audit',
+      ready: true,
+      dryRunOnly: false,
+      mutatesSourceTruth: false,
+      audit: {
+        count: 2,
+        taskCount: 1,
+        plannedClosureCount: 1,
+        plannedMergeCandidateCount: 1
+      },
+      checks: [
+        { key: 'reviewActionExecutor.configured', status: 'ok', summary: 'Review action executor mode is configured.' },
+        { key: 'reviewActionExecutor.closeTasks', status: 'ok', summary: 'Executor closeTasks(request) method is required for execute=true.' },
+        { key: 'reviewActionExecutor.mergeContext', status: 'ok', summary: 'Executor mergeContext(request) method is required for execute=true.' }
+      ]
+    },
     readiness: {
       status: 'fail',
       checks: [
@@ -114,6 +132,13 @@ test('deployment checklist aggregates runtime, source, readiness, notification, 
   assert.equal(checklist.items.find(function (item) {
     return item.key === 'notifications.channel';
   }).status, 'ok');
+  const reviewActionExecutorItem = checklist.items.find(function (item) {
+    return item.key === 'reviewActions.executor';
+  });
+  assert.equal(reviewActionExecutorItem.status, 'ok');
+  assert.equal(reviewActionExecutorItem.evidence.mode, 'file-audit');
+  assert.equal(reviewActionExecutorItem.evidence.audit.count, 2);
+  assert.equal(reviewActionExecutorItem.evidence.checks.length, 3);
   assert.equal(checklist.items.find(function (item) {
     return item.key === 'llm.configuration';
   }).status, 'warn');

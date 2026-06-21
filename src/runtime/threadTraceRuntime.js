@@ -1007,11 +1007,17 @@ function createThreadTraceRuntime(options) {
         storeDir: safeRequest.storeDir,
         workerStaleAfterMs: safeRequest.workerStaleAfterMs
       });
+      const reviewActionExecutorDiagnostics = await this.getContextReviewActionExecutorDiagnostics({
+        limit: safeRequest.limit || 100,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir
+      });
       return getDeploymentChecklist({
         diagnostics,
         adapterDiagnostics,
         connectorReadiness,
         notificationDiagnostics,
+        reviewActionExecutorDiagnostics,
         sourceDiagnostics,
         readiness,
         now: safeRequest.now

@@ -89,6 +89,35 @@ test('operations runbook points notification outbox warnings to overview and dis
   assert.match(runbook.actions[0].relatedCommands[1], /dispatch-events/);
 });
 
+test('operations runbook points review action executor warnings to diagnostics and audit tools', function () {
+  const runbook = getOperationsRunbook({
+    now: '2026-06-21T10:00:00.000Z',
+    checklist: {
+      generatedAt: '2026-06-21T10:00:00.000Z',
+      items: [
+        {
+          key: 'reviewActions.executor',
+          area: 'review-actions',
+          status: 'warn',
+          summary: 'Review action executor mode and readiness are visible before execute=true.',
+          evidence: {
+            mode: 'none',
+            ready: false,
+            dryRunOnly: true
+          }
+        }
+      ]
+    }
+  });
+
+  assert.equal(runbook.status, 'warn');
+  assert.equal(runbook.actionCount, 1);
+  assert.equal(runbook.actions[0].key, 'checklist.reviewActions.executor');
+  assert.match(runbook.actions[0].recommendedCommand, /review-action-executor-diagnostics/);
+  assert.match(runbook.actions[0].relatedCommands[0], /review-action-audit-overview/);
+  assert.match(runbook.actions[0].relatedCommands[1], /review-action-apply --execute true/);
+});
+
 test('operations runbook flags duplicate idempotency task risk', function () {
   const runbook = getOperationsRunbook({
     now: '2026-06-19T10:00:00.000Z',

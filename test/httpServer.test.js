@@ -263,7 +263,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(rolloutManifestPlan.sourceKey, 'nga');
     assert.equal(rolloutManifestPlan.connectorRolloutPlan.sourceIngestDryRun.status, 'ok');
     assert.equal(rolloutManifestPlan.workerTopologyPlan.topology, 'operations-worker');
-    assert.equal(resourceProvisioningPlan.status, 'ok');
+    assert.equal(resourceProvisioningPlan.status, 'warn');
     assert.equal(resourceProvisioningPlan.environment.manifestName, 'http-resource-rollout');
     assert.ok(resourceProvisioningPlan.resources.some(function (resource) {
       return resource.key === 'storage.file';
@@ -272,7 +272,10 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(deploymentGate.gates.some(function (gate) {
       return gate.key === 'rollout.manifest';
     }));
-    assert.equal(deploymentGate.resourceProvisioningPlan.status, 'ok');
+    assert.equal(deploymentGate.gates.find(function (gate) {
+      return gate.key === 'deployment.checklist';
+    }).status, 'warn');
+    assert.equal(deploymentGate.resourceProvisioningPlan.status, 'warn');
     assert.equal(rolloutApply.task.type, 'rollout-manifest-apply');
     assert.equal(rolloutApply.report.status, 'warn');
     assert.equal(rolloutApply.report.dryRun, true);
@@ -655,7 +658,7 @@ test('http server exposes deployment checklist API', async function () {
     const topologyPlan = await getJson(baseUrl + '/api/operations/worker-topology-plan?now=2026-06-19T10:00:00.000Z');
     const openApi = await getJson(baseUrl + '/openapi.json');
 
-    assert.equal(checklist.status, 'ok');
+    assert.equal(checklist.status, 'warn');
     assert.equal(checklist.generatedAt, '2026-06-19T10:00:00.000Z');
     assert.ok(checklist.items.find(function (item) {
       return item.key === 'runtime.configuration';
@@ -663,7 +666,10 @@ test('http server exposes deployment checklist API', async function () {
     assert.ok(checklist.items.find(function (item) {
       return item.key === 'sources.ingestConfiguration';
     }));
-    assert.equal(topologyPlan.status, 'ok');
+    assert.equal(checklist.items.find(function (item) {
+      return item.key === 'reviewActions.executor';
+    }).status, 'warn');
+    assert.equal(topologyPlan.status, 'warn');
     assert.equal(topologyPlan.topology, 'operations-worker');
     assert.equal(topologyPlan.workers[0].workerType, 'operations');
     assert.ok(openApi.paths['/api/deployment/checklist']);
@@ -717,9 +723,11 @@ test('http server exposes operations runbook API', async function () {
     const runbook = await getJson(baseUrl + '/api/operations/runbook?now=2026-06-19T10:00:00.000Z');
     const openApi = await getJson(baseUrl + '/openapi.json');
 
-    assert.equal(runbook.status, 'ok');
+    assert.equal(runbook.status, 'warn');
     assert.equal(runbook.generatedAt, '2026-06-19T10:00:00.000Z');
-    assert.equal(runbook.actionCount, 0);
+    assert.equal(runbook.actionCount, 1);
+    assert.equal(runbook.actions[0].key, 'checklist.reviewActions.executor');
+    assert.equal(runbook.actions[0].recommendedCommand, 'node src/presentation/cli/threadtrace.js review-action-executor-diagnostics');
     assert.equal(runbook.sourceLifecycleReport.summary.total, 0);
     assert.ok(openApi.paths['/api/operations/runbook']);
     assert.ok(openApi.paths['/api/operations/runbook'].get.parameters.some(function (parameter) {

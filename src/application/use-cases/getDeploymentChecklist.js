@@ -6,6 +6,7 @@ function getDeploymentChecklist(options) {
   const adapterDiagnostics = safeOptions.adapterDiagnostics || {};
   const connectorReadiness = safeOptions.connectorReadiness || {};
   const notificationDiagnostics = safeOptions.notificationDiagnostics || {};
+  const reviewActionExecutorDiagnostics = safeOptions.reviewActionExecutorDiagnostics || {};
   const sourceDiagnostics = safeOptions.sourceDiagnostics || {};
   const readiness = safeOptions.readiness || {};
   const items = [
@@ -38,6 +39,14 @@ function getDeploymentChecklist(options) {
     item('notifications.outbox', 'notifications', aggregateChecks(readiness.checks, /^events\./), 'Notification outbox has no unacknowledged failures or due delivery backlog.', {
       checks: selectCheckKeys(readiness.checks, /^events\./)
     }),
+    item('reviewActions.executor', 'review-actions', reviewActionExecutorDiagnostics.status || 'warn', 'Review action executor mode and readiness are visible before execute=true.', {
+      mode: reviewActionExecutorDiagnostics.mode,
+      ready: reviewActionExecutorDiagnostics.ready,
+      dryRunOnly: reviewActionExecutorDiagnostics.dryRunOnly,
+      mutatesSourceTruth: reviewActionExecutorDiagnostics.mutatesSourceTruth,
+      audit: reviewActionExecutorDiagnostics.audit,
+      checks: selectCheckKeys(reviewActionExecutorDiagnostics.checks, /^reviewActionExecutor\./)
+    }),
     item('llm.configuration', 'llm', aggregateChecks(diagnostics.checks, /^config\.llm\./), 'LLM provider configuration is ready for the selected provider.', {
       provider: diagnostics.configuration && diagnostics.configuration.llm && diagnostics.configuration.llm.provider,
       checks: selectCheckKeys(diagnostics.checks, /^config\.llm\./)
@@ -52,6 +61,7 @@ function getDeploymentChecklist(options) {
     adapterDiagnostics,
     connectorReadiness,
     notificationDiagnostics,
+    reviewActionExecutorDiagnostics,
     sourceDiagnostics,
     readiness
   };

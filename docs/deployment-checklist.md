@@ -10,6 +10,7 @@ ThreadTrace exposes a deployment checklist as a runnable readiness contract. It 
 - tracked source ingest configuration
 - worker readiness and lease health
 - notification outbox delivery health
+- review action executor readiness and audit evidence
 - LLM provider configuration
 
 ## Entrypoints
@@ -36,6 +37,7 @@ The checklist returns `ok`, `warn`, or `fail`. HTTP returns `503` when the check
 | `workers.readiness` | workers | Stale/failed worker runs and expired leases. |
 | `notifications.channel` | notifications | File delivery directory or webhook URL configuration. |
 | `notifications.outbox` | notifications | Unacknowledged notification delivery failures or due delivery backlog. |
+| `reviewActions.executor` | review-actions | Executor mode, required methods, dry-run status, source-truth mutation capability, and audit counts. |
 | `llm.configuration` | llm | Provider-specific LLM configuration checks. |
 
 ## Resource Preparation
@@ -46,4 +48,5 @@ Before production traffic, prepare the resources below and use the checklist as 
 - Workers: run either the combined operations worker or separate due-source and notification workers.
 - LLM: keep `mock` for local smoke tests, then configure provider, model, and API key for real enrichment.
 - Notifications: start with file outbox delivery and run `notification-diagnostics`; then add a webhook or future channel when an external receiver is ready.
+- Review actions: keep the default `none` mode for safe dry-runs, use `THREADTRACE_REVIEW_ACTION_EXECUTOR=file-audit` to rehearse execution with audit files, then inject a mutating executor when downstream task and context stores are provisioned.
 - Sources: run `connector-readiness` before registration, then `source-diagnostics` after registering each new forum/source integration.

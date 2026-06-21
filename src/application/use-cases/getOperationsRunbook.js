@@ -9,6 +9,7 @@ const COMMANDS_BY_KEY = {
   'workers.readiness': 'node src/presentation/cli/threadtrace.js worker-topology-plan',
   'notifications.channel': 'node src/presentation/cli/threadtrace.js notification-diagnostics',
   'notifications.outbox': 'node src/presentation/cli/threadtrace.js operations-overview',
+  'reviewActions.executor': 'node src/presentation/cli/threadtrace.js review-action-executor-diagnostics',
   'llm.configuration': 'node src/presentation/cli/threadtrace.js runtime-diagnostics'
 };
 
@@ -278,6 +279,10 @@ function relatedCommandsForChecklistItem(item) {
     'notifications.outbox': [
       'node src/presentation/cli/threadtrace.js list-events --acknowledged false --delivery-status failed',
       'node src/presentation/cli/threadtrace.js dispatch-events'
+    ],
+    'reviewActions.executor': [
+      'node src/presentation/cli/threadtrace.js review-action-audit-overview',
+      'node src/presentation/cli/threadtrace.js review-action-apply --execute true'
     ]
   };
   return commands[item.key] || [];
