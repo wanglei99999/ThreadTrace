@@ -2078,7 +2078,11 @@ function printAuthorIntelligenceDashboard(dashboard) {
   console.log('Top authors:');
   (dashboard.authors || []).slice(0, 10).forEach(function (item) {
     const author = item.author || {};
-    console.log('  ' + (author.displayName || author.sourceAuthorId || 'unknown') + '\tposts=' + item.postCount + '\topinions=' + item.opinionCount + '\tthreads=' + item.threadCount + '\tgaps=' + item.evidenceGapCount);
+    const intelligence = item.intelligence || {};
+    console.log('  ' + (author.displayName || author.sourceAuthorId || 'unknown') + '\tposts=' + item.postCount + '\topinions=' + item.opinionCount + '\tstance=' + (item.dominantStance || 'unknown') + '\tlatest=' + (item.latestAttitude || 'unknown') + '\tconfidence=' + (item.averageOpinionConfidence === undefined ? 'n/a' : item.averageOpinionConfidence) + '\tevidence=' + (intelligence.evidenceStatus || 'unknown') + '\tthreads=' + item.threadCount + '\tgaps=' + item.evidenceGapCount);
+    if (intelligence.summary) {
+      console.log('    ' + intelligence.summary);
+    }
   });
   console.log('Focus entities:');
   (dashboard.focusEntities || []).slice(0, 10).forEach(function (item) {

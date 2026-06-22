@@ -129,7 +129,7 @@ Query parameters:
 - `now`: optional fixed generation time.
 - `storeDir`: optional file store override.
 
-Returns `revisionMode`, `reportRevisionCount`, `summary`, top `authors`, `focusEntities`, `opinionTimeline`, `evidenceGaps`, high-signal `evidence`, compact `threads`, and `recommendedNextAction`.
+Returns `revisionMode`, `reportRevisionCount`, `summary`, top `authors`, `focusEntities`, `opinionTimeline`, `evidenceGaps`, high-signal `evidence`, compact `threads`, and `recommendedNextAction`. Author rows include aggregated stance fields such as `dominantStance`, `latestAttitude`, `averageOpinionConfidence`, `opinionThreadCount`, de-duplicated `topFocusEntities`, and an `intelligence.summary` string for review queues.
 
 ### `POST /api/interpret-text`
 

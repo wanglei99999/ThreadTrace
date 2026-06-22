@@ -931,6 +931,7 @@ function renderAuthorIntelligenceRows(authors) {
   if (authors.length === 0) return '<div class="muted">暂无作者情报</div>';
   return authors.slice(0, 12).map(function (item) {
     const author = item.author || {};
+    const intelligence = item.intelligence || {};
     const focus = (item.topFocusEntities || []).slice(0, 4).map(function (entity) {
       return entity.entity && entity.entity.displayName ? entity.entity.displayName + '/' + entity.latestAttitude : entity.key;
     }).join(' · ');
@@ -938,15 +939,18 @@ function renderAuthorIntelligenceRows(authors) {
       'posts=' + (item.postCount || 0),
       'opinions=' + (item.opinionCount || 0),
       'threads=' + (item.threadCount || 0),
+      item.dominantStance ? 'stance=' + item.dominantStance : undefined,
+      item.averageOpinionConfidence === undefined ? undefined : 'confidence=' + item.averageOpinionConfidence,
       'primary=' + (item.primaryThreadCount || 0),
       'gaps=' + (item.evidenceGapCount || 0)
-    ].join(' · ');
+    ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row"><span>' +
       '<strong>' + escapeHtml(author.displayName || author.sourceAuthorId || item.key) + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
-      '<small>' + escapeHtml(focus || formatStanceSummary(item.stanceSummary)) + '</small>' +
+      '<small>' + escapeHtml(intelligence.summary || focus || formatStanceSummary(item.stanceSummary)) + '</small>' +
+      (focus ? '<small>' + escapeHtml(focus) + '</small>' : '') +
       '</span>' +
-      statusBadge(item.evidenceGapCount > 0 ? 'needs review' : 'ready', item.evidenceGapCount > 0 ? 'warn' : 'ok') +
+      statusBadge(intelligence.evidenceStatus || (item.evidenceGapCount > 0 ? 'needs-review' : 'ready'), intelligence.evidenceStatus === 'needs-review' ? 'warn' : 'ok') +
       '</div>';
   }).join('');
 }

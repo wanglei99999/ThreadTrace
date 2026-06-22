@@ -36,6 +36,17 @@ test('author intelligence dashboard aggregates stored basic-history reports', as
   assert.equal(dashboard.authors[0].opinionCount, 2);
   assert.equal(dashboard.authors[0].primaryThreadCount, 2);
   assert.equal(dashboard.authors[0].stanceSummary.bullish, 2);
+  assert.equal(dashboard.authors[0].dominantStance, 'bullish');
+  assert.equal(dashboard.authors[0].topFocusEntities.length, 1);
+  assert.equal(dashboard.authors[0].topFocusEntities[0].mentionCount, 4);
+  assert.equal(dashboard.authors[0].topFocusEntities[0].threadCount, 2);
+  const bob = dashboard.authors.find(function (item) {
+    return item.author.sourceAuthorId === 'author-2';
+  });
+  assert.equal(bob.opinionCount, 2);
+  assert.equal(bob.stanceSummary.watch, 2);
+  assert.equal(bob.dominantStance, 'watch');
+  assert.equal(bob.intelligence.evidenceStatus, 'ready');
   assert.equal(dashboard.focusEntities[0].entity.displayName, 'Alpha');
   assert.equal(dashboard.focusEntities[0].mentionCount, 4);
   assert.equal(dashboard.opinionTimeline.length, 4);
@@ -48,6 +59,17 @@ test('author intelligence dashboard uses the latest report per thread by default
   latestThreadOne.authorStats[0].postCount = 3;
   latestThreadOne.primaryAuthorProfile.opinionCount = 2;
   latestThreadOne.primaryAuthorProfile.stanceSummary = { bullish: 2 };
+  latestThreadOne.opinionCandidates.push({
+    floor: 6,
+    sourcePostId: 'thread-1-p6',
+    author: 'Alice',
+    authorId: 'author-1',
+    publishedAt: '2026-06-22T09:06:00.000Z',
+    scope: 'market_opinion',
+    attitude: 'risk',
+    confidence: 0.7,
+    evidence: { text: 'Alpha needs risk review.' }
+  });
   const olderThreadOne = sampleReport('thread-1', '2026-06-22T08:00:00.000Z');
   olderThreadOne.authorStats[0].postCount = 99;
   olderThreadOne.primaryAuthorProfile.opinionCount = 99;
@@ -81,10 +103,13 @@ test('author intelligence dashboard uses the latest report per thread by default
   assert.equal(dashboard.summary.threadCount, 2);
   assert.equal(author.postCount, 5);
   assert.equal(author.opinionCount, 3);
+  assert.equal(author.dominantStance, 'bullish');
+  assert.equal(author.latestAttitude, 'risk');
+  assert.equal(author.averageOpinionConfidence, 0.77);
   assert.equal(revisionDashboard.revisionMode, 'all-revisions');
   assert.equal(revisionDashboard.reportCount, 3);
   assert.equal(revisionAuthor.postCount, 104);
-  assert.equal(revisionAuthor.opinionCount, 102);
+  assert.equal(revisionAuthor.opinionCount, 4);
 });
 
 test('author intelligence dashboard filters by author and returns warn for empty reports', async function () {
@@ -110,6 +135,10 @@ test('author intelligence dashboard filters by author and returns warn for empty
 
   assert.equal(dashboard.authors.length, 1);
   assert.equal(dashboard.authors[0].author.sourceAuthorId, 'author-2');
+  assert.equal(dashboard.authors[0].opinionCount, 1);
+  assert.equal(dashboard.authors[0].stanceSummary.watch, 1);
+  assert.equal(dashboard.authors[0].dominantStance, 'watch');
+  assert.equal(dashboard.authors[0].averageOpinionConfidence, 0.65);
   assert.equal(dashboard.opinionTimeline.length, 1);
   assert.equal(dashboard.opinionTimeline[0].author.sourceAuthorId, 'author-2');
   assert.equal(dashboard.focusEntities.length, 0);

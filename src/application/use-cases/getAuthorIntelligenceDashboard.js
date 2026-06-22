@@ -40,7 +40,7 @@ async function getAuthorIntelligenceDashboard(options) {
     threads.push(thread);
     collectAuthors(authorMap, report, thread, authorFilter);
     collectPrimaryAuthorSignals(entityMap, evidenceGaps, report, thread, authorFilter);
-    collectOpinions(opinionTimeline, report, thread, authorFilter);
+    collectOpinions(authorMap, opinionTimeline, report, thread, authorFilter);
     collectEvidence(evidence, report, thread, authorFilter);
   });
 
@@ -173,8 +173,6 @@ function collectAuthors(authorMap, report, thread, authorFilter) {
   const key = authorKey(thread.sourceKey, profile.author || {});
   const summary = getOrCreateAuthor(authorMap, key, thread.sourceKey, profile.author || {});
   summary.primaryThreadCount += 1;
-  summary.opinionCount += numeric(profile.opinionCount);
-  mergeCounts(summary.stanceSummary, profile.stanceSummary);
   summary.focusEntityCount += (profile.focusEntities || []).length;
   summary.evidenceGapCount += (profile.evidenceGaps || []).length;
   (profile.focusEntities || []).slice(0, 8).forEach(function (item) {
@@ -185,6 +183,7 @@ function collectAuthors(authorMap, report, thread, authorFilter) {
       primaryAuthorOpinionCount: item.primaryAuthorOpinionCount,
       latestAttitude: item.latestAttitude,
       confidence: item.confidence,
+      evidenceLevels: item.evidenceLevels,
       thread
     });
   });
@@ -221,13 +220,14 @@ function collectPrimaryAuthorSignals(entityMap, evidenceGaps, report, thread, au
   });
 }
 
-function collectOpinions(opinionTimeline, report, thread, authorFilter) {
+function collectOpinions(authorMap, opinionTimeline, report, thread, authorFilter) {
   (report.opinionCandidates || []).forEach(function (opinion) {
     const author = {
       sourceAuthorId: opinion.authorId,
       displayName: opinion.author
     };
     if (!matchesAuthorFilter(author, authorFilter)) return;
+    collectOpinionForAuthor(authorMap, opinion, thread);
     opinionTimeline.push({
       thread,
       floor: opinion.floor,
@@ -243,6 +243,26 @@ function collectOpinions(opinionTimeline, report, thread, authorFilter) {
       evidenceText: opinion.evidence && opinion.evidence.text
     });
   });
+}
+
+function collectOpinionForAuthor(authorMap, opinion, thread) {
+  const author = {
+    sourceAuthorId: opinion.authorId,
+    displayName: opinion.author
+  };
+  const summary = getOrCreateAuthor(authorMap, authorKey(thread.sourceKey, author), thread.sourceKey, author);
+  summary.opinionCount += 1;
+  summary.opinionThreadKeys.add(thread.key);
+  if (typeof opinion.confidence === 'number' && Number.isFinite(opinion.confidence)) {
+    summary.opinionConfidenceTotal += opinion.confidence;
+    summary.opinionConfidenceCount += 1;
+  }
+  const attitude = opinion.attitude || 'unknown';
+  summary.stanceSummary[attitude] = (summary.stanceSummary[attitude] || 0) + 1;
+  if (!summary.latestOpinionAt || String(opinion.publishedAt || thread.generatedAt || '').localeCompare(String(summary.latestOpinionAt)) >= 0) {
+    summary.latestOpinionAt = opinion.publishedAt || thread.generatedAt;
+    summary.latestAttitude = attitude;
+  }
 }
 
 function collectEvidence(evidence, report, thread, authorFilter) {
@@ -301,6 +321,11 @@ function getOrCreateAuthor(map, key, sourceKey, author) {
       lastFloor: undefined,
       floors: [],
       stanceSummary: {},
+      opinionThreadKeys: new Set(),
+      latestOpinionAt: undefined,
+      latestAttitude: undefined,
+      opinionConfidenceTotal: 0,
+      opinionConfidenceCount: 0,
       focusEntityCount: 0,
       evidenceGapCount: 0,
       focusEntities: [],
@@ -329,12 +354,22 @@ function getOrCreateEntity(map, key, entity) {
 }
 
 function finalizeAuthorSummary(summary) {
-  const focusEntities = summary.focusEntities
-    .sort(function (a, b) {
-      return numeric(b.primaryAuthorOpinionCount) - numeric(a.primaryAuthorOpinionCount)
-        || numeric(b.mentionCount) - numeric(a.mentionCount);
-    })
+  const focusEntities = mergeAuthorFocusEntities(summary.focusEntities)
     .slice(0, 8);
+  const inferredFocusEntityCount = focusEntities.filter(function (item) {
+    return item.evidenceLevels && item.evidenceLevels.inferred > 0;
+  }).length;
+  const intelligence = buildAuthorIntelligenceSummary({
+    stanceSummary: summary.stanceSummary,
+    opinionCount: summary.opinionCount,
+    opinionThreadCount: summary.opinionThreadKeys.size,
+    latestOpinionAt: summary.latestOpinionAt,
+    latestAttitude: summary.latestAttitude,
+    opinionConfidenceTotal: summary.opinionConfidenceTotal,
+    opinionConfidenceCount: summary.opinionConfidenceCount,
+    evidenceGapCount: summary.evidenceGapCount,
+    inferredFocusEntityCount
+  });
   return {
     key: summary.key,
     sourceKey: summary.sourceKey,
@@ -347,12 +382,107 @@ function finalizeAuthorSummary(summary) {
     lastFloor: summary.lastFloor,
     floors: uniqueValues(summary.floors).slice(0, 40),
     stanceSummary: summary.stanceSummary,
-    focusEntityCount: summary.focusEntityCount,
+    dominantStance: intelligence.dominantStance,
+    latestAttitude: intelligence.latestAttitude,
+    latestOpinionAt: intelligence.latestOpinionAt,
+    averageOpinionConfidence: intelligence.averageOpinionConfidence,
+    opinionThreadCount: summary.opinionThreadKeys.size,
+    focusEntityCount: focusEntities.length,
+    focusEntityMentionCount: focusEntities.reduce(function (total, item) {
+      return total + numeric(item.mentionCount);
+    }, 0),
     evidenceGapCount: summary.evidenceGapCount,
+    inferredFocusEntityCount,
+    intelligence,
     topFocusEntities: focusEntities,
     lastSeenAt: summary.lastSeenAt,
     threads: summary.threads.slice(0, 8)
   };
+}
+
+function mergeAuthorFocusEntities(items) {
+  const byEntity = new Map();
+  (items || []).forEach(function (item) {
+    const key = item.key || entityKey(item.entity || {});
+    if (!byEntity.has(key)) {
+      byEntity.set(key, {
+        key,
+        entity: item.entity,
+        mentionCount: 0,
+        primaryAuthorOpinionCount: 0,
+        latestAttitude: item.latestAttitude || 'unknown',
+        confidence: 0,
+        evidenceLevels: {},
+        threadKeys: new Set(),
+        threads: []
+      });
+    }
+    const summary = byEntity.get(key);
+    summary.mentionCount += numeric(item.mentionCount);
+    summary.primaryAuthorOpinionCount += numeric(item.primaryAuthorOpinionCount);
+    summary.latestAttitude = item.latestAttitude || summary.latestAttitude;
+    summary.confidence = Math.max(summary.confidence || 0, numeric(item.confidence));
+    mergeCounts(summary.evidenceLevels, item.evidenceLevels);
+    if (item.thread) {
+      summary.threadKeys.add(item.thread.key);
+      addThreadSummary(summary.threads, item.thread);
+    }
+  });
+  return Array.from(byEntity.values()).map(function (item) {
+    return {
+      key: item.key,
+      entity: item.entity,
+      mentionCount: item.mentionCount,
+      primaryAuthorOpinionCount: item.primaryAuthorOpinionCount,
+      latestAttitude: item.latestAttitude,
+      confidence: item.confidence,
+      evidenceLevels: item.evidenceLevels,
+      threadCount: item.threadKeys.size,
+      threads: item.threads.slice(0, 4)
+    };
+  }).sort(function (a, b) {
+    return numeric(b.primaryAuthorOpinionCount) - numeric(a.primaryAuthorOpinionCount)
+      || numeric(b.mentionCount) - numeric(a.mentionCount)
+      || numeric(b.confidence) - numeric(a.confidence)
+      || String(a.entity && a.entity.displayName || a.key).localeCompare(String(b.entity && b.entity.displayName || b.key));
+  });
+}
+
+function buildAuthorIntelligenceSummary(input) {
+  const dominantStance = dominantCountKey(input.stanceSummary);
+  const evidenceStatus = input.evidenceGapCount > 0 || input.inferredFocusEntityCount > 0 ? 'needs-review' : 'ready';
+  return {
+    dominantStance: dominantStance || 'unknown',
+    latestAttitude: input.latestAttitude || 'unknown',
+    latestOpinionAt: input.latestOpinionAt,
+    opinionThreadCount: input.opinionThreadCount,
+    averageOpinionConfidence: input.opinionConfidenceCount > 0
+      ? Number((input.opinionConfidenceTotal / input.opinionConfidenceCount).toFixed(2))
+      : undefined,
+    evidenceStatus,
+    summary: buildAuthorIntelligenceText({
+      dominantStance,
+      latestAttitude: input.latestAttitude,
+      opinionCount: input.opinionCount,
+      opinionThreadCount: input.opinionThreadCount,
+      evidenceStatus,
+      evidenceGapCount: input.evidenceGapCount,
+      inferredFocusEntityCount: input.inferredFocusEntityCount
+    })
+  };
+}
+
+function buildAuthorIntelligenceText(input) {
+  if (!input.opinionCount) {
+    return 'No explicit opinion signal in the current report window.';
+  }
+  const stance = input.dominantStance || 'unknown';
+  const latest = input.latestAttitude || 'unknown';
+  const scope = input.opinionThreadCount > 1 ? ' across ' + input.opinionThreadCount + ' threads' : '';
+  const evidenceNote = input.evidenceStatus === 'needs-review'
+    ? ' Evidence review needed: gaps=' + input.evidenceGapCount + ', inferred=' + input.inferredFocusEntityCount + '.'
+    : ' Evidence state looks ready.';
+  return 'Dominant stance ' + stance + ', latest ' + latest + ', opinions=' + input.opinionCount + scope + '.' + evidenceNote;
 }
 
 function finalizeEntitySummary(summary) {
@@ -407,6 +537,12 @@ function mergeCounts(target, source) {
   Object.keys(source || {}).forEach(function (key) {
     target[key] = numeric(target[key]) + numeric(source[key]);
   });
+}
+
+function dominantCountKey(summary) {
+  return Object.keys(summary || {}).sort(function (a, b) {
+    return numeric(summary[b]) - numeric(summary[a]) || a.localeCompare(b);
+  })[0];
 }
 
 function compareAuthors(a, b) {
