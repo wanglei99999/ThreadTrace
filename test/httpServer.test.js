@@ -1597,7 +1597,8 @@ test('http server exposes author intelligence dashboard endpoint', async functio
             focusEntityCount: 1,
             opinionCount: 1,
             evidenceGapCount: 0,
-            highSignalEvidenceCount: 1
+            highSignalEvidenceCount: 1,
+            reviewQueueCount: 1
           },
           authors: [
             {
@@ -1614,6 +1615,16 @@ test('http server exposes author intelligence dashboard endpoint', async functio
           opinionTimeline: [],
           evidenceGaps: [],
           evidence: [],
+          reviewQueue: [
+            {
+              key: 'opinion:1',
+              type: 'high-confidence-opinion',
+              priority: 'medium',
+              score: 80,
+              title: 'Validate high-confidence opinion from Alice',
+              refs: []
+            }
+          ],
           threads: [],
           recommendedNextAction: 'Use top authors, focus entities, and opinion timeline as the next review queue.'
         };
@@ -1625,7 +1636,7 @@ test('http server exposes author intelligence dashboard endpoint', async functio
   const baseUrl = 'http://127.0.0.1:' + address.port;
 
   try {
-    const dashboard = await getJson(baseUrl + '/api/intelligence/authors?sourceKey=forum-a&sourceThreadId=thread-1&authorId=author-1&includeReportRevisions=true&limit=9&timelineLimit=4&now=2026-06-22T10:00:00.000Z');
+    const dashboard = await getJson(baseUrl + '/api/intelligence/authors?sourceKey=forum-a&sourceThreadId=thread-1&authorId=author-1&includeReportRevisions=true&limit=9&timelineLimit=4&reviewQueueLimit=3&now=2026-06-22T10:00:00.000Z');
     const openApi = await getJson(baseUrl + '/openapi.json');
 
     assert.equal(calls.length, 1);
@@ -1635,8 +1646,10 @@ test('http server exposes author intelligence dashboard endpoint', async functio
     assert.equal(calls[0].includeReportRevisions, true);
     assert.equal(calls[0].limit, 9);
     assert.equal(calls[0].timelineLimit, 4);
+    assert.equal(calls[0].reviewQueueLimit, 3);
     assert.equal(dashboard.status, 'ok');
     assert.equal(dashboard.authors[0].author.sourceAuthorId, 'author-1');
+    assert.equal(dashboard.reviewQueue[0].type, 'high-confidence-opinion');
     assert.ok(openApi.paths['/api/intelligence/authors']);
   } finally {
     await close(server);

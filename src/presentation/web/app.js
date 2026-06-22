@@ -345,7 +345,8 @@ async function loadAuthorIntelligence() {
   const query = new URLSearchParams({
     sourceKey: form.get('forum') || '',
     limit: '100',
-    timelineLimit: '30'
+    timelineLimit: '30',
+    reviewQueueLimit: '20'
   });
   await renderAsync('authorIntelligenceResult', function () {
     return fetchJson('/api/intelligence/authors?' + query.toString(), {
@@ -897,7 +898,8 @@ function renderAuthorIntelligenceDashboard(dashboard) {
     summaryTile('作者', summary.authorCount || 0),
     summaryTile('观点', summary.opinionCount || 0),
     summaryTile('实体', summary.focusEntityCount || 0),
-    summaryTile('缺口', summary.evidenceGapCount || 0, summary.evidenceGapCount > 0 ? 'warn' : 'ok')
+    summaryTile('缺口', summary.evidenceGapCount || 0, summary.evidenceGapCount > 0 ? 'warn' : 'ok'),
+    summaryTile('Queue', summary.reviewQueueCount || 0, (summary.reviewQueueCount || 0) > 0 ? 'warn' : 'ok')
   ].join('') + '</div>';
   return [
     panel('作者情报概览', [
@@ -907,6 +909,7 @@ function renderAuthorIntelligenceDashboard(dashboard) {
       metric('报告模式', dashboard.revisionMode || 'latest-per-thread'),
       metric('建议', dashboard.recommendedNextAction || dashboard.message || '')
     ].join(''), 'wide'),
+    panel('Review queue', renderAuthorReviewQueueRows(dashboard.reviewQueue || []), 'wide'),
     panel('重点作者', renderAuthorIntelligenceRows(dashboard.authors || []), 'wide'),
     panel('聚焦实体', renderAuthorEntityRows(dashboard.focusEntities || []), 'wide'),
     panel('观点时间线', renderOpinionTimelineRows(dashboard.opinionTimeline || []), 'wide'),
@@ -925,6 +928,28 @@ function authorIntelligenceScope(dashboard) {
     parts.push('author=' + (filter.displayName || filter.authorId));
   }
   return parts.filter(Boolean).join(' · ');
+}
+
+function renderAuthorReviewQueueRows(items) {
+  if (items.length === 0) return '<div class="muted">暂无审核队列</div>';
+  return items.slice(0, 12).map(function (item) {
+    const ref = (item.refs || [])[0] || {};
+    const details = [
+      item.type,
+      item.reason,
+      item.score === undefined ? undefined : 'score=' + item.score,
+      ref.sourceThreadId ? 'thread=' + ref.sourceThreadId : undefined,
+      ref.floor === undefined ? undefined : '#' + ref.floor
+    ].filter(Boolean).join(' · ');
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(item.title || item.key || 'review item') + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '<small>' + escapeHtml(item.summary || '') + '</small>' +
+      '<small>' + escapeHtml(item.nextAction || '') + '</small>' +
+      '</span>' +
+      statusBadge(item.priority || 'unknown', item.priority === 'high' ? 'warn' : 'muted') +
+      '</div>';
+  }).join('');
 }
 
 function renderAuthorIntelligenceRows(authors) {

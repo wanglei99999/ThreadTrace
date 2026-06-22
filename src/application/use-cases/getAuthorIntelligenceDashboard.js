@@ -61,6 +61,14 @@ async function getAuthorIntelligenceDashboard(options) {
   const gapRows = evidenceGaps
     .sort(compareGaps)
     .slice(0, safeOptions.gapLimit || 20);
+  const reviewQueue = buildReviewQueue({
+    authors,
+    focusEntities,
+    opinionTimeline: timeline,
+    evidenceGaps: gapRows,
+    evidence: evidenceRows,
+    limit: safeOptions.reviewQueueLimit || 20
+  });
 
   return {
     generatedAt: now,
@@ -80,18 +88,21 @@ async function getAuthorIntelligenceDashboard(options) {
       focusEntityCount: focusEntities.length,
       opinionCount: timeline.length,
       evidenceGapCount: gapRows.length,
-      highSignalEvidenceCount: evidenceRows.length
+      highSignalEvidenceCount: evidenceRows.length,
+      reviewQueueCount: reviewQueue.length
     },
     authors,
     focusEntities,
     opinionTimeline: timeline,
     evidenceGaps: gapRows,
     evidence: evidenceRows,
+    reviewQueue,
     threads: threads.slice(0, safeOptions.threadLimit || 20),
     recommendedNextAction: recommendedNextAction({
       reportCount: reports.length,
       authorCount: authors.length,
       evidenceGapCount: gapRows.length,
+      reviewQueueCount: reviewQueue.length,
       authorFilter
     })
   };
@@ -116,13 +127,15 @@ function emptyDashboard(options) {
       focusEntityCount: 0,
       opinionCount: 0,
       evidenceGapCount: 0,
-      highSignalEvidenceCount: 0
+      highSignalEvidenceCount: 0,
+      reviewQueueCount: 0
     },
     authors: [],
     focusEntities: [],
     opinionTimeline: [],
     evidenceGaps: [],
     evidence: [],
+    reviewQueue: [],
     threads: [],
     message: 'No basic-history reports found for the requested scope.',
     recommendedNextAction: 'Run an ingest or insight pipeline task to create basic-history reports before opening this dashboard.'
@@ -500,6 +513,168 @@ function finalizeEntitySummary(summary) {
   };
 }
 
+function buildReviewQueue(input) {
+  const items = [];
+  (input.evidenceGaps || []).forEach(function (gap) {
+    addReviewItem(items, {
+      key: compactKey(['gap', gap.thread && gap.thread.key, gap.key, gap.firstFloor, gap.lastFloor]),
+      type: 'evidence-gap',
+      priority: 'high',
+      score: 100 + numeric(gap.lastFloor) - numeric(gap.firstFloor),
+      title: 'Review evidence gap for ' + displayEntity(gap.entity, gap.key),
+      summary: gap.summary || gap.reason || 'Evidence gap needs review before downstream use.',
+      reason: gap.reason || 'evidence-gap',
+      nextAction: 'Open the referenced floors and confirm whether the inferred author opinion has explicit support.',
+      author: gap.author,
+      entity: gap.entity,
+      thread: gap.thread,
+      refs: refsForFloorRange(gap.thread, gap.firstFloor, gap.lastFloor)
+    });
+  });
+
+  (input.authors || []).forEach(function (authorSummary) {
+    const intelligence = authorSummary.intelligence || {};
+    if (intelligence.evidenceStatus !== 'needs-review') return;
+    addReviewItem(items, {
+      key: compactKey(['author', authorSummary.key, 'needs-review']),
+      type: 'author-evidence-review',
+      priority: authorSummary.evidenceGapCount > 0 ? 'high' : 'medium',
+      score: 80 + numeric(authorSummary.evidenceGapCount) * 10 + numeric(authorSummary.inferredFocusEntityCount) * 5 + numeric(authorSummary.opinionCount),
+      title: 'Review author intelligence for ' + displayAuthor(authorSummary.author),
+      summary: intelligence.summary || 'Author intelligence contains inferred or incomplete evidence.',
+      reason: 'author-evidence-status',
+      nextAction: 'Confirm the author stance and focus entities before using this profile in downstream summaries.',
+      author: authorSummary.author,
+      thread: firstThread(authorSummary.threads),
+      refs: refsForThreads(authorSummary.threads)
+    });
+  });
+
+  (input.focusEntities || []).forEach(function (entitySummary) {
+    const inferredCount = numeric(entitySummary.evidenceLevels && entitySummary.evidenceLevels.inferred);
+    if (inferredCount <= 0) return;
+    addReviewItem(items, {
+      key: compactKey(['entity', entitySummary.key, 'inferred']),
+      type: 'inferred-focus-entity',
+      priority: 'medium',
+      score: 70 + inferredCount * 8 + numeric(entitySummary.primaryAuthorOpinionCount) * 2 + numeric(entitySummary.mentionCount),
+      title: 'Resolve inferred evidence for ' + displayEntity(entitySummary.entity, entitySummary.key),
+      summary: 'Focus entity has inferred evidence=' + inferredCount + ', mentions=' + numeric(entitySummary.mentionCount) + ', authorOpinions=' + numeric(entitySummary.primaryAuthorOpinionCount) + '.',
+      reason: 'inferred-evidence-level',
+      nextAction: 'Check the supporting thread floors and replace inferred links with explicit evidence when possible.',
+      entity: entitySummary.entity,
+      thread: firstThread(entitySummary.threads),
+      refs: refsForThreads(entitySummary.threads)
+    });
+  });
+
+  (input.opinionTimeline || []).forEach(function (opinion) {
+    const confidence = numeric(opinion.confidence);
+    if (confidence < 0.8) return;
+    addReviewItem(items, {
+      key: compactKey(['opinion', opinion.sourcePostId || opinion.floor, opinion.thread && opinion.thread.key]),
+      type: 'high-confidence-opinion',
+      priority: 'medium',
+      score: 60 + Math.round(confidence * 20),
+      title: 'Validate high-confidence opinion from ' + displayAuthor(opinion.author),
+      summary: opinion.evidenceText || 'High-confidence opinion candidate needs a quick evidence check.',
+      reason: 'high-confidence-opinion',
+      nextAction: 'Confirm the cited floor, then allow it to seed author memory or downstream briefings.',
+      author: opinion.author,
+      thread: opinion.thread,
+      floor: opinion.floor,
+      sourcePostId: opinion.sourcePostId,
+      refs: [refForFloor(opinion.thread, opinion)]
+    });
+  });
+
+  return dedupeReviewItems(items)
+    .sort(compareReviewItems)
+    .slice(0, input.limit || 20);
+}
+
+function addReviewItem(items, item) {
+  if (!item || !item.key || !item.title) return;
+  items.push(item);
+}
+
+function dedupeReviewItems(items) {
+  const byKey = new Map();
+  (items || []).forEach(function (item) {
+    const existing = byKey.get(item.key);
+    if (!existing || compareReviewItems(item, existing) < 0) {
+      byKey.set(item.key, item);
+    }
+  });
+  return Array.from(byKey.values());
+}
+
+function compareReviewItems(a, b) {
+  return priorityRank(b.priority) - priorityRank(a.priority)
+    || numeric(b.score) - numeric(a.score)
+    || String(a.title || '').localeCompare(String(b.title || ''));
+}
+
+function priorityRank(priority) {
+  if (priority === 'high') return 3;
+  if (priority === 'medium') return 2;
+  if (priority === 'low') return 1;
+  return 0;
+}
+
+function compactKey(parts) {
+  return (parts || []).filter(function (part) {
+    return part !== undefined && part !== null && part !== '';
+  }).join(':');
+}
+
+function displayAuthor(author) {
+  return author && (author.displayName || author.sourceAuthorId) || 'unknown-author';
+}
+
+function displayEntity(entity, fallback) {
+  return entity && (entity.displayName || entity.normalized) || fallback || 'unknown-entity';
+}
+
+function firstThread(threads) {
+  return (threads || [])[0];
+}
+
+function refsForFloorRange(thread, firstFloor, lastFloor) {
+  const refs = [];
+  if (firstFloor !== undefined && firstFloor !== null) {
+    refs.push(refForFloor(thread, { floor: firstFloor }));
+  }
+  if (lastFloor !== undefined && lastFloor !== null && lastFloor !== firstFloor) {
+    refs.push(refForFloor(thread, { floor: lastFloor }));
+  }
+  if (refs.length === 0 && thread) {
+    refs.push(refForThread(thread));
+  }
+  return refs;
+}
+
+function refsForThreads(threads) {
+  return (threads || []).slice(0, 4).map(refForThread);
+}
+
+function refForFloor(thread, item) {
+  return Object.assign(refForThread(thread), {
+    floor: item && item.floor,
+    sourcePostId: item && item.sourcePostId
+  });
+}
+
+function refForThread(thread) {
+  const safeThread = thread || {};
+  return {
+    sourceKey: safeThread.sourceKey,
+    sourceThreadId: safeThread.sourceThreadId,
+    title: safeThread.title,
+    url: safeThread.url
+  };
+}
+
 function addThreadSummary(threads, thread) {
   if (threads.some(function (item) { return item.key === thread.key; })) return;
   threads.push(thread);
@@ -583,6 +758,9 @@ function recommendedNextAction(input) {
   }
   if (input.evidenceGapCount > 0) {
     return 'Review evidence gaps before treating inferred author opinions as confirmed intelligence.';
+  }
+  if (input.reviewQueueCount > 0) {
+    return 'Work the author intelligence review queue from highest priority to lowest.';
   }
   return 'Use top authors, focus entities, and opinion timeline as the next review queue.';
 }

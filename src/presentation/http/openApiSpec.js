@@ -618,6 +618,7 @@ function createOpenApiSpec() {
             { name: 'includeReportRevisions', in: 'query', required: false, schema: { type: 'boolean', example: false } },
             { name: 'limit', in: 'query', required: false, schema: { type: 'number', example: 100 } },
             { name: 'timelineLimit', in: 'query', required: false, schema: { type: 'number', example: 50 } },
+            { name: 'reviewQueueLimit', in: 'query', required: false, schema: { type: 'number', example: 20 } },
             { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-22T10:00:00.000Z' } },
             { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
           ],

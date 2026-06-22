@@ -215,6 +215,7 @@ function main(argv) {
       includeReportRevisions: parseOptionalBoolean(options.includeReportRevisions),
       limit: options.limit ? Number(options.limit) : 100,
       timelineLimit: options.timelineLimit ? Number(options.timelineLimit) : undefined,
+      reviewQueueLimit: options.reviewQueueLimit ? Number(options.reviewQueueLimit) : undefined,
       now: options.now
     }).then(function (dashboard) {
       printAuthorIntelligenceDashboard(dashboard);
@@ -1842,6 +1843,9 @@ function parseArgs(args) {
     } else if (item === '--timeline-limit') {
       options.timelineLimit = args[index + 1];
       index += 1;
+    } else if (item === '--review-queue-limit') {
+      options.reviewQueueLimit = args[index + 1];
+      index += 1;
     } else if (item === '--include-report-revisions') {
       if (args[index + 1] && !String(args[index + 1]).startsWith('--')) {
         options.includeReportRevisions = args[index + 1];
@@ -2075,6 +2079,15 @@ function printAuthorIntelligenceDashboard(dashboard) {
     console.log('Message: ' + dashboard.message);
   }
   console.log('Next: ' + dashboard.recommendedNextAction);
+  console.log('Review queue: ' + ((dashboard.reviewQueue || []).length));
+  (dashboard.reviewQueue || []).slice(0, 10).forEach(function (item) {
+    const ref = (item.refs || [])[0] || {};
+    const location = [ref.sourceThreadId ? 'thread=' + ref.sourceThreadId : undefined, ref.floor === undefined ? undefined : '#' + ref.floor].filter(Boolean).join(' ');
+    console.log('  [' + (item.priority || 'unknown') + '] ' + (item.type || 'item') + '\t' + item.title + (location ? '\t' + location : ''));
+    if (item.nextAction) {
+      console.log('    next: ' + item.nextAction);
+    }
+  });
   console.log('Top authors:');
   (dashboard.authors || []).slice(0, 10).forEach(function (item) {
     const author = item.author || {};
@@ -2109,7 +2122,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js run-ingest-task [--forum nga] [--input dir] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-tasks [--store-dir dir] [--status status] [--type type] [--request-id id] [--trace-id id] [--idempotency-key key] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js list-reports [--source-key key] [--source-thread-id id] [--report-type type] [--store-dir dir]');
-  console.log('  node src/presentation/cli/threadtrace.js author-intelligence [--source-key key] [--source-thread-id id] [--author-id id] [--author name] [--include-report-revisions true] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js author-intelligence [--source-key key] [--source-thread-id id] [--author-id id] [--author name] [--include-report-revisions true] [--store-dir dir] [--limit n] [--review-queue-limit n]');
   console.log('  node src/presentation/cli/threadtrace.js run-semantic-enrichment-task --source-thread-id id [--source-key nga] [--provider mock] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js operations-overview [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-readiness [--store-dir dir] [--limit n]');

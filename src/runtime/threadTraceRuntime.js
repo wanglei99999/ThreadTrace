@@ -911,6 +911,7 @@ function createThreadTraceRuntime(options) {
         timelineLimit: safeRequest.timelineLimit,
         evidenceLimit: safeRequest.evidenceLimit,
         gapLimit: safeRequest.gapLimit,
+        reviewQueueLimit: safeRequest.reviewQueueLimit,
         threadLimit: safeRequest.threadLimit,
         now: safeRequest.now
       });

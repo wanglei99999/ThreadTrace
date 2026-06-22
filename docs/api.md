@@ -126,10 +126,11 @@ Query parameters:
 - `includeReportRevisions`: optional boolean. Defaults to `false`, so each source thread uses only its newest report revision.
 - `limit`: stored report window, defaults to 100.
 - `timelineLimit`: opinion timeline window, defaults to 50.
+- `reviewQueueLimit`: generated review queue window, defaults to 20.
 - `now`: optional fixed generation time.
 - `storeDir`: optional file store override.
 
-Returns `revisionMode`, `reportRevisionCount`, `summary`, top `authors`, `focusEntities`, `opinionTimeline`, `evidenceGaps`, high-signal `evidence`, compact `threads`, and `recommendedNextAction`. Author rows include aggregated stance fields such as `dominantStance`, `latestAttitude`, `averageOpinionConfidence`, `opinionThreadCount`, de-duplicated `topFocusEntities`, and an `intelligence.summary` string for review queues.
+Returns `revisionMode`, `reportRevisionCount`, `summary`, top `authors`, `focusEntities`, `opinionTimeline`, `evidenceGaps`, high-signal `evidence`, generated `reviewQueue`, compact `threads`, and `recommendedNextAction`. Author rows include aggregated stance fields such as `dominantStance`, `latestAttitude`, `averageOpinionConfidence`, `opinionThreadCount`, de-duplicated `topFocusEntities`, and an `intelligence.summary` string for review queues. Review queue items include stable `type`, `priority`, `score`, `reason`, `nextAction`, and source `refs`.
 
 ### `POST /api/interpret-text`
 

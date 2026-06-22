@@ -31,6 +31,7 @@ test('author intelligence dashboard aggregates stored basic-history reports', as
   assert.equal(dashboard.revisionMode, 'latest-per-thread');
   assert.equal(dashboard.summary.threadCount, 2);
   assert.equal(dashboard.summary.authorCount, 2);
+  assert.equal(dashboard.summary.reviewQueueCount, 5);
   assert.equal(dashboard.authors[0].author.sourceAuthorId, 'author-1');
   assert.equal(dashboard.authors[0].postCount, 4);
   assert.equal(dashboard.authors[0].opinionCount, 2);
@@ -51,6 +52,15 @@ test('author intelligence dashboard aggregates stored basic-history reports', as
   assert.equal(dashboard.focusEntities[0].mentionCount, 4);
   assert.equal(dashboard.opinionTimeline.length, 4);
   assert.equal(dashboard.evidenceGaps.length, 2);
+  assert.equal(dashboard.reviewQueue[0].type, 'evidence-gap');
+  assert.equal(dashboard.reviewQueue[0].priority, 'high');
+  assert.equal(dashboard.reviewQueue[0].refs[0].floor, 0);
+  assert.equal(dashboard.reviewQueue.some(function (item) {
+    return item.type === 'author-evidence-review' && item.author.sourceAuthorId === 'author-1';
+  }), true);
+  assert.equal(dashboard.reviewQueue.some(function (item) {
+    return item.type === 'high-confidence-opinion' && item.author.sourceAuthorId === 'author-1';
+  }), true);
   assert.match(dashboard.recommendedNextAction, /evidence gaps/);
 });
 
@@ -142,6 +152,7 @@ test('author intelligence dashboard filters by author and returns warn for empty
   assert.equal(dashboard.opinionTimeline.length, 1);
   assert.equal(dashboard.opinionTimeline[0].author.sourceAuthorId, 'author-2');
   assert.equal(dashboard.focusEntities.length, 0);
+  assert.equal(dashboard.reviewQueue.length, 0);
   assert.equal(empty.status, 'warn');
   assert.equal(empty.reportCount, 0);
   assert.match(empty.message, /No basic-history reports/);

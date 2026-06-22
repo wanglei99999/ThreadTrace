@@ -454,6 +454,7 @@ async function routeRequest(request, response, context) {
       timelineLimit: url.searchParams.get('timelineLimit') ? Number(url.searchParams.get('timelineLimit')) : undefined,
       evidenceLimit: url.searchParams.get('evidenceLimit') ? Number(url.searchParams.get('evidenceLimit')) : undefined,
       gapLimit: url.searchParams.get('gapLimit') ? Number(url.searchParams.get('gapLimit')) : undefined,
+      reviewQueueLimit: url.searchParams.get('reviewQueueLimit') ? Number(url.searchParams.get('reviewQueueLimit')) : undefined,
       now: url.searchParams.get('now') || undefined,
       storeDir: url.searchParams.get('storeDir') || undefined
     });
