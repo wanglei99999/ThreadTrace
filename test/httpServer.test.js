@@ -1581,6 +1581,67 @@ test('http server exposes raw page crawl, list, and replay APIs', async function
   }
 });
 
+test('http server exposes author intelligence dashboard endpoint', async function () {
+  const calls = [];
+  const server = createThreadTraceServer({
+    runtime: {
+      async getAuthorIntelligenceDashboard(request) {
+        calls.push(request);
+        return {
+          generatedAt: request.now,
+          status: 'ok',
+          reportCount: 1,
+          summary: {
+            threadCount: 1,
+            authorCount: 1,
+            focusEntityCount: 1,
+            opinionCount: 1,
+            evidenceGapCount: 0,
+            highSignalEvidenceCount: 1
+          },
+          authors: [
+            {
+              author: {
+                sourceAuthorId: request.authorId,
+                displayName: 'Alice'
+              },
+              postCount: 2,
+              opinionCount: 1,
+              threadCount: 1
+            }
+          ],
+          focusEntities: [],
+          opinionTimeline: [],
+          evidenceGaps: [],
+          evidence: [],
+          threads: [],
+          recommendedNextAction: 'Use top authors, focus entities, and opinion timeline as the next review queue.'
+        };
+      }
+    }
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const dashboard = await getJson(baseUrl + '/api/intelligence/authors?sourceKey=forum-a&sourceThreadId=thread-1&authorId=author-1&limit=9&timelineLimit=4&now=2026-06-22T10:00:00.000Z');
+    const openApi = await getJson(baseUrl + '/openapi.json');
+
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].sourceKey, 'forum-a');
+    assert.equal(calls[0].sourceThreadId, 'thread-1');
+    assert.equal(calls[0].authorId, 'author-1');
+    assert.equal(calls[0].limit, 9);
+    assert.equal(calls[0].timelineLimit, 4);
+    assert.equal(dashboard.status, 'ok');
+    assert.equal(dashboard.authors[0].author.sourceAuthorId, 'author-1');
+    assert.ok(openApi.paths['/api/intelligence/authors']);
+  } finally {
+    await close(server);
+  }
+});
+
 function listen(server, port) {
   return new Promise(function (resolve, reject) {
     server.once('error', reject);

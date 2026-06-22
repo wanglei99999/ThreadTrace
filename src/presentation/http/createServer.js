@@ -440,6 +440,26 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/intelligence/authors') {
+    const dashboard = await context.runtime.getAuthorIntelligenceDashboard({
+      sourceKey: url.searchParams.get('sourceKey') || url.searchParams.get('forum') || undefined,
+      sourceThreadId: url.searchParams.get('sourceThreadId') || undefined,
+      authorId: url.searchParams.get('authorId') || url.searchParams.get('sourceAuthorId') || undefined,
+      author: url.searchParams.get('author') || url.searchParams.get('authorName') || undefined,
+      reportType: url.searchParams.get('reportType') || undefined,
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,
+      authorLimit: url.searchParams.get('authorLimit') ? Number(url.searchParams.get('authorLimit')) : undefined,
+      entityLimit: url.searchParams.get('entityLimit') ? Number(url.searchParams.get('entityLimit')) : undefined,
+      timelineLimit: url.searchParams.get('timelineLimit') ? Number(url.searchParams.get('timelineLimit')) : undefined,
+      evidenceLimit: url.searchParams.get('evidenceLimit') ? Number(url.searchParams.get('evidenceLimit')) : undefined,
+      gapLimit: url.searchParams.get('gapLimit') ? Number(url.searchParams.get('gapLimit')) : undefined,
+      now: url.searchParams.get('now') || undefined,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, 200, dashboard);
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/reports/tasks/semantic-enrichment') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     if (!body.sourceThreadId) {

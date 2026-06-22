@@ -606,6 +606,27 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/intelligence/authors': {
+        get: {
+          summary: 'Build an author and opinion intelligence dashboard from stored basic-history reports',
+          parameters: [
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'forum', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceThreadId', in: 'query', required: false, schema: { type: 'string', example: '45974302' } },
+            { name: 'authorId', in: 'query', required: false, schema: { type: 'string', example: '150058' } },
+            { name: 'author', in: 'query', required: false, schema: { type: 'string', example: '-阿狼-' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number', example: 100 } },
+            { name: 'timelineLimit', in: 'query', required: false, schema: { type: 'number', example: 50 } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-22T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Author summaries, focus entities, opinion timeline, evidence gaps, and supporting evidence'
+            }
+          }
+        }
+      },
       '/api/reports/tasks/semantic-enrichment': {
         post: {
           summary: 'Run and persist semantic enrichment for a stored base report',

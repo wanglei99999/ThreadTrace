@@ -43,6 +43,7 @@ const { runResetTrackedSourceFailureTask } = require('../application/use-cases/r
 const { getSourceLifecycleReport } = require('../application/use-cases/getSourceLifecycleReport');
 const { getSourceScheduleReport } = require('../application/use-cases/getSourceScheduleReport');
 const { getOperationalOverview } = require('../application/use-cases/getOperationalOverview');
+const { getAuthorIntelligenceDashboard } = require('../application/use-cases/getAuthorIntelligenceDashboard');
 const { getOperationalReadiness } = require('../application/use-cases/getOperationalReadiness');
 const { getTaskTraceContext } = require('../application/use-cases/getTaskTraceContext');
 const { getRuntimeDiagnostics } = require('../application/use-cases/getRuntimeDiagnostics');
@@ -890,6 +891,27 @@ function createThreadTraceRuntime(options) {
         sourceThreadId: safeRequest.sourceThreadId,
         reportType: safeRequest.reportType,
         limit: safeRequest.limit || 50
+      });
+    },
+
+    async getAuthorIntelligenceDashboard(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return getAuthorIntelligenceDashboard({
+        reportRepository: repositories.reportRepository,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        sourceThreadId: safeRequest.sourceThreadId,
+        authorId: safeRequest.authorId || safeRequest.sourceAuthorId,
+        author: safeRequest.author || safeRequest.authorName,
+        reportType: safeRequest.reportType,
+        limit: safeRequest.limit || 100,
+        authorLimit: safeRequest.authorLimit,
+        entityLimit: safeRequest.entityLimit,
+        timelineLimit: safeRequest.timelineLimit,
+        evidenceLimit: safeRequest.evidenceLimit,
+        gapLimit: safeRequest.gapLimit,
+        threadLimit: safeRequest.threadLimit,
+        now: safeRequest.now
       });
     },
 

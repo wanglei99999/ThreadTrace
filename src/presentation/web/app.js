@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', function () {
   bindForms();
   document.getElementById('refreshAdaptersButton').addEventListener('click', loadAdapters);
   document.getElementById('enrichHistoryButton').addEventListener('click', enrichHistoryDirectory);
+  document.getElementById('refreshAuthorIntelligenceButton').addEventListener('click', loadAuthorIntelligence);
   document.getElementById('refreshTasksButton').addEventListener('click', loadTasks);
   document.getElementById('refreshSourcesButton').addEventListener('click', loadSources);
   document.getElementById('refreshSourceOperationsButton').addEventListener('click', loadSourceOperations);
@@ -337,6 +338,20 @@ async function enrichHistoryDirectory() {
       provider: 'mock'
     });
   }, renderHistoryReport);
+}
+
+async function loadAuthorIntelligence() {
+  const form = new FormData(document.getElementById('analyzeForm'));
+  const query = new URLSearchParams({
+    sourceKey: form.get('forum') || '',
+    limit: '100',
+    timelineLimit: '30'
+  });
+  await renderAsync('authorIntelligenceResult', function () {
+    return fetchJson('/api/intelligence/authors?' + query.toString(), {
+      acceptErrorStatus: true
+    });
+  }, renderAuthorIntelligenceDashboard);
 }
 
 function buildSourceOnboardingRequest(form) {
@@ -871,6 +886,150 @@ function renderEvidenceReliability(reliability) {
     metric('明确占比', reliability.explicitRatio),
     evidenceList((reliability.cautions || []).slice(0, 4))
   ].join(''));
+}
+
+function renderAuthorIntelligenceDashboard(dashboard) {
+  const summary = dashboard.summary || {};
+  const tiles = '<div class="summary-strip event-summary-strip">' + [
+    summaryTile('报告', dashboard.reportCount || 0, dashboard.status === 'warn' ? 'warn' : 'ok'),
+    summaryTile('线程', summary.threadCount || 0),
+    summaryTile('作者', summary.authorCount || 0),
+    summaryTile('观点', summary.opinionCount || 0),
+    summaryTile('实体', summary.focusEntityCount || 0),
+    summaryTile('缺口', summary.evidenceGapCount || 0, summary.evidenceGapCount > 0 ? 'warn' : 'ok')
+  ].join('') + '</div>';
+  return [
+    panel('作者情报概览', [
+      tiles,
+      metric('状态', dashboard.status || 'unknown'),
+      metric('范围', authorIntelligenceScope(dashboard)),
+      metric('建议', dashboard.recommendedNextAction || dashboard.message || '')
+    ].join(''), 'wide'),
+    panel('重点作者', renderAuthorIntelligenceRows(dashboard.authors || []), 'wide'),
+    panel('聚焦实体', renderAuthorEntityRows(dashboard.focusEntities || []), 'wide'),
+    panel('观点时间线', renderOpinionTimelineRows(dashboard.opinionTimeline || []), 'wide'),
+    panel('证据缺口', renderAuthorEvidenceGapRows(dashboard.evidenceGaps || []), 'wide'),
+    panel('高信号证据', renderAuthorEvidenceRows(dashboard.evidence || []), 'wide')
+  ].join('');
+}
+
+function authorIntelligenceScope(dashboard) {
+  const parts = [
+    dashboard.sourceKey || 'all-sources',
+    dashboard.sourceThreadId ? 'thread=' + dashboard.sourceThreadId : undefined
+  ];
+  const filter = dashboard.authorFilter || {};
+  if (filter.authorId || filter.displayName) {
+    parts.push('author=' + (filter.displayName || filter.authorId));
+  }
+  return parts.filter(Boolean).join(' · ');
+}
+
+function renderAuthorIntelligenceRows(authors) {
+  if (authors.length === 0) return '<div class="muted">暂无作者情报</div>';
+  return authors.slice(0, 12).map(function (item) {
+    const author = item.author || {};
+    const focus = (item.topFocusEntities || []).slice(0, 4).map(function (entity) {
+      return entity.entity && entity.entity.displayName ? entity.entity.displayName + '/' + entity.latestAttitude : entity.key;
+    }).join(' · ');
+    const details = [
+      'posts=' + (item.postCount || 0),
+      'opinions=' + (item.opinionCount || 0),
+      'threads=' + (item.threadCount || 0),
+      'primary=' + (item.primaryThreadCount || 0),
+      'gaps=' + (item.evidenceGapCount || 0)
+    ].join(' · ');
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(author.displayName || author.sourceAuthorId || item.key) + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '<small>' + escapeHtml(focus || formatStanceSummary(item.stanceSummary)) + '</small>' +
+      '</span>' +
+      statusBadge(item.evidenceGapCount > 0 ? 'needs review' : 'ready', item.evidenceGapCount > 0 ? 'warn' : 'ok') +
+      '</div>';
+  }).join('');
+}
+
+function renderAuthorEntityRows(entities) {
+  if (entities.length === 0) return '<div class="muted">暂无聚焦实体</div>';
+  return entities.slice(0, 12).map(function (item) {
+    const entity = item.entity || {};
+    const levels = item.evidenceLevels || {};
+    const details = [
+      'mentions=' + (item.mentionCount || 0),
+      'authorOpinions=' + (item.primaryAuthorOpinionCount || 0),
+      'threads=' + (item.threadCount || 0),
+      'explicit=' + (levels.explicit || 0),
+      'inferred=' + (levels.inferred || 0)
+    ].join(' · ');
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(entity.displayName || item.key) + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '</span>' +
+      statusBadge(item.latestAttitude || 'unknown', statusVariant(item.latestAttitude)) +
+      '</div>';
+  }).join('');
+}
+
+function renderOpinionTimelineRows(items) {
+  if (items.length === 0) return '<div class="muted">暂无观点时间线</div>';
+  return items.slice(0, 16).map(function (item) {
+    const thread = item.thread || {};
+    const author = item.author || {};
+    const details = [
+      thread.sourceThreadId ? 'thread=' + thread.sourceThreadId : undefined,
+      item.publishedAt,
+      item.scope,
+      item.horizon,
+      item.confidence === undefined ? undefined : 'confidence=' + item.confidence
+    ].filter(Boolean).join(' · ');
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml('#' + item.floor + ' · ' + (author.displayName || author.sourceAuthorId || 'unknown')) + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '<small>' + escapeHtml(item.evidenceText || '') + '</small>' +
+      '</span>' +
+      statusBadge(item.attitude || 'unknown', statusVariant(item.attitude)) +
+      '</div>';
+  }).join('');
+}
+
+function renderAuthorEvidenceGapRows(gaps) {
+  if (gaps.length === 0) return '<div class="muted">暂无证据缺口</div>';
+  return gaps.slice(0, 12).map(function (gap) {
+    const entity = gap.entity || {};
+    const thread = gap.thread || {};
+    const details = [
+      thread.sourceThreadId ? 'thread=' + thread.sourceThreadId : undefined,
+      '#' + gap.firstFloor + '-#' + gap.lastFloor,
+      gap.reason
+    ].filter(Boolean).join(' · ');
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(entity.displayName || gap.key || 'unknown-entity') + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '<small>' + escapeHtml(gap.summary || '') + '</small>' +
+      '</span>' +
+      statusBadge('gap', 'warn') +
+      '</div>';
+  }).join('');
+}
+
+function renderAuthorEvidenceRows(items) {
+  if (items.length === 0) return '<div class="muted">暂无高信号证据</div>';
+  return items.slice(0, 12).map(function (item) {
+    const thread = item.thread || {};
+    const author = item.author || {};
+    const details = [
+      thread.sourceThreadId ? 'thread=' + thread.sourceThreadId : undefined,
+      item.publishedAt,
+      item.score === undefined ? undefined : 'score=' + item.score
+    ].filter(Boolean).join(' · ');
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml('#' + item.floor + ' · ' + (author.displayName || author.sourceAuthorId || 'unknown')) + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '<small>' + escapeHtml(item.excerpt || '') + '</small>' +
+      '</span>' +
+      statusBadge('evidence', 'ok') +
+      '</div>';
+  }).join('');
 }
 
 function formatStanceSummary(summary) {

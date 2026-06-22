@@ -113,6 +113,23 @@ Dry-runs or executes synthesis of attention-worthy review results into notificat
 
 返回：基础历史分析报告。
 
+### `GET /api/intelligence/authors`
+
+Builds a read-only author and opinion intelligence dashboard from stored `basic-history` reports. It is source-agnostic: NGA and future connectors only need to persist the same report shape.
+
+Query parameters:
+
+- `sourceKey` / `forum`: optional source filter.
+- `sourceThreadId`: optional thread filter.
+- `authorId` / `sourceAuthorId`: optional author id filter.
+- `author` / `authorName`: optional display-name filter.
+- `limit`: stored report window, defaults to 100.
+- `timelineLimit`: opinion timeline window, defaults to 50.
+- `now`: optional fixed generation time.
+- `storeDir`: optional file store override.
+
+Returns `summary`, top `authors`, `focusEntities`, `opinionTimeline`, `evidenceGaps`, high-signal `evidence`, compact `threads`, and `recommendedNextAction`.
+
 ### `POST /api/interpret-text`
 
 对一条新发言做语境还原。
