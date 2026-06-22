@@ -908,6 +908,8 @@ function renderAuthorIntelligenceDashboard(dashboard) {
       metric('范围', authorIntelligenceScope(dashboard)),
       metric('报告模式', dashboard.revisionMode || 'latest-per-thread'),
       metric('建议', dashboard.recommendedNextAction || dashboard.message || ''),
+      metric('Queue priority', formatStanceSummary(summary.reviewQueuePriorityCounts)),
+      metric('Queue type', formatStanceSummary(summary.reviewQueueTypeCounts)),
       '<a class="inline-button secondary-inline-button" href="' + escapeHtml(authorIntelligenceMarkdownHref(dashboard)) + '" target="_blank" rel="noreferrer">Markdown</a>'
     ].join(''), 'wide'),
     panel('Review queue', renderAuthorReviewQueueRows(dashboard.reviewQueue || []), 'wide'),

@@ -69,6 +69,12 @@ async function getAuthorIntelligenceDashboard(options) {
     evidence: evidenceRows,
     limit: safeOptions.reviewQueueLimit || 20
   });
+  const reviewQueuePriorityCounts = countBy(reviewQueue, function (item) {
+    return item.priority || 'unknown';
+  });
+  const reviewQueueTypeCounts = countBy(reviewQueue, function (item) {
+    return item.type || 'unknown';
+  });
 
   return {
     generatedAt: now,
@@ -89,7 +95,9 @@ async function getAuthorIntelligenceDashboard(options) {
       opinionCount: timeline.length,
       evidenceGapCount: gapRows.length,
       highSignalEvidenceCount: evidenceRows.length,
-      reviewQueueCount: reviewQueue.length
+      reviewQueueCount: reviewQueue.length,
+      reviewQueuePriorityCounts,
+      reviewQueueTypeCounts
     },
     authors,
     focusEntities,
@@ -128,7 +136,9 @@ function emptyDashboard(options) {
       opinionCount: 0,
       evidenceGapCount: 0,
       highSignalEvidenceCount: 0,
-      reviewQueueCount: 0
+      reviewQueueCount: 0,
+      reviewQueuePriorityCounts: {},
+      reviewQueueTypeCounts: {}
     },
     authors: [],
     focusEntities: [],
@@ -718,6 +728,14 @@ function dominantCountKey(summary) {
   return Object.keys(summary || {}).sort(function (a, b) {
     return numeric(summary[b]) - numeric(summary[a]) || a.localeCompare(b);
   })[0];
+}
+
+function countBy(items, keySelector) {
+  return (items || []).reduce(function (counts, item) {
+    const key = keySelector(item) || 'unknown';
+    counts[key] = numeric(counts[key]) + 1;
+    return counts;
+  }, {});
 }
 
 function compareAuthors(a, b) {

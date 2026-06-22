@@ -2085,6 +2085,8 @@ function printAuthorIntelligenceDashboard(dashboard) {
   }
   console.log('Next: ' + dashboard.recommendedNextAction);
   console.log('Review queue: ' + ((dashboard.reviewQueue || []).length));
+  console.log('Review priority: ' + formatCountSummary(summary.reviewQueuePriorityCounts));
+  console.log('Review types: ' + formatCountSummary(summary.reviewQueueTypeCounts));
   (dashboard.reviewQueue || []).slice(0, 10).forEach(function (item) {
     const ref = (item.refs || [])[0] || {};
     const location = [ref.sourceThreadId ? 'thread=' + ref.sourceThreadId : undefined, ref.floor === undefined ? undefined : '#' + ref.floor].filter(Boolean).join(' ');
@@ -2113,6 +2115,14 @@ function printAuthorIntelligenceDashboard(dashboard) {
     const author = item.author || {};
     console.log('  #' + item.floor + '\t' + (item.attitude || 'unknown') + '\t' + (author.displayName || author.sourceAuthorId || 'unknown') + '\t' + (thread.sourceThreadId || 'unknown-thread'));
   });
+}
+
+function formatCountSummary(summary) {
+  const keys = Object.keys(summary || {});
+  if (keys.length === 0) return 'none';
+  return keys.sort().map(function (key) {
+    return key + '=' + summary[key];
+  }).join(', ');
 }
 
 function printHelp() {

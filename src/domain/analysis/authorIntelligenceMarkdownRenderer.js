@@ -16,6 +16,8 @@ function renderAuthorIntelligenceMarkdown(dashboard) {
   lines.push('- Reports: ' + numeric(safeDashboard.reportCount) + ', revisions: ' + numeric(safeDashboard.reportRevisionCount));
   lines.push('- Threads: ' + numeric(summary.threadCount) + ', authors: ' + numeric(summary.authorCount) + ', opinions: ' + numeric(summary.opinionCount));
   lines.push('- Evidence gaps: ' + numeric(summary.evidenceGapCount) + ', review queue: ' + numeric(summary.reviewQueueCount));
+  lines.push('- Review priority: ' + countSummary(summary.reviewQueuePriorityCounts));
+  lines.push('- Review types: ' + countSummary(summary.reviewQueueTypeCounts));
   lines.push('- Recommended next action: ' + safeInline(safeDashboard.recommendedNextAction || safeDashboard.message || 'none'));
 
   lines.push('');
@@ -183,6 +185,14 @@ function displayEntity(entity, fallback) {
 
 function confidenceText(value) {
   return value === undefined || value === null ? 'n/a' : String(value);
+}
+
+function countSummary(summary) {
+  const keys = Object.keys(summary || {});
+  if (keys.length === 0) return 'none';
+  return keys.sort().map(function (key) {
+    return key + '=' + summary[key];
+  }).join(', ');
 }
 
 function safeInline(value) {

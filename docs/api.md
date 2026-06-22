@@ -130,7 +130,7 @@ Query parameters:
 - `now`: optional fixed generation time.
 - `storeDir`: optional file store override.
 
-Returns `revisionMode`, `reportRevisionCount`, `summary`, top `authors`, `focusEntities`, `opinionTimeline`, `evidenceGaps`, high-signal `evidence`, generated `reviewQueue`, compact `threads`, and `recommendedNextAction`. Author rows include aggregated stance fields such as `dominantStance`, `latestAttitude`, `averageOpinionConfidence`, `opinionThreadCount`, de-duplicated `topFocusEntities`, and an `intelligence.summary` string for review queues. Review queue items include stable `type`, `priority`, `score`, `reason`, `nextAction`, and source `refs`.
+Returns `revisionMode`, `reportRevisionCount`, `summary`, top `authors`, `focusEntities`, `opinionTimeline`, `evidenceGaps`, high-signal `evidence`, generated `reviewQueue`, compact `threads`, and `recommendedNextAction`. `summary` includes `reviewQueuePriorityCounts` and `reviewQueueTypeCounts`. Author rows include aggregated stance fields such as `dominantStance`, `latestAttitude`, `averageOpinionConfidence`, `opinionThreadCount`, de-duplicated `topFocusEntities`, and an `intelligence.summary` string for review queues. Review queue items include stable `type`, `priority`, `score`, `reason`, `nextAction`, and source `refs`.
 
 CLI can export the same dashboard as a handoff package with `node src/presentation/cli/threadtrace.js author-intelligence --source-key nga --markdown-output data/reports/author-intelligence.md`.
 

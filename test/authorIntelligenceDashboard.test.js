@@ -32,6 +32,11 @@ test('author intelligence dashboard aggregates stored basic-history reports', as
   assert.equal(dashboard.summary.threadCount, 2);
   assert.equal(dashboard.summary.authorCount, 2);
   assert.equal(dashboard.summary.reviewQueueCount, 5);
+  assert.equal(dashboard.summary.reviewQueuePriorityCounts.high, 3);
+  assert.equal(dashboard.summary.reviewQueuePriorityCounts.medium, 2);
+  assert.equal(dashboard.summary.reviewQueueTypeCounts['evidence-gap'], 2);
+  assert.equal(dashboard.summary.reviewQueueTypeCounts['author-evidence-review'], 1);
+  assert.equal(dashboard.summary.reviewQueueTypeCounts['high-confidence-opinion'], 2);
   assert.equal(dashboard.authors[0].author.sourceAuthorId, 'author-1');
   assert.equal(dashboard.authors[0].postCount, 4);
   assert.equal(dashboard.authors[0].opinionCount, 2);
@@ -153,6 +158,8 @@ test('author intelligence dashboard filters by author and returns warn for empty
   assert.equal(dashboard.opinionTimeline[0].author.sourceAuthorId, 'author-2');
   assert.equal(dashboard.focusEntities.length, 0);
   assert.equal(dashboard.reviewQueue.length, 0);
+  assert.deepEqual(empty.summary.reviewQueuePriorityCounts, {});
+  assert.deepEqual(empty.summary.reviewQueueTypeCounts, {});
   assert.equal(empty.status, 'warn');
   assert.equal(empty.reportCount, 0);
   assert.match(empty.message, /No basic-history reports/);

@@ -18,7 +18,9 @@ test('author intelligence markdown renderer emits review handoff sections', func
       authorCount: 1,
       opinionCount: 1,
       evidenceGapCount: 0,
-      reviewQueueCount: 1
+      reviewQueueCount: 1,
+      reviewQueuePriorityCounts: { medium: 1 },
+      reviewQueueTypeCounts: { 'high-confidence-opinion': 1 }
     },
     reviewQueue: [
       {
@@ -89,6 +91,8 @@ test('author intelligence markdown renderer emits review handoff sections', func
   assert.match(markdown, /## Review Queue/);
   assert.match(markdown, /Validate high-confidence opinion from Alice/);
   assert.match(markdown, /forum-a\/thread-1#3/);
+  assert.match(markdown, /Review priority: medium=1/);
+  assert.match(markdown, /Review types: high-confidence-opinion=1/);
   assert.match(markdown, /Dominant stance bullish/);
   assert.match(markdown, /## Evidence Gaps/);
   assert.match(markdown, /No evidence gaps/);
