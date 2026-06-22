@@ -907,7 +907,8 @@ function renderAuthorIntelligenceDashboard(dashboard) {
       metric('状态', dashboard.status || 'unknown'),
       metric('范围', authorIntelligenceScope(dashboard)),
       metric('报告模式', dashboard.revisionMode || 'latest-per-thread'),
-      metric('建议', dashboard.recommendedNextAction || dashboard.message || '')
+      metric('建议', dashboard.recommendedNextAction || dashboard.message || ''),
+      '<a class="inline-button secondary-inline-button" href="' + escapeHtml(authorIntelligenceMarkdownHref(dashboard)) + '" target="_blank" rel="noreferrer">Markdown</a>'
     ].join(''), 'wide'),
     panel('Review queue', renderAuthorReviewQueueRows(dashboard.reviewQueue || []), 'wide'),
     panel('重点作者', renderAuthorIntelligenceRows(dashboard.authors || []), 'wide'),
@@ -928,6 +929,21 @@ function authorIntelligenceScope(dashboard) {
     parts.push('author=' + (filter.displayName || filter.authorId));
   }
   return parts.filter(Boolean).join(' · ');
+}
+
+function authorIntelligenceMarkdownHref(dashboard) {
+  const query = new URLSearchParams({
+    sourceKey: dashboard.sourceKey || '',
+    limit: String(dashboard.windowLimit || 100),
+    timelineLimit: '30',
+    reviewQueueLimit: '20'
+  });
+  if (dashboard.sourceThreadId) query.set('sourceThreadId', dashboard.sourceThreadId);
+  if (dashboard.revisionMode === 'all-revisions') query.set('includeReportRevisions', 'true');
+  const filter = dashboard.authorFilter || {};
+  if (filter.authorId) query.set('authorId', filter.authorId);
+  if (filter.displayName) query.set('author', filter.displayName);
+  return '/api/intelligence/authors/markdown?' + query.toString();
 }
 
 function renderAuthorReviewQueueRows(items) {

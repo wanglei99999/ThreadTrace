@@ -1637,9 +1637,10 @@ test('http server exposes author intelligence dashboard endpoint', async functio
 
   try {
     const dashboard = await getJson(baseUrl + '/api/intelligence/authors?sourceKey=forum-a&sourceThreadId=thread-1&authorId=author-1&includeReportRevisions=true&limit=9&timelineLimit=4&reviewQueueLimit=3&now=2026-06-22T10:00:00.000Z');
+    const markdown = await getText(baseUrl + '/api/intelligence/authors/markdown?sourceKey=forum-a&sourceThreadId=thread-1&authorId=author-1&includeReportRevisions=true&limit=9&timelineLimit=4&reviewQueueLimit=3&now=2026-06-22T10:00:00.000Z', 'text/markdown');
     const openApi = await getJson(baseUrl + '/openapi.json');
 
-    assert.equal(calls.length, 1);
+    assert.equal(calls.length, 2);
     assert.equal(calls[0].sourceKey, 'forum-a');
     assert.equal(calls[0].sourceThreadId, 'thread-1');
     assert.equal(calls[0].authorId, 'author-1');
@@ -1650,7 +1651,10 @@ test('http server exposes author intelligence dashboard endpoint', async functio
     assert.equal(dashboard.status, 'ok');
     assert.equal(dashboard.authors[0].author.sourceAuthorId, 'author-1');
     assert.equal(dashboard.reviewQueue[0].type, 'high-confidence-opinion');
+    assert.match(markdown, /# Author Intelligence Review Package/);
+    assert.match(markdown, /Validate high-confidence opinion from Alice/);
     assert.ok(openApi.paths['/api/intelligence/authors']);
+    assert.ok(openApi.paths['/api/intelligence/authors/markdown']);
   } finally {
     await close(server);
   }
@@ -1676,6 +1680,13 @@ async function getJson(url) {
   const response = await fetch(url);
   assert.equal(response.status, 200);
   return response.json();
+}
+
+async function getText(url, contentTypePrefix) {
+  const response = await fetch(url);
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('content-type').startsWith(contentTypePrefix), true);
+  return response.text();
 }
 
 async function postJson(url, body) {

@@ -134,6 +134,10 @@ Returns `revisionMode`, `reportRevisionCount`, `summary`, top `authors`, `focusE
 
 CLI can export the same dashboard as a handoff package with `node src/presentation/cli/threadtrace.js author-intelligence --source-key nga --markdown-output data/reports/author-intelligence.md`.
 
+### `GET /api/intelligence/authors/markdown`
+
+Uses the same query parameters as `GET /api/intelligence/authors`, but returns `text/markdown` with the author intelligence review package. This is intended for browser export, operator handoff, or downstream LLM review prompts.
+
 ### `POST /api/interpret-text`
 
 对一条新发言做语境还原。

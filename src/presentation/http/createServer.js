@@ -6,6 +6,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { isApplicationError } = require('../../application/errors/applicationError');
 const { createThreadTraceRuntime } = require('../../runtime/threadTraceRuntime');
+const { renderAuthorIntelligenceMarkdown } = require('../../domain/analysis/authorIntelligenceMarkdownRenderer');
 const { createOpenApiSpec } = require('./openApiSpec');
 
 function createThreadTraceServer(options) {
@@ -441,24 +442,14 @@ async function routeRequest(request, response, context) {
   }
 
   if (request.method === 'GET' && url.pathname === '/api/intelligence/authors') {
-    const dashboard = await context.runtime.getAuthorIntelligenceDashboard({
-      sourceKey: url.searchParams.get('sourceKey') || url.searchParams.get('forum') || undefined,
-      sourceThreadId: url.searchParams.get('sourceThreadId') || undefined,
-      authorId: url.searchParams.get('authorId') || url.searchParams.get('sourceAuthorId') || undefined,
-      author: url.searchParams.get('author') || url.searchParams.get('authorName') || undefined,
-      reportType: url.searchParams.get('reportType') || undefined,
-      includeReportRevisions: url.searchParams.get('includeReportRevisions') === 'true',
-      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,
-      authorLimit: url.searchParams.get('authorLimit') ? Number(url.searchParams.get('authorLimit')) : undefined,
-      entityLimit: url.searchParams.get('entityLimit') ? Number(url.searchParams.get('entityLimit')) : undefined,
-      timelineLimit: url.searchParams.get('timelineLimit') ? Number(url.searchParams.get('timelineLimit')) : undefined,
-      evidenceLimit: url.searchParams.get('evidenceLimit') ? Number(url.searchParams.get('evidenceLimit')) : undefined,
-      gapLimit: url.searchParams.get('gapLimit') ? Number(url.searchParams.get('gapLimit')) : undefined,
-      reviewQueueLimit: url.searchParams.get('reviewQueueLimit') ? Number(url.searchParams.get('reviewQueueLimit')) : undefined,
-      now: url.searchParams.get('now') || undefined,
-      storeDir: url.searchParams.get('storeDir') || undefined
-    });
+    const dashboard = await context.runtime.getAuthorIntelligenceDashboard(authorIntelligenceRequestFromSearchParams(url.searchParams));
     writeJson(response, 200, dashboard);
+    return;
+  }
+
+  if (request.method === 'GET' && url.pathname === '/api/intelligence/authors/markdown') {
+    const dashboard = await context.runtime.getAuthorIntelligenceDashboard(authorIntelligenceRequestFromSearchParams(url.searchParams));
+    writeText(response, 200, renderAuthorIntelligenceMarkdown(dashboard), 'text/markdown; charset=utf-8');
     return;
   }
 
@@ -1193,6 +1184,26 @@ function contentTypeFor(assetName) {
   return 'application/octet-stream';
 }
 
+function authorIntelligenceRequestFromSearchParams(searchParams) {
+  return {
+    sourceKey: searchParams.get('sourceKey') || searchParams.get('forum') || undefined,
+    sourceThreadId: searchParams.get('sourceThreadId') || undefined,
+    authorId: searchParams.get('authorId') || searchParams.get('sourceAuthorId') || undefined,
+    author: searchParams.get('author') || searchParams.get('authorName') || undefined,
+    reportType: searchParams.get('reportType') || undefined,
+    includeReportRevisions: searchParams.get('includeReportRevisions') === 'true',
+    limit: searchParams.get('limit') ? Number(searchParams.get('limit')) : 100,
+    authorLimit: searchParams.get('authorLimit') ? Number(searchParams.get('authorLimit')) : undefined,
+    entityLimit: searchParams.get('entityLimit') ? Number(searchParams.get('entityLimit')) : undefined,
+    timelineLimit: searchParams.get('timelineLimit') ? Number(searchParams.get('timelineLimit')) : undefined,
+    evidenceLimit: searchParams.get('evidenceLimit') ? Number(searchParams.get('evidenceLimit')) : undefined,
+    gapLimit: searchParams.get('gapLimit') ? Number(searchParams.get('gapLimit')) : undefined,
+    reviewQueueLimit: searchParams.get('reviewQueueLimit') ? Number(searchParams.get('reviewQueueLimit')) : undefined,
+    now: searchParams.get('now') || undefined,
+    storeDir: searchParams.get('storeDir') || undefined
+  };
+}
+
 function readJsonBody(request, maxBodyBytes) {
   return new Promise(function (resolve, reject) {
     const chunks = [];
@@ -1229,6 +1240,15 @@ function writeJson(response, statusCode, body) {
     'content-length': Buffer.byteLength(text)
   });
   response.end(text);
+}
+
+function writeText(response, statusCode, text, contentType) {
+  const body = String(text || '');
+  response.writeHead(statusCode, {
+    'content-type': contentType || 'text/plain; charset=utf-8',
+    'content-length': Buffer.byteLength(body)
+  });
+  response.end(body);
 }
 
 function writeError(response, statusCode, code, message, details) {
