@@ -13,6 +13,7 @@ const { writeTextFile } = require('../../infrastructure/storage/textFileWriter')
 const { getForumAdapter } = require('../../infrastructure/forum-adapters/registry');
 const { renderBasicHistoryMarkdown } = require('../../domain/analysis/markdownReportRenderer');
 const { renderNewPostContextMarkdown } = require('../../domain/analysis/contextMarkdownRenderer');
+const { renderAuthorIntelligenceMarkdown } = require('../../domain/analysis/authorIntelligenceMarkdownRenderer');
 const { loadEnvFile } = require('../../runtime/envFileLoader');
 const { createThreadTraceConfig } = require('../../runtime/threadTraceConfig');
 const { createThreadTraceRuntime } = require('../../runtime/threadTraceRuntime');
@@ -219,6 +220,10 @@ function main(argv) {
       now: options.now
     }).then(function (dashboard) {
       printAuthorIntelligenceDashboard(dashboard);
+      if (options.markdownOutput) {
+        const writtenMarkdownPath = writeTextFile(options.markdownOutput, renderAuthorIntelligenceMarkdown(dashboard));
+        console.log('Author intelligence markdown written to: ' + writtenMarkdownPath);
+      }
       if (dashboard.status === 'warn') {
         process.exitCode = 2;
       }
@@ -2122,7 +2127,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js run-ingest-task [--forum nga] [--input dir] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-tasks [--store-dir dir] [--status status] [--type type] [--request-id id] [--trace-id id] [--idempotency-key key] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js list-reports [--source-key key] [--source-thread-id id] [--report-type type] [--store-dir dir]');
-  console.log('  node src/presentation/cli/threadtrace.js author-intelligence [--source-key key] [--source-thread-id id] [--author-id id] [--author name] [--include-report-revisions true] [--store-dir dir] [--limit n] [--review-queue-limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js author-intelligence [--source-key key] [--source-thread-id id] [--author-id id] [--author name] [--include-report-revisions true] [--store-dir dir] [--limit n] [--review-queue-limit n] [--markdown-output file]');
   console.log('  node src/presentation/cli/threadtrace.js run-semantic-enrichment-task --source-thread-id id [--source-key nga] [--provider mock] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js operations-overview [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-readiness [--store-dir dir] [--limit n]');
