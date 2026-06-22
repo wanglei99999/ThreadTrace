@@ -615,6 +615,7 @@ function createOpenApiSpec() {
             { name: 'sourceThreadId', in: 'query', required: false, schema: { type: 'string', example: '45974302' } },
             { name: 'authorId', in: 'query', required: false, schema: { type: 'string', example: '150058' } },
             { name: 'author', in: 'query', required: false, schema: { type: 'string', example: '-阿狼-' } },
+            { name: 'includeReportRevisions', in: 'query', required: false, schema: { type: 'boolean', example: false } },
             { name: 'limit', in: 'query', required: false, schema: { type: 'number', example: 100 } },
             { name: 'timelineLimit', in: 'query', required: false, schema: { type: 'number', example: 50 } },
             { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-22T10:00:00.000Z' } },

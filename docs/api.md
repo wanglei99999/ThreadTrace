@@ -123,12 +123,13 @@ Query parameters:
 - `sourceThreadId`: optional thread filter.
 - `authorId` / `sourceAuthorId`: optional author id filter.
 - `author` / `authorName`: optional display-name filter.
+- `includeReportRevisions`: optional boolean. Defaults to `false`, so each source thread uses only its newest report revision.
 - `limit`: stored report window, defaults to 100.
 - `timelineLimit`: opinion timeline window, defaults to 50.
 - `now`: optional fixed generation time.
 - `storeDir`: optional file store override.
 
-Returns `summary`, top `authors`, `focusEntities`, `opinionTimeline`, `evidenceGaps`, high-signal `evidence`, compact `threads`, and `recommendedNextAction`.
+Returns `revisionMode`, `reportRevisionCount`, `summary`, top `authors`, `focusEntities`, `opinionTimeline`, `evidenceGaps`, high-signal `evidence`, compact `threads`, and `recommendedNextAction`.
 
 ### `POST /api/interpret-text`
 

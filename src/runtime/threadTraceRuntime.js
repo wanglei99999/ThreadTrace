@@ -904,6 +904,7 @@ function createThreadTraceRuntime(options) {
         authorId: safeRequest.authorId || safeRequest.sourceAuthorId,
         author: safeRequest.author || safeRequest.authorName,
         reportType: safeRequest.reportType,
+        includeReportRevisions: safeRequest.includeReportRevisions,
         limit: safeRequest.limit || 100,
         authorLimit: safeRequest.authorLimit,
         entityLimit: safeRequest.entityLimit,

@@ -1625,13 +1625,14 @@ test('http server exposes author intelligence dashboard endpoint', async functio
   const baseUrl = 'http://127.0.0.1:' + address.port;
 
   try {
-    const dashboard = await getJson(baseUrl + '/api/intelligence/authors?sourceKey=forum-a&sourceThreadId=thread-1&authorId=author-1&limit=9&timelineLimit=4&now=2026-06-22T10:00:00.000Z');
+    const dashboard = await getJson(baseUrl + '/api/intelligence/authors?sourceKey=forum-a&sourceThreadId=thread-1&authorId=author-1&includeReportRevisions=true&limit=9&timelineLimit=4&now=2026-06-22T10:00:00.000Z');
     const openApi = await getJson(baseUrl + '/openapi.json');
 
     assert.equal(calls.length, 1);
     assert.equal(calls[0].sourceKey, 'forum-a');
     assert.equal(calls[0].sourceThreadId, 'thread-1');
     assert.equal(calls[0].authorId, 'author-1');
+    assert.equal(calls[0].includeReportRevisions, true);
     assert.equal(calls[0].limit, 9);
     assert.equal(calls[0].timelineLimit, 4);
     assert.equal(dashboard.status, 'ok');

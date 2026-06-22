@@ -447,6 +447,7 @@ async function routeRequest(request, response, context) {
       authorId: url.searchParams.get('authorId') || url.searchParams.get('sourceAuthorId') || undefined,
       author: url.searchParams.get('author') || url.searchParams.get('authorName') || undefined,
       reportType: url.searchParams.get('reportType') || undefined,
+      includeReportRevisions: url.searchParams.get('includeReportRevisions') === 'true',
       limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,
       authorLimit: url.searchParams.get('authorLimit') ? Number(url.searchParams.get('authorLimit')) : undefined,
       entityLimit: url.searchParams.get('entityLimit') ? Number(url.searchParams.get('entityLimit')) : undefined,

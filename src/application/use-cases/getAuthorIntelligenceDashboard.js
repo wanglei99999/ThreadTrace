@@ -8,20 +8,23 @@ async function getAuthorIntelligenceDashboard(options) {
   const limit = safeOptions.limit || 100;
   const now = safeOptions.now || new Date().toISOString();
   const authorFilter = normalizeAuthorFilter(safeOptions);
-  const reports = await reportRepository.listReports({
+  const rawReports = await reportRepository.listReports({
     sourceKey: safeOptions.sourceKey || safeOptions.forum,
     sourceThreadId: safeOptions.sourceThreadId,
     reportType: safeOptions.reportType || 'basic-history',
     limit
   });
+  const revisionMode = safeOptions.includeReportRevisions === true ? 'all-revisions' : 'latest-per-thread';
+  const reports = revisionMode === 'all-revisions' ? rawReports : latestReportsByThread(rawReports);
 
-  if (reports.length === 0) {
+  if (rawReports.length === 0) {
     return emptyDashboard({
       now,
       limit,
       sourceKey: safeOptions.sourceKey || safeOptions.forum,
       sourceThreadId: safeOptions.sourceThreadId,
-      authorFilter
+      authorFilter,
+      revisionMode
     });
   }
 
@@ -67,9 +70,12 @@ async function getAuthorIntelligenceDashboard(options) {
     sourceThreadId: safeOptions.sourceThreadId,
     authorFilter,
     windowLimit: limit,
+    revisionMode,
     reportCount: reports.length,
+    reportRevisionCount: rawReports.length,
     summary: {
       threadCount: uniqueCount(threads.map(function (thread) { return thread.key; })),
+      reportRevisionCount: rawReports.length,
       authorCount: authors.length,
       focusEntityCount: focusEntities.length,
       opinionCount: timeline.length,
@@ -100,9 +106,12 @@ function emptyDashboard(options) {
     sourceThreadId: options.sourceThreadId,
     authorFilter: options.authorFilter,
     windowLimit: options.limit,
+    revisionMode: options.revisionMode || 'latest-per-thread',
     reportCount: 0,
+    reportRevisionCount: 0,
     summary: {
       threadCount: 0,
+      reportRevisionCount: 0,
       authorCount: 0,
       focusEntityCount: 0,
       opinionCount: 0,
@@ -118,6 +127,30 @@ function emptyDashboard(options) {
     message: 'No basic-history reports found for the requested scope.',
     recommendedNextAction: 'Run an ingest or insight pipeline task to create basic-history reports before opening this dashboard.'
   };
+}
+
+function latestReportsByThread(reports) {
+  const byThread = new Map();
+  (reports || []).forEach(function (report, index) {
+    const key = reportThreadKey(report, index);
+    const existing = byThread.get(key);
+    if (!existing || compareReportFreshness(report, existing) < 0) {
+      byThread.set(key, report);
+    }
+  });
+  return Array.from(byThread.values()).sort(compareReportFreshness);
+}
+
+function reportThreadKey(report, index) {
+  const thread = report && report.thread || {};
+  if (thread.sourceKey && thread.sourceThreadId) {
+    return [thread.sourceKey, thread.sourceThreadId].join(':');
+  }
+  return 'report:' + index;
+}
+
+function compareReportFreshness(a, b) {
+  return String(b && b.generatedAt || '').localeCompare(String(a && a.generatedAt || ''));
 }
 
 function collectAuthors(authorMap, report, thread, authorFilter) {

@@ -27,6 +27,8 @@ test('author intelligence dashboard aggregates stored basic-history reports', as
   });
   assert.equal(dashboard.status, 'ok');
   assert.equal(dashboard.reportCount, 2);
+  assert.equal(dashboard.reportRevisionCount, 2);
+  assert.equal(dashboard.revisionMode, 'latest-per-thread');
   assert.equal(dashboard.summary.threadCount, 2);
   assert.equal(dashboard.summary.authorCount, 2);
   assert.equal(dashboard.authors[0].author.sourceAuthorId, 'author-1');
@@ -39,6 +41,50 @@ test('author intelligence dashboard aggregates stored basic-history reports', as
   assert.equal(dashboard.opinionTimeline.length, 4);
   assert.equal(dashboard.evidenceGaps.length, 2);
   assert.match(dashboard.recommendedNextAction, /evidence gaps/);
+});
+
+test('author intelligence dashboard uses the latest report per thread by default', async function () {
+  const latestThreadOne = sampleReport('thread-1', '2026-06-22T09:00:00.000Z');
+  latestThreadOne.authorStats[0].postCount = 3;
+  latestThreadOne.primaryAuthorProfile.opinionCount = 2;
+  latestThreadOne.primaryAuthorProfile.stanceSummary = { bullish: 2 };
+  const olderThreadOne = sampleReport('thread-1', '2026-06-22T08:00:00.000Z');
+  olderThreadOne.authorStats[0].postCount = 99;
+  olderThreadOne.primaryAuthorProfile.opinionCount = 99;
+  const threadTwo = sampleReport('thread-2', '2026-06-22T07:00:00.000Z');
+
+  const reportRepository = {
+    async saveReport() {},
+    async findReports() { return []; },
+    async listReports() {
+      return [latestThreadOne, olderThreadOne, threadTwo];
+    }
+  };
+  const dashboard = await getAuthorIntelligenceDashboard({
+    now: '2026-06-22T10:00:00.000Z',
+    reportRepository
+  });
+  const revisionDashboard = await getAuthorIntelligenceDashboard({
+    now: '2026-06-22T10:00:00.000Z',
+    includeReportRevisions: true,
+    reportRepository
+  });
+  const author = dashboard.authors.find(function (item) {
+    return item.author.sourceAuthorId === 'author-1';
+  });
+  const revisionAuthor = revisionDashboard.authors.find(function (item) {
+    return item.author.sourceAuthorId === 'author-1';
+  });
+
+  assert.equal(dashboard.reportCount, 2);
+  assert.equal(dashboard.reportRevisionCount, 3);
+  assert.equal(dashboard.summary.threadCount, 2);
+  assert.equal(author.postCount, 5);
+  assert.equal(author.opinionCount, 3);
+  assert.equal(revisionDashboard.revisionMode, 'all-revisions');
+  assert.equal(revisionDashboard.reportCount, 3);
+  assert.equal(revisionAuthor.postCount, 104);
+  assert.equal(revisionAuthor.opinionCount, 102);
 });
 
 test('author intelligence dashboard filters by author and returns warn for empty reports', async function () {

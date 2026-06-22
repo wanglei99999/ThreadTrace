@@ -892,6 +892,7 @@ function renderAuthorIntelligenceDashboard(dashboard) {
   const summary = dashboard.summary || {};
   const tiles = '<div class="summary-strip event-summary-strip">' + [
     summaryTile('报告', dashboard.reportCount || 0, dashboard.status === 'warn' ? 'warn' : 'ok'),
+    summaryTile('修订', dashboard.reportRevisionCount || 0),
     summaryTile('线程', summary.threadCount || 0),
     summaryTile('作者', summary.authorCount || 0),
     summaryTile('观点', summary.opinionCount || 0),
@@ -903,6 +904,7 @@ function renderAuthorIntelligenceDashboard(dashboard) {
       tiles,
       metric('状态', dashboard.status || 'unknown'),
       metric('范围', authorIntelligenceScope(dashboard)),
+      metric('报告模式', dashboard.revisionMode || 'latest-per-thread'),
       metric('建议', dashboard.recommendedNextAction || dashboard.message || '')
     ].join(''), 'wide'),
     panel('重点作者', renderAuthorIntelligenceRows(dashboard.authors || []), 'wide'),
