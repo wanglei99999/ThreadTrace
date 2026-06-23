@@ -1,6 +1,7 @@
 'use strict';
 
 const { assertAnalysisReportRepository } = require('../ports/analysisReportRepository');
+const { assertAuthorReviewQueueRepository } = require('../ports/authorReviewQueueRepository');
 const { assertNotificationEventRepository } = require('../ports/notificationEventRepository');
 const { assertRawThreadPageRepository } = require('../ports/rawThreadPageRepository');
 const { assertSourceRepository } = require('../ports/sourceRepository');
@@ -27,7 +28,8 @@ async function migrateStoreRecords(options) {
       notificationEvents: 0,
       rawThreadPages: 0,
       workerRuns: 0,
-      reviewActionExecutions: 0
+      reviewActionExecutions: 0,
+      authorReviewQueueItems: 0
     }
   };
 
@@ -78,6 +80,16 @@ async function migrateStoreRecords(options) {
         return migrateExecutionRecord(target.contextReviewActionExecutionRepository, execution);
       },
       count: function (count) { summary.migrated.reviewActionExecutions = count; }
+    });
+  }
+  if (source.authorReviewQueueRepository) {
+    if (!dryRun && !target.authorReviewQueueRepository) {
+      throw new Error('Target repository set must include authorReviewQueueRepository when source author review queue items are migrated.');
+    }
+    await migrateCollection({
+      items: await source.authorReviewQueueRepository.listItems({ limit }),
+      save: dryRun ? undefined : target.authorReviewQueueRepository.saveItem,
+      count: function (count) { summary.migrated.authorReviewQueueItems = count; }
     });
   }
 
@@ -143,6 +155,9 @@ function assertRepositorySet(repositories, optional) {
   }
   if (safeRepositories.contextReviewActionExecutionRepository) {
     result.contextReviewActionExecutionRepository = assertContextReviewActionExecutionRepository(safeRepositories.contextReviewActionExecutionRepository);
+  }
+  if (safeRepositories.authorReviewQueueRepository) {
+    result.authorReviewQueueRepository = assertAuthorReviewQueueRepository(safeRepositories.authorReviewQueueRepository);
   }
 
   return result;

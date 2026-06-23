@@ -1660,6 +1660,109 @@ test('http server exposes author intelligence dashboard endpoint', async functio
   }
 });
 
+test('http server exposes durable author review queue APIs', async function () {
+  const calls = [];
+  const server = createThreadTraceServer({
+    runtime: {
+      async syncAuthorReviewQueue(request) {
+        calls.push({ method: 'sync', request });
+        return sampleAuthorReviewQueueResult({
+          createdCount: 1,
+          updatedCount: 0
+        });
+      },
+      async listAuthorReviewQueue(request) {
+        calls.push({ method: 'list', request });
+        return sampleAuthorReviewQueueResult({});
+      },
+      async updateAuthorReviewQueueItemStatus(request) {
+        calls.push({ method: 'status', request });
+        const result = sampleAuthorReviewQueueResult({});
+        return {
+          generatedAt: request.now,
+          status: 'ok',
+          item: Object.assign({}, result.items[0], {
+            status: request.status
+          }),
+          recommendedNextAction: 'Continue working the remaining open author intelligence review queue items.'
+        };
+      }
+    }
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const sync = await postJson(baseUrl + '/api/intelligence/author-review-queue/sync', {
+      sourceKey: 'forum-a',
+      reviewQueueLimit: 3,
+      now: '2026-06-23T10:00:00.000Z'
+    });
+    const list = await getJson(baseUrl + '/api/intelligence/author-review-queue?sourceKey=forum-a&status=open&type=high-confidence-opinion&priority=medium&limit=5');
+    const status = await postJson(baseUrl + '/api/intelligence/author-review-queue/' + encodeURIComponent('author-review:test') + '/status', {
+      status: 'confirmed',
+      reviewedBy: 'operator',
+      note: 'checked'
+    });
+    const openApi = await getJson(baseUrl + '/openapi.json');
+
+    assert.equal(sync.createdCount, 1);
+    assert.equal(list.items[0].id, 'author-review:test');
+    assert.equal(status.item.status, 'confirmed');
+    assert.deepEqual(calls.map(function (call) { return call.method; }), ['sync', 'list', 'status']);
+    assert.equal(calls[0].request.sourceKey, 'forum-a');
+    assert.equal(calls[0].request.reviewQueueLimit, 3);
+    assert.equal(calls[1].request.status, 'open');
+    assert.equal(calls[1].request.priority, 'medium');
+    assert.equal(calls[2].request.itemId, 'author-review:test');
+    assert.equal(calls[2].request.reviewedBy, 'operator');
+    assert.ok(openApi.paths['/api/intelligence/author-review-queue']);
+    assert.ok(openApi.paths['/api/intelligence/author-review-queue/sync']);
+    assert.ok(openApi.paths['/api/intelligence/author-review-queue/{itemId}/status']);
+  } finally {
+    await close(server);
+  }
+});
+
+function sampleAuthorReviewQueueResult(overrides) {
+  const safeOverrides = overrides || {};
+  const item = {
+    id: 'author-review:test',
+    status: 'open',
+    type: 'high-confidence-opinion',
+    priority: 'medium',
+    score: 78,
+    title: 'Validate high-confidence opinion from Alice',
+    sourceKey: 'forum-a',
+    sourceThreadId: 'thread-1',
+    floor: 3,
+    seenCount: 1,
+    refs: [
+      {
+        sourceKey: 'forum-a',
+        sourceThreadId: 'thread-1',
+        floor: 3
+      }
+    ]
+  };
+  return Object.assign({
+    generatedAt: '2026-06-23T10:00:00.000Z',
+    status: 'ok',
+    itemCount: 1,
+    createdCount: 0,
+    updatedCount: 0,
+    summary: {
+      byStatus: { open: 1 },
+      byPriority: { medium: 1 },
+      byType: { 'high-confidence-opinion': 1 },
+      openCount: 1
+    },
+    items: [item],
+    recommendedNextAction: 'Review open author intelligence queue items.'
+  }, safeOverrides);
+}
+
 function listen(server, port) {
   return new Promise(function (resolve, reject) {
     server.once('error', reject);

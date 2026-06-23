@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshAdaptersButton').addEventListener('click', loadAdapters);
   document.getElementById('enrichHistoryButton').addEventListener('click', enrichHistoryDirectory);
   document.getElementById('refreshAuthorIntelligenceButton').addEventListener('click', loadAuthorIntelligence);
+  document.getElementById('authorIntelligenceResult').addEventListener('click', handleAuthorIntelligenceAction);
   document.getElementById('refreshTasksButton').addEventListener('click', loadTasks);
   document.getElementById('refreshSourcesButton').addEventListener('click', loadSources);
   document.getElementById('refreshSourceOperationsButton').addEventListener('click', loadSourceOperations);
@@ -353,6 +354,53 @@ async function loadAuthorIntelligence() {
       acceptErrorStatus: true
     });
   }, renderAuthorIntelligenceDashboard);
+}
+
+async function handleAuthorIntelligenceAction(event) {
+  const button = event.target.closest('button[data-action]');
+  if (!button) return;
+  const action = button.dataset.action;
+  if (action === 'sync-author-review-queue') {
+    const form = new FormData(document.getElementById('analyzeForm'));
+    await renderAsync('authorIntelligenceResult', function () {
+      return requestJson('/api/intelligence/author-review-queue/sync', {
+        sourceKey: form.get('forum') || '',
+        limit: 100,
+        timelineLimit: 30,
+        reviewQueueLimit: 20
+      }, {
+        acceptErrorStatus: true
+      });
+    }, renderAuthorReviewQueueResult);
+    return;
+  }
+  if (action === 'load-author-review-queue') {
+    await loadAuthorReviewQueue();
+    return;
+  }
+  if (action === 'set-author-review-status') {
+    await requestJson('/api/intelligence/author-review-queue/' + encodeURIComponent(button.dataset.itemId) + '/status', {
+      status: button.dataset.status,
+      reviewedBy: 'web'
+    }, {
+      acceptErrorStatus: true
+    });
+    await loadAuthorReviewQueue();
+  }
+}
+
+async function loadAuthorReviewQueue() {
+  const form = new FormData(document.getElementById('analyzeForm'));
+  const query = new URLSearchParams({
+    sourceKey: form.get('forum') || '',
+    status: 'open',
+    limit: '50'
+  });
+  await renderAsync('authorIntelligenceResult', function () {
+    return fetchJson('/api/intelligence/author-review-queue?' + query.toString(), {
+      acceptErrorStatus: true
+    });
+  }, renderAuthorReviewQueueResult);
 }
 
 function buildSourceOnboardingRequest(form) {
@@ -910,7 +958,11 @@ function renderAuthorIntelligenceDashboard(dashboard) {
       metric('建议', dashboard.recommendedNextAction || dashboard.message || ''),
       metric('Queue priority', formatStanceSummary(summary.reviewQueuePriorityCounts)),
       metric('Queue type', formatStanceSummary(summary.reviewQueueTypeCounts)),
-      '<a class="inline-button secondary-inline-button" href="' + escapeHtml(authorIntelligenceMarkdownHref(dashboard)) + '" target="_blank" rel="noreferrer">Markdown</a>'
+      '<span class="button-group">' +
+        '<button class="inline-button" type="button" data-action="sync-author-review-queue">Sync queue</button>' +
+        '<button class="inline-button secondary-inline-button" type="button" data-action="load-author-review-queue">Open queue</button>' +
+        '<a class="inline-button secondary-inline-button" href="' + escapeHtml(authorIntelligenceMarkdownHref(dashboard)) + '" target="_blank" rel="noreferrer">Markdown</a>' +
+      '</span>'
     ].join(''), 'wide'),
     panel('Review queue', renderAuthorReviewQueueRows(dashboard.reviewQueue || []), 'wide'),
     panel('重点作者', renderAuthorIntelligenceRows(dashboard.authors || []), 'wide'),
@@ -966,6 +1018,54 @@ function renderAuthorReviewQueueRows(items) {
       '<small>' + escapeHtml(item.nextAction || '') + '</small>' +
       '</span>' +
       statusBadge(item.priority || 'unknown', item.priority === 'high' ? 'warn' : 'muted') +
+      '</div>';
+  }).join('');
+}
+
+function renderAuthorReviewQueueResult(result) {
+  const summary = result.summary || {};
+  const tiles = '<div class="summary-strip event-summary-strip">' + [
+    summaryTile('Items', result.itemCount || 0),
+    summaryTile('Open', summary.openCount || 0, (summary.openCount || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('High', summary.byPriority && summary.byPriority.high || 0, summary.byPriority && summary.byPriority.high ? 'warn' : 'ok')
+  ].join('') + '</div>';
+  return [
+    panel('Author review queue', [
+      tiles,
+      metric('Status', result.status || 'ok'),
+      metric('By status', formatStanceSummary(summary.byStatus)),
+      metric('By priority', formatStanceSummary(summary.byPriority)),
+      metric('By type', formatStanceSummary(summary.byType)),
+      result.createdCount === undefined ? '' : metric('Sync', 'created=' + (result.createdCount || 0) + ' / updated=' + (result.updatedCount || 0)),
+      metric('Next', result.recommendedNextAction || 'none'),
+      '<button class="inline-button secondary-inline-button" type="button" data-action="load-author-review-queue">Refresh open queue</button>'
+    ].join(''), 'wide'),
+    panel('Open items', renderDurableAuthorReviewQueueRows(result.items || []), 'wide')
+  ].join('');
+}
+
+function renderDurableAuthorReviewQueueRows(items) {
+  if (items.length === 0) return '<div class="muted">No durable queue items</div>';
+  return items.slice(0, 30).map(function (item) {
+    const ref = (item.refs || [])[0] || {};
+    const details = [
+      item.id,
+      item.type,
+      item.reason,
+      item.sourceThreadId || ref.sourceThreadId ? 'thread=' + (item.sourceThreadId || ref.sourceThreadId) : undefined,
+      item.floor === undefined && ref.floor === undefined ? undefined : '#' + (item.floor === undefined ? ref.floor : item.floor),
+      'seen=' + (item.seenCount || 0)
+    ].filter(Boolean).join(' · ');
+    const controls = item.status === 'open'
+      ? '<span class="button-group"><button class="inline-button secondary-inline-button" type="button" data-action="set-author-review-status" data-item-id="' + escapeHtml(item.id) + '" data-status="confirmed">Confirm</button><button class="inline-button warning-inline-button" type="button" data-action="set-author-review-status" data-item-id="' + escapeHtml(item.id) + '" data-status="ignored">Ignore</button></span>'
+      : statusBadge(item.status || 'unknown', item.status === 'confirmed' ? 'ok' : 'muted');
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(item.title || item.id) + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '<small>' + escapeHtml(item.summary || '') + '</small>' +
+      '<small>' + escapeHtml(item.nextAction || '') + '</small>' +
+      '</span>' +
+      controls +
       '</div>';
   }).join('');
 }

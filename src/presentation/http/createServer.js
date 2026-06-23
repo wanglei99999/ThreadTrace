@@ -453,6 +453,38 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/intelligence/author-review-queue') {
+    const result = await context.runtime.listAuthorReviewQueue(authorReviewQueueRequestFromSearchParams(url.searchParams));
+    writeJson(response, 200, result);
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/intelligence/author-review-queue/sync') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.syncAuthorReviewQueue(Object.assign({}, body, {
+      storeDir: body.storeDir || context.storeDir,
+      requestId: context.requestId,
+      idempotencyKey: context.idempotencyKey
+    }));
+    writeJson(response, 200, result);
+    return;
+  }
+
+  const authorReviewStatusMatch = url.pathname.match(/^\/api\/intelligence\/author-review-queue\/([^/]+)\/status$/);
+  if (request.method === 'POST' && authorReviewStatusMatch) {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.updateAuthorReviewQueueItemStatus({
+      itemId: decodeURIComponent(authorReviewStatusMatch[1]),
+      status: body.status,
+      reviewedBy: body.reviewedBy || body.reviewer,
+      note: body.note,
+      now: body.now,
+      storeDir: body.storeDir || context.storeDir
+    });
+    writeJson(response, 200, result);
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/reports/tasks/semantic-enrichment') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     if (!body.sourceThreadId) {
@@ -1199,6 +1231,19 @@ function authorIntelligenceRequestFromSearchParams(searchParams) {
     evidenceLimit: searchParams.get('evidenceLimit') ? Number(searchParams.get('evidenceLimit')) : undefined,
     gapLimit: searchParams.get('gapLimit') ? Number(searchParams.get('gapLimit')) : undefined,
     reviewQueueLimit: searchParams.get('reviewQueueLimit') ? Number(searchParams.get('reviewQueueLimit')) : undefined,
+    now: searchParams.get('now') || undefined,
+    storeDir: searchParams.get('storeDir') || undefined
+  };
+}
+
+function authorReviewQueueRequestFromSearchParams(searchParams) {
+  return {
+    sourceKey: searchParams.get('sourceKey') || searchParams.get('forum') || undefined,
+    sourceThreadId: searchParams.get('sourceThreadId') || undefined,
+    status: searchParams.get('status') || undefined,
+    type: searchParams.get('type') || undefined,
+    priority: searchParams.get('priority') || undefined,
+    limit: searchParams.get('limit') ? Number(searchParams.get('limit')) : undefined,
     now: searchParams.get('now') || undefined,
     storeDir: searchParams.get('storeDir') || undefined
   };

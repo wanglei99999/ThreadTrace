@@ -17,6 +17,7 @@ test('migrate store records supports dry-run and writes through repository ports
     events: [{ id: 'event-1' }],
     rawPages: [{ sourceKey: 'nga', contentSha1: 'raw-1' }],
     workerRuns: [{ id: 'worker-run-1' }],
+    authorReviewItems: [{ id: 'author-review-1', status: 'open' }],
     executions: [
       {
         key: 'context-review-action:v1:tasks.closure:migrate',
@@ -54,7 +55,9 @@ test('migrate store records supports dry-run and writes through repository ports
   assert.equal(targetRepositories.saved.rawPages.length, 1);
   assert.equal(targetRepositories.saved.workerRuns.length, 1);
   assert.equal(targetRepositories.saved.executions.length, 1);
+  assert.equal(targetRepositories.saved.authorReviewItems.length, 1);
   assert.equal(dryRun.migrated.reviewActionExecutions, 1);
+  assert.equal(dryRun.migrated.authorReviewQueueItems, 1);
   assert.equal(migrated.dryRun, false);
 });
 
@@ -111,7 +114,8 @@ function fakeRepositorySet(records) {
     events: [],
     rawPages: [],
     workerRuns: [],
-    executions: []
+    executions: [],
+    authorReviewItems: []
   };
 
   return {
@@ -181,6 +185,11 @@ function fakeRepositorySet(records) {
         return saved.executions.find(function (item) { return item.key === key; });
       },
       async listExecutions() { return safeRecords.executions || []; }
+    },
+    authorReviewQueueRepository: {
+      async saveItem(item) { saved.authorReviewItems.push(item); },
+      async findItem() {},
+      async listItems() { return safeRecords.authorReviewItems || []; }
     }
   };
 }

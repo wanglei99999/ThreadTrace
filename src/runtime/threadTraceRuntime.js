@@ -44,6 +44,9 @@ const { getSourceLifecycleReport } = require('../application/use-cases/getSource
 const { getSourceScheduleReport } = require('../application/use-cases/getSourceScheduleReport');
 const { getOperationalOverview } = require('../application/use-cases/getOperationalOverview');
 const { getAuthorIntelligenceDashboard } = require('../application/use-cases/getAuthorIntelligenceDashboard');
+const { syncAuthorReviewQueue } = require('../application/use-cases/syncAuthorReviewQueue');
+const { listAuthorReviewQueue } = require('../application/use-cases/listAuthorReviewQueue');
+const { updateAuthorReviewQueueItemStatus } = require('../application/use-cases/updateAuthorReviewQueueItemStatus');
 const { getOperationalReadiness } = require('../application/use-cases/getOperationalReadiness');
 const { getTaskTraceContext } = require('../application/use-cases/getTaskTraceContext');
 const { getRuntimeDiagnostics } = require('../application/use-cases/getRuntimeDiagnostics');
@@ -91,6 +94,7 @@ const { createFileWorkerLeaseRepository } = require('../infrastructure/storage/f
 const { createFileContextReviewResultRepository } = require('../infrastructure/storage/fileContextReviewResultRepository');
 const { createFileContextReviewActionAuditRepository } = require('../infrastructure/storage/fileContextReviewActionAuditRepository');
 const { createFileContextReviewActionExecutionRepository } = require('../infrastructure/storage/fileContextReviewActionExecutionRepository');
+const { createFileAuthorReviewQueueRepository } = require('../infrastructure/storage/fileAuthorReviewQueueRepository');
 const { createFileNotificationChannel } = require('../infrastructure/notifications/fileNotificationChannel');
 const { createWebhookNotificationChannel } = require('../infrastructure/notifications/webhookNotificationChannel');
 const { createFileContextReviewActionExecutor } = require('../infrastructure/review-actions/fileContextReviewActionExecutor');
@@ -917,6 +921,58 @@ function createThreadTraceRuntime(options) {
       });
     },
 
+    async syncAuthorReviewQueue(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return syncAuthorReviewQueue({
+        reportRepository: repositories.reportRepository,
+        authorReviewQueueRepository: repositories.authorReviewQueueRepository,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        sourceThreadId: safeRequest.sourceThreadId,
+        authorId: safeRequest.authorId || safeRequest.sourceAuthorId,
+        author: safeRequest.author || safeRequest.authorName,
+        reportType: safeRequest.reportType,
+        includeReportRevisions: safeRequest.includeReportRevisions,
+        limit: safeRequest.limit || 100,
+        authorLimit: safeRequest.authorLimit,
+        entityLimit: safeRequest.entityLimit,
+        timelineLimit: safeRequest.timelineLimit,
+        evidenceLimit: safeRequest.evidenceLimit,
+        gapLimit: safeRequest.gapLimit,
+        reviewQueueLimit: safeRequest.reviewQueueLimit,
+        threadLimit: safeRequest.threadLimit,
+        now: safeRequest.now
+      });
+    },
+
+    async listAuthorReviewQueue(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return listAuthorReviewQueue({
+        authorReviewQueueRepository: repositories.authorReviewQueueRepository,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        sourceThreadId: safeRequest.sourceThreadId,
+        status: safeRequest.status,
+        type: safeRequest.type,
+        priority: safeRequest.priority,
+        limit: safeRequest.limit || 50,
+        now: safeRequest.now
+      });
+    },
+
+    async updateAuthorReviewQueueItemStatus(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return updateAuthorReviewQueueItemStatus({
+        authorReviewQueueRepository: repositories.authorReviewQueueRepository,
+        itemId: safeRequest.itemId,
+        status: safeRequest.status,
+        reviewedBy: safeRequest.reviewedBy || safeRequest.reviewer,
+        note: safeRequest.note,
+        now: safeRequest.now
+      });
+    },
+
     async runSemanticEnrichmentTask(request) {
       const safeRequest = request || {};
       const repositories = createRepositoriesFor(safeRequest.storeDir);
@@ -1722,6 +1778,9 @@ function createFileRepositories(storeDir) {
     }),
     contextReviewActionExecutionRepository: createFileContextReviewActionExecutionRepository({
       baseDir: path.join(storeDir, 'review-action-executions')
+    }),
+    authorReviewQueueRepository: createFileAuthorReviewQueueRepository({
+      baseDir: path.join(storeDir, 'author-review-queue')
     })
   };
 }

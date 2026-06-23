@@ -86,6 +86,25 @@ create index if not exists idx_context_review_action_executions_action_status on
 create index if not exists idx_context_review_action_executions_task on context_review_action_executions(task_id);
 create index if not exists idx_context_review_action_executions_updated on context_review_action_executions(updated_at desc);
 
+create table if not exists author_review_queue_items (
+  id text primary key,
+  status text not null,
+  source_key text,
+  source_thread_id text,
+  type text not null,
+  priority text not null,
+  score numeric not null default 0,
+  title text not null,
+  first_seen_at timestamptz not null,
+  last_seen_at timestamptz not null,
+  updated_at timestamptz not null,
+  record jsonb not null
+);
+
+create index if not exists idx_author_review_queue_status on author_review_queue_items(status, updated_at desc);
+create index if not exists idx_author_review_queue_source on author_review_queue_items(source_key, source_thread_id);
+create index if not exists idx_author_review_queue_type_priority on author_review_queue_items(type, priority);
+
 create table if not exists task_records (
   id uuid primary key,
   type text not null,

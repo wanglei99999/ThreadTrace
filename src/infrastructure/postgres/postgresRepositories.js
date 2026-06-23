@@ -1,6 +1,7 @@
 'use strict';
 
 const { createPostgresAnalysisReportRepository } = require('./postgresAnalysisReportRepository');
+const { createPostgresAuthorReviewQueueRepository } = require('./postgresAuthorReviewQueueRepository');
 const { createPostgresContextReviewActionExecutionRepository } = require('./postgresContextReviewActionExecutionRepository');
 const { createPostgresContextReviewResultRepository } = require('./postgresContextReviewResultRepository');
 const { createPostgresNotificationEventRepository } = require('./postgresNotificationEventRepository');
@@ -24,7 +25,8 @@ function createPostgresRepositories(options) {
     workerRunRepository: createPostgresWorkerRunRepository({ client }),
     workerLeaseRepository: createPostgresWorkerLeaseRepository({ client }),
     contextReviewResultRepository: createPostgresContextReviewResultRepository({ client }),
-    contextReviewActionExecutionRepository: createPostgresContextReviewActionExecutionRepository({ client })
+    contextReviewActionExecutionRepository: createPostgresContextReviewActionExecutionRepository({ client }),
+    authorReviewQueueRepository: createPostgresAuthorReviewQueueRepository({ client })
   };
 }
 

@@ -652,6 +652,86 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/intelligence/author-review-queue': {
+        get: {
+          summary: 'List durable author intelligence review queue items',
+          parameters: [
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceThreadId', in: 'query', required: false, schema: { type: 'string', example: '45974302' } },
+            { name: 'status', in: 'query', required: false, schema: { type: 'string', example: 'open' } },
+            { name: 'type', in: 'query', required: false, schema: { type: 'string', example: 'high-confidence-opinion' } },
+            { name: 'priority', in: 'query', required: false, schema: { type: 'string', example: 'medium' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number', example: 50 } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Durable author review queue items and aggregate counts'
+            }
+          }
+        }
+      },
+      '/api/intelligence/author-review-queue/sync': {
+        post: {
+          summary: 'Persist current author intelligence review queue items',
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    sourceKey: { type: 'string', example: 'nga' },
+                    sourceThreadId: { type: 'string', example: '45974302' },
+                    includeReportRevisions: { type: 'boolean', example: false },
+                    limit: { type: 'number', example: 100 },
+                    reviewQueueLimit: { type: 'number', example: 20 },
+                    storeDir: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Created or updated durable review queue records'
+            }
+          }
+        }
+      },
+      '/api/intelligence/author-review-queue/{itemId}/status': {
+        post: {
+          summary: 'Update one durable author review queue item status',
+          parameters: [
+            { name: 'itemId', in: 'path', required: true, schema: { type: 'string' } }
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['status'],
+                  properties: {
+                    status: { type: 'string', example: 'confirmed' },
+                    reviewedBy: { type: 'string', example: 'operator' },
+                    note: { type: 'string' },
+                    storeDir: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Updated author review queue item'
+            },
+            404: {
+              $ref: '#/components/responses/NotFound'
+            }
+          }
+        }
+      },
       '/api/reports/tasks/semantic-enrichment': {
         post: {
           summary: 'Run and persist semantic enrichment for a stored base report',

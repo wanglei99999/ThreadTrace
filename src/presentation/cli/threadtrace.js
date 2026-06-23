@@ -234,6 +234,73 @@ function main(argv) {
     return;
   }
 
+  if (command === 'sync-author-review-queue') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.syncAuthorReviewQueue({
+      storeDir,
+      sourceKey: options.sourceKey || options.forum,
+      sourceThreadId: options.sourceThreadId,
+      authorId: options.authorId,
+      author: options.author,
+      includeReportRevisions: parseOptionalBoolean(options.includeReportRevisions),
+      limit: options.limit ? Number(options.limit) : 100,
+      timelineLimit: options.timelineLimit ? Number(options.timelineLimit) : undefined,
+      reviewQueueLimit: options.reviewQueueLimit ? Number(options.reviewQueueLimit) : undefined,
+      now: options.now
+    }).then(function (result) {
+      printAuthorReviewQueueResult(result);
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
+  if (command === 'list-author-review-queue') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.listAuthorReviewQueue({
+      storeDir,
+      sourceKey: options.sourceKey || options.forum,
+      sourceThreadId: options.sourceThreadId,
+      status: options.status,
+      type: options.type,
+      priority: options.priority,
+      limit: options.limit ? Number(options.limit) : 50,
+      now: options.now
+    }).then(function (result) {
+      printAuthorReviewQueueResult(result);
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
+  if (command === 'set-author-review-queue-status') {
+    if (!options.itemId) {
+      console.error('set-author-review-queue-status requires --item-id.');
+      process.exitCode = 1;
+      return;
+    }
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.updateAuthorReviewQueueItemStatus({
+      storeDir,
+      itemId: options.itemId,
+      status: options.status,
+      reviewedBy: options.reviewedBy || options.reviewerId,
+      note: options.note,
+      now: options.now
+    }).then(function (result) {
+      console.log('Author review queue item: ' + result.item.id);
+      console.log('Status: ' + result.item.status);
+      console.log('Next: ' + result.recommendedNextAction);
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'run-semantic-enrichment-task') {
     if (!options.sourceThreadId) {
       console.error('run-semantic-enrichment-task requires --source-thread-id.');
@@ -1758,6 +1825,9 @@ function parseArgs(args) {
     } else if (item === '--reviewer-id') {
       options.reviewerId = args[index + 1];
       index += 1;
+    } else if (item === '--reviewed-by') {
+      options.reviewedBy = args[index + 1];
+      index += 1;
     } else if (item === '--report-type') {
       options.reportType = args[index + 1];
       index += 1;
@@ -1836,11 +1906,20 @@ function parseArgs(args) {
     } else if (item === '--type') {
       options.type = args[index + 1];
       index += 1;
+    } else if (item === '--priority') {
+      options.priority = args[index + 1];
+      index += 1;
     } else if (item === '--action') {
       options.action = args[index + 1];
       index += 1;
     } else if (item === '--task-id') {
       options.taskId = args[index + 1];
+      index += 1;
+    } else if (item === '--item-id') {
+      options.itemId = args[index + 1];
+      index += 1;
+    } else if (item === '--note') {
+      options.note = args[index + 1];
       index += 1;
     } else if (item === '--limit') {
       options.limit = args[index + 1];
@@ -2117,6 +2196,27 @@ function printAuthorIntelligenceDashboard(dashboard) {
   });
 }
 
+function printAuthorReviewQueueResult(result) {
+  const summary = result.summary || {};
+  console.log('Author review queue: ' + (result.status || 'ok'));
+  console.log('Items: ' + (result.itemCount || 0) + '\topen=' + (summary.openCount || 0));
+  console.log('Status: ' + formatCountSummary(summary.byStatus));
+  console.log('Priority: ' + formatCountSummary(summary.byPriority));
+  console.log('Types: ' + formatCountSummary(summary.byType));
+  if (result.createdCount !== undefined || result.updatedCount !== undefined) {
+    console.log('Sync: created=' + (result.createdCount || 0) + '\tupdated=' + (result.updatedCount || 0));
+  }
+  console.log('Next: ' + (result.recommendedNextAction || 'none'));
+  (result.items || []).slice(0, 20).forEach(function (item) {
+    const ref = (item.refs || [])[0] || {};
+    const location = [
+      item.sourceThreadId || ref.sourceThreadId ? 'thread=' + (item.sourceThreadId || ref.sourceThreadId) : undefined,
+      item.floor === undefined && ref.floor === undefined ? undefined : '#' + (item.floor === undefined ? ref.floor : item.floor)
+    ].filter(Boolean).join(' ');
+    console.log('  ' + item.id + '\t[' + item.status + '/' + item.priority + ']\t' + item.type + '\t' + item.title + (location ? '\t' + location : ''));
+  });
+}
+
 function formatCountSummary(summary) {
   const keys = Object.keys(summary || {});
   if (keys.length === 0) return 'none';
@@ -2138,6 +2238,9 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js list-tasks [--store-dir dir] [--status status] [--type type] [--request-id id] [--trace-id id] [--idempotency-key key] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js list-reports [--source-key key] [--source-thread-id id] [--report-type type] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js author-intelligence [--source-key key] [--source-thread-id id] [--author-id id] [--author name] [--include-report-revisions true] [--store-dir dir] [--limit n] [--review-queue-limit n] [--markdown-output file]');
+  console.log('  node src/presentation/cli/threadtrace.js sync-author-review-queue [--source-key key] [--limit n] [--review-queue-limit n] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js list-author-review-queue [--status open|confirmed|ignored] [--source-key key] [--type type] [--priority high|medium|low] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js set-author-review-queue-status --item-id id --status open|confirmed|ignored [--reviewed-by id] [--note text] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-semantic-enrichment-task --source-thread-id id [--source-key nga] [--provider mock] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js operations-overview [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-readiness [--store-dir dir] [--limit n]');

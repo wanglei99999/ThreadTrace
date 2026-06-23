@@ -138,6 +138,18 @@ CLI can export the same dashboard as a handoff package with `node src/presentati
 
 Uses the same query parameters as `GET /api/intelligence/authors`, but returns `text/markdown` with the author intelligence review package. This is intended for browser export, operator handoff, or downstream LLM review prompts.
 
+### `POST /api/intelligence/author-review-queue/sync`
+
+Persists the current generated author intelligence `reviewQueue` into durable review queue records. The request body accepts the same source/report filters as `GET /api/intelligence/authors` plus `reviewQueueLimit` and `storeDir`. Existing items keep their review status while `lastSeenAt` and `seenCount` are updated.
+
+### `GET /api/intelligence/author-review-queue`
+
+Lists durable author review queue records. Optional filters: `status` (`open`, `confirmed`, `ignored`), `sourceKey`, `sourceThreadId`, `type`, `priority`, `limit`, and `storeDir`. The response includes `summary.byStatus`, `summary.byPriority`, `summary.byType`, and `summary.openCount`.
+
+### `POST /api/intelligence/author-review-queue/{itemId}/status`
+
+Marks a durable author review queue item as `open`, `confirmed`, or `ignored`. The request body accepts `status`, optional `reviewedBy`, `note`, `now`, and `storeDir`.
+
 ### `POST /api/interpret-text`
 
 对一条新发言做语境还原。
