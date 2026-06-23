@@ -61,6 +61,7 @@ async function getNotificationEventOverview(options) {
     byType: countBy(events, function (event) { return event.type || 'unknown'; }),
     bySeverity: countBy(events, function (event) { return event.severity || 'unknown'; }),
     byDeliveryStatus: countBy(events, function (event) { return event.deliveryStatus || 'pending'; }),
+    byOpenDeliveryStatus: countBy(unacknowledgedEvents, function (event) { return event.deliveryStatus || 'pending'; }),
     byAcknowledgement: {
       acknowledged: events.length - unacknowledgedEvents.length,
       unacknowledged: unacknowledgedEvents.length
@@ -70,6 +71,7 @@ async function getNotificationEventOverview(options) {
       failedEvents: failedEvents.slice(0, 10).map(summarizeEvent),
       dueEvents: dueEvents.slice(0, 10).map(summarizeEvent),
       retryExhaustedEvents: exhaustedEvents.slice(0, 10).map(summarizeEvent),
+      reviewableEvents: unacknowledgedEvents.filter(isReviewableEvent).slice(0, 10).map(summarizeEvent),
       unacknowledgedByType: countBy(unacknowledgedEvents, function (event) { return event.type || 'unknown'; })
     },
     recommendedNextAction: recommendedNextAction({
@@ -79,6 +81,11 @@ async function getNotificationEventOverview(options) {
       unacknowledgedCount: unacknowledgedEvents.length
     })
   };
+}
+
+function isReviewableEvent(event) {
+  const status = event.deliveryStatus || 'pending';
+  return status === 'delivered' || status === 'resolved';
 }
 
 function summarizeEvent(event) {

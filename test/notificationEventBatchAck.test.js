@@ -82,6 +82,47 @@ test('bulk notification acknowledgement handles explicit ids idempotently', asyn
   assert.equal(result.results[2].reason, 'already-acknowledged');
 });
 
+test('bulk notification acknowledgement supports dry-run previews', async function () {
+  const saved = [];
+  const events = [
+    event('event-1', { deliveryStatus: 'delivered' }),
+    event('event-2', { deliveryStatus: 'resolved' })
+  ];
+
+  const preview = await acknowledgeNotificationEvents({
+    notificationEventRepository: repository(events, saved, []),
+    deliveryStatus: 'delivered',
+    acknowledgedBy: 'operator',
+    dryRun: true,
+    now: '2026-06-18T10:00:00.000Z'
+  });
+
+  assert.equal(preview.status, 'preview');
+  assert.equal(preview.dryRun, true);
+  assert.equal(preview.executed, false);
+  assert.equal(preview.candidateCount, 1);
+  assert.equal(preview.acknowledgedCount, 0);
+  assert.equal(preview.skippedCount, 0);
+  assert.equal(preview.results[0].status, 'candidate');
+  assert.equal(saved.length, 0);
+
+  const executed = await acknowledgeNotificationEvents({
+    notificationEventRepository: repository(events, saved, []),
+    deliveryStatus: 'delivered',
+    acknowledgedBy: 'operator',
+    dryRun: true,
+    execute: true,
+    now: '2026-06-18T10:00:00.000Z'
+  });
+
+  assert.equal(executed.status, 'ok');
+  assert.equal(executed.dryRun, false);
+  assert.equal(executed.executed, true);
+  assert.equal(executed.candidateCount, 0);
+  assert.equal(executed.acknowledgedCount, 1);
+  assert.equal(saved.length, 1);
+});
+
 function event(id, overrides) {
   return Object.assign({
     id,

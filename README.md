@@ -61,9 +61,13 @@ node src/presentation/cli/threadtrace.js enable-source --source-id <id>
 node src/presentation/cli/threadtrace.js reset-source-failure --source-id <id> --retry-now true --execute true
 node src/presentation/cli/threadtrace.js list-sources
 node src/presentation/cli/threadtrace.js list-events
+node src/presentation/cli/threadtrace.js events-overview
 node src/presentation/cli/threadtrace.js dispatch-events
 node src/presentation/cli/threadtrace.js dispatch-events --channel webhook --webhook-url http://127.0.0.1:9000/threadtrace-events
 node src/presentation/cli/threadtrace.js ack-event --event-id <id>
+node src/presentation/cli/threadtrace.js ack-events --delivery-status delivered --dry-run true
+node src/presentation/cli/threadtrace.js ack-events --delivery-status delivered --execute true --by operator
+node src/presentation/cli/threadtrace.js archive-events
 node src/presentation/cli/threadtrace.js review-action-plan
 node src/presentation/cli/threadtrace.js review-action-gate
 node src/presentation/cli/threadtrace.js review-action-apply
@@ -89,13 +93,14 @@ npm run operations:synthesize-runbook-events
 npm run operations:list-events
 npm run operations:events-overview
 npm run operations:dispatch-events
+npm run operations:ack-events
 npm run operations:archive-events
 npm run operations:resource-provisioning-plan
 npm run deployment:gate
 npm run operations:rollout-manifest-apply
 ```
 
-These commands use the same runtime composition as the HTTP API and Web console. `deployment:checklist` aggregates runtime resources, PostgreSQL schema readiness, adapter contracts, tracked source configuration, workers, notifications, and LLM configuration. `operations:runbook` turns failed or warning checks into actionable next commands. Notification outbox scripts expose list, overview, dispatch, and dry-run archive flows; `operations:archive-events` persists retention only when called with `-- --execute true`.
+These commands use the same runtime composition as the HTTP API and Web console. `deployment:checklist` aggregates runtime resources, PostgreSQL schema readiness, adapter contracts, tracked source configuration, workers, notifications, and LLM configuration. `operations:runbook` turns failed or warning checks into actionable next commands. Notification outbox scripts expose list, overview, dispatch, acknowledgement preview, and dry-run archive flows; `operations:ack-events` defaults to dry-run and only persists when called with `-- --execute true`, while `operations:archive-events` persists retention only when called with `-- --execute true`.
 
 ## HTTP API
 

@@ -25,6 +25,7 @@ function getOperationsRunbook(options) {
     .concat(connectorModuleActions(checklist))
     .concat(sourceLifecycleActions(safeOptions.sourceLifecycleReport))
     .concat(reviewActionGateActions(safeOptions.reviewActionGate))
+    .concat(notificationOutboxActions(safeOptions.notificationEventOverview || checklistNotificationEventOverview(checklist)))
     .concat(authorReviewQueueActions(safeOptions.authorReviewQueue || checklistAuthorReviewQueue(checklist)))
     .concat(idempotencyActions(recentTasks))
     .concat(pipelineRunActions(pipelineRuns.runs || []));
@@ -37,8 +38,75 @@ function getOperationsRunbook(options) {
     checklist,
     sourceLifecycleReport: safeOptions.sourceLifecycleReport,
     reviewActionGate: safeOptions.reviewActionGate,
+    notificationEventOverview: safeOptions.notificationEventOverview || checklistNotificationEventOverview(checklist),
     pipelineRuns
   };
+}
+
+function notificationOutboxActions(overview) {
+  if (!overview) return [];
+  const actions = [];
+  const retryExhaustedCount = overview.retryExhaustedCount || 0;
+  const failedCount = overview.failedCount || 0;
+  const dueForDeliveryCount = overview.dueForDeliveryCount || 0;
+  const byOpenDeliveryStatus = overview.byOpenDeliveryStatus || {};
+  const deliveredOpenCount = byOpenDeliveryStatus.delivered || 0;
+  const resolvedOpenCount = byOpenDeliveryStatus.resolved || 0;
+  const reviewableCount = deliveredOpenCount + resolvedOpenCount;
+
+  if (retryExhaustedCount > 0 || failedCount > 0 || dueForDeliveryCount > 0) {
+    actions.push(action({
+      key: 'notifications.outbox.deliveryBacklog',
+      severity: retryExhaustedCount > 0 ? 'critical' : 'warning',
+      area: 'notifications',
+      title: 'Clear notification delivery backlog.',
+      summary: 'Notification outbox has ' + dueForDeliveryCount + ' due event(s), ' + failedCount + ' failed event(s), and ' + retryExhaustedCount + ' retry-exhausted event(s).',
+      recommendedCommand: retryExhaustedCount > 0
+        ? 'node src/presentation/cli/threadtrace.js notification-diagnostics'
+        : 'node src/presentation/cli/threadtrace.js dispatch-events',
+      relatedCommands: [
+        'node src/presentation/cli/threadtrace.js events-overview --acknowledged false',
+        'node src/presentation/cli/threadtrace.js list-events --acknowledged false --delivery-status failed',
+        'node src/presentation/cli/threadtrace.js dispatch-events'
+      ],
+      evidence: {
+        dueForDeliveryCount,
+        failedCount,
+        retryExhaustedCount,
+        nextDeliveryAt: overview.nextDeliveryAt,
+        failedEvents: overview.attention && overview.attention.failedEvents || [],
+        retryExhaustedEvents: overview.attention && overview.attention.retryExhaustedEvents || []
+      }
+    }));
+  }
+
+  if (reviewableCount > 0) {
+    const recommendedStatus = deliveredOpenCount > 0 ? 'delivered' : 'resolved';
+    actions.push(action({
+      key: 'notifications.outbox.acknowledgeReviewable',
+      severity: 'warning',
+      area: 'notifications',
+      title: 'Acknowledge delivered or resolved notification events.',
+      summary: 'Notification outbox has ' + reviewableCount + ' delivered/resolved event(s) waiting for operator acknowledgement.',
+      recommendedCommand: 'node src/presentation/cli/threadtrace.js ack-events --delivery-status ' + recommendedStatus + ' --dry-run true',
+      relatedCommands: [
+        'node src/presentation/cli/threadtrace.js events-overview --acknowledged false --delivery-status delivered',
+        'node src/presentation/cli/threadtrace.js events-overview --acknowledged false --delivery-status resolved',
+        'node src/presentation/cli/threadtrace.js ack-events --delivery-status delivered --execute true --by operator',
+        'node src/presentation/cli/threadtrace.js ack-events --delivery-status resolved --execute true --by operator',
+        'node src/presentation/cli/threadtrace.js archive-events'
+      ],
+      evidence: {
+        deliveredOpenCount,
+        resolvedOpenCount,
+        reviewableCount,
+        oldestUnacknowledgedAt: overview.oldestUnacknowledgedAt,
+        reviewableEvents: overview.attention && overview.attention.reviewableEvents || []
+      }
+    }));
+  }
+
+  return actions;
 }
 
 function authorReviewQueueActions(queue) {
@@ -74,6 +142,10 @@ function checklistAuthorReviewQueue(checklist) {
   return checklist && checklist.readiness && checklist.readiness.overview
     ? checklist.readiness.overview.authorReviewQueue
     : undefined;
+}
+
+function checklistNotificationEventOverview(checklist) {
+  return checklist && checklist.readiness && checklist.readiness.notificationEventOverview;
 }
 
 function checklistActions(checklist) {
@@ -314,8 +386,10 @@ function relatedCommandsForChecklistItem(item) {
       'node src/presentation/worker/operationsWorkerMain.js --once'
     ],
     'notifications.outbox': [
+      'node src/presentation/cli/threadtrace.js events-overview --acknowledged false',
       'node src/presentation/cli/threadtrace.js list-events --acknowledged false --delivery-status failed',
-      'node src/presentation/cli/threadtrace.js dispatch-events'
+      'node src/presentation/cli/threadtrace.js dispatch-events',
+      'node src/presentation/cli/threadtrace.js ack-events --delivery-status delivered --dry-run true'
     ],
     'reviewActions.executor': [
       'node src/presentation/cli/threadtrace.js review-action-audit-overview',

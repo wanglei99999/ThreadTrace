@@ -85,8 +85,99 @@ test('operations runbook points notification outbox warnings to overview and dis
   assert.equal(runbook.actionCount, 1);
   assert.equal(runbook.actions[0].key, 'checklist.notifications.outbox');
   assert.match(runbook.actions[0].recommendedCommand, /operations-overview/);
-  assert.match(runbook.actions[0].relatedCommands[0], /list-events --acknowledged false --delivery-status failed/);
-  assert.match(runbook.actions[0].relatedCommands[1], /dispatch-events/);
+  assert.match(runbook.actions[0].relatedCommands[0], /events-overview --acknowledged false/);
+  assert.match(runbook.actions[0].relatedCommands[1], /list-events --acknowledged false --delivery-status failed/);
+  assert.match(runbook.actions[0].relatedCommands[2], /dispatch-events/);
+  assert.match(runbook.actions[0].relatedCommands[3], /ack-events --delivery-status delivered --dry-run true/);
+});
+
+test('operations runbook turns notification delivery backlog overview into actions', function () {
+  const runbook = getOperationsRunbook({
+    now: '2026-06-23T10:00:00.000Z',
+    checklist: {
+      generatedAt: '2026-06-23T10:00:00.000Z',
+      items: []
+    },
+    notificationEventOverview: {
+      status: 'fail',
+      dueForDeliveryCount: 2,
+      failedCount: 1,
+      retryExhaustedCount: 1,
+      nextDeliveryAt: '2026-06-23T09:59:00.000Z',
+      byOpenDeliveryStatus: {
+        pending: 1,
+        failed: 1
+      },
+      attention: {
+        failedEvents: [{ id: 'event-1' }],
+        retryExhaustedEvents: [{ id: 'event-1' }]
+      }
+    }
+  });
+
+  assert.equal(runbook.status, 'fail');
+  assert.equal(runbook.actionCount, 1);
+  assert.equal(runbook.actions[0].key, 'notifications.outbox.deliveryBacklog');
+  assert.equal(runbook.actions[0].severity, 'critical');
+  assert.match(runbook.actions[0].recommendedCommand, /notification-diagnostics/);
+  assert.match(runbook.actions[0].relatedCommands[2], /dispatch-events/);
+  assert.equal(runbook.actions[0].evidence.retryExhaustedCount, 1);
+});
+
+test('operations runbook turns delivered notification overview into acknowledgement actions', function () {
+  const runbook = getOperationsRunbook({
+    now: '2026-06-23T10:00:00.000Z',
+    checklist: {
+      generatedAt: '2026-06-23T10:00:00.000Z',
+      items: []
+    },
+    notificationEventOverview: {
+      status: 'ok',
+      dueForDeliveryCount: 0,
+      failedCount: 0,
+      retryExhaustedCount: 0,
+      oldestUnacknowledgedAt: '2026-06-23T09:00:00.000Z',
+      byOpenDeliveryStatus: {
+        delivered: 2,
+        resolved: 1
+      },
+      attention: {
+        reviewableEvents: [{ id: 'event-2' }]
+      }
+    }
+  });
+
+  assert.equal(runbook.status, 'warn');
+  assert.equal(runbook.actionCount, 1);
+  assert.equal(runbook.actions[0].key, 'notifications.outbox.acknowledgeReviewable');
+  assert.equal(runbook.actions[0].area, 'notifications');
+  assert.match(runbook.actions[0].recommendedCommand, /ack-events --delivery-status delivered --dry-run true/);
+  assert.match(runbook.actions[0].relatedCommands[2], /ack-events --delivery-status delivered --execute true/);
+  assert.match(runbook.actions[0].relatedCommands[4], /archive-events/);
+  assert.equal(runbook.actions[0].evidence.reviewableCount, 3);
+});
+
+test('operations runbook recommends resolved acknowledgement when only resolved events are open', function () {
+  const runbook = getOperationsRunbook({
+    now: '2026-06-23T10:00:00.000Z',
+    checklist: {
+      generatedAt: '2026-06-23T10:00:00.000Z',
+      items: []
+    },
+    notificationEventOverview: {
+      status: 'ok',
+      dueForDeliveryCount: 0,
+      failedCount: 0,
+      retryExhaustedCount: 0,
+      byOpenDeliveryStatus: {
+        resolved: 2
+      },
+      attention: {}
+    }
+  });
+
+  assert.equal(runbook.status, 'warn');
+  assert.match(runbook.actions[0].recommendedCommand, /ack-events --delivery-status resolved --dry-run true/);
 });
 
 test('operations runbook points review action executor warnings to diagnostics and audit tools', function () {

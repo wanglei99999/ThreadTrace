@@ -1233,10 +1233,19 @@ function createThreadTraceRuntime(options) {
         now: safeRequest.now,
         storeDir: safeRequest.storeDir
       });
+      const notificationEventOverview = await this.getNotificationEventOverview({
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        limit: safeRequest.eventLimit || safeRequest.limit || 200,
+        maxAttempts: safeRequest.maxAttempts,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir
+      });
       return getOperationsRunbook({
         checklist,
         sourceLifecycleReport,
         reviewActionGate,
+        notificationEventOverview,
         pipelineRuns,
         now: safeRequest.now
       });
@@ -1757,7 +1766,9 @@ function createThreadTraceRuntime(options) {
         acknowledgedBy: safeRequest.acknowledgedBy,
         note: safeRequest.note,
         acknowledgedAt: safeRequest.acknowledgedAt,
-        now: safeRequest.now
+        now: safeRequest.now,
+        dryRun: safeRequest.dryRun,
+        execute: safeRequest.execute
       });
     },
 

@@ -941,6 +941,8 @@ function createOpenApiSpec() {
             { name: 'enabled', in: 'query', required: false, schema: { type: 'boolean' } },
             { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
             { name: 'pipelineLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'eventLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'maxAttempts', in: 'query', required: false, schema: { type: 'number', example: 3 } },
             { name: 'taskLimit', in: 'query', required: false, schema: { type: 'number' } },
             { name: 'sourceRunStaleAfterMs', in: 'query', required: false, schema: { type: 'number', example: 600000 } },
             { name: 'sourceFailureRetryBackoffMs', in: 'query', required: false, schema: { type: 'number', example: 60000 } },
@@ -1508,6 +1510,8 @@ function createOpenApiSpec() {
                     acknowledged: { type: 'boolean', example: false },
                     deliveryStatus: { type: 'string', example: 'delivered' },
                     limit: { type: 'number', example: 50 },
+                    dryRun: { type: 'boolean', example: true },
+                    execute: { type: 'boolean', example: false },
                     acknowledgedBy: { type: 'string', example: 'web' },
                     note: { type: 'string' },
                     storeDir: { type: 'string' }

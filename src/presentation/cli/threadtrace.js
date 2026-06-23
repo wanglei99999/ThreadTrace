@@ -462,6 +462,8 @@ function main(argv) {
       enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
       limit: options.limit ? Number(options.limit) : 100,
       pipelineLimit: options.pipelineLimit ? Number(options.pipelineLimit) : 20,
+      eventLimit: options.eventLimit ? Number(options.eventLimit) : undefined,
+      maxAttempts: options.maxAttempts ? Number(options.maxAttempts) : undefined,
       taskLimit: options.taskLimit ? Number(options.taskLimit) : undefined,
       sourceRunStaleAfterMs: options.sourceRunStaleAfterMs ? Number(options.sourceRunStaleAfterMs) : undefined,
       sourceFailureRetryBackoffMs: options.sourceFailureRetryBackoffMs ? Number(options.sourceFailureRetryBackoffMs) : undefined,
@@ -913,7 +915,7 @@ function main(argv) {
       limit: options.limit ? Number(options.limit) : 50
     }).then(function (events) {
       events.forEach(function (event) {
-        console.log(event.createdAt + '\t' + event.type + '\t' + (event.sourceKey || '') + '\t' + (event.sourceId || '') + '\tarchived=' + (event.archivedAt || 'none') + '\t' + event.summary);
+        console.log(event.createdAt + '\t' + event.id + '\t' + event.type + '\t' + (event.sourceKey || '') + '\t' + (event.sourceId || '') + '\tarchived=' + (event.archivedAt || 'none') + '\t' + event.summary);
       });
     }).catch(function (error) {
       console.error(error && error.stack ? error.stack : error);
@@ -1042,9 +1044,12 @@ function main(argv) {
       acknowledgedBy: options.by,
       note: options.note,
       now: options.now,
+      dryRun: options.execute === 'true' ? false : options.dryRun === 'true',
+      execute: options.execute === 'true',
       storeDir
     }).then(function (result) {
-      console.log('Status: ' + result.status);
+      console.log('Status: ' + result.status + '\tdryRun=' + result.dryRun);
+      console.log('Candidates: ' + result.candidateCount);
       console.log('Acknowledged: ' + result.acknowledgedCount);
       console.log('Skipped: ' + result.skippedCount);
       (result.results || []).slice(0, 20).forEach(function (item) {
@@ -2121,6 +2126,9 @@ function parseArgs(args) {
     } else if (item === '--pipeline-limit') {
       options.pipelineLimit = args[index + 1];
       index += 1;
+    } else if (item === '--event-limit') {
+      options.eventLimit = args[index + 1];
+      index += 1;
     } else if (item === '--source-id') {
       options.sourceId = args[index + 1];
       index += 1;
@@ -2459,7 +2467,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js source-lifecycle-report [--forum nga] [--enabled true] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-schedule-report [--forum nga] [--enabled true] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js trace-context [--request-id id | --trace-id id | --idempotency-key key] [--store-dir dir] [--limit n]');
-  console.log('  node src/presentation/cli/threadtrace.js operations-runbook [--forum nga] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js operations-runbook [--forum nga] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--running-stale-after-ms ms] [--event-limit n] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js synthesize-runbook-events [--execute true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js synthesize-author-review-queue-events [--execute true] [--source-key key] [--status open] [--resolve-stale true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js synthesize-context-review-result-events [--execute true] [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n]');
@@ -2481,7 +2489,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js ingest-raw-page [--forum nga] --content-sha1 sha1 [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js dispatch-events [--channel file|webhook] [--webhook-url url] [--limit n] [--max-attempts n] [--retry-backoff-ms ms] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js ack-event --event-id id [--by user] [--note text] [--store-dir dir]');
-  console.log('  node src/presentation/cli/threadtrace.js ack-events [--event-ids id1,id2] [--source-key key] [--type type] [--acknowledged true|false] [--delivery-status status] [--by user] [--note text] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js ack-events [--event-ids id1,id2] [--source-key key] [--type type] [--acknowledged true|false] [--delivery-status status] [--dry-run true] [--execute true] [--by user] [--note text] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js archive-events [--execute true] [--source-key key] [--delivery-statuses delivered,resolved] [--older-than-days n] [--by user] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js validate-source [--forum nga] [--source-type type] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js validate-thread-json --input-file file [--forum sourceKey] [--now iso]');

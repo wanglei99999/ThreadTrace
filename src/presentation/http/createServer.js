@@ -572,6 +572,8 @@ async function routeRequest(request, response, context) {
       enabled: enabledParam === null ? undefined : enabledParam === 'true',
       limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,
       pipelineLimit: url.searchParams.get('pipelineLimit') ? Number(url.searchParams.get('pipelineLimit')) : 20,
+      eventLimit: url.searchParams.get('eventLimit') ? Number(url.searchParams.get('eventLimit')) : undefined,
+      maxAttempts: url.searchParams.get('maxAttempts') ? Number(url.searchParams.get('maxAttempts')) : undefined,
       taskLimit: url.searchParams.get('taskLimit') ? Number(url.searchParams.get('taskLimit')) : undefined,
       sourceRunStaleAfterMs: url.searchParams.get('sourceRunStaleAfterMs') ? Number(url.searchParams.get('sourceRunStaleAfterMs')) : undefined,
       sourceFailureRetryBackoffMs: url.searchParams.get('sourceFailureRetryBackoffMs') ? Number(url.searchParams.get('sourceFailureRetryBackoffMs')) : undefined,
@@ -880,6 +882,8 @@ async function routeRequest(request, response, context) {
       note: body.note,
       acknowledgedAt: body.acknowledgedAt,
       now: body.now,
+      dryRun: body.execute === true ? false : body.dryRun === true,
+      execute: body.execute === true,
       storeDir: body.storeDir || context.storeDir
     });
     writeJson(response, 200, result);

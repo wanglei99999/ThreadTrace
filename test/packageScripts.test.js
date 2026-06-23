@@ -12,6 +12,7 @@ test('package exposes common operations entrypoints', async function () {
   assert.equal(scripts['operations:list-events'], 'node src/presentation/cli/threadtrace.js list-events');
   assert.equal(scripts['operations:events-overview'], 'node src/presentation/cli/threadtrace.js events-overview');
   assert.equal(scripts['operations:dispatch-events'], 'node src/presentation/cli/threadtrace.js dispatch-events');
+  assert.equal(scripts['operations:ack-events'], 'node src/presentation/cli/threadtrace.js ack-events --dry-run true');
   assert.equal(scripts['operations:archive-events'], 'node src/presentation/cli/threadtrace.js archive-events');
   assert.equal(scripts['operations:resource-provisioning-plan'], 'node src/presentation/cli/threadtrace.js resource-provisioning-plan');
   assert.equal(scripts['deployment:gate'], 'node src/presentation/cli/threadtrace.js deployment-gate');

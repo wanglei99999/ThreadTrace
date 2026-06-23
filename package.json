@@ -40,6 +40,7 @@
     "operations:list-events": "node src/presentation/cli/threadtrace.js list-events",
     "operations:events-overview": "node src/presentation/cli/threadtrace.js events-overview",
     "operations:dispatch-events": "node src/presentation/cli/threadtrace.js dispatch-events",
+    "operations:ack-events": "node src/presentation/cli/threadtrace.js ack-events --dry-run true",
     "operations:archive-events": "node src/presentation/cli/threadtrace.js archive-events",
     "operations:resource-provisioning-plan": "node src/presentation/cli/threadtrace.js resource-provisioning-plan",
     "operations:rollout-manifest-apply": "node src/presentation/cli/threadtrace.js rollout-manifest-apply --manifest-file docs/examples/rollout-manifest.sample.json",

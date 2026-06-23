@@ -254,7 +254,7 @@ Summarizes notification outbox health for dashboards and workers. Optional filte
 
 ### `POST /api/events/ack`
 
-Bulk-acknowledges notification events. Pass `eventIds` for explicit selection, or omit them to acknowledge the current query window. When `eventIds` is omitted, `acknowledged` defaults to `false`, so the endpoint only closes open events unless the caller deliberately overrides the filter. The query window supports `type`, `sourceId`, `sourceKey` / `forum`, `deliveryStatus`, and `limit`.
+Bulk-acknowledges notification events. Pass `eventIds` for explicit selection, or omit them to acknowledge the current query window. When `eventIds` is omitted, `acknowledged` defaults to `false`, so the endpoint only closes open events unless the caller deliberately overrides the filter. The query window supports `type`, `sourceId`, `sourceKey` / `forum`, `deliveryStatus`, and `limit`. Set `dryRun: true` to preview candidates without writing, or `execute: true` to force execution when a client default uses dry-run.
 
 Request:
 ```json
@@ -264,12 +264,13 @@ Request:
   "sourceKey": "nga",
   "deliveryStatus": "delivered",
   "limit": 50,
+  "dryRun": true,
   "acknowledgedBy": "web",
   "note": "Handled by operator"
 }
 ```
 
-Returns `status`, `acknowledgedCount`, `skippedCount`, `filters`, and per-event results. Already acknowledged and missing events are skipped without failing the whole batch.
+Returns `status`, `dryRun`, `candidateCount`, `acknowledgedCount`, `skippedCount`, `filters`, and per-event results. Already acknowledged and missing events are skipped without failing the whole batch.
 
 ### `POST /api/events/archive`
 

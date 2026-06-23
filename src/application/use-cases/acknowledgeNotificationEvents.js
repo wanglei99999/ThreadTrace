@@ -10,6 +10,7 @@ async function acknowledgeNotificationEvents(options) {
   const acknowledgedBy = safeOptions.acknowledgedBy || 'system';
   const note = safeOptions.note;
   const acknowledgedAt = safeOptions.acknowledgedAt || safeOptions.now;
+  const dryRun = safeOptions.execute === true ? false : Boolean(safeOptions.dryRun);
   const events = eventIds.length > 0
     ? await findEventsById(notificationEventRepository, eventIds)
     : (await notificationEventRepository.listEvents(buildQuery(safeOptions))).map(function (event) {
@@ -45,10 +46,12 @@ async function acknowledgeNotificationEvents(options) {
       note,
       acknowledgedAt
     });
-    await notificationEventRepository.saveEvent(acknowledgedEvent);
+    if (!dryRun) {
+      await notificationEventRepository.saveEvent(acknowledgedEvent);
+    }
     results.push({
       eventId: acknowledgedEvent.id,
-      status: 'acknowledged',
+      status: dryRun ? 'candidate' : 'acknowledged',
       event: summarizeEvent(acknowledgedEvent)
     });
   }
@@ -56,12 +59,20 @@ async function acknowledgeNotificationEvents(options) {
   const acknowledgedCount = results.filter(function (result) {
     return result.status === 'acknowledged';
   }).length;
-  const skippedCount = results.length - acknowledgedCount;
+  const candidateCount = results.filter(function (result) {
+    return result.status === 'candidate';
+  }).length;
+  const skippedCount = results.filter(function (result) {
+    return result.status === 'skipped';
+  }).length;
 
   return {
-    status: acknowledgedCount > 0 ? 'ok' : 'noop',
+    status: statusForResult({ acknowledgedCount, candidateCount, dryRun }),
+    dryRun,
+    executed: !dryRun,
     requestedCount: eventIds.length || events.length,
     eventCount: events.length,
+    candidateCount,
     acknowledgedCount,
     skippedCount,
     acknowledgedBy,
@@ -75,6 +86,12 @@ async function acknowledgeNotificationEvents(options) {
     }),
     results
   };
+}
+
+function statusForResult(summary) {
+  if (summary.dryRun && summary.candidateCount > 0) return 'preview';
+  if (summary.acknowledgedCount > 0) return 'ok';
+  return 'noop';
 }
 
 async function findEventsById(repository, eventIds) {

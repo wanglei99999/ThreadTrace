@@ -60,6 +60,8 @@ test('notification event overview summarizes outbox pressure and distribution', 
   assert.equal(overview.byType['runbook-action'], 1);
   assert.equal(overview.bySeverity.warning, 2);
   assert.equal(overview.byDeliveryStatus.resolved, 1);
+  assert.equal(overview.byOpenDeliveryStatus.pending, 1);
+  assert.equal(overview.byOpenDeliveryStatus.failed, 1);
   assert.equal(overview.byAcknowledgement.unacknowledged, 2);
   assert.equal(overview.bySourceKey['forum-a'], 2);
   assert.equal(overview.attention.failedEvents[0].id, 'event-2');
@@ -101,6 +103,26 @@ test('notification event overview applies repository filters', async function ()
   assert.equal(queries[0].sourceKey, 'forum-b');
   assert.equal(queries[0].acknowledged, false);
   assert.equal(queries[0].deliveryStatus, 'pending');
+});
+
+test('notification event overview samples delivered and resolved events waiting for acknowledgement', async function () {
+  const overview = await getNotificationEventOverview({
+    notificationEventRepository: repository([
+      event('event-1', { deliveryStatus: 'delivered' }),
+      event('event-2', { deliveryStatus: 'resolved' }),
+      event('event-3', { deliveryStatus: 'delivered', acknowledgedAt: '2026-06-18T09:30:00.000Z' })
+    ], []),
+    now: '2026-06-18T10:00:00.000Z'
+  });
+
+  assert.equal(overview.status, 'ok');
+  assert.equal(overview.unacknowledgedCount, 2);
+  assert.equal(overview.byOpenDeliveryStatus.delivered, 1);
+  assert.equal(overview.byOpenDeliveryStatus.resolved, 1);
+  assert.deepEqual(overview.attention.reviewableEvents.map(function (item) {
+    return item.id;
+  }), ['event-1', 'event-2']);
+  assert.match(overview.recommendedNextAction, /acknowledge/);
 });
 
 function event(id, overrides) {
