@@ -9,6 +9,11 @@ function getRolloutManifestApplyReport(options) {
   const sourceDraft = safeOptions.sourceDraft;
   const registration = safeOptions.registration;
   const registrationError = safeOptions.registrationError;
+  const rollbackPlan = buildRollbackPlan({
+    execute,
+    registration,
+    sourceDraft
+  });
   const steps = [
     step('manifest.source', sourceDraft ? 'ok' : 'fail', sourceDraft ? 'Source draft was extracted from the rollout manifest.' : 'Rollout manifest must include a source object.', {
       sourceKey: sourceDraft && sourceDraft.sourceKey,
@@ -28,6 +33,7 @@ function getRolloutManifestApplyReport(options) {
     sourceDraft,
     registration,
     registrationError: publicError(registrationError),
+    rollbackPlan,
     steps,
     nextActions: nextActions(steps, deploymentGate),
     deploymentGate
@@ -78,6 +84,33 @@ function registrationEvidence(options) {
   }
   return {
     dryRun: options.dryRun
+  };
+}
+
+function buildRollbackPlan(options) {
+  const safeOptions = options || {};
+  const registration = safeOptions.registration;
+  const source = registration && registration.source || safeOptions.sourceDraft;
+  const sourceId = source && source.id;
+  const commands = sourceId
+    ? [
+      'node src/presentation/cli/threadtrace.js disable-source --source-id ' + sourceId + ' --execute true',
+      'node src/presentation/cli/threadtrace.js source-diagnostics --source-id ' + sourceId
+    ]
+    : [
+      'node src/presentation/cli/threadtrace.js list-sources',
+      'node src/presentation/cli/threadtrace.js disable-source --source-id <source-id> --execute true'
+    ];
+  return {
+    available: Boolean(sourceId),
+    mode: safeOptions.execute ? 'post-apply' : 'dry-run-template',
+    sourceId,
+    sourceKey: source && source.sourceKey,
+    sourceType: source && source.sourceType,
+    summary: sourceId
+      ? 'Disable the registered source if this rollout must be rolled back.'
+      : 'After execute=true, use the registered source id to disable the source if rollback is needed.',
+    commands
   };
 }
 

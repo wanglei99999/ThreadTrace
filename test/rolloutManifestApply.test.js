@@ -29,6 +29,8 @@ test('rollout manifest apply report stays dry-run by default', function () {
   assert.equal(report.status, 'ok');
   assert.equal(report.dryRun, true);
   assert.equal(report.applied, false);
+  assert.equal(report.rollbackPlan.available, false);
+  assert.match(report.rollbackPlan.commands[1], /disable-source --source-id <source-id> --execute true/);
   assert.equal(report.steps.find(function (step) {
     return step.key === 'source.registration';
   }).summary, 'Source registration is ready; dry-run mode did not write to the source repository.');
@@ -102,6 +104,8 @@ test('runtime rollout manifest apply execute registers source', async function (
   assert.equal(report.dryRun, false);
   assert.equal(report.applied, true);
   assert.equal(report.registration.created, true);
+  assert.equal(report.rollbackPlan.available, true);
+  assert.match(report.rollbackPlan.commands[0], new RegExp('disable-source --source-id ' + report.registration.source.id + ' --execute true'));
   assert.equal(sources.length, 1);
   assert.equal(sources[0].displayName, 'Apply sample archive');
 });
@@ -137,6 +141,7 @@ test('runtime rollout manifest apply task records audit trail and replays idempo
   assert.equal(first.task.type, 'rollout-manifest-apply');
   assert.equal(first.task.status, 'completed');
   assert.equal(first.task.output.report.status, 'warn');
+  assert.equal(first.task.output.report.rollbackPlan.available, false);
   assert.equal(first.task.input._trace.requestId, 'rollout-request-1');
   assert.equal(replay.task.id, first.task.id);
   assert.equal(replay.idempotency.reused, true);

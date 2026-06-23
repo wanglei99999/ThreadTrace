@@ -62,6 +62,7 @@ async function runRolloutManifestApplyTask(options) {
       manifestName: report.manifestName,
       source: summarizeSource(report.sourceDraft),
       registration: summarizeRegistration(report.registration),
+      rollbackPlan: report.rollbackPlan,
       deploymentGate: report.deploymentGate ? {
         status: report.deploymentGate.status,
         gateCount: report.deploymentGate.gateCount
@@ -110,6 +111,7 @@ function compactApplyReport(report) {
     manifestName: report.manifestName,
     sourceDraft: summarizeSource(report.sourceDraft),
     registration: summarizeRegistration(report.registration),
+    rollbackPlan: report.rollbackPlan,
     steps: report.steps,
     nextActions: report.nextActions,
     deploymentGate: report.deploymentGate ? {

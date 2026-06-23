@@ -1570,6 +1570,13 @@ function main(argv) {
       if (report.registration && report.registration.source) {
         console.log((report.registration.created ? 'Created' : 'Updated') + ' source: ' + report.registration.source.id);
       }
+      if (report.rollbackPlan) {
+        console.log('Rollback: available=' + report.rollbackPlan.available + '\tmode=' + report.rollbackPlan.mode);
+        console.log('Rollback summary: ' + report.rollbackPlan.summary);
+        (report.rollbackPlan.commands || []).forEach(function (command) {
+          console.log('  rollback: ' + command);
+        });
+      }
       report.steps.forEach(function (step) {
         console.log(step.status + '\t' + step.key + '\t' + step.summary);
       });

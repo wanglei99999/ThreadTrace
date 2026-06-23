@@ -61,6 +61,7 @@ The report includes:
 - `dryRun`, `executed`, and `applied`.
 - `sourceDraft` extracted from the manifest.
 - `registration` when execution created or updated a source.
+- `rollbackPlan` with disable-source commands for the registered source, or a dry-run template before execution.
 - `deploymentGate` for rollout/resource/checklist/runbook evidence.
 - `steps` and `nextActions` for operator follow-up.
 

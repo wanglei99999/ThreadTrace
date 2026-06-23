@@ -1166,7 +1166,7 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Manifest apply dry-run or execution completed and returned a task audit record with report'
+              description: 'Manifest apply dry-run or execution completed and returned a task audit record, report, and rollback plan'
             },
             503: {
               description: 'Manifest apply was blocked by missing source data, gate failure, or registration failure'

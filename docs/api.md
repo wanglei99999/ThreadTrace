@@ -703,7 +703,7 @@ Request:
 }
 ```
 
-The endpoint defaults to dry-run. Set `execute: true` or `dryRun: false` to register the source. The response includes a durable `task` audit record and the apply `report`. A failing deployment gate or registration error returns HTTP `503`; gate warnings return `200` with follow-up actions.
+The endpoint defaults to dry-run. Set `execute: true` or `dryRun: false` to register the source. The response includes a durable `task` audit record and the apply `report`; the report contains `rollbackPlan.commands` with `disable-source` guidance for the registered source or a dry-run rollback template before execution. A failing deployment gate or registration error returns HTTP `503`; gate warnings return `200` with follow-up actions.
 
 ### `POST /api/index-directory`
 

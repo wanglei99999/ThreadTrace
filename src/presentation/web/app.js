@@ -1953,6 +1953,15 @@ function renderRolloutManifestApply(result) {
       metric('Name', report.registration.source.displayName)
     ].join('')));
   }
+  if (report.rollbackPlan) {
+    panels.push(panel('Rollback plan', [
+      metric('Available', report.rollbackPlan.available ? 'yes' : 'no'),
+      metric('Mode', report.rollbackPlan.mode || 'unknown'),
+      metric('Source ID', report.rollbackPlan.sourceId || 'after execute'),
+      metric('Summary', report.rollbackPlan.summary || ''),
+      evidenceList(report.rollbackPlan.commands || [])
+    ].join(''), 'wide'));
+  }
   if (actions.length > 0) {
     panels.push(panel('Apply actions', evidenceList(actions.map(function (action) {
       return action.severity + ' 路 ' + action.key + ' 路 ' + action.summary + ' 路 ' + (action.commands || []).join(' | ');
