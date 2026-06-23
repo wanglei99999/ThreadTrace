@@ -1689,7 +1689,8 @@ function renderResourceProvisioningPlan(result) {
     ].join('')),
     panel('Resources', evidenceList(resources.map(function (item) {
       const env = item.env && item.env.length > 0 ? ' env=' + item.env.join(',') : '';
-      return item.status + ' 路 ' + item.area + ' 路 ' + item.key + ' 路 ' + (item.required ? 'required' : 'optional') + ' 路 ' + item.summary + env;
+      const drift = item.schemaDrift && item.schemaDrift.status !== 'ok' ? ' drift=' + schemaDriftSummary(item.schemaDrift) : '';
+      return item.status + ' 路 ' + item.area + ' 路 ' + item.key + ' 路 ' + (item.required ? 'required' : 'optional') + ' 路 ' + item.summary + env + drift;
     })), 'wide')
   ];
   if (actions.length > 0) {
@@ -2716,6 +2717,25 @@ function evidenceList(items) {
   return items.map(function (item) {
     return '<div class="evidence-row"><span>' + escapeHtml(item) + '</span></div>';
   }).join('');
+}
+
+function schemaDriftSummary(schemaDrift) {
+  const parts = [];
+  if ((schemaDrift.missingTables || []).length > 0) {
+    parts.push('tables:' + schemaDrift.missingTables.join(','));
+  }
+  if ((schemaDrift.missingColumns || []).length > 0) {
+    parts.push('columns:' + schemaDrift.missingColumns.join(','));
+  }
+  if ((schemaDrift.missingIndexes || []).length > 0) {
+    parts.push('indexes:' + schemaDrift.missingIndexes.join(','));
+  }
+  if ((schemaDrift.inspectionErrors || []).length > 0) {
+    parts.push('errors:' + schemaDrift.inspectionErrors.map(function (item) {
+      return item.key;
+    }).join(','));
+  }
+  return parts.join(' ');
 }
 
 function tagList(items) {

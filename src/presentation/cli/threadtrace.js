@@ -1479,6 +1479,9 @@ function main(argv) {
         item.commands.forEach(function (command) {
           console.log('  command: ' + command);
         });
+        if (item.schemaDrift && item.schemaDrift.status !== 'ok') {
+          console.log('  schema drift: ' + formatSchemaDrift(item.schemaDrift));
+        }
       });
       console.log('Next actions: ' + plan.nextActions.length);
       plan.nextActions.forEach(function (action) {
@@ -2410,6 +2413,25 @@ function formatCountSummary(summary) {
   return keys.sort().map(function (key) {
     return key + '=' + summary[key];
   }).join(', ');
+}
+
+function formatSchemaDrift(schemaDrift) {
+  const parts = [];
+  if ((schemaDrift.missingTables || []).length > 0) {
+    parts.push('tables=' + schemaDrift.missingTables.join(','));
+  }
+  if ((schemaDrift.missingColumns || []).length > 0) {
+    parts.push('columns=' + schemaDrift.missingColumns.join(','));
+  }
+  if ((schemaDrift.missingIndexes || []).length > 0) {
+    parts.push('indexes=' + schemaDrift.missingIndexes.join(','));
+  }
+  if ((schemaDrift.inspectionErrors || []).length > 0) {
+    parts.push('errors=' + schemaDrift.inspectionErrors.map(function (item) {
+      return item.key;
+    }).join(','));
+  }
+  return parts.join(' ');
 }
 
 function printHelp() {

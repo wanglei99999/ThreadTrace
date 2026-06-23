@@ -79,6 +79,107 @@ test('resource provisioning plan lists required postgres resources and actions',
   assert.equal(plan.nextActions[0].key, 'storage.postgres');
 });
 
+test('resource provisioning plan summarizes postgres schema drift', function () {
+  const plan = getResourceProvisioningPlan({
+    config: {
+      storageMode: 'postgres',
+      http: {
+        host: '127.0.0.1',
+        port: 3017
+      },
+      workers: {
+        sourceTaskMode: 'ingest'
+      },
+      llm: {
+        provider: 'mock'
+      },
+      notifications: {},
+      reviewActions: {
+        executor: 'file-audit'
+      },
+      connectors: {
+        modules: []
+      }
+    },
+    runtimeDiagnostics: {
+      checks: [
+        {
+          key: 'resources.postgres',
+          status: 'ok',
+          value: 'reachable',
+          summary: 'PostgreSQL responded to a lightweight ping.'
+        },
+        {
+          key: 'resources.postgresSchema',
+          status: 'ok',
+          value: 11,
+          summary: 'PostgreSQL schema contains required ThreadTrace tables.'
+        },
+        {
+          key: 'resources.postgresColumns',
+          status: 'fail',
+          value: 'notification_events.archived_at,notification_events.archive_batch_id',
+          summary: 'PostgreSQL schema is missing required ThreadTrace columns.'
+        },
+        {
+          key: 'resources.postgresIndexes',
+          status: 'fail',
+          value: 'idx_notification_events_source_key,idx_notification_events_archive',
+          summary: 'PostgreSQL schema is missing required ThreadTrace indexes.'
+        }
+      ],
+      configuration: {
+        connectors: {
+          errorCount: 0
+        }
+      }
+    },
+    deploymentChecklist: {
+      items: [
+        {
+          key: 'workers.readiness',
+          status: 'ok'
+        },
+        {
+          key: 'notifications.channel',
+          status: 'ok'
+        },
+        {
+          key: 'llm.configuration',
+          status: 'ok'
+        },
+        {
+          key: 'reviewActions.executor',
+          status: 'ok',
+          evidence: {
+            mode: 'file-audit',
+            ready: true,
+            dryRunOnly: false
+          }
+        }
+      ]
+    }
+  });
+
+  assert.equal(plan.status, 'fail');
+  const storage = plan.resources.find(function (item) {
+    return item.key === 'storage.postgres';
+  });
+  assert.equal(storage.schemaDrift.status, 'fail');
+  assert.equal(storage.schemaDrift.missingCount, 4);
+  assert.deepEqual(storage.schemaDrift.missingColumns, [
+    'notification_events.archived_at',
+    'notification_events.archive_batch_id'
+  ]);
+  assert.deepEqual(storage.schemaDrift.missingIndexes, [
+    'idx_notification_events_source_key',
+    'idx_notification_events_archive'
+  ]);
+  assert.deepEqual(storage.schemaDrift.inspectionErrors, []);
+  assert.match(storage.schemaDrift.applyCommand, /postgresql-schema\.sql/);
+  assert.deepEqual(plan.nextActions[0].schemaDrift.missingIndexes, storage.schemaDrift.missingIndexes);
+});
+
 test('resource provisioning plan includes source and connector requirements from manifest', function () {
   const plan = getResourceProvisioningPlan({
     config: {

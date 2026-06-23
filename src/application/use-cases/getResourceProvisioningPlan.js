@@ -43,14 +43,19 @@ function storageResource(config, diagnostics) {
   const storageMode = config.storageMode || 'file';
   const checks = diagnostics.checks || [];
   if (storageMode === 'postgres') {
-    const status = aggregateStatuses(selectedStatuses(checks, /^resources\.postgres/));
+    const postgresChecks = selectedChecks(checks, /^resources\.postgres/);
+    const schemaDrift = summarizePostgresSchemaDrift(postgresChecks);
+    const status = aggregateStatuses(postgresChecks.map(function (check) {
+      return check.status;
+    }));
     return resource({
       key: 'storage.postgres',
       area: 'storage',
       required: true,
       status,
       summary: 'Provision PostgreSQL primary storage and apply the ThreadTrace schema.',
-      evidence: selectedChecks(checks, /^resources\.postgres/),
+      evidence: postgresChecks,
+      schemaDrift,
       env: ['THREADTRACE_STORAGE=postgres', 'THREADTRACE_DATABASE_URL or DATABASE_URL'],
       commands: ['psql "$env:THREADTRACE_DATABASE_URL" -f docs/postgresql-schema.sql'],
       provisioning: [
@@ -301,7 +306,7 @@ function httpResource(config) {
 }
 
 function resource(input) {
-  return {
+  const output = {
     key: input.key,
     area: input.area,
     required: input.required,
@@ -312,6 +317,10 @@ function resource(input) {
     commands: input.commands || [],
     provisioning: input.provisioning || []
   };
+  if (input.schemaDrift) {
+    output.schemaDrift = input.schemaDrift;
+  }
+  return output;
 }
 
 function nextActions(resources) {
@@ -323,9 +332,48 @@ function nextActions(resources) {
       severity: item.status === 'fail' ? 'critical' : 'warning',
       summary: item.summary,
       env: item.env,
-      commands: item.commands
+      commands: item.commands,
+      schemaDrift: item.schemaDrift
     };
   });
+}
+
+function summarizePostgresSchemaDrift(checks) {
+  const schemaCheck = findCheck(checks, 'resources.postgresSchema');
+  const columnCheck = findCheck(checks, 'resources.postgresColumns');
+  const indexCheck = findCheck(checks, 'resources.postgresIndexes');
+  if (!schemaCheck && !columnCheck && !indexCheck) return undefined;
+
+  const missingTables = missingValues(schemaCheck);
+  const missingColumns = missingValues(columnCheck);
+  const missingIndexes = missingValues(indexCheck);
+  const inspectionErrors = [schemaCheck, columnCheck, indexCheck].filter(function (check) {
+    return check && check.status === 'fail' && missingValues(check).length === 0;
+  }).map(function (check) {
+    return {
+      key: check.key,
+      value: check.value,
+      summary: check.summary
+    };
+  });
+  const missingCount = missingTables.length + missingColumns.length + missingIndexes.length;
+  return {
+    status: missingCount > 0 || inspectionErrors.length > 0 ? 'fail' : 'ok',
+    missingCount,
+    missingTables,
+    missingColumns,
+    missingIndexes,
+    inspectionErrors,
+    applyCommand: 'psql "$env:THREADTRACE_DATABASE_URL" -f docs/postgresql-schema.sql'
+  };
+}
+
+function missingValues(check) {
+  if (!check || check.status !== 'fail') return [];
+  if (!/missing required/i.test(check.summary || '')) return [];
+  return String(check.value || '').split(',').map(function (value) {
+    return value.trim();
+  }).filter(Boolean);
 }
 
 function aggregateResources(resources) {
@@ -366,6 +414,12 @@ function aggregateStatuses(statuses) {
 function findChecklistItem(checklist, key) {
   return ((checklist && checklist.items) || []).find(function (item) {
     return item.key === key;
+  });
+}
+
+function findCheck(checks, key) {
+  return (checks || []).find(function (check) {
+    return check.key === key;
   });
 }
 
