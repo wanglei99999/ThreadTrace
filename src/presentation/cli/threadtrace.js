@@ -873,6 +873,32 @@ function main(argv) {
     return;
   }
 
+  if (command === 'events-overview') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.getNotificationEventOverview({
+      storeDir,
+      type: options.type,
+      sourceId: options.sourceId,
+      acknowledged: options.acknowledged === undefined ? undefined : options.acknowledged === 'true',
+      deliveryStatus: options.deliveryStatus,
+      limit: options.limit ? Number(options.limit) : 200,
+      maxAttempts: options.maxAttempts ? Number(options.maxAttempts) : undefined,
+      now: options.now
+    }).then(function (overview) {
+      console.log('Events overview: ' + overview.status);
+      console.log('Window: ' + overview.eventCount + '/' + overview.windowLimit);
+      console.log('Open: unacknowledged=' + overview.unacknowledgedCount + '\tdue=' + overview.dueForDeliveryCount + '\tfailed=' + overview.failedCount + '\tretryExhausted=' + overview.retryExhaustedCount);
+      console.log('Delivery: ' + formatCountSummary(overview.byDeliveryStatus));
+      console.log('Types: ' + formatCountSummary(overview.byType));
+      console.log('Severity: ' + formatCountSummary(overview.bySeverity));
+      console.log('Next: ' + overview.recommendedNextAction);
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'list-events') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.listNotificationEvents({
@@ -2343,6 +2369,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js validate-connector-module --module-path file [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js connector-readiness [--forum nga] [--enabled true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js notification-diagnostics [--channel file|webhook] [--webhook-url url] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js events-overview [--type type] [--acknowledged true|false] [--delivery-status status] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-source-task --source-id id [--trace-id id] [--source-run-stale-after-ms ms] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-source-insight-pipeline --source-id id [--provider mock] [--trace-id id] [--semantic-enrichment-enabled true|false] [--semantic-skip-if-unchanged true|false] [--source-run-stale-after-ms ms] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-sources-task [--forum nga] [--limit n] [--trace-id id] [--source-run-stale-after-ms ms] [--store-dir dir]');

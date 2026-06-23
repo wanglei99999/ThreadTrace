@@ -657,7 +657,15 @@ async function loadSourceOperations() {
 async function loadEvents() {
   await renderAsync('eventResult', function () {
     const query = buildEventQuery();
-    return fetchJson('/api/events?' + query.toString());
+    return Promise.all([
+      fetchJson('/api/events?' + query.toString()),
+      fetchJson('/api/events/overview?' + query.toString())
+    ]).then(function (results) {
+      return {
+        events: results[0].events || [],
+        overview: results[1]
+      };
+    });
   }, renderEventList);
 }
 
@@ -2390,10 +2398,35 @@ function renderContextReviewActionExecutionRows(executions) {
 
 function renderEventList(result) {
   const events = result.events || [];
+  const overview = result.overview;
   const summary = renderEventListSummary(events);
   const title = '通知事件 · ' + currentEventFilterSummary();
-  if (events.length === 0) return panel(title, summary + '<div class="muted">暂无</div>', 'wide');
-  return panel(title, summary + events.map(renderNotificationEventRow).join(''), 'wide');
+  const listPanel = events.length === 0
+    ? panel(title, summary + '<div class="muted">暂无</div>', 'wide')
+    : panel(title, summary + events.map(renderNotificationEventRow).join(''), 'wide');
+  return (overview ? renderNotificationEventOverview(overview) : '') + listPanel;
+}
+
+function renderNotificationEventOverview(overview) {
+  const attention = overview.attention || {};
+  return panel('Notification outbox overview', [
+    '<div class="summary-strip event-summary-strip">' + [
+      summaryTile('Status', overview.status || 'unknown', statusVariant(overview.status)),
+      summaryTile('Window', String(overview.eventCount || 0)),
+      summaryTile('Open', String(overview.unacknowledgedCount || 0), overview.unacknowledgedCount > 0 ? 'warn' : 'ok'),
+      summaryTile('Due', String(overview.dueForDeliveryCount || 0), overview.dueForDeliveryCount > 0 ? 'warn' : 'ok'),
+      summaryTile('Failed', String(overview.failedCount || 0), overview.failedCount > 0 ? 'fail' : 'ok')
+    ].join('') + '</div>',
+    metric('Delivery status', formatStanceSummary(overview.byDeliveryStatus)),
+    metric('Event types', formatStanceSummary(overview.byType)),
+    metric('Severity', formatStanceSummary(overview.bySeverity)),
+    metric('Next delivery', overview.nextDeliveryAt || 'none'),
+    metric('Oldest open', overview.oldestUnacknowledgedAt || 'none'),
+    metric('Next', overview.recommendedNextAction || 'none'),
+    evidenceList((attention.failedEvents || []).slice(0, 5).map(function (event) {
+      return (event.deliveryStatus || 'failed') + ' | ' + event.type + ' | ' + event.id + ' | attempts=' + (event.deliveryAttempts || 0);
+    }))
+  ].join(''), 'wide');
 }
 
 function renderEventListSummary(events) {

@@ -746,6 +746,22 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/events/overview') {
+    const acknowledgedParam = url.searchParams.get('acknowledged');
+    const overview = await context.runtime.getNotificationEventOverview({
+      type: url.searchParams.get('type') || undefined,
+      sourceId: url.searchParams.get('sourceId') || undefined,
+      acknowledged: acknowledgedParam === null ? undefined : acknowledgedParam === 'true',
+      deliveryStatus: url.searchParams.get('deliveryStatus') || undefined,
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 200,
+      maxAttempts: url.searchParams.get('maxAttempts') ? Number(url.searchParams.get('maxAttempts')) : undefined,
+      now: url.searchParams.get('now') || undefined,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, 200, overview);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/events') {
     const acknowledgedParam = url.searchParams.get('acknowledged');
     const events = await context.runtime.listNotificationEvents({

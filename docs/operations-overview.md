@@ -100,6 +100,7 @@ See `docs/rollout-manifest-apply.md` for the apply contract.
 - Sources: total, enabled, disabled, due, running, failed, and due source samples.
 - Tasks: recent task totals grouped by status and last failure.
 - Events: unacknowledged pending/failed delivery counts, total unacknowledged events, delivery-due count, and next delivery time.
+- Notification outbox overview: event counts by type, severity, delivery status, acknowledgement, source, retry exhaustion, attention samples, and recommended next action.
 - Workers: recent run totals, running/stale counts, latest heartbeat time, active/expired leases, and stale run samples.
 - Raw pages: recent raw evidence count and latest fetch time.
 - Review actions: file-audit executor record count, unique task count, planned closure/merge totals, latest audit time, adapter/action counts, and execution-ledger totals grouped by completed/running/stale-running/failed.

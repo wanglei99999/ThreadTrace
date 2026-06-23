@@ -169,6 +169,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /intelligence\/author-review-queue\/events/);
     assert.match(webAppJs, /Create alerts/);
     assert.match(webAppJs, /buildEventQuery/);
+    assert.match(webAppJs, /api\/events\/overview/);
+    assert.match(webAppJs, /renderNotificationEventOverview/);
     assert.match(webAppJs, /event-summary-strip/);
     assert.match(webAppJs, /formatOpinionChainSummary/);
     assert.match(webAppJs, /renderPrimaryAuthorProfile/);
@@ -247,6 +249,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
       now: '2026-06-21T11:05:00.000Z'
     });
     const contextReviewResultEvents = await getJson(baseUrl + '/api/events?type=context-review-result');
+    const eventOverview = await getJson(baseUrl + '/api/events/overview?type=context-review-result&now=2026-06-21T11:06:00.000Z');
     const invalidContextReviewResult = await postJsonWithStatus(baseUrl + '/api/contracts/context-review-result/validate', {
       result: {
         version: '1.0.0',
@@ -350,6 +353,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(contextReviewResultEventExecute.createdCount, 1);
     assert.equal(contextReviewResultEvents.events.length, 1);
     assert.equal(contextReviewResultEvents.events[0].type, 'context-review-result');
+    assert.equal(eventOverview.eventCount, 1);
+    assert.equal(eventOverview.byType['context-review-result'], 1);
+    assert.equal(eventOverview.generatedAt, '2026-06-21T11:06:00.000Z');
     assert.equal(openApi.openapi, '3.0.3');
     assert.ok(openApi.paths['/api/interpret-text']);
     assert.match(openApi.paths['/api/interpret-text'].post.responses[200].description, /contextReviewHandoff/);
@@ -370,6 +376,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/context-review-results/action-audits/overview']);
     assert.ok(openApi.paths['/api/context-review-results/action-executor/diagnostics']);
     assert.ok(openApi.paths['/api/context-review-results/events']);
+    assert.ok(openApi.paths['/api/events/overview']);
     assert.ok(openApi.paths['/api/connectors/catalog']);
     assert.ok(openApi.paths['/api/connectors/readiness']);
     assert.ok(openApi.paths['/api/connectors/modules/validate']);

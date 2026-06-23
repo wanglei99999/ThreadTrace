@@ -76,6 +76,7 @@ HTTP:
 POST /api/operations/runbook/events
 POST /api/context-review-results/events
 POST /api/intelligence/author-review-queue/events
+GET /api/events/overview
 POST /api/events/dispatch
 ```
 

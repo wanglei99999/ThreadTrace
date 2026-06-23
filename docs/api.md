@@ -225,6 +225,10 @@ Returns: stable run summaries with task id, source metadata, cursor diff, semant
 - `deliveryStatus`: 可选，如 `pending`、`delivered`、`failed`。
 - `limit`: 可选，默认 50。
 
+### `GET /api/events/overview`
+
+Summarizes notification outbox health for dashboards and workers. Optional filters mirror `GET /api/events` and add `maxAttempts`, `now`, and `storeDir`. The response includes status, window size, pending/failed/unacknowledged/due counts, retry-exhausted count, next delivery time, oldest open event, counts by type/severity/delivery status/source, attention samples, and a recommended next action.
+
 ### `POST /api/events/dispatch`
 
 投递待处理通知事件。当前默认通道是本地文件投递，会把事件写入 `data/store/deliveries`；后续可替换为 Webhook、邮件、企业微信或消息队列。

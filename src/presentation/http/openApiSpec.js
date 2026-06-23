@@ -1293,6 +1293,26 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/events/overview': {
+        get: {
+          summary: 'Summarize notification outbox health and backlog distribution',
+          parameters: [
+            { name: 'type', in: 'query', required: false, schema: { type: 'string', example: 'source-changed' } },
+            { name: 'sourceId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'acknowledged', in: 'query', required: false, schema: { type: 'boolean' } },
+            { name: 'deliveryStatus', in: 'query', required: false, schema: { type: 'string', example: 'pending' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number', example: 200 } },
+            { name: 'maxAttempts', in: 'query', required: false, schema: { type: 'number', example: 3 } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Notification outbox overview with counts by type, severity, status, acknowledgement, and attention samples'
+            }
+          }
+        }
+      },
       '/api/events/dispatch': {
         post: {
           summary: 'Dispatch pending notification events',

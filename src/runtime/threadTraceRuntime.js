@@ -44,6 +44,7 @@ const { runResetTrackedSourceFailureTask } = require('../application/use-cases/r
 const { getSourceLifecycleReport } = require('../application/use-cases/getSourceLifecycleReport');
 const { getSourceScheduleReport } = require('../application/use-cases/getSourceScheduleReport');
 const { getOperationalOverview } = require('../application/use-cases/getOperationalOverview');
+const { getNotificationEventOverview } = require('../application/use-cases/getNotificationEventOverview');
 const { getAuthorIntelligenceDashboard } = require('../application/use-cases/getAuthorIntelligenceDashboard');
 const { syncAuthorReviewQueue } = require('../application/use-cases/syncAuthorReviewQueue');
 const { listAuthorReviewQueue } = require('../application/use-cases/listAuthorReviewQueue');
@@ -1664,6 +1665,21 @@ function createThreadTraceRuntime(options) {
         acknowledged: safeRequest.acknowledged,
         deliveryStatus: safeRequest.deliveryStatus,
         limit: safeRequest.limit || 50
+      });
+    },
+
+    async getNotificationEventOverview(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return getNotificationEventOverview({
+        notificationEventRepository: repositories.notificationEventRepository,
+        type: safeRequest.type,
+        sourceId: safeRequest.sourceId,
+        acknowledged: safeRequest.acknowledged,
+        deliveryStatus: safeRequest.deliveryStatus,
+        limit: safeRequest.limit || 200,
+        maxAttempts: safeRequest.maxAttempts,
+        now: safeRequest.now
       });
     },
 
