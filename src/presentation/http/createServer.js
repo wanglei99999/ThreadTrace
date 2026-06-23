@@ -751,6 +751,7 @@ async function routeRequest(request, response, context) {
     const overview = await context.runtime.getNotificationEventOverview({
       type: url.searchParams.get('type') || undefined,
       sourceId: url.searchParams.get('sourceId') || undefined,
+      sourceKey: url.searchParams.get('sourceKey') || url.searchParams.get('forum') || undefined,
       acknowledged: acknowledgedParam === null ? undefined : acknowledgedParam === 'true',
       deliveryStatus: url.searchParams.get('deliveryStatus') || undefined,
       limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 200,
@@ -767,6 +768,7 @@ async function routeRequest(request, response, context) {
     const events = await context.runtime.listNotificationEvents({
       type: url.searchParams.get('type') || undefined,
       sourceId: url.searchParams.get('sourceId') || undefined,
+      sourceKey: url.searchParams.get('sourceKey') || url.searchParams.get('forum') || undefined,
       acknowledged: acknowledgedParam === null ? undefined : acknowledgedParam === 'true',
       deliveryStatus: url.searchParams.get('deliveryStatus') || undefined,
       limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 50,
@@ -869,6 +871,7 @@ async function routeRequest(request, response, context) {
       eventIds: body.eventIds,
       type: body.type,
       sourceId: body.sourceId,
+      sourceKey: body.sourceKey || body.forum,
       acknowledged: typeof body.acknowledged === 'boolean' ? body.acknowledged : undefined,
       deliveryStatus: body.deliveryStatus,
       limit: body.limit,

@@ -55,7 +55,7 @@ node src/presentation/cli/threadtrace.js synthesize-author-review-queue-events
 node src/presentation/cli/threadtrace.js synthesize-author-review-queue-events --execute true --source-key nga
 node src/presentation/cli/threadtrace.js dispatch-events --channel file
 node src/presentation/cli/threadtrace.js dispatch-events --channel webhook --webhook-url http://127.0.0.1:9000/threadtrace-events
-node src/presentation/cli/threadtrace.js ack-events --delivery-status delivered --by operator
+node src/presentation/cli/threadtrace.js ack-events --source-key nga --delivery-status delivered --by operator
 ```
 
 Worker mode:
@@ -84,7 +84,7 @@ POST /api/events/ack
 
 `synthesize-runbook-events`, `synthesize-context-review-result-events`, `synthesize-author-review-queue-events`, `POST /api/operations/runbook/events`, `POST /api/context-review-results/events`, and `POST /api/intelligence/author-review-queue/events` default to dry-run. Set `--execute true` or request body `{"execute": true}` to persist events into the outbox. Stable event IDs are derived from the runbook action key, context review result record id, or durable author queue item id, so repeated synthesis updates pending/failed events without duplicating alerts. Stale runbook and author queue events are marked `resolved` when the underlying action or queue item disappears, and system-resolved events reopen as `pending` if the same action returns. Operator-acknowledged or already delivered events are left untouched for audit safety.
 
-Use `ack-events` or `POST /api/events/ack` to close handled events in bulk. Without explicit `eventIds`, bulk acknowledgement defaults to `acknowledged=false` and the requested filter window, which keeps historical acknowledged events immutable while giving operators a fast way to clear delivered or resolved alerts.
+Use `ack-events` or `POST /api/events/ack` to close handled events in bulk. Without explicit `eventIds`, bulk acknowledgement defaults to `acknowledged=false` and the requested filter window, including optional `sourceKey` / `forum`, which keeps historical acknowledged events immutable while giving operators a fast way to clear delivered or resolved alerts.
 
 Useful environment variables:
 

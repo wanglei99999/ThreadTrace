@@ -755,10 +755,12 @@ function buildEventQuery() {
   const acknowledged = form ? String(form.get('acknowledged') || '') : 'false';
   const deliveryStatus = form ? String(form.get('deliveryStatus') || '').trim() : '';
   const type = form ? String(form.get('type') || '').trim() : '';
+  const sourceKey = form ? String(form.get('sourceKey') || '').trim() : '';
   query.set('limit', String(normalizeEventLimit(form ? form.get('limit') : 10)));
   if (acknowledged === 'true' || acknowledged === 'false') query.set('acknowledged', acknowledged);
   if (deliveryStatus) query.set('deliveryStatus', deliveryStatus);
   if (type) query.set('type', type);
+  if (sourceKey) query.set('sourceKey', sourceKey);
   return query;
 }
 
@@ -773,6 +775,7 @@ function buildVisibleEventAckRequest() {
   const form = formElement ? new FormData(formElement) : undefined;
   const deliveryStatus = form ? String(form.get('deliveryStatus') || '').trim() : '';
   const type = form ? String(form.get('type') || '').trim() : '';
+  const sourceKey = form ? String(form.get('sourceKey') || '').trim() : '';
   const request = {
     acknowledged: false,
     acknowledgedBy: 'web',
@@ -781,6 +784,7 @@ function buildVisibleEventAckRequest() {
   };
   if (deliveryStatus) request.deliveryStatus = deliveryStatus;
   if (type) request.type = type;
+  if (sourceKey) request.sourceKey = sourceKey;
   return request;
 }
 
@@ -2505,11 +2509,13 @@ function currentEventFilterSummary() {
   const acknowledged = String(form.get('acknowledged') || '');
   const deliveryStatus = String(form.get('deliveryStatus') || '');
   const type = String(form.get('type') || '');
+  const sourceKey = String(form.get('sourceKey') || '').trim();
   const scope = acknowledged === 'true' ? '已确认' : (acknowledged === 'false' ? '未确认' : '全部');
   return [
     scope,
     deliveryStatus || '全部状态',
-    type || '全部类型'
+    type || '全部类型',
+    sourceKey || '全部来源'
   ].join(' · ');
 }
 

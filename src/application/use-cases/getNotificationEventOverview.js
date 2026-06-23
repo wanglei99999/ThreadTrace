@@ -11,6 +11,7 @@ async function getNotificationEventOverview(options) {
   const query = {
     type: safeOptions.type,
     sourceId: safeOptions.sourceId,
+    sourceKey: safeOptions.sourceKey,
     acknowledged: safeOptions.acknowledged,
     deliveryStatus: safeOptions.deliveryStatus,
     limit
@@ -43,6 +44,7 @@ async function getNotificationEventOverview(options) {
     filters: cleanObject({
       type: safeOptions.type,
       sourceId: safeOptions.sourceId,
+      sourceKey: safeOptions.sourceKey,
       acknowledged: safeOptions.acknowledged,
       deliveryStatus: safeOptions.deliveryStatus
     }),

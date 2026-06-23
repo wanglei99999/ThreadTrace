@@ -12,6 +12,7 @@ const { createTrackedSource } = require('../src/domain/models/trackedSource');
 const { createFileThreadRepository } = require('../src/infrastructure/storage/fileThreadRepository');
 const { createFileAnalysisReportRepository } = require('../src/infrastructure/storage/fileAnalysisReportRepository');
 const { createFileSourceRepository } = require('../src/infrastructure/storage/fileSourceRepository');
+const { createFileNotificationEventRepository } = require('../src/infrastructure/storage/fileNotificationEventRepository');
 
 test('file repositories persist snapshots and reports behind application ports', async function () {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-'));
@@ -88,3 +89,36 @@ test('file source repository atomically acquires source runs', async function ()
   assert.equal(loaded.runState.status, 'running');
   assert.equal(loaded.runState.lastStartedAt, '2026-06-19T10:01:00.000Z');
 });
+
+test('file notification event repository filters by source key', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-events-'));
+  const repository = createFileNotificationEventRepository({
+    baseDir: path.join(tempDir, 'events')
+  });
+
+  await repository.saveEvent(notificationEvent('event-1', 'forum-a'));
+  await repository.saveEvent(notificationEvent('event-2', 'forum-b'));
+
+  const events = await repository.listEvents({
+    sourceKey: 'forum-b'
+  });
+
+  assert.equal(events.length, 1);
+  assert.equal(events[0].id, 'event-2');
+  assert.equal(events[0].sourceKey, 'forum-b');
+});
+
+function notificationEvent(id, sourceKey) {
+  return {
+    id,
+    type: 'source-changed',
+    severity: 'info',
+    sourceId: 'source-' + sourceKey,
+    sourceKey,
+    title: 'Event ' + id,
+    summary: 'Summary ' + id,
+    createdAt: '2026-06-18T10:00:00.000Z',
+    deliveryStatus: 'pending',
+    deliveryAttempts: 0
+  };
+}

@@ -1356,9 +1356,11 @@ test('http server can register sources and run source ingest tasks', async funct
     const dueResult = await postJson(baseUrl + '/api/sources/tasks/ingest-due', {});
     const skippedDueResult = await postJson(baseUrl + '/api/sources/tasks/ingest-due', {});
     const eventsResult = await getJson(baseUrl + '/api/events');
+    const sourceKeyEventsResult = await getJson(baseUrl + '/api/events?sourceKey=nga');
     const dispatchResult = await postJson(baseUrl + '/api/events/dispatch', {});
     const deliveredEventsResult = await getJson(baseUrl + '/api/events?deliveryStatus=delivered');
     const batchAckResult = await postJson(baseUrl + '/api/events/ack', {
+      sourceKey: 'nga',
       deliveryStatus: 'delivered',
       acknowledgedBy: 'batch-test',
       limit: 5
@@ -1395,6 +1397,7 @@ test('http server can register sources and run source ingest tasks', async funct
     assert.equal(skippedDueResult.dueCount, 0);
     assert.equal(skippedDueResult.skippedCount, 1);
     assert.equal(eventsResult.events.length, 1);
+    assert.equal(sourceKeyEventsResult.events.length, 1);
     assert.equal(eventsResult.events[0].type, 'source-changed');
     assert.equal(dispatchResult.dispatchedCount, 1);
     assert.equal(deliveredEventsResult.events.length, 1);

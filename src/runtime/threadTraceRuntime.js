@@ -1663,6 +1663,7 @@ function createThreadTraceRuntime(options) {
       return repositories.notificationEventRepository.listEvents({
         type: safeRequest.type,
         sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey,
         acknowledged: safeRequest.acknowledged,
         deliveryStatus: safeRequest.deliveryStatus,
         limit: safeRequest.limit || 50
@@ -1676,6 +1677,7 @@ function createThreadTraceRuntime(options) {
         notificationEventRepository: repositories.notificationEventRepository,
         type: safeRequest.type,
         sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey,
         acknowledged: safeRequest.acknowledged,
         deliveryStatus: safeRequest.deliveryStatus,
         limit: safeRequest.limit || 200,
@@ -1746,6 +1748,7 @@ function createThreadTraceRuntime(options) {
         eventIds: safeRequest.eventIds,
         type: safeRequest.type,
         sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey,
         acknowledged: safeRequest.acknowledged,
         deliveryStatus: safeRequest.deliveryStatus,
         limit: safeRequest.limit || 50,

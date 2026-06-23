@@ -68,6 +68,7 @@ async function acknowledgeNotificationEvents(options) {
     filters: eventIds.length > 0 ? {} : cleanObject({
       type: safeOptions.type,
       sourceId: safeOptions.sourceId,
+      sourceKey: safeOptions.sourceKey,
       acknowledged: typeof safeOptions.acknowledged === 'boolean' ? safeOptions.acknowledged : false,
       deliveryStatus: safeOptions.deliveryStatus,
       limit: safeOptions.limit || 50
@@ -91,6 +92,7 @@ function buildQuery(options) {
   return {
     type: options.type,
     sourceId: options.sourceId,
+    sourceKey: options.sourceKey,
     acknowledged: typeof options.acknowledged === 'boolean' ? options.acknowledged : false,
     deliveryStatus: options.deliveryStatus,
     limit: options.limit || 50

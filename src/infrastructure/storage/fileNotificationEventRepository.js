@@ -33,6 +33,7 @@ function createFileNotificationEventRepository(options) {
         const event = JSON.parse(await fs.readFile(filePath, 'utf8'));
         if (safeQuery.type && event.type !== safeQuery.type) continue;
         if (safeQuery.sourceId && event.sourceId !== safeQuery.sourceId) continue;
+        if (safeQuery.sourceKey && event.sourceKey !== safeQuery.sourceKey) continue;
         if (typeof safeQuery.acknowledged === 'boolean') {
           const acknowledged = Boolean(event.acknowledgedAt);
           if (acknowledged !== safeQuery.acknowledged) continue;

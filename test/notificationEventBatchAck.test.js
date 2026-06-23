@@ -21,6 +21,7 @@ test('bulk notification acknowledgement defaults to open events in the filter wi
   const result = await acknowledgeNotificationEvents({
     notificationEventRepository: repository(events, saved, queries),
     type: 'runbook-action',
+    sourceKey: 'forum-a',
     deliveryStatus: 'delivered',
     acknowledgedBy: 'operator',
     note: 'handled',
@@ -39,12 +40,14 @@ test('bulk notification acknowledgement defaults to open events in the filter wi
   assert.deepEqual(queries[0], {
     type: 'runbook-action',
     sourceId: undefined,
+    sourceKey: 'forum-a',
     acknowledged: false,
     deliveryStatus: 'delivered',
     limit: 20
   });
   assert.deepEqual(result.filters, {
     type: 'runbook-action',
+    sourceKey: 'forum-a',
     acknowledged: false,
     deliveryStatus: 'delivered',
     limit: 20
@@ -110,6 +113,7 @@ function repository(events, saved, queries) {
       return events.filter(function (item) {
         if (query.type && item.type !== query.type) return false;
         if (query.sourceId && item.sourceId !== query.sourceId) return false;
+        if (query.sourceKey && item.sourceKey !== query.sourceKey) return false;
         if (typeof query.acknowledged === 'boolean' && Boolean(item.acknowledgedAt) !== query.acknowledged) return false;
         if (query.deliveryStatus && (item.deliveryStatus || 'pending') !== query.deliveryStatus) return false;
         return true;

@@ -68,6 +68,7 @@ test('notification event overview summarizes outbox pressure and distribution', 
   assert.deepEqual(queries[0], {
     type: undefined,
     sourceId: undefined,
+    sourceKey: undefined,
     acknowledged: undefined,
     deliveryStatus: undefined,
     limit: 50
@@ -79,9 +80,10 @@ test('notification event overview applies repository filters', async function ()
   const overview = await getNotificationEventOverview({
     notificationEventRepository: repository([
       event('event-1', { type: 'source-changed', deliveryStatus: 'pending' }),
-      event('event-2', { type: 'runbook-action', deliveryStatus: 'pending' })
+      event('event-2', { type: 'runbook-action', deliveryStatus: 'pending', sourceKey: 'forum-b' })
     ], queries),
     type: 'runbook-action',
+    sourceKey: 'forum-b',
     acknowledged: false,
     deliveryStatus: 'pending',
     now: '2026-06-18T10:00:00.000Z'
@@ -91,10 +93,12 @@ test('notification event overview applies repository filters', async function ()
   assert.equal(overview.byType['runbook-action'], 1);
   assert.deepEqual(overview.filters, {
     type: 'runbook-action',
+    sourceKey: 'forum-b',
     acknowledged: false,
     deliveryStatus: 'pending'
   });
   assert.equal(queries[0].type, 'runbook-action');
+  assert.equal(queries[0].sourceKey, 'forum-b');
   assert.equal(queries[0].acknowledged, false);
   assert.equal(queries[0].deliveryStatus, 'pending');
 });
@@ -125,6 +129,7 @@ function repository(events, queries) {
       return events.filter(function (item) {
         if (query.type && item.type !== query.type) return false;
         if (query.sourceId && item.sourceId !== query.sourceId) return false;
+        if (query.sourceKey && item.sourceKey !== query.sourceKey) return false;
         if (typeof query.acknowledged === 'boolean' && Boolean(item.acknowledgedAt) !== query.acknowledged) return false;
         if (query.deliveryStatus && (item.deliveryStatus || 'pending') !== query.deliveryStatus) return false;
         return true;

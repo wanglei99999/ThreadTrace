@@ -879,6 +879,7 @@ function main(argv) {
       storeDir,
       type: options.type,
       sourceId: options.sourceId,
+      sourceKey: options.sourceKey || options.forum,
       acknowledged: options.acknowledged === undefined ? undefined : options.acknowledged === 'true',
       deliveryStatus: options.deliveryStatus,
       limit: options.limit ? Number(options.limit) : 200,
@@ -905,12 +906,13 @@ function main(argv) {
       storeDir,
       type: options.type,
       sourceId: options.sourceId,
+      sourceKey: options.sourceKey || options.forum,
       acknowledged: options.acknowledged === undefined ? undefined : options.acknowledged === 'true',
       deliveryStatus: options.deliveryStatus,
       limit: options.limit ? Number(options.limit) : 50
     }).then(function (events) {
       events.forEach(function (event) {
-        console.log(event.createdAt + '\t' + event.type + '\t' + event.sourceId + '\t' + event.summary);
+        console.log(event.createdAt + '\t' + event.type + '\t' + (event.sourceKey || '') + '\t' + (event.sourceId || '') + '\t' + event.summary);
       });
     }).catch(function (error) {
       console.error(error && error.stack ? error.stack : error);
@@ -1032,6 +1034,7 @@ function main(argv) {
       eventIds: options.eventIds ? splitCsv(options.eventIds) : undefined,
       type: options.type,
       sourceId: options.sourceId,
+      sourceKey: options.sourceKey || options.forum,
       acknowledged: options.acknowledged === undefined ? undefined : options.acknowledged === 'true',
       deliveryStatus: options.deliveryStatus,
       limit: options.limit ? Number(options.limit) : 50,
@@ -2381,13 +2384,13 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js adapter-diagnostics [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js deployment-checklist [--forum nga] [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js migrate-store --from-store-dir dir [--to-store-dir dir] [--dry-run true|false] [--limit n]');
-  console.log('  node src/presentation/cli/threadtrace.js list-events [--source-id id] [--type type] [--acknowledged true|false] [--delivery-status status] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js list-events [--source-key key] [--source-id id] [--type type] [--acknowledged true|false] [--delivery-status status] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js fetch-thread-page [--forum nga] [--url url | --source-id id] [--source-thread-id id] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-raw-pages [--forum nga] [--source-thread-id id] [--limit n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js ingest-raw-page [--forum nga] --content-sha1 sha1 [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js dispatch-events [--channel file|webhook] [--webhook-url url] [--limit n] [--max-attempts n] [--retry-backoff-ms ms] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js ack-event --event-id id [--by user] [--note text] [--store-dir dir]');
-  console.log('  node src/presentation/cli/threadtrace.js ack-events [--event-ids id1,id2] [--type type] [--acknowledged true|false] [--delivery-status status] [--by user] [--note text] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js ack-events [--event-ids id1,id2] [--source-key key] [--type type] [--acknowledged true|false] [--delivery-status status] [--by user] [--note text] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js validate-source [--forum nga] [--source-type type] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js validate-thread-json --input-file file [--forum sourceKey] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js source-onboarding-preflight [--forum nga] [--source-type type] [--module-path file] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--store-dir dir] [--now iso]');
@@ -2409,7 +2412,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js validate-connector-module --module-path file [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js connector-readiness [--forum nga] [--enabled true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js notification-diagnostics [--channel file|webhook] [--webhook-url url] [--store-dir dir]');
-  console.log('  node src/presentation/cli/threadtrace.js events-overview [--type type] [--acknowledged true|false] [--delivery-status status] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js events-overview [--source-key key] [--type type] [--acknowledged true|false] [--delivery-status status] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-source-task --source-id id [--trace-id id] [--source-run-stale-after-ms ms] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-source-insight-pipeline --source-id id [--provider mock] [--trace-id id] [--semantic-enrichment-enabled true|false] [--semantic-skip-if-unchanged true|false] [--source-run-stale-after-ms ms] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-sources-task [--forum nga] [--limit n] [--trace-id id] [--source-run-stale-after-ms ms] [--store-dir dir]');

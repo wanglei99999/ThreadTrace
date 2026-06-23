@@ -171,15 +171,18 @@ test('postgres notification repository queries due outbox events', async functio
   });
 
   const events = await repository.listEvents({
+    sourceKey: 'nga',
     deliveryStatus: 'failed',
     dueBefore: '2026-06-18T10:02:00.000Z',
     acknowledged: false,
     limit: 10
   });
 
-  assert.match(queries[0].sql, /next_delivery_at is null or next_delivery_at <= \$2/);
+  assert.match(queries[0].sql, /source_key = \$1/);
+  assert.match(queries[0].sql, /delivery_status = \$2/);
+  assert.match(queries[0].sql, /next_delivery_at is null or next_delivery_at <= \$3/);
   assert.match(queries[0].sql, /acknowledged_at is null/);
-  assert.deepEqual(queries[0].params, ['failed', '2026-06-18T10:02:00.000Z', 10]);
+  assert.deepEqual(queries[0].params, ['nga', 'failed', '2026-06-18T10:02:00.000Z', 10]);
   assert.equal(events[0].deliveryStatus, 'failed');
   assert.equal(events[0].nextDeliveryAt, '2026-06-18T10:01:00.000Z');
   assert.equal(events[0].lastDeliveryError.message, 'timeout');

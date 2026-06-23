@@ -77,6 +77,10 @@ function createPostgresNotificationEventRepository(options) {
         params.push(safeQuery.sourceId);
         where.push('source_id = $' + params.length);
       }
+      if (safeQuery.sourceKey) {
+        params.push(safeQuery.sourceKey);
+        where.push('source_key = $' + params.length);
+      }
       if (typeof safeQuery.acknowledged === 'boolean') {
         where.push(safeQuery.acknowledged ? 'acknowledged_at is not null' : 'acknowledged_at is null');
       }

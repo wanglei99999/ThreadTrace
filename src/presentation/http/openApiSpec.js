@@ -1281,6 +1281,7 @@ function createOpenApiSpec() {
           parameters: [
             { name: 'type', in: 'query', required: false, schema: { type: 'string', example: 'source-changed' } },
             { name: 'sourceId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
             { name: 'acknowledged', in: 'query', required: false, schema: { type: 'boolean' } },
             { name: 'deliveryStatus', in: 'query', required: false, schema: { type: 'string', example: 'pending' } },
             { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
@@ -1299,6 +1300,7 @@ function createOpenApiSpec() {
           parameters: [
             { name: 'type', in: 'query', required: false, schema: { type: 'string', example: 'source-changed' } },
             { name: 'sourceId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
             { name: 'acknowledged', in: 'query', required: false, schema: { type: 'boolean' } },
             { name: 'deliveryStatus', in: 'query', required: false, schema: { type: 'string', example: 'pending' } },
             { name: 'limit', in: 'query', required: false, schema: { type: 'number', example: 200 } },
@@ -1466,6 +1468,7 @@ function createOpenApiSpec() {
                     eventIds: { type: 'array', items: { type: 'string' } },
                     type: { type: 'string', example: 'runbook-action' },
                     sourceId: { type: 'string' },
+                    sourceKey: { type: 'string', example: 'nga' },
                     acknowledged: { type: 'boolean', example: false },
                     deliveryStatus: { type: 'string', example: 'delivered' },
                     limit: { type: 'number', example: 50 },

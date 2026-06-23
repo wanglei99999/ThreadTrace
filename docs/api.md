@@ -215,6 +215,8 @@ Returns: stable run summaries with task id, source metadata, cursor diff, semant
 
 ### `GET /api/events`
 
+Optional filters include `type`, `sourceId`, `sourceKey` / `forum`, `acknowledged`, `deliveryStatus`, `limit`, and `storeDir`.
+
 查询通知事件。当前本地实现会在来源导入后发现 cursor 变化时写入 `source-changed` 事件，后续可以接邮件、Webhook、企业微信或消息队列。
 
 查询参数：
@@ -252,13 +254,14 @@ Summarizes notification outbox health for dashboards and workers. Optional filte
 
 ### `POST /api/events/ack`
 
-Bulk-acknowledges notification events. Pass `eventIds` for explicit selection, or omit them to acknowledge the current query window. When `eventIds` is omitted, `acknowledged` defaults to `false`, so the endpoint only closes open events unless the caller deliberately overrides the filter.
+Bulk-acknowledges notification events. Pass `eventIds` for explicit selection, or omit them to acknowledge the current query window. When `eventIds` is omitted, `acknowledged` defaults to `false`, so the endpoint only closes open events unless the caller deliberately overrides the filter. The query window supports `type`, `sourceId`, `sourceKey` / `forum`, `deliveryStatus`, and `limit`.
 
 Request:
 ```json
 {
   "eventIds": ["source-changed-1"],
   "type": "runbook-action",
+  "sourceKey": "nga",
   "deliveryStatus": "delivered",
   "limit": 50,
   "acknowledgedBy": "web",
