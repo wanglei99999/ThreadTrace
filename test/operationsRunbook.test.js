@@ -211,6 +211,37 @@ test('operations runbook flags duplicate idempotency task risk', function () {
   assert.match(runbook.actions[0].recommendedCommand, /trace-context --idempotency-key idem-1/);
 });
 
+test('operations runbook flags open author review queue items', function () {
+  const runbook = getOperationsRunbook({
+    now: '2026-06-23T10:00:00.000Z',
+    checklist: {
+      generatedAt: '2026-06-23T10:00:00.000Z',
+      items: [],
+      readiness: {
+        overview: {
+          authorReviewQueue: {
+            openCount: 3,
+            highPriorityOpenCount: 1,
+            byPriority: { high: 1, medium: 2 },
+            byType: { 'evidence-gap': 1, 'high-confidence-opinion': 2 },
+            latestUpdatedAt: '2026-06-23T09:59:00.000Z'
+          }
+        }
+      }
+    },
+    pipelineRuns: {
+      runs: []
+    }
+  });
+
+  assert.equal(runbook.status, 'warn');
+  assert.equal(runbook.actionCount, 1);
+  assert.equal(runbook.actions[0].key, 'authorReviewQueue.open');
+  assert.equal(runbook.actions[0].area, 'intelligence');
+  assert.match(runbook.actions[0].recommendedCommand, /list-author-review-queue --status open/);
+  assert.equal(runbook.actions[0].evidence.highPriorityOpenCount, 1);
+});
+
 test('operations runbook turns source lifecycle signals into actions', function () {
   const runbook = getOperationsRunbook({
     now: '2026-06-19T10:00:00.000Z',

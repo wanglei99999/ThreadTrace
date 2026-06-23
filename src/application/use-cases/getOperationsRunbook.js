@@ -25,6 +25,7 @@ function getOperationsRunbook(options) {
     .concat(connectorModuleActions(checklist))
     .concat(sourceLifecycleActions(safeOptions.sourceLifecycleReport))
     .concat(reviewActionGateActions(safeOptions.reviewActionGate))
+    .concat(authorReviewQueueActions(safeOptions.authorReviewQueue || checklistAuthorReviewQueue(checklist)))
     .concat(idempotencyActions(recentTasks))
     .concat(pipelineRunActions(pipelineRuns.runs || []));
 
@@ -38,6 +39,39 @@ function getOperationsRunbook(options) {
     reviewActionGate: safeOptions.reviewActionGate,
     pipelineRuns
   };
+}
+
+function authorReviewQueueActions(queue) {
+  if (!queue || !queue.openCount) return [];
+  const highPriorityOpenCount = queue.highPriorityOpenCount || 0;
+  return [
+    action({
+      key: 'authorReviewQueue.open',
+      severity: 'warning',
+      area: 'intelligence',
+      title: 'Review open author intelligence queue items.',
+      summary: 'Author intelligence has ' + queue.openCount + ' open review item(s)' +
+        (highPriorityOpenCount > 0 ? ', including ' + highPriorityOpenCount + ' high-priority item(s).' : '.'),
+      recommendedCommand: 'node src/presentation/cli/threadtrace.js list-author-review-queue --status open',
+      relatedCommands: [
+        'node src/presentation/cli/threadtrace.js sync-author-review-queue',
+        'node src/presentation/cli/threadtrace.js author-intelligence'
+      ],
+      evidence: {
+        openCount: queue.openCount,
+        highPriorityOpenCount,
+        byPriority: queue.byPriority || {},
+        byType: queue.byType || {},
+        latestUpdatedAt: queue.latestUpdatedAt
+      }
+    })
+  ];
+}
+
+function checklistAuthorReviewQueue(checklist) {
+  return checklist && checklist.readiness && checklist.readiness.overview
+    ? checklist.readiness.overview.authorReviewQueue
+    : undefined;
 }
 
 function checklistActions(checklist) {

@@ -40,6 +40,7 @@ async function getOperationalOverview(options) {
     events: summarizeEvents(pendingEvents, failedEvents, unacknowledgedEvents, now),
     workers: summarizeWorkers(workerRuns, workerLeases, now, safeOptions.workerStaleAfterMs),
     rawPages: summarizeRawPages(rawPages),
+    authorReviewQueue: summarizeAuthorReviewQueue(safeOptions.authorReviewQueue),
     reviewActions: summarizeReviewActions({
       auditOverview: safeOptions.reviewActionAuditOverview,
       executions: safeOptions.reviewActionExecutions
@@ -48,10 +49,36 @@ async function getOperationalOverview(options) {
       tasks: recentTasks.slice(0, 10).map(summarizeRecentTask),
       events: unacknowledgedEvents.slice(0, 10),
       rawPages: rawPages.slice(0, 10),
+      authorReviewQueue: recentAuthorReviewQueueItems(safeOptions.authorReviewQueue),
       workerRuns: workerRuns.slice(0, 10),
       workerLeases: workerLeases.slice(0, 10)
     }
   };
+}
+
+function summarizeAuthorReviewQueue(result) {
+  const items = result && Array.isArray(result.items) ? result.items : [];
+  const summary = result && result.summary || {};
+  const byStatus = summary.byStatus || countBy(items, function (item) { return item.status || 'unknown'; });
+  const byPriority = summary.byPriority || countBy(items, function (item) { return item.priority || 'unknown'; });
+  const byType = summary.byType || countBy(items, function (item) { return item.type || 'unknown'; });
+  return {
+    itemCount: result && result.itemCount !== undefined ? result.itemCount : items.length,
+    openCount: summary.openCount !== undefined ? summary.openCount : (byStatus.open || 0),
+    highPriorityOpenCount: items.filter(function (item) {
+      return item.status === 'open' && item.priority === 'high';
+    }).length || (byPriority.high || 0),
+    byStatus,
+    byPriority,
+    byType,
+    latestUpdatedAt: latestTimestamp(items.map(function (item) {
+      return item.updatedAt || item.lastSeenAt;
+    }))
+  };
+}
+
+function recentAuthorReviewQueueItems(result) {
+  return result && Array.isArray(result.items) ? result.items.slice(0, 10) : [];
 }
 
 function summarizeReviewActions(options) {
@@ -272,6 +299,14 @@ function countByStatus(tasks, status) {
   return tasks.filter(function (task) {
     return task.status === status;
   }).length;
+}
+
+function countBy(items, keySelector) {
+  return (items || []).reduce(function (counts, item) {
+    const key = keySelector(item);
+    counts[key] = (counts[key] || 0) + 1;
+    return counts;
+  }, {});
 }
 
 function isEventDue(event, now) {

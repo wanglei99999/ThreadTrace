@@ -171,6 +171,31 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
           staleRunning: true
         }
       ]
+    },
+    authorReviewQueue: {
+      itemCount: 2,
+      summary: {
+        byStatus: { open: 2 },
+        byPriority: { high: 1, medium: 1 },
+        byType: { 'evidence-gap': 1, 'high-confidence-opinion': 1 },
+        openCount: 2
+      },
+      items: [
+        {
+          id: 'author-review-high',
+          status: 'open',
+          priority: 'high',
+          type: 'evidence-gap',
+          updatedAt: '2026-06-18T09:57:00.000Z'
+        },
+        {
+          id: 'author-review-medium',
+          status: 'open',
+          priority: 'medium',
+          type: 'high-confidence-opinion',
+          updatedAt: '2026-06-18T09:56:00.000Z'
+        }
+      ]
     }
   });
 
@@ -196,6 +221,11 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
   assert.equal(overview.workers.leases.expired, 1);
   assert.equal(overview.rawPages.total, 1);
   assert.equal(overview.rawPages.latestFetchedAt, '2026-06-18T09:50:00.000Z');
+  assert.equal(overview.authorReviewQueue.openCount, 2);
+  assert.equal(overview.authorReviewQueue.highPriorityOpenCount, 1);
+  assert.equal(overview.authorReviewQueue.byType['evidence-gap'], 1);
+  assert.equal(overview.authorReviewQueue.latestUpdatedAt, '2026-06-18T09:57:00.000Z');
+  assert.equal(overview.recent.authorReviewQueue[0].id, 'author-review-high');
   assert.equal(overview.reviewActions.auditCount, 2);
   assert.equal(overview.reviewActions.taskCount, 1);
   assert.equal(overview.reviewActions.plannedClosureCount, 1);

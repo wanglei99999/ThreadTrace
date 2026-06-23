@@ -1007,6 +1007,11 @@ function createThreadTraceRuntime(options) {
         runningStaleAfterMs: safeRequest.runningStaleAfterMs,
         storeDir
       });
+      const authorReviewQueue = await listAuthorReviewQueue({
+        authorReviewQueueRepository: repositories.authorReviewQueueRepository,
+        limit: safeRequest.limit || 100,
+        now: safeRequest.now
+      });
       const overview = await getOperationalOverview({
         sourceRepository: repositories.sourceRepository,
         taskRepository: repositories.taskRepository,
@@ -1016,6 +1021,7 @@ function createThreadTraceRuntime(options) {
         workerLeaseRepository: repositories.workerLeaseRepository,
         reviewActionAuditOverview,
         reviewActionExecutions,
+        authorReviewQueue,
         now: safeRequest.now,
         limit: safeRequest.limit || 100,
         workerStaleAfterMs: safeRequest.workerStaleAfterMs

@@ -342,6 +342,7 @@ function main(argv) {
       console.log('Workers: running=' + overview.workers.running + ', stale=' + overview.workers.stale + ', failed=' + overview.workers.failed + ', latestHeartbeat=' + (overview.workers.latestHeartbeatAt || 'none'));
       console.log('Worker leases: active=' + overview.workers.leases.active + ', expired=' + overview.workers.leases.expired);
       console.log('Raw pages: total=' + overview.rawPages.total + ', latest=' + (overview.rawPages.latestFetchedAt || 'none'));
+      console.log('Author review queue: open=' + (overview.authorReviewQueue.openCount || 0) + ', high=' + (overview.authorReviewQueue.highPriorityOpenCount || 0) + ', latest=' + (overview.authorReviewQueue.latestUpdatedAt || 'none'));
       console.log('Review action executions: total=' + overview.reviewActions.executions.count + ', running=' + overview.reviewActions.executions.running + ', staleRunning=' + overview.reviewActions.executions.staleRunning + ', failed=' + overview.reviewActions.executions.failed);
     }).catch(function (error) {
       console.error(error && error.stack ? error.stack : error);
