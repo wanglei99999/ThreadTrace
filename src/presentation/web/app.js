@@ -378,6 +378,12 @@ async function handleAuthorIntelligenceAction(event) {
     await loadAuthorReviewQueue();
     return;
   }
+  if (action === 'synthesize-author-review-queue-events') {
+    const execute = button.dataset.execute === 'true';
+    if (execute && !window.confirm('Create notification events from open author review queue items?')) return;
+    await synthesizeAuthorReviewQueueEventsFromButton(button, execute);
+    return;
+  }
   if (action === 'set-author-review-status') {
     await requestJson('/api/intelligence/author-review-queue/' + encodeURIComponent(button.dataset.itemId) + '/status', {
       status: button.dataset.status,
@@ -401,6 +407,22 @@ async function loadAuthorReviewQueue() {
       acceptErrorStatus: true
     });
   }, renderAuthorReviewQueueResult);
+}
+
+async function synthesizeAuthorReviewQueueEventsFromButton(button, execute) {
+  const form = new FormData(document.getElementById('analyzeForm'));
+  await renderAsync('authorIntelligenceResult', function () {
+    return requestJson('/api/intelligence/author-review-queue/events', {
+      sourceKey: form.get('forum') || '',
+      status: 'open',
+      execute,
+      resolveStale: true,
+      limit: Number(button.dataset.limit) || 50
+    }, {
+      acceptErrorStatus: true
+    });
+  }, renderAuthorReviewQueueEventSynthesis);
+  await loadEvents();
 }
 
 function buildSourceOnboardingRequest(form) {
@@ -1025,9 +1047,11 @@ function renderAuthorReviewQueueRows(items) {
 
 function renderAuthorReviewQueueResult(result) {
   const summary = result.summary || {};
+  const openCount = summary.openCount || 0;
+  const alertDisabled = openCount > 0 ? '' : ' disabled';
   const tiles = '<div class="summary-strip event-summary-strip">' + [
     summaryTile('Items', result.itemCount || 0),
-    summaryTile('Open', summary.openCount || 0, (summary.openCount || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('Open', openCount, openCount > 0 ? 'warn' : 'ok'),
     summaryTile('High', summary.byPriority && summary.byPriority.high || 0, summary.byPriority && summary.byPriority.high ? 'warn' : 'ok')
   ].join('') + '</div>';
   return [
@@ -1039,9 +1063,39 @@ function renderAuthorReviewQueueResult(result) {
       metric('By type', formatStanceSummary(summary.byType)),
       result.createdCount === undefined ? '' : metric('Sync', 'created=' + (result.createdCount || 0) + ' / updated=' + (result.updatedCount || 0)),
       metric('Next', result.recommendedNextAction || 'none'),
-      '<button class="inline-button secondary-inline-button" type="button" data-action="load-author-review-queue">Refresh open queue</button>'
+      '<span class="button-group">' +
+        '<button class="inline-button secondary-inline-button" type="button" data-action="load-author-review-queue">Refresh open queue</button>' +
+        '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-author-review-queue-events" data-execute="false" data-limit="50">Alert check</button>' +
+        '<button class="inline-button warning-inline-button" type="button" data-action="synthesize-author-review-queue-events" data-execute="true" data-limit="50"' + alertDisabled + '>Create alerts</button>' +
+      '</span>'
     ].join(''), 'wide'),
     panel('Open items', renderDurableAuthorReviewQueueRows(result.items || []), 'wide')
+  ].join('');
+}
+
+function renderAuthorReviewQueueEventSynthesis(result) {
+  const rows = result.results || [];
+  return [
+    panel('Author queue alert synthesis', [
+      metric('Mode', result.dryRun ? 'dry-run' : 'execute'),
+      metric('Items', result.itemCount || 0),
+      metric('Actions', result.actionCount || 0),
+      metric('Created', result.createdCount || 0),
+      metric('Updated', result.updatedCount || 0),
+      metric('Resolved', result.resolvedCount || 0),
+      metric('Reopened', result.reopenedCount || 0),
+      metric('Skipped', result.skippedCount || 0),
+      metric('Next', result.recommendedNextAction || 'none'),
+      '<span class="button-group">' +
+        '<button class="inline-button secondary-inline-button" type="button" data-action="load-author-review-queue">Back to queue</button>' +
+        '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-author-review-queue-events" data-execute="false" data-limit="50">Run check again</button>' +
+      '</span>'
+    ].join(''), 'wide'),
+    panel('Event preview', evidenceList(rows.map(function (item) {
+      const event = item.event || {};
+      const reason = item.reason ? ' | ' + item.reason : '';
+      return item.status + ' | ' + (item.itemId || 'unknown-item') + ' | ' + (event.id || 'no-event') + ' | ' + (event.severity || 'unknown') + reason;
+    })), 'wide')
   ].join('');
 }
 

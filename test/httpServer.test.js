@@ -156,13 +156,16 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(homeHtml, /refreshSourceOperationsButton/);
     assert.match(homeHtml, /sourceOperationsResult/);
     assert.match(homeHtml, /sourceOperationActionResult/);
+    assert.match(homeHtml, /author-review-queue/);
     assert.match(webAppJs, /set-source-enabled/);
     assert.match(webAppJs, /Disable check/);
     assert.match(webAppJs, /run-source-pipeline/);
     assert.match(webAppJs, /reset-source-failure/);
     assert.match(webAppJs, /failure\/reset/);
     assert.match(webAppJs, /synthesize-runbook-events/);
+    assert.match(webAppJs, /synthesize-author-review-queue-events/);
     assert.match(webAppJs, /operations\/runbook\/events/);
+    assert.match(webAppJs, /intelligence\/author-review-queue\/events/);
     assert.match(webAppJs, /Create alerts/);
     assert.match(webAppJs, /buildEventQuery/);
     assert.match(webAppJs, /event-summary-strip/);
@@ -191,6 +194,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /renderContextReviewActionApplyResult/);
     assert.match(webAppJs, /synthesizeReviewResultEvents/);
     assert.match(webAppJs, /renderContextReviewResultEventSynthesis/);
+    assert.match(webAppJs, /renderAuthorReviewQueueEventSynthesis/);
     assert.match(webAppJs, /api\/context-review-results/);
     assert.equal(adapters.adapters[0].sourceKey, 'nga');
     assert.equal(adapterDiagnostics.status, 'ok');
