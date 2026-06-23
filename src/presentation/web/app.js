@@ -42,7 +42,13 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshReviewActionAuditsButton').addEventListener('click', loadContextReviewActionAudits);
   document.getElementById('refreshReviewActionExecutionsButton').addEventListener('click', loadContextReviewActionExecutions);
   document.getElementById('refreshReviewActionExecutorDiagnosticsButton').addEventListener('click', loadContextReviewActionExecutorDiagnostics);
-  document.getElementById('synthesizeReviewResultEventsButton').addEventListener('click', synthesizeReviewResultEvents);
+  document.getElementById('synthesizeReviewResultEventsButton').addEventListener('click', function () {
+    synthesizeReviewResultEvents(false);
+  });
+  document.getElementById('createReviewResultEventsButton').addEventListener('click', async function () {
+    if (!window.confirm('Create notification events from attention-worthy review results?')) return;
+    await synthesizeReviewResultEvents(true);
+  });
   document.getElementById('refreshRawPagesButton').addEventListener('click', loadRawPages);
   document.getElementById('dispatchEventsButton').addEventListener('click', dispatchEvents);
   document.getElementById('runSourcesButton').addEventListener('click', runAllSources);
@@ -869,14 +875,15 @@ async function synthesizeRunbookEventsFromButton(button, execute) {
   await loadEvents();
 }
 
-async function synthesizeReviewResultEvents() {
+async function synthesizeReviewResultEvents(execute) {
   await renderAsync('contextReviewResultResult', function () {
     return requestJson('/api/context-review-results/events', {
-      execute: false,
+      execute: execute === true,
       limit: 50
     });
   }, renderContextReviewResultEventSynthesis);
   await loadContextReviewResults();
+  await loadEvents();
 }
 
 async function dispatchEvents() {

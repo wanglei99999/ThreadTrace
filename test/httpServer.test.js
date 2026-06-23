@@ -151,6 +151,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(homeHtml, /refreshReviewActionGateButton/);
     assert.match(homeHtml, /runReviewActionApplyButton/);
     assert.match(homeHtml, /synthesizeReviewResultEventsButton/);
+    assert.match(homeHtml, /createReviewResultEventsButton/);
     assert.match(homeHtml, /refreshReviewActionExecutionsButton/);
     assert.match(homeHtml, /deliveryStatus/);
     assert.match(homeHtml, /refreshSourceOperationsButton/);
@@ -193,6 +194,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /renderContextReviewActionExecutorDiagnostics/);
     assert.match(webAppJs, /renderContextReviewActionApplyResult/);
     assert.match(webAppJs, /synthesizeReviewResultEvents/);
+    assert.match(webAppJs, /attention-worthy review results/);
     assert.match(webAppJs, /renderContextReviewResultEventSynthesis/);
     assert.match(webAppJs, /renderAuthorReviewQueueEventSynthesis/);
     assert.match(webAppJs, /api\/context-review-results/);
