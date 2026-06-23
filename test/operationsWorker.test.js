@@ -268,6 +268,86 @@ test('operations worker can synthesize context review result events before dispa
   assert.equal(result.contextReviewResultEvents.createdCount, 1);
 });
 
+test('operations worker can archive handled events after dispatch before overview', async function () {
+  const calls = [];
+  const workerRuns = [];
+  const worker = createOperationsWorker({
+    logger: silentLogger(),
+    workerRunRepository: {
+      async saveWorkerRun(run) {
+        workerRuns.push(Object.assign({}, run));
+      },
+      async findWorkerRun() {},
+      async listWorkerRuns() {
+        return workerRuns;
+      }
+    },
+    runtime: {
+      async runDueSourcesIngestTasks() {
+        calls.push(['sources']);
+        return {
+          dueCount: 0,
+          completedCount: 0,
+          failedCount: 0,
+          skippedCount: 0
+        };
+      },
+      async dispatchNotificationEvents() {
+        calls.push(['events']);
+        return {
+          dispatchedCount: 1,
+          failedCount: 0,
+          skippedCount: 0
+        };
+      },
+      async archiveNotificationEvents(request) {
+        calls.push(['archive-events', request.execute, request.sourceKey]);
+        return {
+          status: 'ok',
+          dryRun: false,
+          scannedCount: 3,
+          candidateCount: 2,
+          archivedCount: 2,
+          skippedCount: 0,
+          cutoffAt: '2026-06-01T00:00:00.000Z',
+          batchId: 'batch-1'
+        };
+      },
+      async getOperationalOverview() {
+        calls.push(['overview']);
+        return {
+          events: {
+            unacknowledged: 0
+          },
+          workers: {
+            stale: 0
+          },
+          tasks: {
+            failed: 0
+          }
+        };
+      }
+    }
+  });
+
+  const result = await worker.runOnce({
+    archiveEvents: {
+      execute: true,
+      sourceKey: 'forum-a'
+    }
+  });
+
+  assert.deepEqual(calls, [
+    ['sources'],
+    ['events'],
+    ['archive-events', true, 'forum-a'],
+    ['overview']
+  ]);
+  assert.equal(result.archivedEvents.archivedCount, 2);
+  assert.equal(workerRuns.at(-1).output.archivedEvents.archivedCount, 2);
+  assert.equal(workerRuns.at(-1).output.archivedEvents.batchId, 'batch-1');
+});
+
 test('operations worker can run review action dry-run before dispatch', async function () {
   const calls = [];
   const workerRuns = [];

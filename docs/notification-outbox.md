@@ -71,6 +71,8 @@ npm run worker:operations-once -- --context-review-result-events true
 npm run worker:operations-loop -- --context-review-result-events-execute true
 npm run worker:operations-once -- --author-review-queue-events true
 npm run worker:operations-loop -- --author-review-queue-events-execute true --source-key nga
+npm run worker:operations-once -- --archive-events true --source-key nga
+npm run worker:operations-loop -- --archive-events-execute true --source-key nga
 ```
 
 HTTP:
@@ -89,7 +91,7 @@ POST /api/events/archive
 
 Use `ack-events` or `POST /api/events/ack` to close handled events in bulk. Without explicit `eventIds`, bulk acknowledgement defaults to `acknowledged=false` and the requested filter window, including optional `sourceKey` / `forum`, which keeps historical acknowledged events immutable while giving operators a fast way to clear delivered or resolved alerts.
 
-Use `archive-events` or `POST /api/events/archive` to keep the active outbox small after operators have handled alerts. The archive command defaults to dry-run and only targets acknowledged `delivered` or `resolved` events older than the retention window. File storage moves records into `events/_archive/YYYY-MM/`; PostgreSQL stores `archived_at`, `archived_by`, `archive_reason`, and `archive_batch_id`. Active reads hide archived events unless the caller sets `includeArchived=true`.
+Use `archive-events`, `POST /api/events/archive`, or the operations-worker `--archive-events true` / `--archive-events-execute true` flags to keep the active outbox small after operators have handled alerts. The archive command defaults to dry-run and only targets acknowledged `delivered` or `resolved` events older than the retention window. File storage moves records into `events/_archive/YYYY-MM/`; PostgreSQL stores `archived_at`, `archived_by`, `archive_reason`, and `archive_batch_id`. Active reads hide archived events unless the caller sets `includeArchived=true`.
 
 Useful environment variables:
 

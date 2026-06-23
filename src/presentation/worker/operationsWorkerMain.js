@@ -71,6 +71,9 @@ async function main(argv) {
     }
     console.log('Events delivered: ' + result.events.dispatchedCount);
     console.log('Events failed: ' + result.events.failedCount);
+    if (result.archivedEvents) {
+      console.log('Events archived: ' + result.archivedEvents.archivedCount + ', candidates=' + result.archivedEvents.candidateCount + ', dryRun=' + result.archivedEvents.dryRun);
+    }
     console.log('Open events: ' + result.overview.events.unacknowledged);
     console.log('Worker stale: ' + result.overview.workers.stale);
   }
@@ -104,6 +107,22 @@ function buildRequest(options, storeDir, config) {
       includeFailed: options.includeFailed === undefined ? undefined : options.includeFailed !== 'false',
       storeDir
     },
+    archiveEvents: options.archiveEvents === 'true' || options.archiveEventsExecute === 'true'
+      ? {
+        sourceKey: options.sourceKey || options.forum,
+        sourceId: options.sourceId,
+        type: options.archiveEventType,
+        deliveryStatuses: options.archiveDeliveryStatuses,
+        requireAcknowledged: parseOptionalBoolean(options.archiveRequireAcknowledged),
+        olderThanDays: options.archiveOlderThanDays ? Number(options.archiveOlderThanDays) : undefined,
+        scanLimit: options.archiveScanLimit ? Number(options.archiveScanLimit) : undefined,
+        archiveLimit: options.archiveLimit ? Number(options.archiveLimit) : (options.limit ? Number(options.limit) : undefined),
+        execute: options.archiveEventsExecute === 'true',
+        archivedBy: options.archiveBy,
+        reason: options.archiveReason,
+        storeDir
+      }
+      : undefined,
     runbookEvents: options.runbookEvents === 'true' || options.runbookEventsExecute === 'true'
       ? {
         forum: options.forum,
@@ -179,6 +198,9 @@ function parseArgs(args) {
     } else if (item === '--source-thread-id') {
       options.sourceThreadId = args[index + 1];
       index += 1;
+    } else if (item === '--source-id') {
+      options.sourceId = args[index + 1];
+      index += 1;
     } else if (item === '--channel') {
       options.channel = args[index + 1];
       index += 1;
@@ -250,6 +272,36 @@ function parseArgs(args) {
       index += 1;
     } else if (item === '--author-review-queue-resolve-stale') {
       options.authorReviewQueueResolveStale = args[index + 1];
+      index += 1;
+    } else if (item === '--archive-events') {
+      options.archiveEvents = args[index + 1];
+      index += 1;
+    } else if (item === '--archive-events-execute') {
+      options.archiveEventsExecute = args[index + 1];
+      index += 1;
+    } else if (item === '--archive-event-type') {
+      options.archiveEventType = args[index + 1];
+      index += 1;
+    } else if (item === '--archive-delivery-statuses') {
+      options.archiveDeliveryStatuses = args[index + 1];
+      index += 1;
+    } else if (item === '--archive-require-acknowledged') {
+      options.archiveRequireAcknowledged = args[index + 1];
+      index += 1;
+    } else if (item === '--archive-older-than-days') {
+      options.archiveOlderThanDays = args[index + 1];
+      index += 1;
+    } else if (item === '--archive-scan-limit') {
+      options.archiveScanLimit = args[index + 1];
+      index += 1;
+    } else if (item === '--archive-limit') {
+      options.archiveLimit = args[index + 1];
+      index += 1;
+    } else if (item === '--archive-by') {
+      options.archiveBy = args[index + 1];
+      index += 1;
+    } else if (item === '--archive-reason') {
+      options.archiveReason = args[index + 1];
       index += 1;
     } else if (item === '--review-action') {
       options.reviewAction = args[index + 1];
