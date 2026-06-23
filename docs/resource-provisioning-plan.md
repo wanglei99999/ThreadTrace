@@ -16,6 +16,7 @@ Plan a specific source rollout:
 
 ```powershell
 node src/presentation/cli/threadtrace.js resource-provisioning-plan --manifest-file docs/examples/rollout-manifest.sample.json
+node src/presentation/cli/threadtrace.js resource-provisioning-plan --manifest-file docs/examples/external-package-rollout-manifest.sample.json
 ```
 
 ## HTTP
@@ -29,7 +30,7 @@ The body can be a rollout manifest directly, or an object with a `manifest` prop
 ## Planned Resources
 
 - `storage.file` or `storage.postgres`: primary persistence, schema/bootstrap command, and storage environment variables.
-- `source.*`: source-specific input path, JSON file, URL, or connector location object.
+- `source.*`: source-specific input path, JSON file, URL, connector location object, or custom connector manifest fields such as `inputFile`.
 - `connectors.modules`: optional or required connector module packaging via `THREADTRACE_CONNECTOR_MODULES`.
 - `workers.runtime`: worker commands, topology, leases, intervals, and source task mode.
 - `reviewActions.executor`: review action execution mode, diagnostics command, audit rehearsal, and future source-truth mutation adapter.

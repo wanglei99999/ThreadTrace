@@ -137,17 +137,32 @@ function sourceInputResource(manifest) {
       provisioning: ['Generate or export JSON that satisfies the ThreadSnapshot JSON contract.']
     });
   }
+  const externalLocationEvidence = externalSourceLocationEvidence(source);
   return resource({
     key: 'source.externalLocation',
     area: 'sources',
     required: true,
-    status: source.url || source.location ? 'ok' : 'warn',
+    status: externalLocationEvidence.hasLocation ? 'ok' : 'warn',
     summary: 'Provision source-specific location settings for the connector handler.',
-    evidence: { hasUrl: Boolean(source.url), hasLocation: Boolean(source.location) },
+    evidence: externalLocationEvidence,
     env: [],
     commands: ['node src/presentation/cli/threadtrace.js source-onboarding-preflight --location-file <file>'],
     provisioning: ['Provide the location object required by the selected source ingest handler.']
   });
+}
+
+function externalSourceLocationEvidence(source) {
+  const location = source.location || {};
+  const fields = ['inputFile', 'inputDir', 'url', 'feedUrl'];
+  const providedFields = fields.filter(function (field) {
+    return source[field] || location[field];
+  });
+  return {
+    hasLocation: Boolean(source.location) || providedFields.length > 0,
+    hasUrl: Boolean(source.url || location.url),
+    providedFields,
+    locationKeys: Object.keys(location)
+  };
 }
 
 function connectorModuleResource(config, diagnostics, manifestPlan) {

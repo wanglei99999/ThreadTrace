@@ -323,3 +323,36 @@ test('runtime resource provisioning plan composes diagnostics and manifest plann
   }).status, 'ok');
   assert.equal(plan.rolloutManifestPlan.connectorRolloutPlan.sourceIngestDryRun.status, 'ok');
 });
+
+test('runtime resource provisioning plan recognizes package connector manifest input fields', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-resource-package-plan-'));
+  const cwd = path.resolve(__dirname, '..');
+  const manifest = JSON.parse(await fs.readFile(path.join(cwd, 'docs', 'examples', 'external-package-rollout-manifest.sample.json'), 'utf8'));
+  const runtime = createThreadTraceRuntime({
+    cwd,
+    env: {
+      THREADTRACE_REVIEW_ACTION_EXECUTOR: 'file-audit'
+    },
+    storeDir: path.join(tempDir, 'store')
+  });
+
+  const plan = await runtime.getResourceProvisioningPlan({
+    now: '2026-06-19T10:00:00.000Z',
+    storeDir: path.join(tempDir, 'store'),
+    manifest
+  });
+  const sourceInput = plan.resources.find(function (item) {
+    return item.key === 'source.externalLocation';
+  });
+  const connector = plan.resources.find(function (item) {
+    return item.key === 'connectors.modules';
+  });
+
+  assert.equal(plan.environment.sourceKey, 'external-package');
+  assert.equal(plan.environment.sourceType, 'package-normalized-feed');
+  assert.equal(sourceInput.status, 'ok');
+  assert.deepEqual(sourceInput.evidence.providedFields, ['inputFile']);
+  assert.equal(connector.required, true);
+  assert.equal(connector.status, 'ok');
+  assert.equal(plan.rolloutManifestPlan.connectorRolloutPlan.sourceIngestDryRun.status, 'ok');
+});
