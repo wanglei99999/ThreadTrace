@@ -47,6 +47,7 @@ It is intended for multi-forum growth: each future source can provide the same m
 
 ```powershell
 node src/presentation/cli/threadtrace.js rollout-manifest-plan --manifest-file docs/examples/rollout-manifest.sample.json
+node src/presentation/cli/threadtrace.js rollout-manifest-plan --manifest-file docs/examples/external-rollout-manifest.sample.json
 ```
 
 The command prints the manifest status, source identity, composed connector rollout status, worker topology status, and next actions.

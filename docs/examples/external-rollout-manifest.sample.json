@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "name": "external-normalized-feed-rollout",
+  "source": {
+    "sourceKey": "external",
+    "sourceType": "external-normalized-feed",
+    "displayName": "External normalized feed",
+    "inputFile": "docs/examples/external-thread.sample.json"
+  },
+  "connector": {
+    "modulePath": "docs/examples/external-normalized-feed-connector.cjs"
+  },
+  "ingest": {
+    "dryRun": true,
+    "allowRemoteFetch": false
+  },
+  "workers": {
+    "topology": "operations-worker",
+    "sourceTaskMode": "ingest"
+  },
+  "deployment": {
+    "storeDir": "data/store",
+    "limit": 100
+  }
+}

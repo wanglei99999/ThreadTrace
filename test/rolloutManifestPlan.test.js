@@ -121,3 +121,27 @@ test('runtime rollout manifest plan composes rollout and worker planning', async
   assert.equal(plan.workerTopologyPlan.status, 'ok');
   assert.equal(plan.workerTopologyPlan.topology, 'operations-worker');
 });
+
+test('documented external rollout manifest composes connector dry-run', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-external-rollout-manifest-'));
+  const cwd = path.resolve(__dirname, '..');
+  const manifest = JSON.parse(await fs.readFile(path.join(cwd, 'docs', 'examples', 'external-rollout-manifest.sample.json'), 'utf8'));
+  const runtime = createThreadTraceRuntime({
+    cwd,
+    env: {
+      THREADTRACE_REVIEW_ACTION_EXECUTOR: 'file-audit'
+    },
+    storeDir: path.join(tempDir, 'store')
+  });
+
+  const plan = await runtime.getRolloutManifestPlan({
+    now: '2026-06-19T10:00:00.000Z',
+    manifest
+  });
+
+  assert.equal(plan.sourceType, 'external-normalized-feed');
+  assert.equal(plan.connectorRolloutPlan.connectorModuleValidation.valid, true);
+  assert.equal(plan.connectorRolloutPlan.sourceIngestDryRun.status, 'ok');
+  assert.equal(plan.connectorRolloutPlan.sourceIngestDryRun.thread.sourceThreadId, 'external-thread-1');
+  assert.equal(plan.workerTopologyPlan.status, 'ok');
+});
