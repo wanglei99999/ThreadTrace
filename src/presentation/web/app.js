@@ -51,7 +51,12 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   document.getElementById('refreshRawPagesButton').addEventListener('click', loadRawPages);
   document.getElementById('dispatchEventsButton').addEventListener('click', dispatchEvents);
-  document.getElementById('ackVisibleEventsButton').addEventListener('click', acknowledgeVisibleEvents);
+  document.getElementById('previewAckEventsButton').addEventListener('click', function () {
+    acknowledgeVisibleEvents(false);
+  });
+  document.getElementById('ackVisibleEventsButton').addEventListener('click', function () {
+    acknowledgeVisibleEvents(true);
+  });
   document.getElementById('previewEventArchiveButton').addEventListener('click', function () {
     archiveHandledEvents(false);
   });
@@ -776,7 +781,7 @@ function normalizeEventLimit(value) {
   return Math.min(Math.floor(limit), 100);
 }
 
-function buildVisibleEventAckRequest() {
+function buildVisibleEventAckRequest(execute) {
   const formElement = document.getElementById('eventFilterForm');
   const form = formElement ? new FormData(formElement) : undefined;
   const deliveryStatus = form ? String(form.get('deliveryStatus') || '').trim() : '';
@@ -786,7 +791,9 @@ function buildVisibleEventAckRequest() {
     acknowledged: false,
     acknowledgedBy: 'web',
     note: 'Acknowledged from the web event filter.',
-    limit: normalizeEventLimit(form ? form.get('limit') : 10)
+    limit: normalizeEventLimit(form ? form.get('limit') : 10),
+    dryRun: execute !== true,
+    execute: execute === true
   };
   if (deliveryStatus) request.deliveryStatus = deliveryStatus;
   if (type) request.type = type;
@@ -949,11 +956,11 @@ async function dispatchEvents() {
   await loadEvents();
 }
 
-async function acknowledgeVisibleEvents() {
-  const request = buildVisibleEventAckRequest();
-  if (!window.confirm('Acknowledge up to ' + request.limit + ' open notification events in the current filter?')) return;
+async function acknowledgeVisibleEvents(execute) {
+  const request = buildVisibleEventAckRequest(execute);
+  if (execute && !window.confirm('Acknowledge up to ' + request.limit + ' open notification events in the current filter?')) return;
   const target = document.getElementById('eventResult');
-  target.innerHTML = '<div class="empty">Acknowledging events...</div>';
+  target.innerHTML = '<div class="empty">' + (execute ? 'Acknowledging events...' : 'Previewing acknowledgement candidates...') + '</div>';
   try {
     const result = await requestJson('/api/events/ack', request);
     await loadSystemStatus();
@@ -2086,7 +2093,7 @@ function statusBadge(label, variant) {
 function statusVariant(status) {
   if (status === 'ok' || status === 'noop') return 'ok';
   if (status === 'fail' || status === 'critical') return 'fail';
-  if (status === 'warn' || status === 'warning' || status === 'actionable') return 'warn';
+  if (status === 'warn' || status === 'warning' || status === 'actionable' || status === 'preview') return 'warn';
   return 'muted';
 }
 
@@ -2497,6 +2504,7 @@ function renderNotificationEventOverview(overview) {
       summaryTile('Failed', String(overview.failedCount || 0), overview.failedCount > 0 ? 'fail' : 'ok')
     ].join('') + '</div>',
     metric('Delivery status', formatStanceSummary(overview.byDeliveryStatus)),
+    metric('Open delivery status', formatStanceSummary(overview.byOpenDeliveryStatus)),
     metric('Event types', formatStanceSummary(overview.byType)),
     metric('Severity', formatStanceSummary(overview.bySeverity)),
     metric('Next delivery', overview.nextDeliveryAt || 'none'),
@@ -2504,7 +2512,9 @@ function renderNotificationEventOverview(overview) {
     metric('Next', overview.recommendedNextAction || 'none'),
     evidenceList((attention.failedEvents || []).slice(0, 5).map(function (event) {
       return (event.deliveryStatus || 'failed') + ' | ' + event.type + ' | ' + event.id + ' | attempts=' + (event.deliveryAttempts || 0);
-    }))
+    }).concat((attention.reviewableEvents || []).slice(0, 5).map(function (event) {
+      return (event.deliveryStatus || 'delivered') + ' | ' + event.type + ' | ' + event.id + ' | reviewable';
+    })))
   ].join(''), 'wide');
 }
 
@@ -2579,9 +2589,12 @@ function renderEventAckResult(result) {
 }
 
 function renderEventBatchAckResult(result) {
-  return panel('Notification events acknowledged', [
+  const title = result.dryRun ? 'Notification acknowledgement preview' : 'Notification events acknowledged';
+  return panel(title, [
     '<div class="summary-strip event-summary-strip">' + [
       summaryTile('Status', result.status || 'unknown', statusVariant(result.status)),
+      summaryTile('Dry-run', result.dryRun ? 'yes' : 'no', result.dryRun ? 'warn' : 'ok'),
+      summaryTile('Candidates', String(result.candidateCount || 0), result.candidateCount > 0 ? 'warn' : 'muted'),
       summaryTile('Acked', String(result.acknowledgedCount || 0), result.acknowledgedCount > 0 ? 'ok' : 'muted'),
       summaryTile('Skipped', String(result.skippedCount || 0), result.skippedCount > 0 ? 'warn' : 'ok'),
       summaryTile('Window', String(result.eventCount || 0))
