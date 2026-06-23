@@ -1,0 +1,12 @@
+{
+  "name": "@threadtrace/example-external-connector-package",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Package-style ThreadTrace connector template for external normalized feeds.",
+  "main": "index.cjs",
+  "type": "commonjs",
+  "scripts": {
+    "validate": "node ../../../src/presentation/cli/threadtrace.js validate-connector-module --module-path ./index.cjs",
+    "dry-run": "node ../../../src/presentation/cli/threadtrace.js source-ingest-dry-run --module-path ./index.cjs --forum external-package --source-type package-normalized-feed --input-file ../external-thread.sample.json"
+  }
+}

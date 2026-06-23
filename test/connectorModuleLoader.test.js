@@ -232,6 +232,38 @@ test('documented external normalized connector validates and dry-runs sample JSO
   assert.equal(dryRun.repositoryWrites.reports, 1);
 });
 
+test('documented external connector package validates and dry-runs sample JSON', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-docs-connector-package-'));
+  const cwd = path.resolve(__dirname, '..');
+  const modulePath = path.join(cwd, 'docs', 'examples', 'external-connector-package', 'index.cjs');
+  const inputFile = path.join(cwd, 'docs', 'examples', 'external-thread.sample.json');
+  const runtime = createThreadTraceRuntime({
+    cwd,
+    storeDir: path.join(tempDir, 'store')
+  });
+
+  const validation = runtime.validateConnectorModule({
+    modulePath,
+    now: '2026-06-19T10:00:00.000Z'
+  });
+  const dryRun = await runtime.dryRunSourceIngest({
+    modulePath,
+    forum: 'external-package',
+    sourceType: 'package-normalized-feed',
+    displayName: 'External connector package docs sample',
+    inputFile,
+    now: '2026-06-19T10:00:00.000Z'
+  });
+
+  assert.equal(validation.valid, true);
+  assert.equal(validation.contractSummary.sourceIngestHandlers[0].sourceType, 'package-normalized-feed');
+  assert.equal(validation.contractSummary.sourceIngestHandlers[0].capabilities.packageTemplate, true);
+  assert.equal(dryRun.status, 'ok');
+  assert.equal(dryRun.thread.sourceThreadId, 'external-thread-1');
+  assert.equal(dryRun.repositoryWrites.threadSnapshots, 1);
+  assert.equal(dryRun.repositoryWrites.reports, 1);
+});
+
 test('connector module validation reloads changed module files', async function () {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-connector-module-reload-'));
   const modulePath = path.join(tempDir, 'reloadConnector.cjs');
