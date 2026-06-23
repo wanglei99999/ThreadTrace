@@ -2,7 +2,7 @@
 
 ThreadTrace can run background work in two deployment shapes:
 
-- `operations-worker`: one combined worker loop runs due source work, notification dispatch, and operational overview updates.
+- `operations-worker`: one combined worker loop runs due source work, optional review/runbook/author-queue synthesis, notification dispatch, and operational overview updates.
 - `split-workers`: separate loops run due source work and notification dispatch.
 
 The topology plan is a read-only deployment planning report. It does not start workers, acquire leases, write task records, or change source schedules.
@@ -68,4 +68,3 @@ File storage is appropriate for local development and simple single-node operati
 ```
 
 `nextActions` is generated from non-ok checks and points operators to the next diagnostic command.
-

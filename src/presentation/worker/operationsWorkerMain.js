@@ -63,6 +63,9 @@ async function main(argv) {
     if (result.reviewActionTask) {
       console.log('Review action: ' + result.reviewActionTask.report.status + ', dryRun=' + result.reviewActionTask.report.dryRun);
     }
+    if (result.authorReviewQueueEvents) {
+      console.log('Author queue events: ' + result.authorReviewQueueEvents.eventCount + ', dryRun=' + result.authorReviewQueueEvents.dryRun);
+    }
     console.log('Events delivered: ' + result.events.dispatchedCount);
     console.log('Events failed: ' + result.events.failedCount);
     console.log('Open events: ' + result.overview.events.unacknowledged);
@@ -110,6 +113,19 @@ function buildRequest(options, storeDir, config) {
         storeDir
       }
       : undefined,
+    authorReviewQueueEvents: options.authorReviewQueueEvents === 'true' || options.authorReviewQueueEventsExecute === 'true'
+      ? {
+        sourceKey: options.sourceKey || options.forum,
+        sourceThreadId: options.sourceThreadId,
+        status: options.authorReviewQueueStatus || 'open',
+        type: options.authorReviewQueueType,
+        priority: options.authorReviewQueuePriority,
+        execute: options.authorReviewQueueEventsExecute === 'true',
+        resolveStale: parseOptionalBoolean(options.authorReviewQueueResolveStale),
+        limit: options.limit ? Number(options.limit) : undefined,
+        storeDir
+      }
+      : undefined,
     reviewAction: options.reviewAction === 'true' || options.reviewActionExecute === 'true'
       ? {
         execute: options.reviewActionExecute === 'true',
@@ -146,6 +162,9 @@ function parseArgs(args) {
       index += 1;
     } else if (item === '--source-key') {
       options.sourceKey = args[index + 1];
+      index += 1;
+    } else if (item === '--source-thread-id') {
+      options.sourceThreadId = args[index + 1];
       index += 1;
     } else if (item === '--channel') {
       options.channel = args[index + 1];
@@ -194,6 +213,24 @@ function parseArgs(args) {
       index += 1;
     } else if (item === '--runbook-events-execute') {
       options.runbookEventsExecute = args[index + 1];
+      index += 1;
+    } else if (item === '--author-review-queue-events') {
+      options.authorReviewQueueEvents = args[index + 1];
+      index += 1;
+    } else if (item === '--author-review-queue-events-execute') {
+      options.authorReviewQueueEventsExecute = args[index + 1];
+      index += 1;
+    } else if (item === '--author-review-queue-status') {
+      options.authorReviewQueueStatus = args[index + 1];
+      index += 1;
+    } else if (item === '--author-review-queue-type') {
+      options.authorReviewQueueType = args[index + 1];
+      index += 1;
+    } else if (item === '--author-review-queue-priority') {
+      options.authorReviewQueuePriority = args[index + 1];
+      index += 1;
+    } else if (item === '--author-review-queue-resolve-stale') {
+      options.authorReviewQueueResolveStale = args[index + 1];
       index += 1;
     } else if (item === '--review-action') {
       options.reviewAction = args[index + 1];

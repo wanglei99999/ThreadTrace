@@ -132,6 +132,75 @@ test('operations worker can synthesize runbook notification events before dispat
   assert.equal(result.runbookEvents.eventCount, 1);
 });
 
+test('operations worker can synthesize author review queue events before dispatch', async function () {
+  const calls = [];
+  const worker = createOperationsWorker({
+    logger: silentLogger(),
+    runtime: {
+      async runDueSourcesIngestTasks() {
+        calls.push(['sources']);
+        return {
+          dueCount: 0,
+          completedCount: 0,
+          failedCount: 0,
+          skippedCount: 0
+        };
+      },
+      async synthesizeAuthorReviewQueueNotificationEvents(request) {
+        calls.push(['author-queue-events', request.execute, request.sourceKey]);
+        return {
+          itemCount: 2,
+          actionCount: 2,
+          eventCount: 2,
+          createdCount: 2,
+          updatedCount: 0,
+          resolvedCount: 0,
+          reopenedCount: 0,
+          skippedCount: 0
+        };
+      },
+      async dispatchNotificationEvents() {
+        calls.push(['events']);
+        return {
+          dispatchedCount: 2,
+          failedCount: 0,
+          skippedCount: 0
+        };
+      },
+      async getOperationalOverview() {
+        calls.push(['overview']);
+        return {
+          events: {
+            unacknowledged: 2
+          },
+          workers: {
+            stale: 0
+          },
+          tasks: {
+            failed: 0
+          }
+        };
+      }
+    }
+  });
+
+  const result = await worker.runOnce({
+    authorReviewQueueEvents: {
+      execute: true,
+      sourceKey: 'forum-a'
+    }
+  });
+
+  assert.deepEqual(calls, [
+    ['sources'],
+    ['author-queue-events', true, 'forum-a'],
+    ['events'],
+    ['overview']
+  ]);
+  assert.equal(result.authorReviewQueueEvents.eventCount, 2);
+  assert.equal(result.authorReviewQueueEvents.createdCount, 2);
+});
+
 test('operations worker can run review action dry-run before dispatch', async function () {
   const calls = [];
   const workerRuns = [];

@@ -62,6 +62,8 @@ npm run worker:events-once
 npm run worker:events-loop
 npm run worker:operations-once -- --runbook-events true
 npm run worker:operations-loop -- --runbook-events-execute true
+npm run worker:operations-once -- --author-review-queue-events true
+npm run worker:operations-loop -- --author-review-queue-events-execute true --source-key nga
 ```
 
 HTTP:
