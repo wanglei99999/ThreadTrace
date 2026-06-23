@@ -42,6 +42,8 @@ const REQUIRED_INDEXES = [
   'idx_notification_events_due',
   'idx_notification_events_ack',
   'idx_notification_events_source',
+  'idx_notification_events_source_key',
+  'idx_notification_events_archive',
   'idx_retrieval_documents_thread',
   'idx_retrieval_documents_author',
   'idx_retrieval_documents_text_trgm',
@@ -52,6 +54,16 @@ const REQUIRED_INDEXES = [
   'idx_worker_leases_type',
   'idx_worker_leases_expires'
 ];
+
+const REQUIRED_COLUMNS = {
+  notification_events: [
+    'source_key',
+    'archived_at',
+    'archived_by',
+    'archive_reason',
+    'archive_batch_id'
+  ]
+};
 
 async function inspectPostgresResources(options) {
   const safeOptions = options || {};
@@ -78,12 +90,14 @@ async function inspectPostgresResources(options) {
   try {
     await client.query('select 1 as ok');
     const schemaCheck = await inspectSchema(client);
+    const columnCheck = await inspectColumns(client);
     const indexCheck = await inspectIndexes(client);
     return {
       storageMode: 'postgres',
       checks: [
         check('resources.postgres', 'ok', 'reachable', 'PostgreSQL responded to a lightweight ping.'),
         schemaCheck,
+        columnCheck,
         indexCheck
       ]
     };
@@ -94,6 +108,27 @@ async function inspectPostgresResources(options) {
         check('resources.postgres', 'fail', errorMessage(error), 'PostgreSQL ping failed.')
       ]
     };
+  }
+}
+
+async function inspectColumns(client) {
+  try {
+    const result = await client.query(
+      'select table_name, column_name from information_schema.columns where table_schema = $1 and table_name = any($2) and column_name = any($3)',
+      ['public', Object.keys(REQUIRED_COLUMNS), requiredColumnNames()]
+    );
+    const existing = new Set((result.rows || []).map(function (row) {
+      return row.table_name + '.' + row.column_name;
+    }));
+    const missing = requiredColumnKeys().filter(function (columnKey) {
+      return !existing.has(columnKey);
+    });
+    if (missing.length > 0) {
+      return check('resources.postgresColumns', 'fail', missing.join(','), 'PostgreSQL schema is missing required ThreadTrace columns.');
+    }
+    return check('resources.postgresColumns', 'ok', requiredColumnKeys().length, 'PostgreSQL schema contains required ThreadTrace columns.');
+  } catch (error) {
+    return check('resources.postgresColumns', 'fail', errorMessage(error), 'PostgreSQL column check failed.');
   }
 }
 
@@ -139,6 +174,20 @@ async function inspectSchema(client) {
   }
 }
 
+function requiredColumnKeys() {
+  return Object.keys(REQUIRED_COLUMNS).flatMap(function (tableName) {
+    return REQUIRED_COLUMNS[tableName].map(function (columnName) {
+      return tableName + '.' + columnName;
+    });
+  });
+}
+
+function requiredColumnNames() {
+  return Array.from(new Set(Object.keys(REQUIRED_COLUMNS).flatMap(function (tableName) {
+    return REQUIRED_COLUMNS[tableName];
+  })));
+}
+
 function check(key, status, value, summary) {
   return {
     key,
@@ -155,5 +204,6 @@ function errorMessage(error) {
 module.exports = {
   inspectPostgresResources,
   REQUIRED_TABLES,
-  REQUIRED_INDEXES
+  REQUIRED_INDEXES,
+  REQUIRED_COLUMNS
 };

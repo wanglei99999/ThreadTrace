@@ -64,6 +64,9 @@ test('runtime deployment gate composes rollout and resource reports', async func
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-deployment-gate-'));
   const runtime = createThreadTraceRuntime({
     defaultInputDir: path.resolve(__dirname, '..', 'example'),
+    env: {
+      THREADTRACE_REVIEW_ACTION_EXECUTOR: 'file-audit'
+    },
     storeDir: path.join(tempDir, 'store')
   });
   const report = await runtime.getDeploymentGateReport({

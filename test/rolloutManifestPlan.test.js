@@ -88,6 +88,9 @@ test('runtime rollout manifest plan composes rollout and worker planning', async
   }, null, 2) + '\n', 'utf8');
 
   const runtime = createThreadTraceRuntime({
+    env: {
+      THREADTRACE_REVIEW_ACTION_EXECUTOR: 'file-audit'
+    },
     storeDir: path.join(tempDir, 'store')
   });
   const plan = await runtime.getRolloutManifestPlan({

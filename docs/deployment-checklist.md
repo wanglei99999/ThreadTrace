@@ -30,7 +30,7 @@ The checklist returns `ok`, `warn`, or `fail`. HTTP returns `503` when the check
 | Key | Area | Evidence |
 | --- | --- | --- |
 | `runtime.configuration` | runtime | Redacted runtime diagnostics are available. |
-| `resources.storage` | resources | File store paths, PostgreSQL ping checks, and required PostgreSQL tables. |
+| `resources.storage` | resources | File store paths, PostgreSQL ping checks, and required PostgreSQL tables, columns, and indexes. |
 | `adapters.contract` | adapters | Forum adapters resolve from the registry and implement parser contracts. |
 | `connectors.readiness` | connectors | Source connector catalog, module load errors, adapter coverage, and configured source counts. |
 | `sources.ingestConfiguration` | sources | Source locations, ingest handlers, and adapters. |

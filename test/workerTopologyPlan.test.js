@@ -82,6 +82,9 @@ test('worker topology plan warns when split workers use file storage', function 
 test('runtime worker topology plan uses current file-storage configuration', async function () {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-worker-topology-'));
   const runtime = createThreadTraceRuntime({
+    env: {
+      THREADTRACE_REVIEW_ACTION_EXECUTOR: 'file-audit'
+    },
     storeDir: tempDir
   });
   const plan = await runtime.getWorkerTopologyPlan({
@@ -95,4 +98,3 @@ test('runtime worker topology plan uses current file-storage configuration', asy
   assert.equal(plan.workers[0].workerType, 'operations');
   assert.match(plan.workers[0].command, /operationsWorkerMain/);
 });
-

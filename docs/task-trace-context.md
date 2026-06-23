@@ -34,7 +34,7 @@ The first replay-enabled use cases are:
 
 Dynamic batch and scheduler-driven tasks still treat idempotency metadata as observational because their effective inputs depend on source state, due times, and worker leases.
 
-PostgreSQL deployments should apply `docs/postgresql-schema.sql`; it includes expression indexes for `requestId`, `traceId`, and `idempotencyKey` task lookups. Runtime diagnostics report missing baseline indexes as `resources.postgresIndexes`.
+PostgreSQL deployments should apply `docs/postgresql-schema.sql`; it includes expression indexes for `requestId`, `traceId`, and `idempotencyKey` task lookups. Runtime diagnostics report missing baseline columns as `resources.postgresColumns` and missing baseline indexes as `resources.postgresIndexes`.
 
 ## Propagation Rules
 

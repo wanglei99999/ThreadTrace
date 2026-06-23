@@ -138,4 +138,4 @@ In file storage mode, diagnostics verify:
 - default input directory readability
 - store directory writability
 
-In PostgreSQL mode, diagnostics create or use the configured PostgreSQL client, run a lightweight `select 1 as ok` ping, and verify the required ThreadTrace tables exist in `public`. Missing client configuration, missing `pg`, connection errors, or missing schema tables are reported as `fail` resource checks so readiness probes can block traffic before workers start writing production data.
+In PostgreSQL mode, diagnostics create or use the configured PostgreSQL client, run a lightweight `select 1 as ok` ping, and verify the required ThreadTrace tables, critical columns, and indexes exist in `public`. Missing client configuration, missing `pg`, connection errors, missing schema tables, missing notification outbox archive columns, or missing baseline indexes are reported as `fail` resource checks so readiness probes can block traffic before workers start writing production data.
