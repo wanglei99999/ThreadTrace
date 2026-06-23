@@ -2,6 +2,7 @@
 
 const state = {
   adapters: [],
+  sourceTypes: [],
   currentView: 'history'
 };
 
@@ -68,6 +69,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('runDuePipelinesButton').addEventListener('click', runDuePipelines);
   document.getElementById('crawlUrlButton').addEventListener('click', crawlThreadUrl);
   loadAdapters();
+  loadConnectorCatalog();
   loadSystemStatus();
 });
 
@@ -447,6 +449,7 @@ function buildSourceOnboardingRequest(form) {
   const sourceType = form.get('sourceType') || 'saved-html-directory';
   const locationValue = String(form.get('locationValue') || '').trim();
   const location = parseOptionalLocationJson(form.get('locationJson'));
+  const locationField = inferLocationField(sourceType, locationValue);
   const request = {
     forum: form.get('forum'),
     sourceType,
@@ -455,12 +458,15 @@ function buildSourceOnboardingRequest(form) {
   };
   if (location) {
     request.location = location;
-  } else if (sourceType === 'thread-url') {
+  } else if (locationField === 'url') {
     request.url = locationValue;
-  } else if (sourceType === 'normalized-thread-json') {
+  } else if (locationField === 'inputFile') {
     request.inputFile = locationValue;
+  } else if (locationField && locationField !== 'inputDir') {
+    request.location = {};
+    request.location[locationField] = locationValue;
   } else {
-    request.inputDir = form.get('inputDir');
+    request.inputDir = locationValue || form.get('inputDir');
   }
   return request;
 }
@@ -473,6 +479,26 @@ function parseOptionalLocationJson(value) {
     throw new Error('Location JSON must be an object.');
   }
   return parsed;
+}
+
+function inferLocationField(sourceType, locationValue) {
+  const type = String(sourceType || '');
+  const value = String(locationValue || '').trim();
+  const sourceTypeSpec = findSourceTypeSpec(type);
+  const requiredFields = sourceTypeSpec && sourceTypeSpec.locationSchema && sourceTypeSpec.locationSchema.required || [];
+  if (requiredFields.length === 1) return requiredFields[0];
+  if (type === 'thread-url') return 'url';
+  if (type === 'normalized-thread-json') return 'inputFile';
+  if (!value) return 'inputDir';
+  if (/\b(json|normalized)\b/i.test(type)) return 'inputFile';
+  if (/^https?:\/\//i.test(value)) return /\bfeed\b/i.test(type) ? 'feedUrl' : 'url';
+  return 'inputDir';
+}
+
+function findSourceTypeSpec(sourceType) {
+  return (state.sourceTypes || []).find(function (item) {
+    return item.sourceType === sourceType;
+  });
 }
 
 function parseManifestJson(value) {
@@ -522,6 +548,7 @@ async function loadAdapters() {
   try {
     const result = await fetchJson('/adapters');
     state.adapters = result.adapters || [];
+    fillSuggestionLists();
     fillAdapterSelect('historyForum');
     fillAdapterSelect('contextForum');
     fillAdapterSelect('searchForum');
@@ -535,15 +562,67 @@ async function loadAdapters() {
   }
 }
 
+async function loadConnectorCatalog() {
+  try {
+    const result = await fetchJson('/api/connectors/catalog', {
+      acceptErrorStatus: true
+    });
+    state.sourceTypes = mergeSourceTypeLists(state.sourceTypes, result.sourceTypes || []);
+    fillSuggestionLists();
+  } catch (error) {
+    state.sourceTypes = state.sourceTypes || [];
+  }
+}
+
 function fillAdapterSelect(id) {
-  const select = document.getElementById(id);
-  select.innerHTML = '';
+  const field = document.getElementById(id);
+  if (!field) return;
+  if (field.tagName === 'INPUT') {
+    if (!field.value && state.adapters[0]) field.value = state.adapters[0].sourceKey;
+    fillSuggestionLists();
+    return;
+  }
+  field.innerHTML = '';
   state.adapters.forEach(function (adapter) {
     const option = document.createElement('option');
     option.value = adapter.sourceKey;
     option.textContent = adapter.displayName + ' (' + adapter.sourceKey + ')';
-    select.appendChild(option);
+    field.appendChild(option);
   });
+}
+
+function fillSuggestionLists() {
+  const forumSuggestions = document.getElementById('forumSuggestions');
+  const sourceTypeSuggestions = document.getElementById('sourceTypeSuggestions');
+  if (forumSuggestions) {
+    forumSuggestions.innerHTML = '';
+    (state.adapters || []).forEach(function (adapter) {
+      const option = document.createElement('option');
+      option.value = adapter.sourceKey;
+      option.label = adapter.displayName + ' (' + adapter.sourceKey + ')';
+      forumSuggestions.appendChild(option);
+    });
+  }
+  if (sourceTypeSuggestions) {
+    sourceTypeSuggestions.innerHTML = '';
+    (state.sourceTypes || []).forEach(function (sourceType) {
+      const option = document.createElement('option');
+      option.value = sourceType.sourceType;
+      option.label = sourceType.description || sourceType.sourceType;
+      sourceTypeSuggestions.appendChild(option);
+    });
+  }
+}
+
+function mergeSourceTypeLists(current, incoming) {
+  const result = [];
+  const known = new Set();
+  (current || []).concat(incoming || []).forEach(function (item) {
+    if (!item || !item.sourceType || known.has(item.sourceType)) return;
+    known.add(item.sourceType);
+    result.push(item);
+  });
+  return result;
 }
 
 async function loadSystemStatus() {
@@ -1521,12 +1600,21 @@ function renderSourceOnboardingPreflight(result) {
     ].join('')));
   }
   if (result.connectorModuleValidation) {
+    rememberConnectorContractSourceTypes(result.connectorModuleValidation.contractSummary);
     panels.push(panel('Connector 模块', [
+      renderConnectorContractTiles(result.connectorModuleValidation.contractSummary),
       metric('可加载', result.connectorModuleValidation.valid ? 'yes' : 'no'),
       metric('状态', result.connectorModuleValidation.status),
       metric('模块', result.connectorModuleValidation.modulePath || 'missing'),
       metric('错误', (result.connectorModuleValidation.errors || []).length)
     ].join('')));
+    if (hasConnectorContractDetails(result.connectorModuleValidation.contractSummary)) {
+      panels.push(panel('Connector contract summary', renderConnectorContractSummary(result.connectorModuleValidation.contractSummary), 'wide'));
+    }
+    const failureRows = connectorContractFailureRows(result.connectorModuleValidation.checks || []);
+    if (failureRows.length > 0) {
+      panels.push(panel('Connector contract failures', evidenceList(failureRows), 'wide'));
+    }
   }
   if (result.threadJsonValidation) {
     panels.push(panel('ThreadSnapshot JSON', [
@@ -1540,6 +1628,7 @@ function renderSourceOnboardingPreflight(result) {
 }
 
 function renderConnectorModuleValidation(result) {
+  rememberConnectorContractSourceTypes(result.contractSummary);
   const modules = result.modules || [];
   const errors = result.errors || [];
   const registrationCount = modules.reduce(function (total, item) {
@@ -1547,16 +1636,22 @@ function renderConnectorModuleValidation(result) {
   }, 0);
   const panels = [
     panel('Connector 模块验证', [
+      renderConnectorContractTiles(result.contractSummary),
       metric('状态', result.status),
       metric('可加载', result.valid ? 'yes' : 'no'),
       metric('模块', result.modulePath || 'missing'),
       metric('注册项', registrationCount),
       metric('错误', errors.length)
     ].join('')),
-    panel('验证检查', evidenceList((result.checks || []).map(function (check) {
-      return check.status + ' · ' + check.key + ' · ' + check.summary + ' · ' + check.value;
-    })), 'wide')
+    panel('Contract checks', renderConnectorCheckRows(result.checks || []), 'wide')
   ];
+  if (hasConnectorContractDetails(result.contractSummary)) {
+    panels.push(panel('Contract summary', renderConnectorContractSummary(result.contractSummary), 'wide'));
+  }
+  const failureRows = connectorContractFailureRows(result.checks || []);
+  if (failureRows.length > 0) {
+    panels.push(panel('Contract failures', evidenceList(failureRows), 'wide'));
+  }
   if (modules.length > 0) {
     panels.push(panel('注册结果', evidenceList(modules.map(function (item) {
       return item.modulePath + ' · adapters=' + (item.forumAdapters || []).join(',') + ' · handlers=' + (item.sourceIngestHandlers || []).join(',');
@@ -1568,6 +1663,100 @@ function renderConnectorModuleValidation(result) {
     })), 'wide'));
   }
   return panels.join('');
+}
+
+function renderConnectorCheckRows(checks) {
+  if (!checks || checks.length === 0) return '<div class="muted">No checks</div>';
+  return checks.map(function (check) {
+    const value = formatCheckValue(check.value);
+    const detail = value ? '<small>' + escapeHtml(value) + '</small>' : '';
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(check.key || 'check') + '</strong>' +
+      '<small>' + escapeHtml(check.summary || '') + '</small>' +
+      detail +
+      '</span>' +
+      statusBadge(check.status || 'unknown', statusVariant(check.status)) +
+      '</div>';
+  }).join('');
+}
+
+function renderConnectorContractTiles(summary) {
+  if (!summary) return '';
+  return '<div class="summary-strip event-summary-strip">' + [
+    summaryTile('Adapters', summary.forumAdapterCount || 0, (summary.forumAdapterCount || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('Handlers', summary.sourceIngestHandlerCount || 0, (summary.sourceIngestHandlerCount || 0) > 0 ? 'ok' : 'muted')
+  ].join('') + '</div>';
+}
+
+function hasConnectorContractDetails(summary) {
+  if (!summary) return false;
+  return (summary.forumAdapters || []).length > 0 || (summary.sourceIngestHandlers || []).length > 0;
+}
+
+function rememberConnectorContractSourceTypes(summary) {
+  if (!summary || !(summary.sourceIngestHandlers || []).length) return;
+  const known = new Set((state.sourceTypes || []).map(function (item) {
+    return item.sourceType;
+  }));
+  (summary.sourceIngestHandlers || []).forEach(function (handler) {
+    if (!handler.sourceType || known.has(handler.sourceType)) return;
+    known.add(handler.sourceType);
+    state.sourceTypes.push({
+      sourceType: handler.sourceType,
+      description: handler.description || handler.sourceType,
+      requiresAdapter: handler.requiresAdapter !== false,
+      locationSchema: {
+        required: handler.requiredLocationFields || [],
+        properties: {}
+      },
+      capabilities: handler.capabilities || {}
+    });
+  });
+  fillSuggestionLists();
+}
+
+function renderConnectorContractSummary(summary) {
+  if (!hasConnectorContractDetails(summary)) return '<div class="muted">No contract details</div>';
+  const adapterRows = (summary.forumAdapters || []).map(function (adapter) {
+    const capabilities = formatCapabilities(adapter.capabilities);
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(adapter.sourceKey || 'missing-sourceKey') + '</strong>' +
+      '<small>' + escapeHtml((adapter.displayName || 'missing displayName') + ' | fetchThread=' + (adapter.hasFetchThread ? 'yes' : 'no')) + '</small>' +
+      '<small>' + escapeHtml(capabilities ? 'capabilities=' + capabilities : 'capabilities=none') + '</small>' +
+      '</span>' +
+      statusBadge('adapter', 'ok') +
+      '</div>';
+  });
+  const handlerRows = (summary.sourceIngestHandlers || []).map(function (handler) {
+    const location = (handler.requiredLocationFields || []).join(',') || 'none';
+    const capabilities = formatCapabilities(handler.capabilities);
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(handler.sourceType || 'missing-sourceType') + '</strong>' +
+      '<small>' + escapeHtml((handler.description || 'missing description') + ' | requiresAdapter=' + handler.requiresAdapter) + '</small>' +
+      '<small>' + escapeHtml('requiredLocation=' + location + (capabilities ? ' | capabilities=' + capabilities : '')) + '</small>' +
+      '</span>' +
+      statusBadge('handler', 'ok') +
+      '</div>';
+  });
+  return adapterRows.concat(handlerRows).join('');
+}
+
+function connectorContractFailureRows(checks) {
+  return (checks || []).filter(function (check) {
+    return check.status === 'fail' && check.value && typeof check.value === 'object';
+  }).reduce(function (rows, check) {
+    const value = check.value || {};
+    if (Array.isArray(value.duplicateForumAdapters) && value.duplicateForumAdapters.length > 0) {
+      rows.push(check.key + ' | duplicate adapters: ' + value.duplicateForumAdapters.join(','));
+    }
+    if (Array.isArray(value.duplicateSourceIngestHandlers) && value.duplicateSourceIngestHandlers.length > 0) {
+      rows.push(check.key + ' | duplicate handlers: ' + value.duplicateSourceIngestHandlers.join(','));
+    }
+    (value.failures || []).forEach(function (failure) {
+      rows.push(check.key + ' | ' + (failure.sourceKey || failure.sourceType || 'unknown') + ' missing: ' + (failure.missing || []).join(','));
+    });
+    return rows;
+  }, []);
 }
 
 function renderSourceIngestDryRun(result) {
@@ -1602,8 +1791,11 @@ function renderSourceIngestDryRun(result) {
 function renderConnectorRolloutPlan(result) {
   const steps = result.steps || [];
   const actions = result.nextActions || [];
+  const moduleValidation = result.connectorModuleValidation;
+  if (moduleValidation) rememberConnectorContractSourceTypes(moduleValidation.contractSummary);
   const panels = [
     panel('Connector rollout plan', [
+      moduleValidation ? renderConnectorContractTiles(moduleValidation.contractSummary) : '',
       metric('Status', result.status),
       metric('Source', (result.sourceKey || 'unknown') + ' / ' + (result.sourceType || 'unknown')),
       metric('Module', result.modulePath || 'not provided'),
@@ -1619,6 +1811,15 @@ function renderConnectorRolloutPlan(result) {
       metric('Thread', result.sourceIngestDryRun.thread ? result.sourceIngestDryRun.thread.sourceThreadId : 'none'),
       metric('Posts', result.sourceIngestDryRun.thread ? result.sourceIngestDryRun.thread.postCount : 0)
     ].join('')));
+  }
+  if (moduleValidation && hasConnectorContractDetails(moduleValidation.contractSummary)) {
+    panels.push(panel('Connector contract summary', renderConnectorContractSummary(moduleValidation.contractSummary), 'wide'));
+  }
+  if (moduleValidation) {
+    const failureRows = connectorContractFailureRows(moduleValidation.checks || []);
+    if (failureRows.length > 0) {
+      panels.push(panel('Connector contract failures', evidenceList(failureRows), 'wide'));
+    }
   }
   if (actions.length > 0) {
     panels.push(panel('Next actions', evidenceList(actions.map(function (action) {
@@ -2730,6 +2931,20 @@ function evidenceList(items) {
   return items.map(function (item) {
     return '<div class="evidence-row"><span>' + escapeHtml(item) + '</span></div>';
   }).join('');
+}
+
+function formatCheckValue(value) {
+  if (value === undefined) return '';
+  if (value === null) return 'null';
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+}
+
+function formatCapabilities(capabilities) {
+  if (!capabilities || typeof capabilities !== 'object') return '';
+  return Object.keys(capabilities).sort().map(function (key) {
+    return key + '=' + capabilities[key];
+  }).join(',');
 }
 
 function schemaDriftSummary(schemaDrift) {

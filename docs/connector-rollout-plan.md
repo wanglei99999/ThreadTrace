@@ -26,6 +26,17 @@ node src/presentation/cli/threadtrace.js connector-rollout-plan `
   --dry-run-ingest true
 ```
 
+Runnable repository example:
+
+```powershell
+node src/presentation/cli/threadtrace.js connector-rollout-plan `
+  --forum external `
+  --source-type external-normalized-feed `
+  --module-path docs/examples/external-normalized-feed-connector.cjs `
+  --input-file docs/examples/external-thread.sample.json `
+  --dry-run-ingest true
+```
+
 The command exits with code `2` when any rollout step has `status=fail`, which makes it suitable for release gates and scripted operator checklists.
 
 If no `--module-path` is supplied, module validation is marked as `warn` and the plan still reports the contract, runtime readiness, and deployment checklist. If no source draft fields are supplied, source onboarding preflight is marked as `warn`. If `dryRunIngest` is not requested, source ingest dry-run is marked as `warn`.

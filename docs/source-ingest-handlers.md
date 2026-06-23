@@ -89,6 +89,15 @@ Connector validation is stricter than a plain `require()` smoke test. It fails w
 
 The validation response includes `contractSummary` and per-check failure details so connector authors can fix the package before it is added to runtime configuration.
 
+This repository includes a runnable external connector template:
+
+```powershell
+node src/presentation/cli/threadtrace.js validate-connector-module --module-path docs/examples/external-normalized-feed-connector.cjs
+node src/presentation/cli/threadtrace.js source-ingest-dry-run --module-path docs/examples/external-normalized-feed-connector.cjs --forum external --source-type external-normalized-feed --input-file docs/examples/external-thread.sample.json
+```
+
+The template models a low-friction bridge for future forums or channels: an outside collector normalizes content into ThreadTrace's canonical `ThreadSnapshot` JSON, then a small connector module registers the source type and reuses the standard ingest pipeline.
+
 For a full pre-release view, run the read-only connector rollout plan. It aggregates the connector contract, optional module validation, optional source onboarding preflight, current connector readiness, and deployment checklist:
 
 ```powershell

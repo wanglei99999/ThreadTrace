@@ -167,15 +167,11 @@
         <form id="sourceOnboardingForm" class="control-strip">
           <label>
             <span>接入论坛</span>
-            <select name="forum" id="onboardingForum"></select>
+            <input name="forum" id="onboardingForum" list="forumSuggestions" value="nga" autocomplete="off">
           </label>
           <label>
             <span>来源类型</span>
-            <select name="sourceType">
-              <option value="saved-html-directory">saved-html-directory</option>
-              <option value="thread-url">thread-url</option>
-              <option value="normalized-thread-json">normalized-thread-json</option>
-            </select>
+            <input name="sourceType" list="sourceTypeSuggestions" value="saved-html-directory" autocomplete="off">
           </label>
           <label class="grow">
             <span>来源名称</span>
@@ -301,15 +297,11 @@
         <form id="sourceDryRunForm" class="control-strip">
           <label>
             <span>Dry-run forum</span>
-            <select name="forum" id="dryRunForum"></select>
+            <input name="forum" id="dryRunForum" list="forumSuggestions" value="nga" autocomplete="off">
           </label>
           <label>
             <span>Source type</span>
-            <select name="sourceType">
-              <option value="saved-html-directory">saved-html-directory</option>
-              <option value="thread-url">thread-url</option>
-              <option value="normalized-thread-json">normalized-thread-json</option>
-            </select>
+            <input name="sourceType" list="sourceTypeSuggestions" value="saved-html-directory" autocomplete="off">
           </label>
           <label class="grow">
             <span>Name</span>
@@ -336,15 +328,11 @@
         <form id="connectorRolloutForm" class="control-strip">
           <label>
             <span>Rollout forum</span>
-            <select name="forum" id="rolloutForum"></select>
+            <input name="forum" id="rolloutForum" list="forumSuggestions" value="nga" autocomplete="off">
           </label>
           <label>
             <span>Source type</span>
-            <select name="sourceType">
-              <option value="saved-html-directory">saved-html-directory</option>
-              <option value="thread-url">thread-url</option>
-              <option value="normalized-thread-json">normalized-thread-json</option>
-            </select>
+            <input name="sourceType" list="sourceTypeSuggestions" value="saved-html-directory" autocomplete="off">
           </label>
           <label class="grow">
             <span>Name</span>
@@ -509,6 +497,8 @@
       </section>
     </main>
   </div>
+  <datalist id="forumSuggestions"></datalist>
+  <datalist id="sourceTypeSuggestions"></datalist>
   <script src="/app.js"></script>
 </body>
 </html>

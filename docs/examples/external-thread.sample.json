@@ -1,0 +1,50 @@
+{
+  "forum": {
+    "sourceKey": "external",
+    "displayName": "External Forum"
+  },
+  "sourceKey": "external",
+  "sourceThreadId": "external-thread-1",
+  "title": "External normalized thread sample",
+  "posts": [
+    {
+      "sourceKey": "external",
+      "sourcePostId": "external-post-1",
+      "floor": 0,
+      "author": {
+        "sourceKey": "external",
+        "sourceAuthorId": "external-author-1",
+        "displayName": "External Author"
+      },
+      "publishedAt": "2026-06-19T10:00:00.000Z",
+      "contentText": "This sample shows how an external collector can feed ThreadTrace without writing an HTML parser first.",
+      "links": [],
+      "relations": []
+    },
+    {
+      "sourceKey": "external",
+      "sourcePostId": "external-post-2",
+      "floor": 1,
+      "author": {
+        "sourceKey": "external",
+        "sourceAuthorId": "external-author-2",
+        "displayName": "Second Author"
+      },
+      "publishedAt": "2026-06-19T10:05:00.000Z",
+      "contentText": "The connector module supplies the source type while the JSON payload stays on the canonical ThreadSnapshot contract.",
+      "links": [],
+      "relations": [
+        {
+          "type": "reply-to",
+          "targetPostId": "external-post-1",
+          "targetFloor": 0,
+          "evidenceText": "responding to the collector bridge idea"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "collector": "docs-example",
+    "contract": "ThreadTrace ThreadSnapshot JSON"
+  }
+}
