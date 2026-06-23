@@ -485,6 +485,25 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/intelligence/author-review-queue/events') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.synthesizeAuthorReviewQueueNotificationEvents({
+      sourceKey: body.sourceKey || body.forum,
+      sourceThreadId: body.sourceThreadId,
+      status: body.status,
+      type: body.type,
+      priority: body.priority,
+      execute: body.execute === true || body.dryRun === false,
+      resolveStale: body.resolveStale,
+      limit: body.limit,
+      staleLimit: body.staleLimit,
+      now: body.now,
+      storeDir: body.storeDir || context.storeDir
+    });
+    writeJson(response, 200, result);
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/reports/tasks/semantic-enrichment') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     if (!body.sourceThreadId) {

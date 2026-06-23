@@ -520,6 +520,34 @@ function main(argv) {
     return;
   }
 
+  if (command === 'synthesize-author-review-queue-events') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.synthesizeAuthorReviewQueueNotificationEvents({
+      sourceKey: options.sourceKey || options.forum,
+      sourceThreadId: options.sourceThreadId,
+      status: options.status,
+      type: options.type,
+      priority: options.priority,
+      execute: options.execute === 'true' || options.dryRun === 'false',
+      resolveStale: parseOptionalBoolean(options.resolveStale),
+      limit: options.limit ? Number(options.limit) : 50,
+      staleLimit: options.staleLimit ? Number(options.staleLimit) : undefined,
+      now: options.now,
+      storeDir
+    }).then(function (result) {
+      console.log('Author review queue events: ' + result.status);
+      console.log('Mode: ' + (result.dryRun ? 'dry-run' : 'execute'));
+      console.log('Items: ' + result.itemCount + '\tcreated=' + result.createdCount + '\tupdated=' + result.updatedCount + '\tresolved=' + result.resolvedCount + '\treopened=' + result.reopenedCount + '\tskipped=' + result.skippedCount);
+      result.results.forEach(function (item) {
+        console.log(item.status + '\t' + (item.itemId || 'unknown-item') + '\t' + item.event.id + '\t' + item.event.severity);
+      });
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'review-action-plan') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.getContextReviewResultActionPlan(buildReviewResultQuery(options, storeDir)).then(function (plan) {
@@ -1931,6 +1959,12 @@ function parseArgs(args) {
     } else if (item === '--review-queue-limit') {
       options.reviewQueueLimit = args[index + 1];
       index += 1;
+    } else if (item === '--stale-limit') {
+      options.staleLimit = args[index + 1];
+      index += 1;
+    } else if (item === '--resolve-stale') {
+      options.resolveStale = args[index + 1];
+      index += 1;
     } else if (item === '--include-report-revisions') {
       if (args[index + 1] && !String(args[index + 1]).startsWith('--')) {
         options.includeReportRevisions = args[index + 1];
@@ -2250,6 +2284,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js trace-context [--request-id id | --trace-id id | --idempotency-key key] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-runbook [--forum nga] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js synthesize-runbook-events [--execute true] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js synthesize-author-review-queue-events [--execute true] [--source-key key] [--status open] [--resolve-stale true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-plan [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-gate [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-apply [--execute true] [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');

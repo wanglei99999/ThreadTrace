@@ -1686,6 +1686,39 @@ test('http server exposes durable author review queue APIs', async function () {
           }),
           recommendedNextAction: 'Continue working the remaining open author intelligence review queue items.'
         };
+      },
+      async synthesizeAuthorReviewQueueNotificationEvents(request) {
+        calls.push({ method: 'events', request });
+        return {
+          generatedAt: request.now,
+          status: 'ok',
+          dryRun: request.execute !== true,
+          executed: request.execute === true,
+          itemCount: 1,
+          actionCount: 1,
+          eventCount: 1,
+          createdCount: 1,
+          updatedCount: 0,
+          resolvedCount: 0,
+          reopenedCount: 0,
+          skippedCount: 0,
+          results: [
+            {
+              status: 'created',
+              itemId: 'author-review:test',
+              event: {
+                id: 'author-review-queue:test',
+                type: 'author-review-queue',
+                severity: 'info',
+                sourceKey: 'forum-a',
+                payload: {
+                  itemId: 'author-review:test'
+                }
+              }
+            }
+          ],
+          recommendedNextAction: 'Dispatch pending notification events.'
+        };
       }
     }
   });
@@ -1705,21 +1738,36 @@ test('http server exposes durable author review queue APIs', async function () {
       reviewedBy: 'operator',
       note: 'checked'
     });
+    const events = await postJson(baseUrl + '/api/intelligence/author-review-queue/events', {
+      sourceKey: 'forum-a',
+      status: 'open',
+      execute: true,
+      resolveStale: true,
+      staleLimit: 7,
+      now: '2026-06-23T10:05:00.000Z'
+    });
     const openApi = await getJson(baseUrl + '/openapi.json');
 
     assert.equal(sync.createdCount, 1);
     assert.equal(list.items[0].id, 'author-review:test');
     assert.equal(status.item.status, 'confirmed');
-    assert.deepEqual(calls.map(function (call) { return call.method; }), ['sync', 'list', 'status']);
+    assert.equal(events.executed, true);
+    assert.equal(events.results[0].event.type, 'author-review-queue');
+    assert.deepEqual(calls.map(function (call) { return call.method; }), ['sync', 'list', 'status', 'events']);
     assert.equal(calls[0].request.sourceKey, 'forum-a');
     assert.equal(calls[0].request.reviewQueueLimit, 3);
     assert.equal(calls[1].request.status, 'open');
     assert.equal(calls[1].request.priority, 'medium');
     assert.equal(calls[2].request.itemId, 'author-review:test');
     assert.equal(calls[2].request.reviewedBy, 'operator');
+    assert.equal(calls[3].request.sourceKey, 'forum-a');
+    assert.equal(calls[3].request.execute, true);
+    assert.equal(calls[3].request.resolveStale, true);
+    assert.equal(calls[3].request.staleLimit, 7);
     assert.ok(openApi.paths['/api/intelligence/author-review-queue']);
     assert.ok(openApi.paths['/api/intelligence/author-review-queue/sync']);
     assert.ok(openApi.paths['/api/intelligence/author-review-queue/{itemId}/status']);
+    assert.ok(openApi.paths['/api/intelligence/author-review-queue/events']);
   } finally {
     await close(server);
   }

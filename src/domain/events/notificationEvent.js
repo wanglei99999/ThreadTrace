@@ -98,6 +98,50 @@ function createContextReviewResultEvent(input) {
   };
 }
 
+function createAuthorReviewQueueEvent(input) {
+  const safeInput = input || {};
+  const item = safeInput.item || {};
+  const now = safeInput.createdAt || new Date().toISOString();
+  return {
+    id: safeInput.id || buildAuthorReviewQueueEventId(item),
+    type: 'author-review-queue',
+    severity: severityForAuthorReviewQueueItem(item),
+    sourceId: undefined,
+    sourceKey: item.sourceKey,
+    taskId: undefined,
+    createdAt: now,
+    title: item.title || 'Author intelligence review item',
+    summary: item.summary || item.nextAction || 'Author intelligence review queue item requires attention.',
+    payload: {
+      itemId: item.id,
+      queueKey: item.queueKey,
+      status: item.status,
+      type: item.type,
+      priority: item.priority,
+      score: item.score,
+      sourceKey: item.sourceKey,
+      sourceThreadId: item.sourceThreadId,
+      floor: item.floor,
+      sourcePostId: item.sourcePostId,
+      author: item.author,
+      entity: item.entity,
+      refs: item.refs || [],
+      reason: item.reason,
+      nextAction: item.nextAction,
+      seenCount: item.seenCount,
+      lastSeenAt: item.lastSeenAt
+    },
+    deliveryStatus: safeInput.deliveryStatus || 'pending',
+    deliveryAttempts: safeInput.deliveryAttempts || 0,
+    nextDeliveryAt: safeInput.nextDeliveryAt || now,
+    lastDeliveryError: safeInput.lastDeliveryError,
+    lastDeliveredAt: safeInput.lastDeliveredAt,
+    acknowledgedAt: safeInput.acknowledgedAt,
+    acknowledgedBy: safeInput.acknowledgedBy,
+    acknowledgementNote: safeInput.acknowledgementNote
+  };
+}
+
 function acknowledgeNotificationEvent(event, input) {
   const safeInput = input || {};
   const now = safeInput.acknowledgedAt || new Date().toISOString();
@@ -159,9 +203,26 @@ function buildContextReviewResultEventId(record) {
   return 'context-review-result-' + digest;
 }
 
+function buildAuthorReviewQueueEventId(item) {
+  const key = item && item.id ? item.id : JSON.stringify({
+    queueKey: item && item.queueKey,
+    sourceKey: item && item.sourceKey,
+    sourceThreadId: item && item.sourceThreadId,
+    floor: item && item.floor,
+    type: item && item.type
+  });
+  const digest = crypto.createHash('sha1').update(String(key)).digest('hex').slice(0, 12);
+  return 'author-review-queue-' + digest;
+}
+
 function severityForRunbookAction(action) {
   if (action && action.severity === 'critical') return 'critical';
   if (action && action.severity === 'warning') return 'warning';
+  return 'info';
+}
+
+function severityForAuthorReviewQueueItem(item) {
+  if (item && item.priority === 'high') return 'warning';
   return 'info';
 }
 
@@ -180,8 +241,10 @@ module.exports = {
   createSourceChangedEvent,
   createRunbookActionEvent,
   createContextReviewResultEvent,
+  createAuthorReviewQueueEvent,
   buildRunbookActionEventId,
   buildContextReviewResultEventId,
+  buildAuthorReviewQueueEventId,
   acknowledgeNotificationEvent,
   markNotificationEventDelivered,
   markNotificationEventDeliveryFailed

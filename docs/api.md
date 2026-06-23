@@ -150,6 +150,12 @@ Lists durable author review queue records. Optional filters: `status` (`open`, `
 
 Marks a durable author review queue item as `open`, `confirmed`, or `ignored`. The request body accepts `status`, optional `reviewedBy`, `note`, `now`, and `storeDir`.
 
+### `POST /api/intelligence/author-review-queue/events`
+
+Dry-runs or executes synthesis of open durable author review queue items into notification outbox events. The endpoint defaults to dry-run; set `execute: true` or `dryRun: false` to persist `author-review-queue` events. Event IDs are stable per durable queue item, so repeated synthesis updates pending or failed events instead of duplicating alerts.
+
+Optional filters: `sourceKey` / `forum`, `sourceThreadId`, `status`, `type`, `priority`, `limit`, `staleLimit`, `resolveStale`, `now`, and `storeDir`. By default, stale `author-review-queue` events in the same filter scope are marked `resolved` when the underlying queue item is no longer open. Operator-acknowledged or already delivered events are skipped for audit safety.
+
 ### `POST /api/interpret-text`
 
 对一条新发言做语境还原。

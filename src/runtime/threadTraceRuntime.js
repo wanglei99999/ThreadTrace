@@ -30,6 +30,7 @@ const { acknowledgeNotificationEvent } = require('../application/use-cases/ackno
 const { dispatchPendingNotificationEvents } = require('../application/use-cases/dispatchPendingNotificationEvents');
 const { synthesizeRunbookNotificationEvents } = require('../application/use-cases/synthesizeRunbookNotificationEvents');
 const { synthesizeContextReviewResultNotificationEvents } = require('../application/use-cases/synthesizeContextReviewResultNotificationEvents');
+const { synthesizeAuthorReviewQueueNotificationEvents } = require('../application/use-cases/synthesizeAuthorReviewQueueNotificationEvents');
 const { fetchAndStoreThreadPage } = require('../application/use-cases/fetchAndStoreThreadPage');
 const { enrichAnalysisReportWithLlm } = require('../application/use-cases/enrichAnalysisReportWithLlm');
 const { runSemanticEnrichmentTask } = require('../application/use-cases/runSemanticEnrichmentTask');
@@ -969,6 +970,25 @@ function createThreadTraceRuntime(options) {
         status: safeRequest.status,
         reviewedBy: safeRequest.reviewedBy || safeRequest.reviewer,
         note: safeRequest.note,
+        now: safeRequest.now
+      });
+    },
+
+    async synthesizeAuthorReviewQueueNotificationEvents(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return synthesizeAuthorReviewQueueNotificationEvents({
+        authorReviewQueueRepository: repositories.authorReviewQueueRepository,
+        notificationEventRepository: repositories.notificationEventRepository,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        sourceThreadId: safeRequest.sourceThreadId,
+        status: safeRequest.status,
+        type: safeRequest.type,
+        priority: safeRequest.priority,
+        limit: safeRequest.limit || 50,
+        staleLimit: safeRequest.staleLimit,
+        resolveStale: safeRequest.resolveStale,
+        execute: safeRequest.execute === true,
         now: safeRequest.now
       });
     },

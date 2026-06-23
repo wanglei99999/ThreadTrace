@@ -732,6 +732,38 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/intelligence/author-review-queue/events': {
+        post: {
+          summary: 'Synthesize notification outbox events from open author review queue items',
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    sourceKey: { type: 'string', example: 'nga' },
+                    sourceThreadId: { type: 'string', example: '45974302' },
+                    status: { type: 'string', example: 'open' },
+                    type: { type: 'string', example: 'high-confidence-opinion' },
+                    priority: { type: 'string', example: 'high' },
+                    execute: { type: 'boolean', example: false },
+                    resolveStale: { type: 'boolean', example: true },
+                    limit: { type: 'number', example: 50 },
+                    staleLimit: { type: 'number', example: 100 },
+                    storeDir: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Notification event synthesis preview or execution result'
+            }
+          }
+        }
+      },
       '/api/reports/tasks/semantic-enrichment': {
         post: {
           summary: 'Run and persist semantic enrichment for a stored base report',
