@@ -1453,6 +1453,37 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/events/ack': {
+        post: {
+          summary: 'Acknowledge notification events in bulk',
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    eventIds: { type: 'array', items: { type: 'string' } },
+                    type: { type: 'string', example: 'runbook-action' },
+                    sourceId: { type: 'string' },
+                    acknowledged: { type: 'boolean', example: false },
+                    deliveryStatus: { type: 'string', example: 'delivered' },
+                    limit: { type: 'number', example: 50 },
+                    acknowledgedBy: { type: 'string', example: 'web' },
+                    note: { type: 'string' },
+                    storeDir: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Bulk acknowledgement result with acknowledged and skipped counts'
+            }
+          }
+        }
+      },
       '/api/events/{eventId}/ack': {
         post: {
           summary: 'Acknowledge a notification event',

@@ -863,6 +863,25 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/events/ack') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.acknowledgeNotificationEvents({
+      eventIds: body.eventIds,
+      type: body.type,
+      sourceId: body.sourceId,
+      acknowledged: typeof body.acknowledged === 'boolean' ? body.acknowledged : undefined,
+      deliveryStatus: body.deliveryStatus,
+      limit: body.limit,
+      acknowledgedBy: body.acknowledgedBy,
+      note: body.note,
+      acknowledgedAt: body.acknowledgedAt,
+      now: body.now,
+      storeDir: body.storeDir || context.storeDir
+    });
+    writeJson(response, 200, result);
+    return;
+  }
+
   const eventAckMatch = url.pathname.match(/^\/api\/events\/([^/]+)\/ack$/);
   if (request.method === 'POST' && eventAckMatch) {
     const body = await readJsonBody(request, context.maxBodyBytes);

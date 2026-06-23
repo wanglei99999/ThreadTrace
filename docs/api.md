@@ -250,6 +250,24 @@ Summarizes notification outbox health for dashboards and workers. Optional filte
 - `file`: 默认通道，把事件写入 `data/store/deliveries`。
 - `webhook`: 向 `webhookUrl` 发起 `POST application/json`，也可用环境变量 `THREADTRACE_WEBHOOK_URL` 提供地址。
 
+### `POST /api/events/ack`
+
+Bulk-acknowledges notification events. Pass `eventIds` for explicit selection, or omit them to acknowledge the current query window. When `eventIds` is omitted, `acknowledged` defaults to `false`, so the endpoint only closes open events unless the caller deliberately overrides the filter.
+
+Request:
+```json
+{
+  "eventIds": ["source-changed-1"],
+  "type": "runbook-action",
+  "deliveryStatus": "delivered",
+  "limit": 50,
+  "acknowledgedBy": "web",
+  "note": "Handled by operator"
+}
+```
+
+Returns `status`, `acknowledgedCount`, `skippedCount`, `filters`, and per-event results. Already acknowledged and missing events are skipped without failing the whole batch.
+
 ### `POST /api/events/{eventId}/ack`
 
 确认一个通知事件。确认后事件仍会保留在本地 outbox 中，但 `acknowledgedAt` 会被写入，后续查询可用 `acknowledged=false` 只看未处理事件。

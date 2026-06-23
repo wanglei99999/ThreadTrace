@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   document.getElementById('refreshRawPagesButton').addEventListener('click', loadRawPages);
   document.getElementById('dispatchEventsButton').addEventListener('click', dispatchEvents);
+  document.getElementById('ackVisibleEventsButton').addEventListener('click', acknowledgeVisibleEvents);
   document.getElementById('runSourcesButton').addEventListener('click', runAllSources);
   document.getElementById('runDueSourcesButton').addEventListener('click', runDueSources);
   document.getElementById('runDuePipelinesButton').addEventListener('click', runDuePipelines);
@@ -767,6 +768,22 @@ function normalizeEventLimit(value) {
   return Math.min(Math.floor(limit), 100);
 }
 
+function buildVisibleEventAckRequest() {
+  const formElement = document.getElementById('eventFilterForm');
+  const form = formElement ? new FormData(formElement) : undefined;
+  const deliveryStatus = form ? String(form.get('deliveryStatus') || '').trim() : '';
+  const type = form ? String(form.get('type') || '').trim() : '';
+  const request = {
+    acknowledged: false,
+    acknowledgedBy: 'web',
+    note: 'Acknowledged from the web event filter.',
+    limit: normalizeEventLimit(form ? form.get('limit') : 10)
+  };
+  if (deliveryStatus) request.deliveryStatus = deliveryStatus;
+  if (type) request.type = type;
+  return request;
+}
+
 async function loadRawPages() {
   await renderAsync('rawPageResult', function () {
     return fetchJson('/api/raw-pages?limit=10');
@@ -900,6 +917,22 @@ async function dispatchEvents() {
   }, renderEventDispatchResult);
   await loadSystemStatus();
   await loadEvents();
+}
+
+async function acknowledgeVisibleEvents() {
+  const request = buildVisibleEventAckRequest();
+  if (!window.confirm('Acknowledge up to ' + request.limit + ' open notification events in the current filter?')) return;
+  const target = document.getElementById('eventResult');
+  target.innerHTML = '<div class="empty">Acknowledging events...</div>';
+  try {
+    const result = await requestJson('/api/events/ack', request);
+    await loadSystemStatus();
+    await loadEvents();
+    const refreshedTarget = document.getElementById('eventResult');
+    refreshedTarget.innerHTML = renderEventBatchAckResult(result) + refreshedTarget.innerHTML;
+  } catch (error) {
+    renderError('eventResult', error);
+  }
 }
 
 async function renderAsync(targetId, task, renderer) {
@@ -2494,6 +2527,21 @@ function renderEventAckResult(result) {
     metric('事件 ID', result.event.id),
     metric('确认时间', result.event.acknowledgedAt),
     metric('确认人', result.event.acknowledgedBy)
+  ].join(''), 'wide');
+}
+
+function renderEventBatchAckResult(result) {
+  return panel('Notification events acknowledged', [
+    '<div class="summary-strip event-summary-strip">' + [
+      summaryTile('Status', result.status || 'unknown', statusVariant(result.status)),
+      summaryTile('Acked', String(result.acknowledgedCount || 0), result.acknowledgedCount > 0 ? 'ok' : 'muted'),
+      summaryTile('Skipped', String(result.skippedCount || 0), result.skippedCount > 0 ? 'warn' : 'ok'),
+      summaryTile('Window', String(result.eventCount || 0))
+    ].join('') + '</div>',
+    metric('Acknowledged by', result.acknowledgedBy || 'system'),
+    evidenceList((result.results || []).slice(0, 8).map(function (item) {
+      return item.status + ' | ' + item.eventId + (item.reason ? ' | ' + item.reason : '');
+    }))
   ].join(''), 'wide');
 }
 

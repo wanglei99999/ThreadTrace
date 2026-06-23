@@ -1358,6 +1358,11 @@ test('http server can register sources and run source ingest tasks', async funct
     const eventsResult = await getJson(baseUrl + '/api/events');
     const dispatchResult = await postJson(baseUrl + '/api/events/dispatch', {});
     const deliveredEventsResult = await getJson(baseUrl + '/api/events?deliveryStatus=delivered');
+    const batchAckResult = await postJson(baseUrl + '/api/events/ack', {
+      deliveryStatus: 'delivered',
+      acknowledgedBy: 'batch-test',
+      limit: 5
+    });
     const ackResult = await postJson(baseUrl + '/api/events/' + encodeURIComponent(eventsResult.events[0].id) + '/ack', {
       acknowledgedBy: 'test'
     });
@@ -1393,7 +1398,9 @@ test('http server can register sources and run source ingest tasks', async funct
     assert.equal(eventsResult.events[0].type, 'source-changed');
     assert.equal(dispatchResult.dispatchedCount, 1);
     assert.equal(deliveredEventsResult.events.length, 1);
-    assert.equal(ackResult.event.acknowledgedBy, 'test');
+    assert.equal(batchAckResult.acknowledgedCount, 1);
+    assert.equal(batchAckResult.skippedCount, 0);
+    assert.equal(ackResult.event.acknowledgedBy, 'batch-test');
     assert.equal(openEventsResult.events.length, 0);
     assert.equal(taskResult.sourceId, registerResult.source.id);
     assert.equal(taskResult.task.status, 'completed');

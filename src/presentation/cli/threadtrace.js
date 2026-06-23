@@ -1026,6 +1026,33 @@ function main(argv) {
     return;
   }
 
+  if (command === 'ack-events') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.acknowledgeNotificationEvents({
+      eventIds: options.eventIds ? splitCsv(options.eventIds) : undefined,
+      type: options.type,
+      sourceId: options.sourceId,
+      acknowledged: options.acknowledged === undefined ? undefined : options.acknowledged === 'true',
+      deliveryStatus: options.deliveryStatus,
+      limit: options.limit ? Number(options.limit) : 50,
+      acknowledgedBy: options.by,
+      note: options.note,
+      now: options.now,
+      storeDir
+    }).then(function (result) {
+      console.log('Status: ' + result.status);
+      console.log('Acknowledged: ' + result.acknowledgedCount);
+      console.log('Skipped: ' + result.skippedCount);
+      (result.results || []).slice(0, 20).forEach(function (item) {
+        console.log(item.status + '\t' + item.eventId + (item.reason ? '\t' + item.reason : ''));
+      });
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'register-source') {
     const sourceType = options.sourceType || 'saved-html-directory';
     const inputDir = options.input || (sourceType === 'saved-html-directory' ? defaultInputDir : undefined);
@@ -2124,6 +2151,9 @@ function parseArgs(args) {
     } else if (item === '--event-id') {
       options.eventId = args[index + 1];
       index += 1;
+    } else if (item === '--event-ids') {
+      options.eventIds = args[index + 1];
+      index += 1;
     } else if (item === '--by') {
       options.by = args[index + 1];
       index += 1;
@@ -2138,6 +2168,15 @@ function parseArgs(args) {
 function parseOptionalBoolean(value) {
   if (value === undefined) return undefined;
   return value !== 'false';
+}
+
+function splitCsv(value) {
+  return String(value || '')
+    .split(',')
+    .map(function (item) {
+      return item.trim();
+    })
+    .filter(Boolean);
 }
 
 function buildReviewResultQuery(options, storeDir) {
@@ -2348,6 +2387,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js ingest-raw-page [--forum nga] --content-sha1 sha1 [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js dispatch-events [--channel file|webhook] [--webhook-url url] [--limit n] [--max-attempts n] [--retry-backoff-ms ms] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js ack-event --event-id id [--by user] [--note text] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js ack-events [--event-ids id1,id2] [--type type] [--acknowledged true|false] [--delivery-status status] [--by user] [--note text] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js validate-source [--forum nga] [--source-type type] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js validate-thread-json --input-file file [--forum sourceKey] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js source-onboarding-preflight [--forum nga] [--source-type type] [--module-path file] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--store-dir dir] [--now iso]');

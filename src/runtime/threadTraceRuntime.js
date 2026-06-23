@@ -27,6 +27,7 @@ const { runEnabledSourcesIngestTasks } = require('../application/use-cases/runEn
 const { runDueSourcesIngestTasks } = require('../application/use-cases/runDueSourcesIngestTasks');
 const { runDueSourceInsightPipelineTasks } = require('../application/use-cases/runDueSourceInsightPipelineTasks');
 const { acknowledgeNotificationEvent } = require('../application/use-cases/acknowledgeNotificationEvent');
+const { acknowledgeNotificationEvents } = require('../application/use-cases/acknowledgeNotificationEvents');
 const { dispatchPendingNotificationEvents } = require('../application/use-cases/dispatchPendingNotificationEvents');
 const { synthesizeRunbookNotificationEvents } = require('../application/use-cases/synthesizeRunbookNotificationEvents');
 const { synthesizeContextReviewResultNotificationEvents } = require('../application/use-cases/synthesizeContextReviewResultNotificationEvents');
@@ -1734,6 +1735,24 @@ function createThreadTraceRuntime(options) {
         eventId: safeRequest.eventId,
         acknowledgedBy: safeRequest.acknowledgedBy,
         note: safeRequest.note
+      });
+    },
+
+    async acknowledgeNotificationEvents(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return acknowledgeNotificationEvents({
+        notificationEventRepository: repositories.notificationEventRepository,
+        eventIds: safeRequest.eventIds,
+        type: safeRequest.type,
+        sourceId: safeRequest.sourceId,
+        acknowledged: safeRequest.acknowledged,
+        deliveryStatus: safeRequest.deliveryStatus,
+        limit: safeRequest.limit || 50,
+        acknowledgedBy: safeRequest.acknowledgedBy,
+        note: safeRequest.note,
+        acknowledgedAt: safeRequest.acknowledgedAt,
+        now: safeRequest.now
       });
     },
 
