@@ -150,6 +150,8 @@ Each action includes an area, title, evidence, a primary CLI command, and option
 
 Source lifecycle actions point operators to `source-lifecycle-report` when a source disable is blocked by an active run or when a failed source is still waiting for retry backoff. If an operator has reviewed a failed source and wants to bypass the remaining backoff window, the runbook also links to `reset-source-failure --retry-now true --execute true`.
 
+Author review queue actions point operators to `list-author-review-queue --status open`, the manual `synthesize-author-review-queue-events` command, and the operations worker author-queue event flag so queue pressure can become durable outbox notifications without duplicating delivery logic.
+
 Runbook notification synthesis promotes critical and warning runbook actions into the notification outbox as `runbook-action` events. It defaults to dry-run through CLI and HTTP, uses stable IDs based on action keys to avoid duplicate alerts, preserves pending/failed delivery state when an action is refreshed, marks stale actions as `resolved`, reopens system-resolved actions if they return, and skips operator-acknowledged or delivered actions so operator decisions remain durable.
 
 Author review queue notification synthesis promotes open durable author intelligence review items into the notification outbox as `author-review-queue` events. It defaults to dry-run through CLI, HTTP, Web UI, and operations-worker flags, uses stable IDs based on queue item ids, scopes stale resolution to the requested source/thread/type/priority filters, and skips operator-acknowledged or delivered events so manual decisions remain durable.

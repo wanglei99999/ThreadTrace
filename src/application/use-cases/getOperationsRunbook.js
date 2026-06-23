@@ -55,6 +55,8 @@ function authorReviewQueueActions(queue) {
       recommendedCommand: 'node src/presentation/cli/threadtrace.js list-author-review-queue --status open',
       relatedCommands: [
         'node src/presentation/cli/threadtrace.js sync-author-review-queue',
+        'node src/presentation/cli/threadtrace.js synthesize-author-review-queue-events',
+        'node src/presentation/worker/operationsWorkerMain.js --once --author-review-queue-events true',
         'node src/presentation/cli/threadtrace.js author-intelligence'
       ],
       evidence: {

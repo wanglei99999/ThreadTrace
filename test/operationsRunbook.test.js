@@ -239,6 +239,8 @@ test('operations runbook flags open author review queue items', function () {
   assert.equal(runbook.actions[0].key, 'authorReviewQueue.open');
   assert.equal(runbook.actions[0].area, 'intelligence');
   assert.match(runbook.actions[0].recommendedCommand, /list-author-review-queue --status open/);
+  assert.match(runbook.actions[0].relatedCommands[1], /synthesize-author-review-queue-events/);
+  assert.match(runbook.actions[0].relatedCommands[2], /operationsWorkerMain.js --once --author-review-queue-events true/);
   assert.equal(runbook.actions[0].evidence.highPriorityOpenCount, 1);
 });
 
