@@ -350,7 +350,11 @@ test('operations runbook turns source lifecycle signals into actions', function 
           displayName: 'Running source',
           lastStartedAt: '2026-06-19T09:59:00.000Z',
           staleAfterMs: 600000,
-          nextAction: 'wait-for-run-or-force-disable'
+          nextAction: 'wait-for-run-or-force-disable',
+          recommendedCommands: [
+            'node src/presentation/cli/threadtrace.js source-lifecycle-report --source-run-stale-after-ms 600000',
+            'node src/presentation/cli/threadtrace.js disable-source --source-id source-running --force true --execute true'
+          ]
         }
       ],
       sources: [
@@ -364,7 +368,11 @@ test('operations runbook turns source lifecycle signals into actions', function 
             failureCount: 2,
             backoffMs: 120000
           },
-          nextAction: 'wait-for-failure-backoff'
+          nextAction: 'wait-for-failure-backoff',
+          recommendedCommands: [
+            'node src/presentation/cli/threadtrace.js source-schedule-report --forum nga',
+            'node src/presentation/cli/threadtrace.js reset-source-failure --source-id source-failed --retry-now true --execute true'
+          ]
         }
       ]
     },
@@ -377,12 +385,15 @@ test('operations runbook turns source lifecycle signals into actions', function 
   assert.equal(runbook.actionCount, 2);
   assert.equal(runbook.actions[0].key, 'sourceLifecycle.disableBlocked.source-running');
   assert.equal(runbook.actions[0].severity, 'warning');
-  assert.match(runbook.actions[0].recommendedCommand, /source-lifecycle-report/);
-  assert.match(runbook.actions[0].relatedCommands[1], /--force true/);
+  assert.match(runbook.actions[0].recommendedCommand, /source-run-stale-after-ms 600000/);
+  assert.match(runbook.actions[0].relatedCommands[0], /--force true --execute true/);
+  assert.match(runbook.actions[0].relatedCommands[2], /list-sources/);
   assert.equal(runbook.actions[1].key, 'sourceLifecycle.failureRetry.source-failed');
   assert.equal(runbook.actions[1].evidence.retryAt, '2026-06-19T10:01:00.000Z');
   assert.match(runbook.actions[1].summary, /Failed source/);
-  assert.match(runbook.actions[1].relatedCommands[2], /reset-source-failure --source-id source-failed/);
+  assert.match(runbook.actions[1].recommendedCommand, /source-schedule-report --forum nga/);
+  assert.match(runbook.actions[1].relatedCommands[0], /reset-source-failure --source-id source-failed/);
+  assert.match(runbook.actions[1].relatedCommands[2], /source-diagnostics/);
 });
 
 test('operations runbook turns review action gate warnings into actions', function () {

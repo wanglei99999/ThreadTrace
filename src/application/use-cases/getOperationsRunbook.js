@@ -219,17 +219,19 @@ function pipelineRunActions(runs) {
 function sourceLifecycleActions(report) {
   if (!report) return [];
   const blockedDisableActions = (report.blockedDisables || []).slice(0, 10).map(function (source) {
+    const commands = lifecycleActionCommands(source, [
+      'node src/presentation/cli/threadtrace.js source-lifecycle-report',
+      'node src/presentation/cli/threadtrace.js list-sources',
+      'node src/presentation/cli/threadtrace.js disable-source --source-id ' + quoteCommandValue(source.sourceId) + ' --force true --execute true'
+    ]);
     return action({
       key: 'sourceLifecycle.disableBlocked.' + safeActionKey(source.sourceId),
       severity: 'warning',
       area: 'sources',
       title: 'Wait for active source run before disabling.',
       summary: (source.displayName || source.sourceId || 'Unknown source') + ' is still running and normal disable is blocked until the run finishes or becomes stale.',
-      recommendedCommand: 'node src/presentation/cli/threadtrace.js source-lifecycle-report',
-      relatedCommands: [
-        'node src/presentation/cli/threadtrace.js list-sources',
-        'node src/presentation/cli/threadtrace.js disable-source --source-id ' + quoteCommandValue(source.sourceId) + ' --execute true --force true'
-      ],
+      recommendedCommand: commands[0],
+      relatedCommands: commands.slice(1),
       evidence: {
         sourceId: source.sourceId,
         lastStartedAt: source.lastStartedAt,
@@ -241,18 +243,20 @@ function sourceLifecycleActions(report) {
   const retryWaitingActions = (report.sources || []).filter(function (source) {
     return source.failureRetry && source.failureRetry.active && !source.failureRetry.elapsed;
   }).slice(0, 10).map(function (source) {
+    const commands = lifecycleActionCommands(source, [
+      'node src/presentation/cli/threadtrace.js source-lifecycle-report',
+      'node src/presentation/cli/threadtrace.js source-diagnostics',
+      'node src/presentation/cli/threadtrace.js run-due-sources-task',
+      'node src/presentation/cli/threadtrace.js reset-source-failure --source-id ' + quoteCommandValue(source.id) + ' --retry-now true --execute true'
+    ]);
     return action({
       key: 'sourceLifecycle.failureRetry.' + safeActionKey(source.id),
       severity: 'warning',
       area: 'sources',
       title: 'Wait for failed source retry backoff.',
       summary: (source.displayName || source.id || 'Unknown source') + ' failed recently and will be skipped until ' + (source.failureRetry.retryAt || 'the retry window elapses') + '.',
-      recommendedCommand: 'node src/presentation/cli/threadtrace.js source-lifecycle-report',
-      relatedCommands: [
-        'node src/presentation/cli/threadtrace.js source-diagnostics',
-        'node src/presentation/cli/threadtrace.js run-due-sources-task',
-        'node src/presentation/cli/threadtrace.js reset-source-failure --source-id ' + quoteCommandValue(source.id) + ' --retry-now true --execute true'
-      ],
+      recommendedCommand: commands[0],
+      relatedCommands: commands.slice(1),
       evidence: {
         sourceId: source.id,
         retryAt: source.failureRetry.retryAt,
@@ -263,6 +267,19 @@ function sourceLifecycleActions(report) {
     });
   });
   return blockedDisableActions.concat(retryWaitingActions);
+}
+
+function lifecycleActionCommands(source, fallbackCommands) {
+  return uniqueCommands((source.recommendedCommands || []).concat(fallbackCommands || []));
+}
+
+function uniqueCommands(commands) {
+  const seen = new Set();
+  return (commands || []).filter(function (command) {
+    if (!command || seen.has(command)) return false;
+    seen.add(command);
+    return true;
+  });
 }
 
 function reviewActionGateActions(gateReport) {
