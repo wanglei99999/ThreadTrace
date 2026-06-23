@@ -123,16 +123,20 @@ test('source lifecycle report summarizes disable guards and lifecycle tasks', as
   assert.equal(report.summary.disableBlocked, 1);
   assert.equal(report.blockedDisables.length, 1);
   assert.equal(report.blockedDisables[0].sourceId, 'source-1');
+  assert.match(report.blockedDisables[0].recommendedCommands[1], /disable-source --source-id source-1 --force true --execute true/);
   assert.equal(report.sources[0].disableGuard.canDisable, false);
   assert.equal(report.sources[0].latestLifecycleTask.id, 'task-disable-1');
   assert.equal(report.sources[1].disableGuard.stale, true);
   assert.equal(report.sources[1].nextAction, 'disable-or-recover-stale-run');
+  assert.match(report.sources[1].recommendedCommands[0], /disable-source --source-id source-2 --execute true/);
   assert.equal(report.sources[2].nextAction, 'enable-source');
+  assert.match(report.sources[2].recommendedCommands[0], /enable-source --source-id source-3 --execute true/);
   assert.equal(report.sources[3].failureRetry.active, true);
   assert.equal(report.sources[3].failureRetry.elapsed, false);
   assert.equal(report.sources[3].failureRetry.retryAt, '2026-06-19T10:01:00.000Z');
   assert.equal(report.sources[3].latestLifecycleTask.id, 'task-reset-1');
   assert.equal(report.sources[3].nextAction, 'wait-for-failure-backoff');
+  assert.match(report.sources[3].recommendedCommands[1], /reset-source-failure --source-id source-4 --retry-now true --execute true/);
   assert.deepEqual(report.recentLifecycleTasks.map(function (task) {
     return task.id;
   }), ['task-disable-1', 'task-reset-1', 'task-enable-1']);

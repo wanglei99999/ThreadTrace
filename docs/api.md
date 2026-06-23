@@ -375,7 +375,7 @@ Query parameters:
 - `sourceFailureMaxRetryBackoffMs`: optional maximum retry delay for exponential source failure backoff.
 - `now`: optional fixed time for repeatable checks.
 
-Returns `summary`, `blockedDisables`, per-source `disableGuard`, `failureRetry`, `latestLifecycleTask`, and `recentLifecycleTasks`.
+Returns `summary`, `blockedDisables`, per-source `disableGuard`, `failureRetry`, `latestLifecycleTask`, `nextAction`, `recommendedCommands`, and `recentLifecycleTasks`.
 
 ### `GET /api/sources/schedule`
 

@@ -390,9 +390,15 @@ function main(argv) {
       console.log('Sources: total=' + report.summary.total + ', enabled=' + report.summary.enabled + ', disabled=' + report.summary.disabled + ', running=' + report.summary.running + ', failureRetryWaiting=' + report.summary.failureRetryWaiting + ', disableBlocked=' + report.summary.disableBlocked);
       report.blockedDisables.forEach(function (source) {
         console.log('blocked\t' + source.sourceId + '\t' + source.displayName + '\tlastStarted=' + (source.lastStartedAt || 'unknown') + '\t' + source.nextAction);
+        (source.recommendedCommands || []).forEach(function (command) {
+          console.log('  command: ' + command);
+        });
       });
       report.sources.forEach(function (source) {
         console.log(source.id + '\t' + source.sourceKey + '\t' + source.sourceType + '\tenabled=' + source.enabled + '\trun=' + source.runState.status + '\tcanDisable=' + source.disableGuard.canDisable + '\tretryAt=' + (source.failureRetry.retryAt || 'none') + '\tnext=' + source.nextAction);
+        (source.recommendedCommands || []).slice(0, 2).forEach(function (command) {
+          console.log('  command: ' + command);
+        });
       });
       if (report.status === 'warn') {
         process.exitCode = 2;

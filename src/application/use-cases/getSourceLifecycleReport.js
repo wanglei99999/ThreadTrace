@@ -58,7 +58,8 @@ async function getSourceLifecycleReport(options) {
         displayName: source.displayName,
         lastStartedAt: source.runState.lastStartedAt,
         staleAfterMs: source.disableGuard.staleAfterMs,
-        nextAction: source.nextAction
+        nextAction: source.nextAction,
+        recommendedCommands: source.recommendedCommands
       };
     }),
     sources: sourceReports,
@@ -76,6 +77,7 @@ function summarizeSourceLifecycle(source, lifecycleTasks, options) {
   const latestLifecycleTask = lifecycleTasks.find(function (task) {
     return taskSourceId(task) === source.id;
   });
+  const nextAction = getNextLifecycleAction(source, disableGuard, failureRetry);
   return {
     id: source.id,
     sourceKey: source.sourceKey,
@@ -93,7 +95,8 @@ function summarizeSourceLifecycle(source, lifecycleTasks, options) {
     },
     failureRetry: summarizeFailureRetry(failureRetry),
     latestLifecycleTask: summarizeLifecycleTask(latestLifecycleTask),
-    nextAction: getNextLifecycleAction(source, disableGuard, failureRetry)
+    nextAction,
+    recommendedCommands: lifecycleCommands(source, nextAction, disableGuard, failureRetry)
   };
 }
 
@@ -164,6 +167,33 @@ function getNextLifecycleAction(source, disableGuard, failureRetry) {
   if (failureRetry && failureRetry.active && failureRetry.elapsed) return 'run-due-source-task';
   if (disableGuard.running && disableGuard.stale) return 'disable-or-recover-stale-run';
   return 'disable-source';
+}
+
+function lifecycleCommands(source, nextAction, disableGuard, failureRetry) {
+  const sourceId = source.id;
+  const commands = [];
+  if (nextAction === 'enable-source') {
+    commands.push('node src/presentation/cli/threadtrace.js enable-source --source-id ' + sourceId + ' --execute true');
+    commands.push('node src/presentation/cli/threadtrace.js source-diagnostics');
+  } else if (nextAction === 'wait-for-run-or-force-disable') {
+    commands.push('node src/presentation/cli/threadtrace.js source-lifecycle-report --source-run-stale-after-ms ' + disableGuard.staleAfterMs);
+    commands.push('node src/presentation/cli/threadtrace.js disable-source --source-id ' + sourceId + ' --force true --execute true');
+  } else if (nextAction === 'wait-for-failure-backoff') {
+    commands.push('node src/presentation/cli/threadtrace.js source-schedule-report --forum ' + source.sourceKey);
+    commands.push('node src/presentation/cli/threadtrace.js reset-source-failure --source-id ' + sourceId + ' --retry-now true --execute true');
+  } else if (nextAction === 'run-due-source-task') {
+    commands.push('node src/presentation/cli/threadtrace.js run-source-task --source-id ' + sourceId);
+    commands.push('node src/presentation/cli/threadtrace.js reset-source-failure --source-id ' + sourceId + ' --retry-now true --execute true');
+  } else if (nextAction === 'disable-or-recover-stale-run') {
+    commands.push('node src/presentation/cli/threadtrace.js disable-source --source-id ' + sourceId + ' --execute true');
+    commands.push('node src/presentation/cli/threadtrace.js run-source-task --source-id ' + sourceId);
+  } else {
+    commands.push('node src/presentation/cli/threadtrace.js disable-source --source-id ' + sourceId + ' --execute true');
+    if (failureRetry && failureRetry.active) {
+      commands.push('node src/presentation/cli/threadtrace.js reset-source-failure --source-id ' + sourceId + ' --retry-now true --execute true');
+    }
+  }
+  return commands;
 }
 
 function taskSourceId(task) {

@@ -2170,7 +2170,8 @@ function renderLifecycleSourceRow(source) {
     guard.lastStartedAt ? 'started=' + guard.lastStartedAt : undefined,
     retry.retryAt ? 'retry=' + retry.retryAt : undefined,
     retry.backoffMs ? 'backoff=' + formatDurationMs(retry.backoffMs) : undefined,
-    source.latestLifecycleTask ? 'task=' + source.latestLifecycleTask.id + '/' + source.latestLifecycleTask.status : undefined
+    source.latestLifecycleTask ? 'task=' + source.latestLifecycleTask.id + '/' + source.latestLifecycleTask.status : undefined,
+    (source.recommendedCommands || [])[0] ? 'cmd=' + (source.recommendedCommands || [])[0] : undefined
   ].filter(Boolean).join(' | ');
   const controls = '<span class="button-group source-op-buttons">' +
     statusBadge(label, variant) +

@@ -1759,7 +1759,7 @@ function createOpenApiSpec() {
       },
       '/api/sources/lifecycle': {
         get: {
-          summary: 'Report tracked source lifecycle state, disable guards, failure resets, and recent lifecycle tasks',
+          summary: 'Report tracked source lifecycle state, disable guards, failure resets, recommended commands, and recent lifecycle tasks',
           parameters: [
             { name: 'forum', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
             { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
@@ -1774,7 +1774,7 @@ function createOpenApiSpec() {
           ],
           responses: {
             200: {
-              description: 'Lifecycle report with disable guard state, failure retry state, and recent lifecycle task audit records'
+              description: 'Lifecycle report with disable guard state, failure retry state, recommended commands, and recent lifecycle task audit records'
             }
           }
         }

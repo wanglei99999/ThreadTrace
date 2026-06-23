@@ -34,8 +34,8 @@ Query parameters:
 The report returns:
 
 - `summary`: source counts, running counts, stale running counts, failure-retry-waiting counts, and disable-blocked counts.
-- `blockedDisables`: sources that currently need waiting or an explicit force disable.
-- `sources`: per-source lifecycle state, disable guard, failure retry plan, latest lifecycle task, and next action.
+- `blockedDisables`: sources that currently need waiting or an explicit force disable, including recommended CLI commands.
+- `sources`: per-source lifecycle state, disable guard, failure retry plan, latest lifecycle task, next action, and recommended CLI commands.
 - `recentLifecycleTasks`: recent `disable-tracked-source`, `enable-tracked-source`, and `reset-tracked-source-failure` task records.
 
 Use this report before rollout rollback, source maintenance, or worker recovery so operators can distinguish a safe disable from an active run that should finish first.
