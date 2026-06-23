@@ -151,6 +151,14 @@ create table if not exists notification_events (
   created_at timestamptz not null
 );
 
+-- Keep the baseline script safe to re-run against databases created before
+-- source scoping or archive retention columns were introduced.
+alter table notification_events add column if not exists source_key text;
+alter table notification_events add column if not exists archived_at timestamptz;
+alter table notification_events add column if not exists archived_by text;
+alter table notification_events add column if not exists archive_reason text;
+alter table notification_events add column if not exists archive_batch_id text;
+
 create index if not exists idx_notification_events_created on notification_events(created_at desc);
 create index if not exists idx_notification_events_delivery_status on notification_events(delivery_status);
 create index if not exists idx_notification_events_due on notification_events(delivery_status, next_delivery_at);
