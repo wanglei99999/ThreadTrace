@@ -86,12 +86,16 @@ npm run deployment:checklist
 npm run operations:worker-topology-plan
 npm run operations:runbook
 npm run operations:synthesize-runbook-events
+npm run operations:list-events
+npm run operations:events-overview
+npm run operations:dispatch-events
+npm run operations:archive-events
 npm run operations:resource-provisioning-plan
 npm run deployment:gate
 npm run operations:rollout-manifest-apply
 ```
 
-These commands use the same runtime composition as the HTTP API and Web console. `deployment:checklist` aggregates runtime resources, PostgreSQL schema readiness, adapter contracts, tracked source configuration, workers, notifications, and LLM configuration. `operations:runbook` turns failed or warning checks into actionable next commands. `operations:synthesize-runbook-events` defaults to dry-run and can persist runbook actions into the notification outbox with `-- --execute true`.
+These commands use the same runtime composition as the HTTP API and Web console. `deployment:checklist` aggregates runtime resources, PostgreSQL schema readiness, adapter contracts, tracked source configuration, workers, notifications, and LLM configuration. `operations:runbook` turns failed or warning checks into actionable next commands. Notification outbox scripts expose list, overview, dispatch, and dry-run archive flows; `operations:archive-events` persists retention only when called with `-- --execute true`.
 
 ## HTTP API
 
