@@ -138,6 +138,67 @@ test('runtime validates connector module files before startup configuration', as
   assert.match(broken.errors[0].message, /validation boom/);
 });
 
+test('connector module validation reports contract and duplicate registration failures', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-connector-module-contract-fail-'));
+  const modulePath = path.join(tempDir, 'contractFailConnector.cjs');
+  await fs.writeFile(modulePath, [
+    "'use strict';",
+    "module.exports = {",
+    "  forumAdapters: [{",
+    "    sourceKey: 'missing-display-name',",
+    "    parseSavedHtml() {",
+    "      return { sourceKey: 'missing-display-name', sourceThreadId: 'thread-1', title: 'Thread', posts: [] };",
+    "    }",
+    "  }],",
+    "  sourceIngestHandlers: [",
+    "    {",
+    "      sourceType: 'duplicate-feed',",
+    "      requiresAdapter: false,",
+    "      description: 'Duplicate feed A.',",
+    "      locationSchema: { required: ['feedUrl'], properties: { feedUrl: { type: 'string' } } },",
+    "      async run() { throw new Error('not used in this test'); }",
+    "    },",
+    "    {",
+    "      sourceType: 'duplicate-feed',",
+    "      requiresAdapter: false,",
+    "      description: 'Duplicate feed B.',",
+    "      locationSchema: { required: ['feedUrl'], properties: { feedUrl: { type: 'string' } } },",
+    "      async run() { throw new Error('not used in this test'); }",
+    "    },",
+    "    {",
+    "      sourceType: 'missing-description-feed',",
+    "      requiresAdapter: false,",
+    "      locationSchema: { required: ['feedUrl'], properties: { feedUrl: { type: 'string' } } },",
+    "      async run() { throw new Error('not used in this test'); }",
+    "    }",
+    "  ]",
+    "};",
+    ""
+  ].join('\n'), 'utf8');
+
+  const runtime = createThreadTraceRuntime({
+    storeDir: path.join(tempDir, 'store')
+  });
+  const result = runtime.validateConnectorModule({
+    modulePath,
+    now: '2026-06-19T10:00:00.000Z'
+  });
+
+  assert.equal(result.valid, false);
+  assert.equal(result.status, 'fail');
+  assert.deepEqual(result.checks.find(function (check) {
+    return check.key === 'connectorModule.uniqueRegistrations';
+  }).value.duplicateSourceIngestHandlers, ['duplicate-feed']);
+  assert.deepEqual(result.checks.find(function (check) {
+    return check.key === 'connectorModule.adapterContracts';
+  }).value.failures[0].missing, ['displayName']);
+  assert.deepEqual(result.checks.find(function (check) {
+    return check.key === 'connectorModule.handlerContracts';
+  }).value.failures[0].missing, ['description']);
+  assert.equal(result.contractSummary.forumAdapterCount, 1);
+  assert.equal(result.contractSummary.sourceIngestHandlerCount, 3);
+});
+
 test('connector module validation reloads changed module files', async function () {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-connector-module-reload-'));
   const modulePath = path.join(tempDir, 'reloadConnector.cjs');

@@ -1698,8 +1698,17 @@ function main(argv) {
     console.log('Connector module validation: valid=' + result.valid + ', status=' + result.status);
     console.log('Module: ' + (result.modulePath || 'missing'));
     console.log('Registrations: modules=' + result.modules.length + ', errors=' + result.errors.length);
+    if (result.contractSummary) {
+      console.log('Contracts: adapters=' + result.contractSummary.forumAdapterCount + ', handlers=' + result.contractSummary.sourceIngestHandlerCount);
+      (result.contractSummary.forumAdapters || []).forEach(function (adapter) {
+        console.log('  adapter\t' + adapter.sourceKey + '\t' + (adapter.displayName || 'missing-display-name'));
+      });
+      (result.contractSummary.sourceIngestHandlers || []).forEach(function (handler) {
+        console.log('  handler\t' + handler.sourceType + '\trequiresAdapter=' + handler.requiresAdapter + '\tlocation=' + (handler.requiredLocationFields || []).join(','));
+      });
+    }
     result.checks.forEach(function (check) {
-      console.log(check.status + '\t' + check.key + '\t' + check.summary + '\t' + check.value);
+      console.log(check.status + '\t' + check.key + '\t' + check.summary + '\t' + formatCheckValue(check.value));
     });
     if (!result.valid) {
       process.exitCode = 2;
@@ -2421,6 +2430,13 @@ function formatCountSummary(summary) {
   return keys.sort().map(function (key) {
     return key + '=' + summary[key];
   }).join(', ');
+}
+
+function formatCheckValue(value) {
+  if (value === undefined) return '';
+  if (value === null) return 'null';
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
 }
 
 function formatSchemaDrift(schemaDrift) {

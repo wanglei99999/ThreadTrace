@@ -16,6 +16,8 @@ test('connector module contract exposes runtime extension shapes', function () {
   assert.ok(contract.context.registerSourceIngestHandler);
   assert.deepEqual(contract.forumAdapter.required, ['sourceKey', 'displayName', 'parseSavedHtml']);
   assert.ok(contract.sourceIngestHandler.required.includes('sourceType'));
+  assert.ok(contract.validation.requiredChecks.includes('connectorModule.handlerContracts'));
+  assert.ok(contract.registrationReport.forumAdapterDetails);
   assert.match(contract.example, /external-feed/);
   assert.equal(runtimeContract.version, contract.version);
 });

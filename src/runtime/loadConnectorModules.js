@@ -45,7 +45,9 @@ function applyConnectorModule(connectorModule, context) {
   const registration = {
     modulePath: context.modulePath,
     forumAdapters: [],
-    sourceIngestHandlers: []
+    forumAdapterDetails: [],
+    sourceIngestHandlers: [],
+    sourceIngestHandlerDetails: []
   };
   const moduleValue = typeof connectorModule === 'function'
     ? connectorModule(buildContext(context, registration))
@@ -69,11 +71,13 @@ function buildContext(context, registration) {
     registerForumAdapter: function (adapter) {
       context.forumAdapterRegistry.register(adapter);
       registration.forumAdapters.push(adapter.sourceKey);
+      registration.forumAdapterDetails.push(summarizeForumAdapter(adapter));
       return adapter;
     },
     registerSourceIngestHandler: function (handler) {
       context.sourceIngestHandlerRegistry.register(handler);
       registration.sourceIngestHandlers.push(handler.sourceType);
+      registration.sourceIngestHandlerDetails.push(summarizeSourceIngestHandler(handler));
       return handler;
     }
   };
@@ -83,6 +87,7 @@ function registerForumAdapters(adapters, context, registration) {
   adapters.forEach(function (adapter) {
     context.forumAdapterRegistry.register(adapter);
     registration.forumAdapters.push(adapter.sourceKey);
+    registration.forumAdapterDetails.push(summarizeForumAdapter(adapter));
   });
 }
 
@@ -90,7 +95,33 @@ function registerSourceIngestHandlers(handlers, context, registration) {
   handlers.forEach(function (handler) {
     context.sourceIngestHandlerRegistry.register(handler);
     registration.sourceIngestHandlers.push(handler.sourceType);
+    registration.sourceIngestHandlerDetails.push(summarizeSourceIngestHandler(handler));
   });
+}
+
+function summarizeForumAdapter(adapter) {
+  return {
+    sourceKey: adapter && adapter.sourceKey,
+    displayName: adapter && adapter.displayName,
+    hasParseSavedHtml: Boolean(adapter && typeof adapter.parseSavedHtml === 'function'),
+    hasFetchThread: Boolean(adapter && typeof adapter.fetchThread === 'function'),
+    capabilities: adapter && adapter.capabilities || {}
+  };
+}
+
+function summarizeSourceIngestHandler(handler) {
+  const locationSchema = handler && handler.locationSchema || {};
+  return {
+    sourceType: handler && handler.sourceType,
+    description: handler && handler.description,
+    requiresAdapter: handler ? handler.requiresAdapter !== false : true,
+    hasRun: Boolean(handler && typeof handler.run === 'function'),
+    locationSchema: {
+      required: Array.isArray(locationSchema.required) ? locationSchema.required.slice() : [],
+      properties: locationSchema.properties || {}
+    },
+    capabilities: handler && handler.capabilities || {}
+  };
 }
 
 function normalizeModuleExport(value) {

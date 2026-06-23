@@ -48,7 +48,20 @@ function getConnectorModuleContract() {
     registrationReport: {
       modulePath: 'Absolute module path.',
       forumAdapters: 'Registered forum adapter sourceKey values.',
-      sourceIngestHandlers: 'Registered source ingest handler sourceType values.'
+      forumAdapterDetails: 'Registered forum adapter contract metadata safe for diagnostics.',
+      sourceIngestHandlers: 'Registered source ingest handler sourceType values.',
+      sourceIngestHandlerDetails: 'Registered source ingest handler contract metadata safe for diagnostics.'
+    },
+    validation: {
+      requiredChecks: [
+        'connectorModule.path',
+        'connectorModule.load',
+        'connectorModule.registrations',
+        'connectorModule.uniqueRegistrations',
+        'connectorModule.adapterContracts',
+        'connectorModule.handlerContracts'
+      ],
+      contractSummary: 'Validation responses include registered adapter and source-ingest handler metadata for release review.'
     },
     diagnostics: {
       readiness: 'GET /api/connectors/readiness and connector-readiness report loaded modules and load errors.',

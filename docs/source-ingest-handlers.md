@@ -79,6 +79,16 @@ content-type: application/json
 
 Validation and onboarding preflight reload the module file for each run, so connector authors can edit a module and immediately re-run the check without restarting ThreadTrace.
 
+Connector validation is stricter than a plain `require()` smoke test. It fails when a module:
+
+- cannot be loaded
+- registers no forum adapter or source ingest handler
+- registers duplicate adapter `sourceKey` or handler `sourceType` values
+- registers an adapter missing `sourceKey`, `displayName`, or `parseSavedHtml`
+- registers a source ingest handler missing `sourceType`, `description`, `locationSchema.properties`, or `run`
+
+The validation response includes `contractSummary` and per-check failure details so connector authors can fix the package before it is added to runtime configuration.
+
 For a full pre-release view, run the read-only connector rollout plan. It aggregates the connector contract, optional module validation, optional source onboarding preflight, current connector readiness, and deployment checklist:
 
 ```powershell

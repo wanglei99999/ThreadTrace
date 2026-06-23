@@ -798,7 +798,7 @@ function createOpenApiSpec() {
       },
       '/api/connectors/modules/validate': {
         post: {
-          summary: 'Validate that a connector module file can load and register adapters or handlers',
+          summary: 'Validate that a connector module file loads, registers extensions, and satisfies connector contracts',
           requestBody: {
             required: true,
             content: {
@@ -816,10 +816,10 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Connector module validation passed'
+              description: 'Connector module validation passed, including contract summary'
             },
             503: {
-              description: 'Connector module validation failed'
+              description: 'Connector module validation failed with per-check contract details'
             },
             400: {
               $ref: '#/components/responses/BadRequest'
