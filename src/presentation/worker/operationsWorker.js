@@ -68,6 +68,7 @@ function createOperationsWorker(options) {
       await leaseGuard.renew();
       const dueSources = await runDueSourceTasks(runtime, sourceTaskMode, withWorkerTrace(sourcesRequest, workerRun));
       const reviewActionTask = await runReviewActionTask(runtime, safeRequest, leaseGuard, tracker, workerRun);
+      const contextReviewResultEvents = await synthesizeContextReviewResultEvents(runtime, safeRequest, leaseGuard, tracker, workerRun);
       const runbookEvents = await synthesizeRunbookEvents(runtime, safeRequest, leaseGuard, tracker, workerRun);
       const authorReviewQueueEvents = await synthesizeAuthorReviewQueueEvents(runtime, safeRequest, leaseGuard, tracker, workerRun);
       workerRun = await tracker.heartbeat(workerRun, { step: 'dispatch-events' });
@@ -76,11 +77,12 @@ function createOperationsWorker(options) {
       workerRun = await tracker.heartbeat(workerRun, { step: 'overview' });
       await leaseGuard.renew();
       const overview = await runtime.getOperationalOverview(safeRequest.overview || {});
-      await tracker.complete(workerRun, summarizeOperationsResult(dueSources, reviewActionTask, runbookEvents, authorReviewQueueEvents, events, overview));
-      logger.log('[worker] operations run completed: due=' + dueSources.dueCount + ', sourceFailed=' + dueSources.failedCount + ', reviewAction=' + (reviewActionTask ? reviewActionTask.report.status : 'skipped') + ', runbookEvents=' + (runbookEvents ? runbookEvents.eventCount : 0) + ', authorQueueEvents=' + (authorReviewQueueEvents ? authorReviewQueueEvents.eventCount : 0) + ', eventDelivered=' + events.dispatchedCount + ', eventFailed=' + events.failedCount + ', openEvents=' + overview.events.unacknowledged);
+      await tracker.complete(workerRun, summarizeOperationsResult(dueSources, reviewActionTask, contextReviewResultEvents, runbookEvents, authorReviewQueueEvents, events, overview));
+      logger.log('[worker] operations run completed: due=' + dueSources.dueCount + ', sourceFailed=' + dueSources.failedCount + ', reviewAction=' + (reviewActionTask ? reviewActionTask.report.status : 'skipped') + ', reviewResultEvents=' + (contextReviewResultEvents ? contextReviewResultEvents.eventCount : 0) + ', runbookEvents=' + (runbookEvents ? runbookEvents.eventCount : 0) + ', authorQueueEvents=' + (authorReviewQueueEvents ? authorReviewQueueEvents.eventCount : 0) + ', eventDelivered=' + events.dispatchedCount + ', eventFailed=' + events.failedCount + ', openEvents=' + overview.events.unacknowledged);
       return {
         dueSources,
         reviewActionTask,
+        contextReviewResultEvents,
         runbookEvents,
         authorReviewQueueEvents,
         events,
@@ -135,6 +137,16 @@ async function synthesizeRunbookEvents(runtime, request, leaseGuard, tracker, wo
   return runtime.synthesizeRunbookNotificationEvents(request.runbookEvents);
 }
 
+async function synthesizeContextReviewResultEvents(runtime, request, leaseGuard, tracker, workerRun) {
+  if (!request.contextReviewResultEvents) return undefined;
+  if (typeof runtime.synthesizeContextReviewResultNotificationEvents !== 'function') {
+    throw new Error('OperationsWorker requires runtime.synthesizeContextReviewResultNotificationEvents(request) when contextReviewResultEvents is enabled.');
+  }
+  await tracker.heartbeat(workerRun, { step: 'context-review-result-events' });
+  await leaseGuard.renew();
+  return runtime.synthesizeContextReviewResultNotificationEvents(request.contextReviewResultEvents);
+}
+
 async function synthesizeAuthorReviewQueueEvents(runtime, request, leaseGuard, tracker, workerRun) {
   if (!request.authorReviewQueueEvents) return undefined;
   if (typeof runtime.synthesizeAuthorReviewQueueNotificationEvents !== 'function') {
@@ -184,7 +196,7 @@ function stepForSourceTaskMode(sourceTaskMode) {
   return 'ingest-due-sources';
 }
 
-function summarizeOperationsResult(dueSources, reviewActionTask, runbookEvents, authorReviewQueueEvents, events, overview) {
+function summarizeOperationsResult(dueSources, reviewActionTask, contextReviewResultEvents, runbookEvents, authorReviewQueueEvents, events, overview) {
   return {
     dueSources: {
       sourceTaskMode: dueSources.task && dueSources.task.type === 'source-insight-pipeline-due-sources' ? 'insight-pipeline' : 'ingest',
@@ -199,6 +211,14 @@ function summarizeOperationsResult(dueSources, reviewActionTask, runbookEvents, 
       createdCount: runbookEvents.createdCount,
       updatedCount: runbookEvents.updatedCount,
       skippedCount: runbookEvents.skippedCount
+    } : undefined,
+    contextReviewResultEvents: contextReviewResultEvents ? {
+      reviewResultCount: contextReviewResultEvents.reviewResultCount,
+      actionCount: contextReviewResultEvents.actionCount,
+      eventCount: contextReviewResultEvents.eventCount,
+      createdCount: contextReviewResultEvents.createdCount,
+      updatedCount: contextReviewResultEvents.updatedCount,
+      skippedCount: contextReviewResultEvents.skippedCount
     } : undefined,
     authorReviewQueueEvents: authorReviewQueueEvents ? {
       itemCount: authorReviewQueueEvents.itemCount,

@@ -49,6 +49,8 @@ node src/presentation/cli/threadtrace.js notification-diagnostics --channel file
 node src/presentation/cli/threadtrace.js notification-diagnostics --channel webhook --webhook-url http://127.0.0.1:9000/threadtrace-events
 node src/presentation/cli/threadtrace.js synthesize-runbook-events
 node src/presentation/cli/threadtrace.js synthesize-runbook-events --execute true
+node src/presentation/cli/threadtrace.js synthesize-context-review-result-events
+node src/presentation/cli/threadtrace.js synthesize-context-review-result-events --execute true
 node src/presentation/cli/threadtrace.js synthesize-author-review-queue-events
 node src/presentation/cli/threadtrace.js synthesize-author-review-queue-events --execute true --source-key nga
 node src/presentation/cli/threadtrace.js dispatch-events --channel file
@@ -62,6 +64,8 @@ npm run worker:events-once
 npm run worker:events-loop
 npm run worker:operations-once -- --runbook-events true
 npm run worker:operations-loop -- --runbook-events-execute true
+npm run worker:operations-once -- --context-review-result-events true
+npm run worker:operations-loop -- --context-review-result-events-execute true
 npm run worker:operations-once -- --author-review-queue-events true
 npm run worker:operations-loop -- --author-review-queue-events-execute true --source-key nga
 ```
@@ -70,11 +74,12 @@ HTTP:
 
 ```text
 POST /api/operations/runbook/events
+POST /api/context-review-results/events
 POST /api/intelligence/author-review-queue/events
 POST /api/events/dispatch
 ```
 
-`synthesize-runbook-events`, `synthesize-author-review-queue-events`, `POST /api/operations/runbook/events`, and `POST /api/intelligence/author-review-queue/events` default to dry-run. Set `--execute true` or request body `{"execute": true}` to persist events into the outbox. Stable event IDs are derived from the runbook action key or durable author queue item id, so repeated synthesis updates pending/failed events without duplicating alerts. Stale runbook and author queue events are marked `resolved` when the underlying action or queue item disappears, and system-resolved events reopen as `pending` if the same action returns. Operator-acknowledged or already delivered events are left untouched for audit safety.
+`synthesize-runbook-events`, `synthesize-context-review-result-events`, `synthesize-author-review-queue-events`, `POST /api/operations/runbook/events`, `POST /api/context-review-results/events`, and `POST /api/intelligence/author-review-queue/events` default to dry-run. Set `--execute true` or request body `{"execute": true}` to persist events into the outbox. Stable event IDs are derived from the runbook action key, context review result record id, or durable author queue item id, so repeated synthesis updates pending/failed events without duplicating alerts. Stale runbook and author queue events are marked `resolved` when the underlying action or queue item disappears, and system-resolved events reopen as `pending` if the same action returns. Operator-acknowledged or already delivered events are left untouched for audit safety.
 
 Useful environment variables:
 

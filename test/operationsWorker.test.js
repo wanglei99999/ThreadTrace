@@ -201,6 +201,73 @@ test('operations worker can synthesize author review queue events before dispatc
   assert.equal(result.authorReviewQueueEvents.createdCount, 2);
 });
 
+test('operations worker can synthesize context review result events before dispatch', async function () {
+  const calls = [];
+  const worker = createOperationsWorker({
+    logger: silentLogger(),
+    runtime: {
+      async runDueSourcesIngestTasks() {
+        calls.push(['sources']);
+        return {
+          dueCount: 0,
+          completedCount: 0,
+          failedCount: 0,
+          skippedCount: 0
+        };
+      },
+      async synthesizeContextReviewResultNotificationEvents(request) {
+        calls.push(['review-result-events', request.execute, request.handoffId]);
+        return {
+          reviewResultCount: 1,
+          actionCount: 1,
+          eventCount: 1,
+          createdCount: 1,
+          updatedCount: 0,
+          skippedCount: 0
+        };
+      },
+      async dispatchNotificationEvents() {
+        calls.push(['events']);
+        return {
+          dispatchedCount: 1,
+          failedCount: 0,
+          skippedCount: 0
+        };
+      },
+      async getOperationalOverview() {
+        calls.push(['overview']);
+        return {
+          events: {
+            unacknowledged: 1
+          },
+          workers: {
+            stale: 0
+          },
+          tasks: {
+            failed: 0
+          }
+        };
+      }
+    }
+  });
+
+  const result = await worker.runOnce({
+    contextReviewResultEvents: {
+      execute: true,
+      handoffId: 'handoff-1'
+    }
+  });
+
+  assert.deepEqual(calls, [
+    ['sources'],
+    ['review-result-events', true, 'handoff-1'],
+    ['events'],
+    ['overview']
+  ]);
+  assert.equal(result.contextReviewResultEvents.eventCount, 1);
+  assert.equal(result.contextReviewResultEvents.createdCount, 1);
+});
+
 test('operations worker can run review action dry-run before dispatch', async function () {
   const calls = [];
   const workerRuns = [];

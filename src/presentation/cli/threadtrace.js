@@ -548,6 +548,24 @@ function main(argv) {
     return;
   }
 
+  if (command === 'synthesize-context-review-result-events') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.synthesizeContextReviewResultNotificationEvents(Object.assign(buildReviewResultQuery(options, storeDir), {
+      execute: options.execute === 'true' || options.dryRun === 'false'
+    })).then(function (result) {
+      console.log('Context review result events: ' + result.status);
+      console.log('Mode: ' + (result.dryRun ? 'dry-run' : 'execute'));
+      console.log('Review results: ' + result.reviewResultCount + '\tcreated=' + result.createdCount + '\tupdated=' + result.updatedCount + '\tskipped=' + result.skippedCount);
+      result.results.forEach(function (item) {
+        console.log(item.status + '\t' + (item.recordId || 'unknown-record') + '\t' + item.event.id + '\t' + item.event.severity);
+      });
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'review-action-plan') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.getContextReviewResultActionPlan(buildReviewResultQuery(options, storeDir)).then(function (plan) {
@@ -2285,6 +2303,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js operations-runbook [--forum nga] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js synthesize-runbook-events [--execute true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js synthesize-author-review-queue-events [--execute true] [--source-key key] [--status open] [--resolve-stale true] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js synthesize-context-review-result-events [--execute true] [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-plan [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-gate [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-apply [--execute true] [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');

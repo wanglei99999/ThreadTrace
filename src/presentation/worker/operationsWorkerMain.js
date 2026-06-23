@@ -63,6 +63,9 @@ async function main(argv) {
     if (result.reviewActionTask) {
       console.log('Review action: ' + result.reviewActionTask.report.status + ', dryRun=' + result.reviewActionTask.report.dryRun);
     }
+    if (result.contextReviewResultEvents) {
+      console.log('Review result events: ' + result.contextReviewResultEvents.eventCount + ', dryRun=' + result.contextReviewResultEvents.dryRun);
+    }
     if (result.authorReviewQueueEvents) {
       console.log('Author queue events: ' + result.authorReviewQueueEvents.eventCount + ', dryRun=' + result.authorReviewQueueEvents.dryRun);
     }
@@ -110,6 +113,16 @@ function buildRequest(options, storeDir, config) {
         sourceRunStaleAfterMs: config.workers.sourceRunStaleAfterMs,
         sourceFailureRetryBackoffMs: config.workers.sourceFailureRetryBackoffMs,
         sourceFailureMaxRetryBackoffMs: config.workers.sourceFailureMaxRetryBackoffMs,
+        storeDir
+      }
+      : undefined,
+    contextReviewResultEvents: options.contextReviewResultEvents === 'true' || options.contextReviewResultEventsExecute === 'true'
+      ? {
+        execute: options.contextReviewResultEventsExecute === 'true',
+        handoffId: options.handoffId,
+        status: options.reviewStatus,
+        reviewerId: options.reviewerId,
+        limit: options.limit ? Number(options.limit) : undefined,
         storeDir
       }
       : undefined,
@@ -213,6 +226,12 @@ function parseArgs(args) {
       index += 1;
     } else if (item === '--runbook-events-execute') {
       options.runbookEventsExecute = args[index + 1];
+      index += 1;
+    } else if (item === '--context-review-result-events') {
+      options.contextReviewResultEvents = args[index + 1];
+      index += 1;
+    } else if (item === '--context-review-result-events-execute') {
+      options.contextReviewResultEventsExecute = args[index + 1];
       index += 1;
     } else if (item === '--author-review-queue-events') {
       options.authorReviewQueueEvents = args[index + 1];
