@@ -339,15 +339,17 @@ function nextActions(resources) {
 }
 
 function summarizePostgresSchemaDrift(checks) {
+  const extensionCheck = findCheck(checks, 'resources.postgresExtensions');
   const schemaCheck = findCheck(checks, 'resources.postgresSchema');
   const columnCheck = findCheck(checks, 'resources.postgresColumns');
   const indexCheck = findCheck(checks, 'resources.postgresIndexes');
-  if (!schemaCheck && !columnCheck && !indexCheck) return undefined;
+  if (!extensionCheck && !schemaCheck && !columnCheck && !indexCheck) return undefined;
 
+  const missingExtensions = missingValues(extensionCheck);
   const missingTables = missingValues(schemaCheck);
   const missingColumns = missingValues(columnCheck);
   const missingIndexes = missingValues(indexCheck);
-  const inspectionErrors = [schemaCheck, columnCheck, indexCheck].filter(function (check) {
+  const inspectionErrors = [extensionCheck, schemaCheck, columnCheck, indexCheck].filter(function (check) {
     return check && check.status === 'fail' && missingValues(check).length === 0;
   }).map(function (check) {
     return {
@@ -356,10 +358,11 @@ function summarizePostgresSchemaDrift(checks) {
       summary: check.summary
     };
   });
-  const missingCount = missingTables.length + missingColumns.length + missingIndexes.length;
+  const missingCount = missingExtensions.length + missingTables.length + missingColumns.length + missingIndexes.length;
   return {
     status: missingCount > 0 || inspectionErrors.length > 0 ? 'fail' : 'ok',
     missingCount,
+    missingExtensions,
     missingTables,
     missingColumns,
     missingIndexes,

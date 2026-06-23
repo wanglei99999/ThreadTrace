@@ -14,6 +14,10 @@ const REQUIRED_TABLES = [
   'worker_leases'
 ];
 
+const REQUIRED_EXTENSIONS = [
+  'pg_trgm'
+];
+
 const REQUIRED_INDEXES = [
   'idx_tracked_sources_source_key',
   'idx_tracked_sources_enabled',
@@ -89,6 +93,7 @@ async function inspectPostgresResources(options) {
 
   try {
     await client.query('select 1 as ok');
+    const extensionCheck = await inspectExtensions(client);
     const schemaCheck = await inspectSchema(client);
     const columnCheck = await inspectColumns(client);
     const indexCheck = await inspectIndexes(client);
@@ -96,6 +101,7 @@ async function inspectPostgresResources(options) {
       storageMode: 'postgres',
       checks: [
         check('resources.postgres', 'ok', 'reachable', 'PostgreSQL responded to a lightweight ping.'),
+        extensionCheck,
         schemaCheck,
         columnCheck,
         indexCheck
@@ -108,6 +114,27 @@ async function inspectPostgresResources(options) {
         check('resources.postgres', 'fail', errorMessage(error), 'PostgreSQL ping failed.')
       ]
     };
+  }
+}
+
+async function inspectExtensions(client) {
+  try {
+    const result = await client.query(
+      'select extname from pg_extension where extname = any($1)',
+      [REQUIRED_EXTENSIONS]
+    );
+    const existing = new Set((result.rows || []).map(function (row) {
+      return row.extname;
+    }));
+    const missing = REQUIRED_EXTENSIONS.filter(function (extensionName) {
+      return !existing.has(extensionName);
+    });
+    if (missing.length > 0) {
+      return check('resources.postgresExtensions', 'fail', missing.join(','), 'PostgreSQL cluster is missing required ThreadTrace extensions.');
+    }
+    return check('resources.postgresExtensions', 'ok', REQUIRED_EXTENSIONS.length, 'PostgreSQL cluster contains required ThreadTrace extensions.');
+  } catch (error) {
+    return check('resources.postgresExtensions', 'fail', errorMessage(error), 'PostgreSQL extension check failed.');
   }
 }
 
@@ -203,6 +230,7 @@ function errorMessage(error) {
 
 module.exports = {
   inspectPostgresResources,
+  REQUIRED_EXTENSIONS,
   REQUIRED_TABLES,
   REQUIRED_INDEXES,
   REQUIRED_COLUMNS

@@ -110,6 +110,12 @@ test('resource provisioning plan summarizes postgres schema drift', function () 
           summary: 'PostgreSQL responded to a lightweight ping.'
         },
         {
+          key: 'resources.postgresExtensions',
+          status: 'fail',
+          value: 'pg_trgm',
+          summary: 'PostgreSQL cluster is missing required ThreadTrace extensions.'
+        },
+        {
           key: 'resources.postgresSchema',
           status: 'ok',
           value: 11,
@@ -166,7 +172,10 @@ test('resource provisioning plan summarizes postgres schema drift', function () 
     return item.key === 'storage.postgres';
   });
   assert.equal(storage.schemaDrift.status, 'fail');
-  assert.equal(storage.schemaDrift.missingCount, 4);
+  assert.equal(storage.schemaDrift.missingCount, 5);
+  assert.deepEqual(storage.schemaDrift.missingExtensions, [
+    'pg_trgm'
+  ]);
   assert.deepEqual(storage.schemaDrift.missingColumns, [
     'notification_events.archived_at',
     'notification_events.archive_batch_id'

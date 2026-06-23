@@ -2417,6 +2417,9 @@ function formatCountSummary(summary) {
 
 function formatSchemaDrift(schemaDrift) {
   const parts = [];
+  if ((schemaDrift.missingExtensions || []).length > 0) {
+    parts.push('extensions=' + schemaDrift.missingExtensions.join(','));
+  }
   if ((schemaDrift.missingTables || []).length > 0) {
     parts.push('tables=' + schemaDrift.missingTables.join(','));
   }

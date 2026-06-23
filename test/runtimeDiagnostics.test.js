@@ -7,6 +7,7 @@ const { createThreadTraceConfig } = require('../src/runtime/threadTraceConfig');
 const { createThreadTraceRuntime } = require('../src/runtime/threadTraceRuntime');
 const {
   REQUIRED_COLUMNS,
+  REQUIRED_EXTENSIONS,
   REQUIRED_INDEXES,
   REQUIRED_TABLES
 } = require('../src/infrastructure/diagnostics/postgresResourceDiagnostics');
@@ -110,6 +111,11 @@ test('runtime diagnostics pings injected PostgreSQL client', async function () {
             })
           };
         }
+        if (/pg_extension/.test(sql)) {
+          return {
+            rows: requiredExtensionRows()
+          };
+        }
         if (/information_schema\.columns/.test(sql)) {
           return {
             rows: requiredColumnRows()
@@ -135,6 +141,7 @@ test('runtime diagnostics pings injected PostgreSQL client', async function () {
   assert.equal(diagnostics.resources.storageMode, 'postgres');
   assert.deepEqual(queries, [
     'select 1 as ok',
+    'select extname from pg_extension where extname = any($1)',
     'select table_name from information_schema.tables where table_schema = $1 and table_name = any($2)',
     'select table_name, column_name from information_schema.columns where table_schema = $1 and table_name = any($2) and column_name = any($3)',
     'select indexname from pg_indexes where schemaname = $1 and indexname = any($2)'
@@ -143,6 +150,9 @@ test('runtime diagnostics pings injected PostgreSQL client', async function () {
   assert.ok(REQUIRED_COLUMN_NAMES.includes('archived_at'));
   assert.equal(diagnostics.checks.find(function (item) {
     return item.key === 'resources.postgres';
+  }).status, 'ok');
+  assert.equal(diagnostics.checks.find(function (item) {
+    return item.key === 'resources.postgresExtensions';
   }).status, 'ok');
   assert.equal(diagnostics.checks.find(function (item) {
     return item.key === 'resources.postgresSchema';
@@ -163,5 +173,13 @@ function requiredColumnRows() {
         column_name: columnName
       };
     });
+  });
+}
+
+function requiredExtensionRows() {
+  return REQUIRED_EXTENSIONS.map(function (extensionName) {
+    return {
+      extname: extensionName
+    };
   });
 }
