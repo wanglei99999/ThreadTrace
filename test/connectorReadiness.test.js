@@ -18,6 +18,32 @@ test('connector readiness summarizes handlers, adapter coverage, and configured 
       {
         modulePath: 'D:/connectors/example.cjs',
         forumAdapters: ['external'],
+        forumAdapterDetails: [
+          {
+            sourceKey: 'external',
+            displayName: 'External Forum',
+            hasParseSavedHtml: true,
+            hasFetchThread: false,
+            capabilities: {}
+          }
+        ],
+        sourceIngestHandlerDetails: [
+          {
+            sourceType: 'external-feed',
+            description: 'External feed',
+            requiresAdapter: false,
+            hasRun: true,
+            locationSchema: {
+              required: ['feedUrl'],
+              properties: {
+                feedUrl: { type: 'string' }
+              }
+            },
+            capabilities: {
+              fetchesRemote: true
+            }
+          }
+        ],
         sourceIngestHandlers: ['external-feed']
       }
     ],
@@ -44,6 +70,9 @@ test('connector readiness summarizes handlers, adapter coverage, and configured 
   assert.equal(readiness.sourceCount, 1);
   assert.equal(readiness.modules.count, 1);
   assert.equal(readiness.modules.modules[0].sourceIngestHandlers[0], 'external-feed');
+  assert.equal(readiness.modules.modules[0].contractSummary.forumAdapterCount, 1);
+  assert.equal(readiness.modules.modules[0].contractSummary.sourceIngestHandlers[0].sourceType, 'external-feed');
+  assert.deepEqual(readiness.modules.modules[0].contractSummary.sourceIngestHandlers[0].requiredLocationFields, ['feedUrl']);
   assert.equal(savedHtml.status, 'ok');
   assert.equal(savedHtml.sourceCount, 1);
   assert.equal(savedHtml.enabledSourceCount, 1);

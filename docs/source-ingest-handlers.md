@@ -126,7 +126,7 @@ Discovery returns each handler's adapter requirement, location schema, and capab
 
 `/api/connectors/catalog` combines source types with registered forum adapters, including `compatibleSourceKeys` for handler types that require an adapter.
 
-`/api/connectors/readiness` combines the catalog with stored source diagnostics. It reports loaded connector modules, each connector's handler registration, adapter coverage, configured source count, status counts, and per-source checks. The matching CLI command is:
+`/api/connectors/readiness` combines the catalog with stored source diagnostics. It reports loaded connector modules, each module's safe contract summary, each connector's handler registration, adapter coverage, configured source count, status counts, and per-source checks. The matching CLI command is:
 
 ```powershell
 node src/presentation/cli/threadtrace.js connector-readiness --forum nga

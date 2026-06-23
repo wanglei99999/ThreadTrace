@@ -44,10 +44,15 @@ async function getConnectorReadiness(options) {
 
 function summarizeConnectorModules(connectorModules, connectorModuleErrors) {
   const modules = (connectorModules || []).map(function (connectorModule) {
+    const forumAdapterDetails = connectorModule.forumAdapterDetails || [];
+    const sourceIngestHandlerDetails = connectorModule.sourceIngestHandlerDetails || [];
     return {
       modulePath: connectorModule.modulePath,
       forumAdapters: connectorModule.forumAdapters || [],
-      sourceIngestHandlers: connectorModule.sourceIngestHandlers || []
+      forumAdapterDetails,
+      sourceIngestHandlers: connectorModule.sourceIngestHandlers || [],
+      sourceIngestHandlerDetails,
+      contractSummary: summarizeModuleContracts(forumAdapterDetails, sourceIngestHandlerDetails)
     };
   });
   return {
@@ -55,6 +60,30 @@ function summarizeConnectorModules(connectorModules, connectorModuleErrors) {
     errorCount: (connectorModuleErrors || []).length,
     errors: connectorModuleErrors || [],
     modules
+  };
+}
+
+function summarizeModuleContracts(forumAdapterDetails, sourceIngestHandlerDetails) {
+  return {
+    forumAdapterCount: forumAdapterDetails.length,
+    sourceIngestHandlerCount: sourceIngestHandlerDetails.length,
+    forumAdapters: forumAdapterDetails.map(function (adapter) {
+      return {
+        sourceKey: adapter.sourceKey,
+        displayName: adapter.displayName,
+        hasFetchThread: adapter.hasFetchThread === true,
+        capabilities: adapter.capabilities || {}
+      };
+    }),
+    sourceIngestHandlers: sourceIngestHandlerDetails.map(function (handler) {
+      return {
+        sourceType: handler.sourceType,
+        description: handler.description,
+        requiresAdapter: handler.requiresAdapter !== false,
+        requiredLocationFields: handler.locationSchema && handler.locationSchema.required || [],
+        capabilities: handler.capabilities || {}
+      };
+    })
   };
 }
 

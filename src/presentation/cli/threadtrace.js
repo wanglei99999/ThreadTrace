@@ -1728,6 +1728,13 @@ function main(argv) {
       console.log('Connector readiness: ' + readiness.status);
       console.log('Connectors: ' + readiness.connectorCount + ', sources=' + readiness.sourceCount);
       console.log('Modules: ' + (readiness.modules ? readiness.modules.count : 0) + ', errors=' + (readiness.modules ? readiness.modules.errorCount : 0));
+      ((readiness.modules && readiness.modules.modules) || []).forEach(function (moduleReport) {
+        const summary = moduleReport.contractSummary || {};
+        console.log('  module\t' + moduleReport.modulePath + '\tadapters=' + (summary.forumAdapterCount || 0) + '\thandlers=' + (summary.sourceIngestHandlerCount || 0));
+        (summary.sourceIngestHandlers || []).forEach(function (handler) {
+          console.log('    handler\t' + handler.sourceType + '\trequiresAdapter=' + handler.requiresAdapter + '\tlocation=' + (handler.requiredLocationFields || []).join(','));
+        });
+      });
       readiness.connectors.forEach(function (connector) {
         console.log(connector.status + '\t' + connector.sourceType + '\tsources=' + connector.sourceCount + '\tenabled=' + connector.enabledSourceCount);
       });

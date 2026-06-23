@@ -62,6 +62,8 @@ test('runtime loads external connector modules from configuration', async functi
   assert.equal(readiness.modules.count, 1);
   assert.equal(readiness.modules.modules[0].forumAdapters[0], 'external-forum');
   assert.equal(readiness.modules.modules[0].sourceIngestHandlers[0], 'external-feed');
+  assert.equal(readiness.modules.modules[0].contractSummary.sourceIngestHandlerCount, 1);
+  assert.equal(readiness.modules.modules[0].contractSummary.sourceIngestHandlers[0].sourceType, 'external-feed');
   assert.equal(readiness.connectors.some(function (connector) {
     return connector.sourceType === 'external-feed' && connector.sourceCount === 1;
   }), true);
