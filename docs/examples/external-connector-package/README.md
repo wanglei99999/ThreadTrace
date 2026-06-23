@@ -35,6 +35,15 @@ node src/presentation/cli/threadtrace.js source-ingest-dry-run --module-path doc
 node src/presentation/cli/threadtrace.js source-onboarding-preflight --module-path docs/examples/external-connector-package/index.cjs --forum external-package --source-type package-normalized-feed --location-file docs/examples/external-connector-package/sample-location.json
 ```
 
+## Rollout Manifest
+
+Use the package rollout manifest to run connector validation, onboarding preflight, dry-run ingest, and worker topology planning from one file:
+
+```powershell
+node src/presentation/cli/threadtrace.js rollout-manifest-plan --manifest-file docs/examples/external-package-rollout-manifest.sample.json
+node src/presentation/cli/threadtrace.js rollout-manifest-apply --manifest-file docs/examples/external-package-rollout-manifest.sample.json
+```
+
 ## Runtime Configuration
 
 For production-like startup, point `THREADTRACE_CONNECTOR_MODULES` to the package entrypoint:

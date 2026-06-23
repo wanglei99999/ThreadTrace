@@ -11,6 +11,7 @@ Dry-run:
 ```powershell
 node src/presentation/cli/threadtrace.js rollout-manifest-apply --manifest-file docs/examples/rollout-manifest.sample.json
 node src/presentation/cli/threadtrace.js rollout-manifest-apply --manifest-file docs/examples/external-rollout-manifest.sample.json
+node src/presentation/cli/threadtrace.js rollout-manifest-apply --manifest-file docs/examples/external-package-rollout-manifest.sample.json
 ```
 
 Execute registration:

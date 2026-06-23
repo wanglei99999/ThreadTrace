@@ -145,3 +145,30 @@ test('documented external rollout manifest composes connector dry-run', async fu
   assert.equal(plan.connectorRolloutPlan.sourceIngestDryRun.thread.sourceThreadId, 'external-thread-1');
   assert.equal(plan.workerTopologyPlan.status, 'ok');
 });
+
+test('documented external package rollout manifest composes connector dry-run', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-external-package-rollout-manifest-'));
+  const cwd = path.resolve(__dirname, '..');
+  const manifest = JSON.parse(await fs.readFile(path.join(cwd, 'docs', 'examples', 'external-package-rollout-manifest.sample.json'), 'utf8'));
+  const runtime = createThreadTraceRuntime({
+    cwd,
+    env: {
+      THREADTRACE_REVIEW_ACTION_EXECUTOR: 'file-audit'
+    },
+    storeDir: path.join(tempDir, 'store')
+  });
+
+  const plan = await runtime.getRolloutManifestPlan({
+    now: '2026-06-19T10:00:00.000Z',
+    manifest
+  });
+
+  assert.equal(plan.sourceKey, 'external-package');
+  assert.equal(plan.sourceType, 'package-normalized-feed');
+  assert.equal(plan.modulePath, 'docs/examples/external-connector-package/index.cjs');
+  assert.equal(plan.connectorRolloutPlan.connectorModuleValidation.valid, true);
+  assert.equal(plan.connectorRolloutPlan.connectorModuleValidation.contractSummary.sourceIngestHandlers[0].capabilities.packageTemplate, true);
+  assert.equal(plan.connectorRolloutPlan.sourceIngestDryRun.status, 'ok');
+  assert.equal(plan.connectorRolloutPlan.sourceIngestDryRun.thread.sourceThreadId, 'external-thread-1');
+  assert.equal(plan.workerTopologyPlan.status, 'ok');
+});

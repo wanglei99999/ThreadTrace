@@ -1,0 +1,26 @@
+{
+  "version": "1.0",
+  "name": "external-package-normalized-feed-rollout",
+  "source": {
+    "sourceKey": "external-package",
+    "sourceType": "package-normalized-feed",
+    "displayName": "External connector package feed",
+    "inputFile": "docs/examples/external-thread.sample.json",
+    "tags": ["external", "package-template"]
+  },
+  "connector": {
+    "modulePath": "docs/examples/external-connector-package/index.cjs"
+  },
+  "ingest": {
+    "dryRun": true,
+    "allowRemoteFetch": false
+  },
+  "workers": {
+    "topology": "operations-worker",
+    "sourceTaskMode": "ingest"
+  },
+  "deployment": {
+    "storeDir": "data/store",
+    "limit": 100
+  }
+}
