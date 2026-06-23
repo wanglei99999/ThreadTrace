@@ -281,6 +281,10 @@ function bindForms() {
   document.getElementById('sourceOperationsResult').addEventListener('click', async function (event) {
     const button = event.target.closest('button[data-action]');
     if (!button) return;
+    if (button.dataset.action === 'copy-lifecycle-command') {
+      await copyLifecycleCommandFromButton(button);
+      return;
+    }
     if (button.dataset.action === 'synthesize-runbook-events') {
       const execute = button.dataset.execute === 'true';
       if (execute && !window.confirm('Create notification events from current runbook actions?')) return;
@@ -2170,8 +2174,7 @@ function renderLifecycleSourceRow(source) {
     guard.lastStartedAt ? 'started=' + guard.lastStartedAt : undefined,
     retry.retryAt ? 'retry=' + retry.retryAt : undefined,
     retry.backoffMs ? 'backoff=' + formatDurationMs(retry.backoffMs) : undefined,
-    source.latestLifecycleTask ? 'task=' + source.latestLifecycleTask.id + '/' + source.latestLifecycleTask.status : undefined,
-    (source.recommendedCommands || [])[0] ? 'cmd=' + (source.recommendedCommands || [])[0] : undefined
+    source.latestLifecycleTask ? 'task=' + source.latestLifecycleTask.id + '/' + source.latestLifecycleTask.status : undefined
   ].filter(Boolean).join(' | ');
   const controls = '<span class="button-group source-op-buttons">' +
     statusBadge(label, variant) +
@@ -2182,9 +2185,21 @@ function renderLifecycleSourceRow(source) {
   return '<div class="action-row ops-row"><span>' +
     '<strong>' + escapeHtml(source.displayName || source.id) + '</strong>' +
     '<small>' + escapeHtml(details) + '</small>' +
+    renderLifecycleCommandRows(source.recommendedCommands || []) +
     '</span>' +
     controls +
     '</div>';
+}
+
+function renderLifecycleCommandRows(commands) {
+  const filteredCommands = (commands || []).filter(Boolean).slice(0, 3);
+  if (filteredCommands.length === 0) return '';
+  return '<div class="lifecycle-command-list">' + filteredCommands.map(function (command) {
+    return '<div class="lifecycle-command-row">' +
+      '<code>' + escapeHtml(command) + '</code>' +
+      '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="copy-lifecycle-command">Copy</button>' +
+      '</div>';
+  }).join('') + '</div>';
 }
 
 function renderSourceRunButtons(source) {
@@ -3025,6 +3040,48 @@ async function requestJson(url, body, options) {
     throw new Error(errorBody.error && errorBody.error.message ? errorBody.error.message : response.statusText);
   }
   return response.json();
+}
+
+async function copyLifecycleCommandFromButton(button) {
+  const row = button.closest('.lifecycle-command-row');
+  const commandElement = row ? row.querySelector('code') : undefined;
+  const command = commandElement ? commandElement.textContent : '';
+  if (!command) return;
+  const originalText = button.textContent;
+  try {
+    await copyTextToClipboard(command);
+    button.textContent = 'Copied';
+  } catch (error) {
+    button.textContent = 'Copy failed';
+  }
+  window.setTimeout(function () {
+    button.textContent = originalText;
+  }, 1500);
+}
+
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch (error) {
+      // Fall through to the textarea copy path for restrictive browser policies.
+    }
+  }
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', 'readonly');
+  textarea.style.position = 'fixed';
+  textarea.style.left = '-9999px';
+  document.body.appendChild(textarea);
+  try {
+    textarea.select();
+    if (!document.execCommand || !document.execCommand('copy')) {
+      throw new Error('copy command was not accepted');
+    }
+  } finally {
+    document.body.removeChild(textarea);
+  }
 }
 
 async function fetchJson(url, options) {

@@ -40,4 +40,6 @@ The report returns:
 
 Use this report before rollout rollback, source maintenance, or worker recovery so operators can distinguish a safe disable from an active run that should finish first.
 
+The Web source operations view renders the same recommended commands as copyable command rows, keeping browser actions separate from shell execution.
+
 When a failed source is waiting for retry backoff and an operator has reviewed the failure, use `reset-source-failure --retry-now true --execute true` or `POST /api/sources/{sourceId}/failure/reset` to clear the failure state and make the source schedulable again.

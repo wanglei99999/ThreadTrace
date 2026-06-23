@@ -303,6 +303,12 @@ form button[type="submit"]:hover {
   opacity: 0.58;
 }
 
+.compact-inline-button {
+  min-height: 28px;
+  padding: 0 9px;
+  font-size: 12px;
+}
+
 .button-group {
   display: flex;
   flex-wrap: wrap;
@@ -391,6 +397,33 @@ form button[type="submit"]:hover {
   align-items: center;
 }
 
+.lifecycle-command-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 5px;
+}
+
+.lifecycle-command-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.lifecycle-command-row code {
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #f8faf9;
+  color: var(--accent-strong);
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
 .status-badge {
   flex: 0 0 auto;
   min-width: 72px;
@@ -457,6 +490,10 @@ form button[type="submit"]:hover {
   .control-strip {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .lifecycle-command-row {
+    grid-template-columns: 1fr;
   }
 
   label.compact {
