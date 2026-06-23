@@ -271,6 +271,26 @@ Request:
 
 Returns `status`, `acknowledgedCount`, `skippedCount`, `filters`, and per-event results. Already acknowledged and missing events are skipped without failing the whole batch.
 
+### `POST /api/events/archive`
+
+Dry-runs or executes notification outbox retention. By default the endpoint is a dry-run and only plans events that are already acknowledged, have `deliveryStatus` `delivered` or `resolved`, and are older than the retention window. Set `execute: true` to archive candidates.
+
+Request:
+```json
+{
+  "sourceKey": "nga",
+  "deliveryStatuses": ["delivered", "resolved"],
+  "requireAcknowledged": true,
+  "olderThanDays": 30,
+  "archiveLimit": 100,
+  "execute": false,
+  "archivedBy": "operator",
+  "reason": "Handled notification retention"
+}
+```
+
+Returns a retention plan with `candidateCount`, `archivedCount`, `cutoffAt`, `batchId`, candidate samples, and per-event execution results. File storage moves archived event JSON files under `events/_archive/`; PostgreSQL stores archive metadata on the outbox row. `GET /api/events` hides archived events unless `includeArchived=true`.
+
 ### `POST /api/events/{eventId}/ack`
 
 确认一个通知事件。确认后事件仍会保留在本地 outbox 中，但 `acknowledgedAt` 会被写入，后续查询可用 `acknowledged=false` 只看未处理事件。

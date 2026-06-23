@@ -144,6 +144,10 @@ create table if not exists notification_events (
   acknowledged_at timestamptz,
   acknowledged_by text,
   acknowledgement_note text,
+  archived_at timestamptz,
+  archived_by text,
+  archive_reason text,
+  archive_batch_id text,
   created_at timestamptz not null
 );
 
@@ -152,6 +156,8 @@ create index if not exists idx_notification_events_delivery_status on notificati
 create index if not exists idx_notification_events_due on notification_events(delivery_status, next_delivery_at);
 create index if not exists idx_notification_events_ack on notification_events(acknowledged_at);
 create index if not exists idx_notification_events_source on notification_events(source_id);
+create index if not exists idx_notification_events_source_key on notification_events(source_key);
+create index if not exists idx_notification_events_archive on notification_events(archived_at);
 
 create table if not exists retrieval_documents (
   id text primary key,

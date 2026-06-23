@@ -771,6 +771,7 @@ async function routeRequest(request, response, context) {
       sourceKey: url.searchParams.get('sourceKey') || url.searchParams.get('forum') || undefined,
       acknowledged: acknowledgedParam === null ? undefined : acknowledgedParam === 'true',
       deliveryStatus: url.searchParams.get('deliveryStatus') || undefined,
+      includeArchived: url.searchParams.get('includeArchived') === 'true',
       limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 50,
       storeDir: url.searchParams.get('storeDir') || undefined
     });
@@ -878,6 +879,30 @@ async function routeRequest(request, response, context) {
       acknowledgedBy: body.acknowledgedBy,
       note: body.note,
       acknowledgedAt: body.acknowledgedAt,
+      now: body.now,
+      storeDir: body.storeDir || context.storeDir
+    });
+    writeJson(response, 200, result);
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/events/archive') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.archiveNotificationEvents({
+      type: body.type,
+      sourceId: body.sourceId,
+      sourceKey: body.sourceKey || body.forum,
+      deliveryStatuses: body.deliveryStatuses,
+      requireAcknowledged: body.requireAcknowledged,
+      olderThanDays: body.olderThanDays,
+      cutoffAt: body.cutoffAt,
+      scanLimit: body.scanLimit,
+      archiveLimit: body.archiveLimit,
+      limit: body.limit,
+      execute: body.execute === true || body.dryRun === false,
+      archivedBy: body.archivedBy,
+      reason: body.reason,
+      batchId: body.batchId,
       now: body.now,
       storeDir: body.storeDir || context.storeDir
     });

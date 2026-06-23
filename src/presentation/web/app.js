@@ -52,6 +52,12 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshRawPagesButton').addEventListener('click', loadRawPages);
   document.getElementById('dispatchEventsButton').addEventListener('click', dispatchEvents);
   document.getElementById('ackVisibleEventsButton').addEventListener('click', acknowledgeVisibleEvents);
+  document.getElementById('previewEventArchiveButton').addEventListener('click', function () {
+    archiveHandledEvents(false);
+  });
+  document.getElementById('archiveEventsButton').addEventListener('click', function () {
+    archiveHandledEvents(true);
+  });
   document.getElementById('runSourcesButton').addEventListener('click', runAllSources);
   document.getElementById('runDueSourcesButton').addEventListener('click', runDueSources);
   document.getElementById('runDuePipelinesButton').addEventListener('click', runDuePipelines);
@@ -788,6 +794,26 @@ function buildVisibleEventAckRequest() {
   return request;
 }
 
+function buildEventArchiveRequest(execute) {
+  const formElement = document.getElementById('eventFilterForm');
+  const form = formElement ? new FormData(formElement) : undefined;
+  const type = form ? String(form.get('type') || '').trim() : '';
+  const sourceKey = form ? String(form.get('sourceKey') || '').trim() : '';
+  const request = {
+    execute: execute === true,
+    deliveryStatuses: ['delivered', 'resolved'],
+    requireAcknowledged: true,
+    olderThanDays: 30,
+    archiveLimit: normalizeEventLimit(form ? form.get('limit') : 10),
+    scanLimit: 500,
+    archivedBy: 'web',
+    reason: 'Archived from the web event filter.'
+  };
+  if (type) request.type = type;
+  if (sourceKey) request.sourceKey = sourceKey;
+  return request;
+}
+
 async function loadRawPages() {
   await renderAsync('rawPageResult', function () {
     return fetchJson('/api/raw-pages?limit=10');
@@ -934,6 +960,21 @@ async function acknowledgeVisibleEvents() {
     await loadEvents();
     const refreshedTarget = document.getElementById('eventResult');
     refreshedTarget.innerHTML = renderEventBatchAckResult(result) + refreshedTarget.innerHTML;
+  } catch (error) {
+    renderError('eventResult', error);
+  }
+}
+
+async function archiveHandledEvents(execute) {
+  const request = buildEventArchiveRequest(execute);
+  if (execute && !window.confirm('Archive handled notification events older than 30 days in the current filter?')) return;
+  const target = document.getElementById('eventResult');
+  target.innerHTML = '<div class="empty">Checking event archive policy...</div>';
+  try {
+    const result = await requestJson('/api/events/archive', request);
+    await loadEvents();
+    const refreshedTarget = document.getElementById('eventResult');
+    refreshedTarget.innerHTML = renderEventArchiveResult(result) + refreshedTarget.innerHTML;
   } catch (error) {
     renderError('eventResult', error);
   }
@@ -2042,9 +2083,9 @@ function statusBadge(label, variant) {
 }
 
 function statusVariant(status) {
-  if (status === 'ok') return 'ok';
+  if (status === 'ok' || status === 'noop') return 'ok';
   if (status === 'fail' || status === 'critical') return 'fail';
-  if (status === 'warn' || status === 'warning') return 'warn';
+  if (status === 'warn' || status === 'warning' || status === 'actionable') return 'warn';
   return 'muted';
 }
 
@@ -2548,6 +2589,24 @@ function renderEventBatchAckResult(result) {
     evidenceList((result.results || []).slice(0, 8).map(function (item) {
       return item.status + ' | ' + item.eventId + (item.reason ? ' | ' + item.reason : '');
     }))
+  ].join(''), 'wide');
+}
+
+function renderEventArchiveResult(result) {
+  const rows = result.results && result.results.length ? result.results : result.candidates || [];
+  return panel('Notification event archive', [
+    '<div class="summary-strip event-summary-strip">' + [
+      summaryTile('Status', result.status || 'unknown', statusVariant(result.status)),
+      summaryTile('Dry-run', result.dryRun ? 'yes' : 'no', result.dryRun ? 'warn' : 'ok'),
+      summaryTile('Candidates', String(result.candidateCount || 0), result.candidateCount > 0 ? 'warn' : 'ok'),
+      summaryTile('Archived', String(result.archivedCount || 0), result.archivedCount > 0 ? 'ok' : 'muted')
+    ].join('') + '</div>',
+    metric('Cutoff', result.cutoffAt || 'none'),
+    metric('Batch', result.batchId || 'none'),
+    evidenceList(rows.slice(0, 8).map(function (item) {
+      return (item.status || 'candidate') + ' | ' + (item.eventId || item.id) + ' | ' + (item.sourceKey || (item.event && item.event.sourceKey) || 'unknown');
+    })),
+    metric('Next', result.recommendedNextAction || 'none')
   ].join(''), 'wide');
 }
 

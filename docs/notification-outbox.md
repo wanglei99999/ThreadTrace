@@ -56,6 +56,8 @@ node src/presentation/cli/threadtrace.js synthesize-author-review-queue-events -
 node src/presentation/cli/threadtrace.js dispatch-events --channel file
 node src/presentation/cli/threadtrace.js dispatch-events --channel webhook --webhook-url http://127.0.0.1:9000/threadtrace-events
 node src/presentation/cli/threadtrace.js ack-events --source-key nga --delivery-status delivered --by operator
+node src/presentation/cli/threadtrace.js archive-events --source-key nga
+node src/presentation/cli/threadtrace.js archive-events --source-key nga --execute true --by operator
 ```
 
 Worker mode:
@@ -80,11 +82,14 @@ POST /api/intelligence/author-review-queue/events
 GET /api/events/overview
 POST /api/events/dispatch
 POST /api/events/ack
+POST /api/events/archive
 ```
 
 `synthesize-runbook-events`, `synthesize-context-review-result-events`, `synthesize-author-review-queue-events`, `POST /api/operations/runbook/events`, `POST /api/context-review-results/events`, and `POST /api/intelligence/author-review-queue/events` default to dry-run. Set `--execute true` or request body `{"execute": true}` to persist events into the outbox. Stable event IDs are derived from the runbook action key, context review result record id, or durable author queue item id, so repeated synthesis updates pending/failed events without duplicating alerts. Stale runbook and author queue events are marked `resolved` when the underlying action or queue item disappears, and system-resolved events reopen as `pending` if the same action returns. Operator-acknowledged or already delivered events are left untouched for audit safety.
 
 Use `ack-events` or `POST /api/events/ack` to close handled events in bulk. Without explicit `eventIds`, bulk acknowledgement defaults to `acknowledged=false` and the requested filter window, including optional `sourceKey` / `forum`, which keeps historical acknowledged events immutable while giving operators a fast way to clear delivered or resolved alerts.
+
+Use `archive-events` or `POST /api/events/archive` to keep the active outbox small after operators have handled alerts. The archive command defaults to dry-run and only targets acknowledged `delivered` or `resolved` events older than the retention window. File storage moves records into `events/_archive/YYYY-MM/`; PostgreSQL stores `archived_at`, `archived_by`, `archive_reason`, and `archive_batch_id`. Active reads hide archived events unless the caller sets `includeArchived=true`.
 
 Useful environment variables:
 
@@ -94,7 +99,7 @@ Useful environment variables:
 
 ## Extension Notes
 
-- PostgreSQL should store notification events as an outbox table with indexes on `delivery_status`, `next_delivery_at`, and `created_at`.
+- PostgreSQL should store notification events as an outbox table with indexes on `delivery_status`, `next_delivery_at`, `created_at`, `source_key`, and `archived_at`.
 - A queue-backed implementation can keep the same event schema and use the outbox as the durable source of truth.
 - New channels should implement the `NotificationChannel` port and return a small `deliveryResult` object that is safe to persist.
 - Runbook action, context review result, and author review queue events use the same outbox contract as source-change events, so future alert channels do not need special-case delivery logic.

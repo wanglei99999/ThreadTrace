@@ -909,10 +909,11 @@ function main(argv) {
       sourceKey: options.sourceKey || options.forum,
       acknowledged: options.acknowledged === undefined ? undefined : options.acknowledged === 'true',
       deliveryStatus: options.deliveryStatus,
+      includeArchived: options.includeArchived === 'true',
       limit: options.limit ? Number(options.limit) : 50
     }).then(function (events) {
       events.forEach(function (event) {
-        console.log(event.createdAt + '\t' + event.type + '\t' + (event.sourceKey || '') + '\t' + (event.sourceId || '') + '\t' + event.summary);
+        console.log(event.createdAt + '\t' + event.type + '\t' + (event.sourceKey || '') + '\t' + (event.sourceId || '') + '\tarchived=' + (event.archivedAt || 'none') + '\t' + event.summary);
       });
     }).catch(function (error) {
       console.error(error && error.stack ? error.stack : error);
@@ -1049,6 +1050,40 @@ function main(argv) {
       (result.results || []).slice(0, 20).forEach(function (item) {
         console.log(item.status + '\t' + item.eventId + (item.reason ? '\t' + item.reason : ''));
       });
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
+  if (command === 'archive-events') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.archiveNotificationEvents({
+      type: options.type,
+      sourceId: options.sourceId,
+      sourceKey: options.sourceKey || options.forum,
+      deliveryStatuses: options.deliveryStatuses,
+      requireAcknowledged: options.requireAcknowledged === undefined ? undefined : options.requireAcknowledged !== 'false',
+      olderThanDays: options.olderThanDays ? Number(options.olderThanDays) : undefined,
+      cutoffAt: options.cutoffAt,
+      scanLimit: options.scanLimit ? Number(options.scanLimit) : undefined,
+      archiveLimit: options.archiveLimit ? Number(options.archiveLimit) : undefined,
+      limit: options.limit ? Number(options.limit) : undefined,
+      execute: options.execute === 'true',
+      archivedBy: options.by,
+      reason: options.reason || options.note,
+      batchId: options.batchId,
+      now: options.now,
+      storeDir
+    }).then(function (result) {
+      console.log('Status: ' + result.status + '\tdryRun=' + result.dryRun);
+      console.log('Scanned: ' + result.scannedCount + '\tcandidates=' + result.candidateCount + '\tarchived=' + result.archivedCount + '\tskipped=' + result.skippedCount);
+      console.log('Cutoff: ' + result.cutoffAt);
+      (result.results.length ? result.results : result.candidates).slice(0, 20).forEach(function (item) {
+        console.log((item.status || 'candidate') + '\t' + (item.eventId || item.id) + '\t' + (item.sourceKey || (item.event && item.event.sourceKey) || ''));
+      });
+      console.log('Next: ' + result.recommendedNextAction);
     }).catch(function (error) {
       console.error(error && error.stack ? error.stack : error);
       process.exitCode = 1;
@@ -2036,6 +2071,37 @@ function parseArgs(args) {
     } else if (item === '--stale-limit') {
       options.staleLimit = args[index + 1];
       index += 1;
+    } else if (item === '--scan-limit') {
+      options.scanLimit = args[index + 1];
+      index += 1;
+    } else if (item === '--archive-limit') {
+      options.archiveLimit = args[index + 1];
+      index += 1;
+    } else if (item === '--older-than-days') {
+      options.olderThanDays = args[index + 1];
+      index += 1;
+    } else if (item === '--cutoff-at') {
+      options.cutoffAt = args[index + 1];
+      index += 1;
+    } else if (item === '--delivery-statuses') {
+      options.deliveryStatuses = args[index + 1];
+      index += 1;
+    } else if (item === '--require-acknowledged') {
+      options.requireAcknowledged = args[index + 1];
+      index += 1;
+    } else if (item === '--include-archived') {
+      if (args[index + 1] && !String(args[index + 1]).startsWith('--')) {
+        options.includeArchived = args[index + 1];
+        index += 1;
+      } else {
+        options.includeArchived = 'true';
+      }
+    } else if (item === '--reason') {
+      options.reason = args[index + 1];
+      index += 1;
+    } else if (item === '--batch-id') {
+      options.batchId = args[index + 1];
+      index += 1;
     } else if (item === '--resolve-stale') {
       options.resolveStale = args[index + 1];
       index += 1;
@@ -2391,6 +2457,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js dispatch-events [--channel file|webhook] [--webhook-url url] [--limit n] [--max-attempts n] [--retry-backoff-ms ms] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js ack-event --event-id id [--by user] [--note text] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js ack-events [--event-ids id1,id2] [--source-key key] [--type type] [--acknowledged true|false] [--delivery-status status] [--by user] [--note text] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js archive-events [--execute true] [--source-key key] [--delivery-statuses delivered,resolved] [--older-than-days n] [--by user] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js validate-source [--forum nga] [--source-type type] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js validate-thread-json --input-file file [--forum sourceKey] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js source-onboarding-preflight [--forum nga] [--source-type type] [--module-path file] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--store-dir dir] [--now iso]');

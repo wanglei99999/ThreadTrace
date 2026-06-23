@@ -28,6 +28,7 @@ const { runDueSourcesIngestTasks } = require('../application/use-cases/runDueSou
 const { runDueSourceInsightPipelineTasks } = require('../application/use-cases/runDueSourceInsightPipelineTasks');
 const { acknowledgeNotificationEvent } = require('../application/use-cases/acknowledgeNotificationEvent');
 const { acknowledgeNotificationEvents } = require('../application/use-cases/acknowledgeNotificationEvents');
+const { archiveNotificationEvents } = require('../application/use-cases/archiveNotificationEvents');
 const { dispatchPendingNotificationEvents } = require('../application/use-cases/dispatchPendingNotificationEvents');
 const { synthesizeRunbookNotificationEvents } = require('../application/use-cases/synthesizeRunbookNotificationEvents');
 const { synthesizeContextReviewResultNotificationEvents } = require('../application/use-cases/synthesizeContextReviewResultNotificationEvents');
@@ -1666,6 +1667,7 @@ function createThreadTraceRuntime(options) {
         sourceKey: safeRequest.sourceKey,
         acknowledged: safeRequest.acknowledged,
         deliveryStatus: safeRequest.deliveryStatus,
+        includeArchived: safeRequest.includeArchived,
         limit: safeRequest.limit || 50
       });
     },
@@ -1755,6 +1757,29 @@ function createThreadTraceRuntime(options) {
         acknowledgedBy: safeRequest.acknowledgedBy,
         note: safeRequest.note,
         acknowledgedAt: safeRequest.acknowledgedAt,
+        now: safeRequest.now
+      });
+    },
+
+    async archiveNotificationEvents(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return archiveNotificationEvents({
+        notificationEventRepository: repositories.notificationEventRepository,
+        type: safeRequest.type,
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey,
+        deliveryStatuses: safeRequest.deliveryStatuses,
+        requireAcknowledged: safeRequest.requireAcknowledged,
+        olderThanDays: safeRequest.olderThanDays,
+        cutoffAt: safeRequest.cutoffAt,
+        scanLimit: safeRequest.scanLimit,
+        archiveLimit: safeRequest.archiveLimit,
+        limit: safeRequest.limit,
+        execute: safeRequest.execute,
+        archivedBy: safeRequest.archivedBy,
+        reason: safeRequest.reason,
+        batchId: safeRequest.batchId,
         now: safeRequest.now
       });
     },

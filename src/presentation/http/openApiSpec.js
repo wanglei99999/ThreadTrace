@@ -1284,6 +1284,7 @@ function createOpenApiSpec() {
             { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
             { name: 'acknowledged', in: 'query', required: false, schema: { type: 'boolean' } },
             { name: 'deliveryStatus', in: 'query', required: false, schema: { type: 'string', example: 'pending' } },
+            { name: 'includeArchived', in: 'query', required: false, schema: { type: 'boolean' } },
             { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
             { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
           ],
@@ -1343,6 +1344,41 @@ function createOpenApiSpec() {
           responses: {
             200: {
               description: 'Dispatch summary'
+            }
+          }
+        }
+      },
+      '/api/events/archive': {
+        post: {
+          summary: 'Dry-run or execute notification event retention archiving',
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    execute: { type: 'boolean', example: false },
+                    sourceKey: { type: 'string', example: 'nga' },
+                    sourceId: { type: 'string' },
+                    type: { type: 'string', example: 'runbook-action' },
+                    deliveryStatuses: { type: 'array', items: { type: 'string' }, example: ['delivered', 'resolved'] },
+                    requireAcknowledged: { type: 'boolean', example: true },
+                    olderThanDays: { type: 'number', example: 30 },
+                    cutoffAt: { type: 'string', example: '2026-06-01T00:00:00.000Z' },
+                    scanLimit: { type: 'number', example: 500 },
+                    archiveLimit: { type: 'number', example: 100 },
+                    archivedBy: { type: 'string', example: 'operator' },
+                    reason: { type: 'string' },
+                    storeDir: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Retention plan or archive execution result'
             }
           }
         }

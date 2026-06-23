@@ -108,6 +108,32 @@ test('file notification event repository filters by source key', async function 
   assert.equal(events[0].sourceKey, 'forum-b');
 });
 
+test('file notification event repository archives events inside the store', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-events-archive-'));
+  const repository = createFileNotificationEventRepository({
+    baseDir: path.join(tempDir, 'events')
+  });
+
+  await repository.saveEvent(notificationEvent('event-1', 'forum-a'));
+  const archived = await repository.archiveEvent('event-1', {
+    archivedAt: '2026-06-23T10:00:00.000Z',
+    archivedBy: 'test',
+    reason: 'handled',
+    batchId: 'batch-1'
+  });
+  const activeEvents = await repository.listEvents({});
+  const allEvents = await repository.listEvents({
+    includeArchived: true
+  });
+
+  assert.equal(archived.id, 'event-1');
+  assert.equal(archived.archivedBy, 'test');
+  assert.equal(archived.archiveReason, 'handled');
+  assert.equal(activeEvents.length, 0);
+  assert.equal(allEvents.length, 1);
+  assert.equal(allEvents[0].archivedAt, '2026-06-23T10:00:00.000Z');
+});
+
 function notificationEvent(id, sourceKey) {
   return {
     id,

@@ -1368,6 +1368,12 @@ test('http server can register sources and run source ingest tasks', async funct
     const ackResult = await postJson(baseUrl + '/api/events/' + encodeURIComponent(eventsResult.events[0].id) + '/ack', {
       acknowledgedBy: 'test'
     });
+    const archivePreview = await postJson(baseUrl + '/api/events/archive', {
+      sourceKey: 'nga',
+      cutoffAt: '2999-01-01T00:00:00.000Z',
+      execute: false,
+      limit: 5
+    });
     const openEventsResult = await getJson(baseUrl + '/api/events?acknowledged=false');
     const taskResult = await postJson(baseUrl + '/api/sources/' + encodeURIComponent(registerResult.source.id) + '/tasks/ingest', {});
     const batchResult = await postJson(baseUrl + '/api/sources/tasks/ingest', {});
@@ -1404,6 +1410,8 @@ test('http server can register sources and run source ingest tasks', async funct
     assert.equal(batchAckResult.acknowledgedCount, 1);
     assert.equal(batchAckResult.skippedCount, 0);
     assert.equal(ackResult.event.acknowledgedBy, 'batch-test');
+    assert.equal(archivePreview.dryRun, true);
+    assert.equal(archivePreview.candidateCount, 1);
     assert.equal(openEventsResult.events.length, 0);
     assert.equal(taskResult.sourceId, registerResult.source.id);
     assert.equal(taskResult.task.status, 'completed');

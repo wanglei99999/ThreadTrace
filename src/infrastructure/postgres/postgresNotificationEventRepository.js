@@ -13,8 +13,8 @@ function createPostgresNotificationEventRepository(options) {
         [
           'insert into notification_events (',
           'id, type, severity, source_id, source_key, task_id, title, summary, payload, delivery_status, delivery_attempts, delivery_result,',
-          'last_delivery_error, last_delivery_attempt_at, last_delivered_at, next_delivery_at, acknowledged_at, acknowledged_by, acknowledgement_note, created_at',
-          ') values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)',
+          'last_delivery_error, last_delivery_attempt_at, last_delivered_at, next_delivery_at, acknowledged_at, acknowledged_by, acknowledgement_note, archived_at, archived_by, archive_reason, archive_batch_id, created_at',
+          ') values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)',
           'on conflict (id) do update set',
           'type = excluded.type,',
           'severity = excluded.severity,',
@@ -33,7 +33,11 @@ function createPostgresNotificationEventRepository(options) {
           'next_delivery_at = excluded.next_delivery_at,',
           'acknowledged_at = excluded.acknowledged_at,',
           'acknowledged_by = excluded.acknowledged_by,',
-          'acknowledgement_note = excluded.acknowledgement_note'
+          'acknowledgement_note = excluded.acknowledgement_note,',
+          'archived_at = excluded.archived_at,',
+          'archived_by = excluded.archived_by,',
+          'archive_reason = excluded.archive_reason,',
+          'archive_batch_id = excluded.archive_batch_id'
         ].join(' '),
         [
           event.id,
@@ -55,6 +59,10 @@ function createPostgresNotificationEventRepository(options) {
           event.acknowledgedAt || null,
           event.acknowledgedBy || null,
           event.acknowledgementNote || null,
+          event.archivedAt || null,
+          event.archivedBy || null,
+          event.archiveReason || null,
+          event.archiveBatchId || null,
           event.createdAt
         ]
       );
@@ -65,10 +73,36 @@ function createPostgresNotificationEventRepository(options) {
       return result.rows[0] ? rowToEvent(result.rows[0]) : undefined;
     },
 
+    async archiveEvent(id, metadata) {
+      const safeMetadata = metadata || {};
+      const result = await client.query(
+        [
+          'update notification_events set',
+          'archived_at = coalesce(archived_at, $2),',
+          'archived_by = coalesce(archived_by, $3),',
+          'archive_reason = coalesce(archive_reason, $4),',
+          'archive_batch_id = coalesce(archive_batch_id, $5)',
+          'where id = $1',
+          'returning *'
+        ].join(' '),
+        [
+          id,
+          safeMetadata.archivedAt || new Date().toISOString(),
+          safeMetadata.archivedBy || 'system',
+          safeMetadata.reason || safeMetadata.archiveReason || null,
+          safeMetadata.batchId || null
+        ]
+      );
+      return result.rows[0] ? rowToEvent(result.rows[0]) : undefined;
+    },
+
     async listEvents(query) {
       const safeQuery = query || {};
       const params = [];
       const where = [];
+      if (!safeQuery.includeArchived) {
+        where.push('archived_at is null');
+      }
       if (safeQuery.type) {
         params.push(safeQuery.type);
         where.push('type = $' + params.length);
@@ -125,7 +159,11 @@ function rowToEvent(row) {
     nextDeliveryAt: toIso(row.next_delivery_at),
     acknowledgedAt: toIso(row.acknowledged_at),
     acknowledgedBy: row.acknowledged_by || undefined,
-    acknowledgementNote: row.acknowledgement_note || undefined
+    acknowledgementNote: row.acknowledgement_note || undefined,
+    archivedAt: toIso(row.archived_at),
+    archivedBy: row.archived_by || undefined,
+    archiveReason: row.archive_reason || undefined,
+    archiveBatchId: row.archive_batch_id || undefined
   };
 }
 

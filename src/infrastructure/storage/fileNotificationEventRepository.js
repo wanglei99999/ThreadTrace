@@ -24,13 +24,40 @@ function createFileNotificationEventRepository(options) {
       }
     },
 
+    async archiveEvent(id, metadata) {
+      const filePath = eventPath(baseDir, id);
+      const safeMetadata = metadata || {};
+      let event;
+      try {
+        event = JSON.parse(await fs.readFile(filePath, 'utf8'));
+      } catch (error) {
+        if (error && error.code === 'ENOENT') return undefined;
+        throw error;
+      }
+
+      const archivedEvent = Object.assign({}, event, {
+        archivedAt: safeMetadata.archivedAt || new Date().toISOString(),
+        archivedBy: safeMetadata.archivedBy || 'system',
+        archiveReason: safeMetadata.reason || safeMetadata.archiveReason,
+        archiveBatchId: safeMetadata.batchId
+      });
+      const archivePath = archivedEventPath(baseDir, archivedEvent);
+      await fs.mkdir(path.dirname(archivePath), { recursive: true });
+      await fs.rename(filePath, archivePath);
+      await fs.writeFile(archivePath, JSON.stringify(archivedEvent, null, 2) + '\n', 'utf8');
+      return archivedEvent;
+    },
+
     async listEvents(query) {
       const safeQuery = query || {};
-      const files = await listEventFiles(baseDir);
+      const files = safeQuery.includeArchived
+        ? (await listEventFiles(baseDir)).concat(await listArchivedEventFiles(baseDir))
+        : await listEventFiles(baseDir);
       const events = [];
 
       for (const filePath of files) {
         const event = JSON.parse(await fs.readFile(filePath, 'utf8'));
+        if (!safeQuery.includeArchived && event.archivedAt) continue;
         if (safeQuery.type && event.type !== safeQuery.type) continue;
         if (safeQuery.sourceId && event.sourceId !== safeQuery.sourceId) continue;
         if (safeQuery.sourceKey && event.sourceKey !== safeQuery.sourceKey) continue;
@@ -58,6 +85,12 @@ function eventPath(baseDir, id) {
   return path.join(baseDir, safeSegment(id) + '.json');
 }
 
+function archivedEventPath(baseDir, event) {
+  const archivedAt = event.archivedAt || new Date().toISOString();
+  const bucket = /^\d{4}-\d{2}/.test(archivedAt) ? archivedAt.slice(0, 7) : 'unknown';
+  return path.join(baseDir, '_archive', bucket, safeSegment(event.id) + '.json');
+}
+
 function safeSegment(value) {
   return String(value || 'unknown').replace(/[^a-zA-Z0-9_.-]/g, '_');
 }
@@ -72,6 +105,28 @@ async function listEventFiles(baseDir) {
       .map(function (entry) {
         return path.join(baseDir, entry.name);
       });
+  } catch (error) {
+    if (error && error.code === 'ENOENT') return [];
+    throw error;
+  }
+}
+
+async function listArchivedEventFiles(baseDir) {
+  const archiveDir = path.join(baseDir, '_archive');
+  try {
+    const buckets = await fs.readdir(archiveDir, { withFileTypes: true });
+    const files = [];
+    for (const bucket of buckets) {
+      if (!bucket.isDirectory()) continue;
+      const bucketDir = path.join(archiveDir, bucket.name);
+      const entries = await fs.readdir(bucketDir, { withFileTypes: true });
+      entries.forEach(function (entry) {
+        if (entry.isFile() && /\.json$/i.test(entry.name)) {
+          files.push(path.join(bucketDir, entry.name));
+        }
+      });
+    }
+    return files;
   } catch (error) {
     if (error && error.code === 'ENOENT') return [];
     throw error;

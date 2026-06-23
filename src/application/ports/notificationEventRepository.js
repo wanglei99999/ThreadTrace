@@ -7,7 +7,8 @@
  * @typedef {Object} NotificationEventRepository
  * @property {(event: Object) => Promise<void>} saveEvent
  * @property {(id: string) => Promise<Object|undefined>} findEvent
- * @property {(query?: { type?: string, sourceId?: string, sourceKey?: string, acknowledged?: boolean, deliveryStatus?: string, dueBefore?: string, limit?: number }) => Promise<Object[]>} listEvents
+ * @property {(query?: { type?: string, sourceId?: string, sourceKey?: string, acknowledged?: boolean, deliveryStatus?: string, dueBefore?: string, includeArchived?: boolean, limit?: number }) => Promise<Object[]>} listEvents
+ * @property {((eventId: string, metadata?: Object) => Promise<Object|undefined>)} [archiveEvent]
  */
 
 function assertNotificationEventRepository(repository) {
@@ -19,6 +20,9 @@ function assertNotificationEventRepository(repository) {
   }
   if (typeof repository.listEvents !== 'function') {
     throw new Error('NotificationEventRepository must implement listEvents(query).');
+  }
+  if (repository.archiveEvent !== undefined && typeof repository.archiveEvent !== 'function') {
+    throw new Error('NotificationEventRepository archiveEvent must be a function when provided.');
   }
   return repository;
 }

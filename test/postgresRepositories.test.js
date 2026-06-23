@@ -178,6 +178,7 @@ test('postgres notification repository queries due outbox events', async functio
     limit: 10
   });
 
+  assert.match(queries[0].sql, /archived_at is null/);
   assert.match(queries[0].sql, /source_key = \$1/);
   assert.match(queries[0].sql, /delivery_status = \$2/);
   assert.match(queries[0].sql, /next_delivery_at is null or next_delivery_at <= \$3/);
@@ -186,6 +187,67 @@ test('postgres notification repository queries due outbox events', async functio
   assert.equal(events[0].deliveryStatus, 'failed');
   assert.equal(events[0].nextDeliveryAt, '2026-06-18T10:01:00.000Z');
   assert.equal(events[0].lastDeliveryError.message, 'timeout');
+});
+
+test('postgres notification repository archives outbox events', async function () {
+  const queries = [];
+  const repository = createPostgresNotificationEventRepository({
+    client: {
+      async query(sql, params) {
+        queries.push({ sql, params });
+        return {
+          rows: [
+            {
+              id: 'event-1',
+              type: 'source-changed',
+              severity: 'info',
+              source_id: 'source-1',
+              source_key: 'nga',
+              task_id: null,
+              title: 'NGA archive',
+              summary: 'changed',
+              payload: {},
+              delivery_status: 'delivered',
+              delivery_attempts: 1,
+              delivery_result: null,
+              last_delivery_error: null,
+              last_delivery_attempt_at: null,
+              last_delivered_at: new Date('2026-06-18T10:00:00.000Z'),
+              next_delivery_at: null,
+              acknowledged_at: new Date('2026-06-18T10:01:00.000Z'),
+              acknowledged_by: 'operator',
+              acknowledgement_note: null,
+              archived_at: new Date('2026-06-23T10:00:00.000Z'),
+              archived_by: 'retention',
+              archive_reason: 'handled',
+              archive_batch_id: 'batch-1',
+              created_at: new Date('2026-06-18T09:59:00.000Z')
+            }
+          ]
+        };
+      }
+    }
+  });
+
+  const archived = await repository.archiveEvent('event-1', {
+    archivedAt: '2026-06-23T10:00:00.000Z',
+    archivedBy: 'retention',
+    reason: 'handled',
+    batchId: 'batch-1'
+  });
+
+  assert.match(queries[0].sql, /update notification_events set/);
+  assert.match(queries[0].sql, /archived_at = coalesce/);
+  assert.deepEqual(queries[0].params, [
+    'event-1',
+    '2026-06-23T10:00:00.000Z',
+    'retention',
+    'handled',
+    'batch-1'
+  ]);
+  assert.equal(archived.archivedAt, '2026-06-23T10:00:00.000Z');
+  assert.equal(archived.archivedBy, 'retention');
+  assert.equal(archived.archiveReason, 'handled');
 });
 
 test('postgres task repository filters by trace metadata', async function () {
