@@ -1677,6 +1677,13 @@ test('http server exposes tracked source diagnostics', async function () {
       return check.key === 'source.adapter';
     }).status, 'fail');
     assert.ok(openApi.paths['/api/sources/diagnostics']);
+    assert.equal(openApi.paths['/api/sources/diagnostics'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceDiagnostics');
+    assert.equal(openApi.paths['/api/sources/diagnostics'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/SourceDiagnostics');
+    assert.equal(openApi.components.schemas.SourceDiagnostics.properties.sources.items.$ref, '#/components/schemas/SourceDiagnosticItem');
+    assert.equal(openApi.components.schemas.SourceDiagnostics.properties.nextActions.items.$ref, '#/components/schemas/SourceDiagnosticAction');
+    assert.equal(openApi.components.schemas.SourceDiagnosticItem.properties.checks.items.$ref, '#/components/schemas/SourceDiagnosticCheck');
+    assert.equal(openApi.components.schemas.SourceDiagnosticAction.properties.evidence.$ref, '#/components/schemas/SourceDiagnosticActionEvidence');
+    assert.equal(openApi.components.schemas.SourceDiagnosticAction.properties.commands.items.type, 'string');
   } finally {
     await close(server);
   }

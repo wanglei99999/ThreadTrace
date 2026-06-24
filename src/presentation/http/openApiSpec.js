@@ -1922,10 +1922,24 @@ function createOpenApiSpec() {
           ],
           responses: {
             200: {
-              description: 'Source diagnostics are ok or warn'
+              description: 'Source diagnostics are ok or warn',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceDiagnostics'
+                  }
+                }
+              }
             },
             503: {
-              description: 'Source diagnostics failed'
+              description: 'Source diagnostics failed',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceDiagnostics'
+                  }
+                }
+              }
             }
           }
         }
@@ -2799,6 +2813,93 @@ function createOpenApiSpec() {
             executions: {
               type: 'array',
               items: { $ref: '#/components/schemas/ContextReviewActionExecutionRecord' }
+            }
+          }
+        },
+        SourceDiagnosticCheck: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', example: 'source.adapter' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            value: {
+              description: 'Observed diagnostic value such as a source key, source type, location summary, boolean, or error text.'
+            },
+            summary: { type: 'string', example: 'Forum adapter is registered.' }
+          }
+        },
+        SourceDiagnosticActionEvidence: {
+          type: 'object',
+          properties: {
+            sourceId: { type: 'string' },
+            sourceKey: { type: 'string', example: 'nga' },
+            sourceType: { type: 'string', example: 'thread-url' },
+            checkValue: {
+              description: 'Observed check value that caused the action.'
+            },
+            requiredFields: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            providedFields: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            missingRequiredFields: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            registeredHandler: { type: 'boolean' },
+            enabled: { type: 'boolean' }
+          },
+          additionalProperties: true
+        },
+        SourceDiagnosticAction: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', example: 'source.adapter' },
+            sourceId: { type: 'string' },
+            severity: { type: 'string', enum: ['warning', 'critical'] },
+            summary: { type: 'string' },
+            commands: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            evidence: { $ref: '#/components/schemas/SourceDiagnosticActionEvidence' },
+            evidenceSummary: { type: 'string' }
+          }
+        },
+        SourceDiagnosticItem: {
+          type: 'object',
+          properties: {
+            sourceId: { type: 'string' },
+            sourceKey: { type: 'string', example: 'nga' },
+            sourceType: { type: 'string', example: 'thread-url' },
+            displayName: { type: 'string' },
+            enabled: { type: 'boolean' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            checks: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceDiagnosticCheck' }
+            },
+            nextActions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceDiagnosticAction' }
+            }
+          }
+        },
+        SourceDiagnostics: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            sourceCount: { type: 'number', example: 1 },
+            sources: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceDiagnosticItem' }
+            },
+            nextActions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceDiagnosticAction' }
             }
           }
         },
