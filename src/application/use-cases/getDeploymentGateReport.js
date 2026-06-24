@@ -29,6 +29,7 @@ function getDeploymentGateReport(options) {
     nextActions: nextActions(gates, {
       rolloutManifestPlan,
       resourceProvisioningPlan,
+      deploymentChecklist,
       operationsRunbook
     }),
     rolloutManifestPlan,
@@ -86,6 +87,9 @@ function compactResource(resource) {
 
 function checklistEvidence(checklist) {
   if (!checklist) return {};
+  const sourceActions = checklist.sourceDiagnostics && Array.isArray(checklist.sourceDiagnostics.nextActions)
+    ? checklist.sourceDiagnostics.nextActions
+    : [];
   return {
     itemCount: (checklist.items || []).length,
     failingItems: (checklist.items || []).filter(function (item) {
@@ -97,7 +101,9 @@ function checklistEvidence(checklist) {
       return item.status === 'warn';
     }).map(function (item) {
       return item.key;
-    })
+    }),
+    sourceActionCount: sourceActions.length,
+    sourceActionDetails: sourceActions.map(compactAction)
   };
 }
 
@@ -139,6 +145,9 @@ function detailsForGate(item, reports) {
   if (item.key === 'resources.provisioning' && reports.resourceProvisioningPlan) {
     return (reports.resourceProvisioningPlan.nextActions || []).map(compactAction);
   }
+  if (item.key === 'deployment.checklist' && reports.deploymentChecklist) {
+    return checklistDetails(reports.deploymentChecklist);
+  }
   if (item.key === 'operations.runbook' && reports.operationsRunbook) {
     return (reports.operationsRunbook.actions || []).map(function (action) {
       return {
@@ -153,9 +162,43 @@ function detailsForGate(item, reports) {
   return [];
 }
 
+function checklistDetails(checklist) {
+  const sourceActions = checklist.sourceDiagnostics && Array.isArray(checklist.sourceDiagnostics.nextActions)
+    ? checklist.sourceDiagnostics.nextActions.map(compactAction)
+    : [];
+  const itemActions = (checklist.items || []).filter(function (item) {
+    return item.status !== 'ok';
+  }).map(function (item) {
+    return {
+      key: item.key,
+      severity: item.status === 'fail' ? 'critical' : 'warning',
+      summary: item.summary,
+      evidence: item.evidence || {},
+      evidenceSummary: checklistItemEvidenceSummary(item)
+    };
+  });
+  return sourceActions.concat(itemActions);
+}
+
+function checklistItemEvidenceSummary(item) {
+  const evidence = item && item.evidence || {};
+  const parts = [];
+  if (evidence.sourceCount !== undefined) parts.push('sourceCount=' + evidence.sourceCount);
+  if (evidence.connectorCount !== undefined) parts.push('connectorCount=' + evidence.connectorCount);
+  if (evidence.mode) parts.push('mode=' + evidence.mode);
+  if (evidence.ready !== undefined) parts.push('ready=' + evidence.ready);
+  if (evidence.count !== undefined) parts.push('count=' + evidence.count);
+  if (evidence.status) parts.push('status=' + evidence.status);
+  if (evidence.summary && evidence.summary.nextActionCount !== undefined) {
+    parts.push('nextActionCount=' + evidence.summary.nextActionCount);
+  }
+  return parts.join(' ');
+}
+
 function compactAction(action) {
   return {
     key: action.key,
+    sourceId: action.sourceId,
     severity: action.severity,
     summary: action.summary,
     commands: action.commands || (action.command ? [action.command] : []),
@@ -170,6 +213,10 @@ function commandsForGate(item, reports) {
   }
   if (item.key === 'resources.provisioning' && reports.resourceProvisioningPlan) {
     return commandsFromActions(reports.resourceProvisioningPlan.nextActions).concat(item.commands);
+  }
+  if (item.key === 'deployment.checklist' && reports.deploymentChecklist) {
+    const sourceActions = reports.deploymentChecklist.sourceDiagnostics && reports.deploymentChecklist.sourceDiagnostics.nextActions || [];
+    return commandsFromActions(sourceActions).concat(item.commands);
   }
   if (item.key === 'operations.runbook' && reports.operationsRunbook) {
     return (reports.operationsRunbook.actions || []).map(function (action) {

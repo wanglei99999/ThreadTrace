@@ -84,6 +84,81 @@ test('deployment gate aggregates rollout resources checklist and runbook', funct
   assert.deepEqual(report.nextActions[0].details[0].evidence.missingRequiredFields, ['tenantId']);
 });
 
+test('deployment gate carries source diagnostics actions from deployment checklist', function () {
+  const report = getDeploymentGateReport({
+    now: '2026-06-19T10:00:00.000Z',
+    rolloutManifestPlan: {
+      status: 'ok',
+      steps: [],
+      nextActions: []
+    },
+    resourceProvisioningPlan: {
+      status: 'ok',
+      resources: [],
+      nextActions: []
+    },
+    deploymentChecklist: {
+      status: 'fail',
+      items: [
+        {
+          key: 'sources.ingestConfiguration',
+          status: 'fail',
+          summary: 'Tracked sources have usable locations, handlers, and adapters.',
+          evidence: {
+            sourceCount: 1,
+            summary: {
+              nextActionCount: 1
+            }
+          }
+        }
+      ],
+      sourceDiagnostics: {
+        status: 'fail',
+        sourceCount: 1,
+        nextActions: [
+          {
+            key: 'source.handler',
+            sourceId: 'source-broken',
+            severity: 'critical',
+            summary: 'Register a source ingest handler for Broken feed through the connector catalog or a connector module.',
+            commands: [
+              'node src/presentation/cli/threadtrace.js connector-catalog',
+              'node src/presentation/cli/threadtrace.js validate-connector-module --module-path <file>'
+            ],
+            evidence: {
+              sourceId: 'source-broken',
+              sourceType: 'external-feed',
+              registeredHandler: false
+            },
+            evidenceSummary: 'sourceId=source-broken sourceType=external-feed registeredHandler=false'
+          }
+        ],
+        sources: []
+      }
+    },
+    operationsRunbook: {
+      status: 'ok',
+      actionCount: 0,
+      actions: []
+    }
+  });
+
+  const action = report.nextActions.find(function (item) {
+    return item.key === 'deployment.checklist';
+  });
+  const gate = report.gates.find(function (item) {
+    return item.key === 'deployment.checklist';
+  });
+
+  assert.equal(report.status, 'fail');
+  assert.equal(gate.evidence.sourceActionCount, 1);
+  assert.equal(gate.evidence.sourceActionDetails[0].key, 'source.handler');
+  assert.ok(action.commands.includes('node src/presentation/cli/threadtrace.js connector-catalog'));
+  assert.equal(action.details[0].key, 'source.handler');
+  assert.equal(action.details[0].sourceId, 'source-broken');
+  assert.match(action.details[0].evidenceSummary, /registeredHandler=false/);
+});
+
 test('runtime deployment gate composes rollout and resource reports', async function () {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-deployment-gate-'));
   const runtime = createThreadTraceRuntime({

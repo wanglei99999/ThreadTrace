@@ -1137,6 +1137,7 @@ function createOpenApiSpec() {
       '/api/operations/rollout-manifest/apply': {
         post: {
           summary: 'Dry-run or execute rollout manifest source registration after deployment gate evaluation',
+          description: 'Apply reports carry deployment gate action details, including resource evidence and source diagnostics repair actions from checklist failures.',
           requestBody: {
             required: true,
             content: {
@@ -1217,6 +1218,7 @@ function createOpenApiSpec() {
       '/api/deployment/gate': {
         post: {
           summary: 'Evaluate rollout, resource provisioning, deployment checklist, and operations runbook gates before deployment',
+          description: 'Gate nextActions include lower-level details with evidenceSummary, including resource provisioning evidence and source diagnostics repair actions from deployment checklist failures.',
           requestBody: {
             required: false,
             content: {

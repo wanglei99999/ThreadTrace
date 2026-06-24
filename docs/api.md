@@ -682,7 +682,7 @@ Request:
 }
 ```
 
-The response includes `gates`, `nextActions`, and the composed lower-level reports. Gate `nextActions` may include lower-level `details` with `evidenceSummary` for operator-facing failure causes. A failing gate returns HTTP `503`; warnings return `200`.
+The response includes `gates`, `nextActions`, and the composed lower-level reports. Gate `nextActions` may include lower-level `details` with `evidenceSummary` for operator-facing failure causes, including resource inputs and source diagnostics repair actions from the deployment checklist. A failing gate returns HTTP `503`; warnings return `200`.
 
 ### `POST /api/operations/rollout-manifest/apply`
 
@@ -713,7 +713,7 @@ Request:
 }
 ```
 
-The endpoint defaults to dry-run. Set `execute: true` or `dryRun: false` to register the source. The response includes a durable `task` audit record and the apply `report`; the report contains `rollbackPlan.commands` with `disable-source` guidance for the registered source or a dry-run rollback template before execution. A failing deployment gate or registration error returns HTTP `503`; gate warnings return `200` with follow-up actions. Deployment gate blockers can include lower-level `details` with `evidenceSummary` so apply responses identify missing resource inputs without requiring a separate gate request.
+The endpoint defaults to dry-run. Set `execute: true` or `dryRun: false` to register the source. The response includes a durable `task` audit record and the apply `report`; the report contains `rollbackPlan.commands` with `disable-source` guidance for the registered source or a dry-run rollback template before execution. A failing deployment gate or registration error returns HTTP `503`; gate warnings return `200` with follow-up actions. Deployment gate blockers can include lower-level `details` with `evidenceSummary` so apply responses identify missing resource inputs or broken stored source diagnostics without requiring a separate gate request.
 
 ### `POST /api/index-directory`
 

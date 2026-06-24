@@ -64,7 +64,7 @@ The report includes:
 - `registration` when execution created or updated a source.
 - `rollbackPlan` with disable-source commands for the registered source, or a dry-run template before execution.
 - `deploymentGate` for rollout/resource/checklist/runbook evidence.
-- `steps` and `nextActions` for operator follow-up. When the deployment gate blocks apply, gate lower-level `details` and compact `evidenceSummary` values are carried into apply actions so the blocked rollout can show missing resource inputs directly.
+- `steps` and `nextActions` for operator follow-up. When the deployment gate blocks apply, gate lower-level `details` and compact `evidenceSummary` values are carried into apply actions so the blocked rollout can show missing resource inputs or broken stored source diagnostics directly.
 
 ## Audit Trail
 
