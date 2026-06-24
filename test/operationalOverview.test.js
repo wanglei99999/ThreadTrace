@@ -81,6 +81,10 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
             workerType: 'operations',
             workerId: 'worker-a',
             status: 'running',
+            input: {
+              sourceId: 'source-1',
+              sourceKey: 'nga'
+            },
             startedAt: '2026-06-18T09:00:00.000Z',
             updatedAt: '2026-06-18T09:00:00.000Z',
             heartbeatAt: '2026-06-18T09:00:00.000Z'
@@ -90,6 +94,9 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
             workerType: 'notification-event',
             workerId: 'worker-b',
             status: 'completed',
+            scope: {
+              sourceKey: 'external'
+            },
             startedAt: '2026-06-18T09:55:00.000Z',
             updatedAt: '2026-06-18T09:56:00.000Z',
             heartbeatAt: '2026-06-18T09:56:00.000Z',
@@ -246,7 +253,23 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
   assert.equal(overview.workers.running, 1);
   assert.equal(overview.workers.stale, 1);
   assert.equal(overview.workers.completed, 1);
+  assert.equal(overview.workers.sourceScoped, 2);
+  assert.equal(overview.workers.unscoped, 0);
+  assert.equal(overview.workers.byWorkerType.operations, 1);
+  assert.equal(overview.workers.bySourceId['source-1'], 1);
+  assert.equal(overview.workers.bySourceKey.nga, 1);
+  assert.equal(overview.workers.bySourceKey.external, 1);
+  assert.equal(overview.workers.runningBySourceId['source-1'], 1);
+  assert.equal(overview.workers.staleBySourceKey.nga, 1);
   assert.equal(overview.workers.latestHeartbeatAt, '2026-06-18T09:56:00.000Z');
+  assert.deepEqual(overview.workers.latestRun.scope, {
+    sourceId: 'source-1',
+    sourceKey: 'nga'
+  });
+  assert.deepEqual(overview.workers.staleRuns[0].scope, {
+    sourceId: 'source-1',
+    sourceKey: 'nga'
+  });
   assert.equal(overview.workers.leases.active, 2);
   assert.equal(overview.workers.leases.expired, 2);
   assert.equal(overview.workers.leases.sourceScoped, 2);

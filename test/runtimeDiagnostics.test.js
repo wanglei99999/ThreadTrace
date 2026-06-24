@@ -146,7 +146,8 @@ test('runtime diagnostics pings injected PostgreSQL client', async function () {
     'select table_name, column_name from information_schema.columns where table_schema = $1 and table_name = any($2) and column_name = any($3)',
     'select indexname from pg_indexes where schemaname = $1 and indexname = any($2)'
   ]);
-  assert.deepEqual(REQUIRED_COLUMN_TABLES, ['notification_events']);
+  assert.deepEqual(REQUIRED_COLUMN_TABLES, ['worker_runs', 'notification_events']);
+  assert.ok(REQUIRED_COLUMN_NAMES.includes('source_id'));
   assert.ok(REQUIRED_COLUMN_NAMES.includes('archived_at'));
   assert.equal(diagnostics.checks.find(function (item) {
     return item.key === 'resources.postgres';

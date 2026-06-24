@@ -212,6 +212,8 @@ create table if not exists worker_runs (
   worker_type text not null,
   worker_id text not null,
   status text not null,
+  source_id text,
+  source_key text,
   input jsonb not null default '{}'::jsonb,
   progress jsonb not null default '{}'::jsonb,
   output jsonb,
@@ -222,8 +224,13 @@ create table if not exists worker_runs (
   finished_at timestamptz
 );
 
+alter table worker_runs add column if not exists source_id text;
+alter table worker_runs add column if not exists source_key text;
+
 create index if not exists idx_worker_runs_type_started on worker_runs(worker_type, started_at desc);
 create index if not exists idx_worker_runs_status_heartbeat on worker_runs(status, heartbeat_at desc);
+create index if not exists idx_worker_runs_source_id_started on worker_runs(source_id, started_at desc) where source_id is not null;
+create index if not exists idx_worker_runs_source_key_started on worker_runs(source_key, started_at desc) where source_key is not null;
 
 create table if not exists worker_leases (
   lease_key text primary key,

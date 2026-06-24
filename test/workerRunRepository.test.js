@@ -19,7 +19,10 @@ test('file worker run repository persists and filters worker runs', async functi
     workerType: 'operations',
     workerId: 'worker-a',
     status: 'completed',
-    input: {},
+    input: {
+      sourceId: 'source-1',
+      sourceKey: 'nga'
+    },
     progress: {},
     output: { ok: true },
     startedAt: '2026-06-18T10:00:00.000Z',
@@ -32,7 +35,9 @@ test('file worker run repository persists and filters worker runs', async functi
     workerType: 'notification-event',
     workerId: 'worker-b',
     status: 'failed',
-    input: {},
+    input: {
+      sourceKey: 'external'
+    },
     progress: {},
     error: { message: 'boom' },
     startedAt: '2026-06-18T10:02:00.000Z',
@@ -44,12 +49,18 @@ test('file worker run repository persists and filters worker runs', async functi
   const loaded = await repository.findWorkerRun('run-1');
   const failedRuns = await repository.listWorkerRuns({ status: 'failed' });
   const operationsRuns = await repository.listWorkerRuns({ workerType: 'operations' });
+  const sourceIdRuns = await repository.listWorkerRuns({ sourceId: 'source-1' });
+  const sourceKeyRuns = await repository.listWorkerRuns({ sourceKey: 'external' });
 
   assert.equal(loaded.output.ok, true);
   assert.equal(failedRuns.length, 1);
   assert.equal(failedRuns[0].id, 'run-2');
   assert.equal(operationsRuns.length, 1);
   assert.equal(operationsRuns[0].id, 'run-1');
+  assert.equal(sourceIdRuns.length, 1);
+  assert.equal(sourceIdRuns[0].id, 'run-1');
+  assert.equal(sourceKeyRuns.length, 1);
+  assert.equal(sourceKeyRuns[0].id, 'run-2');
 });
 
 test('file worker lease repository coordinates owners and expired leases', async function () {

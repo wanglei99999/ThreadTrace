@@ -64,7 +64,7 @@ node src/presentation/cli/threadtrace.js runtime-diagnostics
 node src/presentation/cli/threadtrace.js resource-provisioning-plan --manifest-file docs/examples/rollout-manifest.sample.json
 ```
 
-When runtime diagnostics can reach PostgreSQL, the provisioning plan also summarizes schema drift from `resources.postgresExtensions`, `resources.postgresSchema`, `resources.postgresColumns`, and `resources.postgresIndexes`, including missing `pg_trgm`, notification outbox archive columns, and source/archive indexes. The remediation command remains the idempotent baseline schema apply step above; the schema file includes `alter table ... add column if not exists` statements for existing notification outbox tables.
+When runtime diagnostics can reach PostgreSQL, the provisioning plan also summarizes schema drift from `resources.postgresExtensions`, `resources.postgresSchema`, `resources.postgresColumns`, and `resources.postgresIndexes`, including missing `pg_trgm`, notification outbox archive columns, worker-run source columns, and source/archive/worker indexes. The remediation command remains the idempotent baseline schema apply step above; the schema file includes `alter table ... add column if not exists` statements for existing notification outbox and worker-run tables.
 
 ## Deployment Notes
 

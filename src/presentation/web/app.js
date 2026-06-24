@@ -676,6 +676,7 @@ async function loadSystemStatus() {
       statusRow('Source config', sourceDiagnostics.status + ' · ' + sourceDiagnostics.sourceCount),
       statusRow('Notify', diagnosticStatus(notificationDiagnostics, 'notifications.channel') + ' · ' + notificationDiagnostics.channel),
       statusRow('Source mode', diagnostics.configuration.workers.sourceTaskMode),
+      statusRow('Worker runs', workerRunStatusSummary(overview.workers)),
       statusRow('Worker leases', workerLeaseStatusSummary(overview.workers && overview.workers.leases)),
       statusRow('LLM', diagnostics.configuration.llm.provider),
     ].concat(resourceStatusRows, [
@@ -691,7 +692,7 @@ async function loadSystemStatus() {
       statusRow('生成时间', overview.generatedAt)
     ]);
     target.innerHTML = rows.join('');
-    document.getElementById('runbookResult').innerHTML = renderOperationsReadiness(operationsReadiness) + renderWorkerLeaseOverview(overview.workers && overview.workers.leases) + renderOperationsRunbook(operationsRunbook);
+    document.getElementById('runbookResult').innerHTML = renderOperationsReadiness(operationsReadiness) + renderWorkerRunOverview(overview.workers) + renderWorkerLeaseOverview(overview.workers && overview.workers.leases) + renderOperationsRunbook(operationsRunbook);
   } catch (error) {
     target.innerHTML = '<div class="error">' + escapeHtml(error.message) + '</div>';
   }
@@ -2179,6 +2180,26 @@ function renderWorkerLeaseOverview(leases) {
   ].join(''), 'wide');
 }
 
+function renderWorkerRunOverview(workers) {
+  const safeWorkers = workers || {};
+  const sampleRuns = uniqueWorkerRuns((safeWorkers.staleRuns || []).concat(safeWorkers.latestRun ? [safeWorkers.latestRun] : []));
+  return panel('Worker run sources', [
+    '<div class="summary-strip">',
+    summaryTile('Running', String(safeWorkers.running || 0), (safeWorkers.running || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('Stale', String(safeWorkers.stale || 0), (safeWorkers.stale || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('Scoped', String(safeWorkers.sourceScoped || 0), (safeWorkers.sourceScoped || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('Global', String(safeWorkers.unscoped || 0), (safeWorkers.unscoped || 0) > 0 ? 'muted' : 'ok'),
+    '</div>',
+    metric('Worker types', compactCountMap(safeWorkers.byWorkerType)),
+    metric('Runs by source ids', compactCountMap(safeWorkers.bySourceId)),
+    metric('Runs by source keys', compactCountMap(safeWorkers.bySourceKey)),
+    metric('Running source ids', compactCountMap(safeWorkers.runningBySourceId)),
+    metric('Stale source ids', compactCountMap(safeWorkers.staleBySourceId)),
+    metric('Stale source keys', compactCountMap(safeWorkers.staleBySourceKey)),
+    evidenceList(sampleRuns.slice(0, 8).map(formatWorkerRunRow))
+  ].join(''), 'wide');
+}
+
 function workerLeaseStatusSummary(leases) {
   const safeLeases = leases || {};
   return [
@@ -2189,6 +2210,16 @@ function workerLeaseStatusSummary(leases) {
   ].join(' 路 ');
 }
 
+function workerRunStatusSummary(workers) {
+  const safeWorkers = workers || {};
+  return [
+    'running ' + (safeWorkers.running || 0),
+    'stale ' + (safeWorkers.stale || 0),
+    'scoped ' + (safeWorkers.sourceScoped || 0),
+    'failed ' + (safeWorkers.failed || 0)
+  ].join(' | ');
+}
+
 function uniqueLeases(leases) {
   const seen = new Set();
   return (leases || []).filter(function (lease) {
@@ -2197,6 +2228,31 @@ function uniqueLeases(leases) {
     seen.add(key);
     return true;
   });
+}
+
+function uniqueWorkerRuns(runs) {
+  const seen = new Set();
+  return (runs || []).filter(function (run) {
+    const key = run && run.id || '';
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function formatWorkerRunRow(run) {
+  const scope = run.scope || {};
+  const scopeLabel = scope.sourceId
+    ? 'sourceId=' + scope.sourceId
+    : (scope.sourceKey ? 'sourceKey=' + scope.sourceKey : 'global');
+  return [
+    run.status || 'unknown-status',
+    run.workerType || 'unknown-worker',
+    scopeLabel,
+    run.workerId || 'unknown-owner',
+    run.heartbeatAt || run.updatedAt || 'no-heartbeat',
+    run.id || 'unknown-run'
+  ].join(' | ');
 }
 
 function formatWorkerLeaseRow(lease) {

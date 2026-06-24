@@ -58,11 +58,17 @@ const REQUIRED_INDEXES = [
   'idx_raw_thread_pages_thread',
   'idx_worker_runs_type_started',
   'idx_worker_runs_status_heartbeat',
+  'idx_worker_runs_source_id_started',
+  'idx_worker_runs_source_key_started',
   'idx_worker_leases_type',
   'idx_worker_leases_expires'
 ];
 
 const REQUIRED_COLUMNS = {
+  worker_runs: [
+    'source_id',
+    'source_key'
+  ],
   notification_events: [
     'source_key',
     'archived_at',

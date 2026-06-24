@@ -3,6 +3,7 @@
 const fs = require('fs/promises');
 const path = require('path');
 const { assertWorkerRunRepository } = require('../../application/ports/workerRunRepository');
+const { deriveWorkerRunSourceScope } = require('../../domain/models/workerRun');
 
 function createFileWorkerRunRepository(options) {
   const baseDir = path.resolve((options && options.baseDir) || path.join(process.cwd(), 'data', 'store', 'worker-runs'));
@@ -33,6 +34,9 @@ function createFileWorkerRunRepository(options) {
         const run = JSON.parse(await fs.readFile(filePath, 'utf8'));
         if (safeQuery.workerType && run.workerType !== safeQuery.workerType) continue;
         if (safeQuery.status && run.status !== safeQuery.status) continue;
+        const scope = deriveWorkerRunSourceScope(run);
+        if (safeQuery.sourceId && scope.sourceId !== safeQuery.sourceId) continue;
+        if (safeQuery.sourceKey && scope.sourceKey !== safeQuery.sourceKey) continue;
         runs.push(run);
       }
 

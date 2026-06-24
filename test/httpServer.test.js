@@ -216,6 +216,11 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/events/dispatch'].post.requestBody.content['application/json'].schema.properties.sourceKey);
     assert.equal(openApi.paths['/api/operations/overview'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/OperationalOverview');
     assert.equal(openApi.components.schemas.OperationalOverview.properties.workers.properties.leases.$ref, '#/components/schemas/WorkerLeaseSummary');
+    assert.equal(openApi.components.schemas.OperationalOverview.properties.workers.properties.latestRun.$ref, '#/components/schemas/WorkerRun');
+    assert.equal(openApi.components.schemas.OperationalOverview.properties.workers.properties.staleRuns.items.$ref, '#/components/schemas/WorkerRun');
+    assert.equal(openApi.components.schemas.OperationalOverview.properties.recent.properties.workerRuns.items.$ref, '#/components/schemas/WorkerRun');
+    assert.equal(openApi.components.schemas.WorkerRun.properties.scope.$ref, '#/components/schemas/SourceScope');
+    assert.equal(openApi.components.schemas.WorkerRun.properties.scoped.type, 'boolean');
     assert.equal(openApi.components.schemas.WorkerLease.properties.scope.$ref, '#/components/schemas/SourceScope');
     assert.equal(openApi.components.schemas.WorkerLeaseSummary.properties.sourceScoped.type, 'number');
     assert.equal(adapters.adapters[0].sourceKey, 'nga');

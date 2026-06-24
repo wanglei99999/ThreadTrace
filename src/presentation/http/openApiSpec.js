@@ -2191,6 +2191,25 @@ function createOpenApiSpec() {
           },
           additionalProperties: false
         },
+        WorkerRun: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', example: '5eacb7ef-e116-4974-87fd-234b34e45a54' },
+            workerType: { type: 'string', example: 'due-source' },
+            workerId: { type: 'string', example: 'due-source:host:12345' },
+            status: { type: 'string', enum: ['running', 'completed', 'failed', 'skipped'] },
+            scope: { $ref: '#/components/schemas/SourceScope' },
+            scoped: { type: 'boolean', example: true },
+            input: { type: 'object', additionalProperties: true },
+            progress: { type: 'object', additionalProperties: true },
+            output: { type: 'object', additionalProperties: true },
+            error: { type: 'object', additionalProperties: true },
+            startedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            updatedAt: { type: 'string', example: '2026-06-18T10:01:00.000Z' },
+            heartbeatAt: { type: 'string', example: '2026-06-18T10:01:00.000Z' },
+            finishedAt: { type: 'string', example: '2026-06-18T10:02:00.000Z' }
+          }
+        },
         WorkerLease: {
           type: 'object',
           properties: {
@@ -2321,12 +2340,42 @@ function createOpenApiSpec() {
                 completed: { type: 'number' },
                 failed: { type: 'number' },
                 skipped: { type: 'number' },
+                sourceScoped: { type: 'number' },
+                unscoped: { type: 'number' },
+                byWorkerType: {
+                  type: 'object',
+                  additionalProperties: { type: 'number' }
+                },
+                bySourceId: {
+                  type: 'object',
+                  additionalProperties: { type: 'number' }
+                },
+                bySourceKey: {
+                  type: 'object',
+                  additionalProperties: { type: 'number' }
+                },
+                runningBySourceId: {
+                  type: 'object',
+                  additionalProperties: { type: 'number' }
+                },
+                runningBySourceKey: {
+                  type: 'object',
+                  additionalProperties: { type: 'number' }
+                },
+                staleBySourceId: {
+                  type: 'object',
+                  additionalProperties: { type: 'number' }
+                },
+                staleBySourceKey: {
+                  type: 'object',
+                  additionalProperties: { type: 'number' }
+                },
                 latestHeartbeatAt: { type: 'string' },
                 leases: { $ref: '#/components/schemas/WorkerLeaseSummary' },
-                latestRun: { type: 'object', additionalProperties: true },
+                latestRun: { $ref: '#/components/schemas/WorkerRun' },
                 staleRuns: {
                   type: 'array',
-                  items: { type: 'object', additionalProperties: true }
+                  items: { $ref: '#/components/schemas/WorkerRun' }
                 }
               }
             },
@@ -2339,6 +2388,10 @@ function createOpenApiSpec() {
                 workerLeases: {
                   type: 'array',
                   items: { $ref: '#/components/schemas/WorkerLease' }
+                },
+                workerRuns: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/WorkerRun' }
                 }
               },
               additionalProperties: true

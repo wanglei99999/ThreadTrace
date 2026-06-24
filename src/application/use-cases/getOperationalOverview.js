@@ -1,6 +1,7 @@
 'use strict';
 
 const { parseWorkerLeaseKey } = require('../../domain/models/workerLeaseKey');
+const { deriveWorkerRunSourceScope } = require('../../domain/models/workerRun');
 const { evaluateTrackedSourceSchedule } = require('../../domain/scheduling/trackedSourceSchedule');
 const { assertNotificationEventRepository } = require('../ports/notificationEventRepository');
 const { assertRawThreadPageRepository } = require('../ports/rawThreadPageRepository');
@@ -51,7 +52,7 @@ async function getOperationalOverview(options) {
       events: unacknowledgedEvents.slice(0, 10),
       rawPages: rawPages.slice(0, 10),
       authorReviewQueue: recentAuthorReviewQueueItems(safeOptions.authorReviewQueue),
-      workerRuns: workerRuns.slice(0, 10),
+      workerRuns: workerRuns.slice(0, 10).map(summarizeWorkerRun),
       workerLeases: workerLeases.slice(0, 10).map(function (lease) {
         return summarizeWorkerLease(lease, now);
       })
@@ -269,35 +270,70 @@ function summarizeRawPages(rawPages) {
 
 function summarizeWorkers(workerRuns, workerLeases, now, staleAfterMs) {
   const staleWindowMs = staleAfterMs || 5 * 60 * 1000;
-  const runningRuns = workerRuns.filter(function (run) {
+  const summarizedRuns = workerRuns.map(summarizeWorkerRun);
+  const runningRuns = summarizedRuns.filter(function (run) {
     return run.status === 'running';
   });
   const staleRuns = runningRuns.filter(function (run) {
     return isStaleWorkerRun(run, now, staleWindowMs);
   });
+  const sourceScopedRuns = summarizedRuns.filter(function (run) {
+    return run.scoped;
+  });
   return {
-    total: workerRuns.length,
+    total: summarizedRuns.length,
     running: runningRuns.length,
     stale: staleRuns.length,
-    completed: countByStatus(workerRuns, 'completed'),
-    failed: countByStatus(workerRuns, 'failed'),
-    skipped: countByStatus(workerRuns, 'skipped'),
-    latestHeartbeatAt: latestTimestamp(workerRuns.map(function (run) {
+    completed: countByStatus(summarizedRuns, 'completed'),
+    failed: countByStatus(summarizedRuns, 'failed'),
+    skipped: countByStatus(summarizedRuns, 'skipped'),
+    sourceScoped: sourceScopedRuns.length,
+    unscoped: summarizedRuns.length - sourceScopedRuns.length,
+    byWorkerType: countBy(summarizedRuns, function (run) { return run.workerType || 'unknown'; }),
+    bySourceId: countBy(sourceScopedRuns.filter(function (run) {
+      return run.scope && run.scope.sourceId;
+    }), function (run) { return run.scope.sourceId; }),
+    bySourceKey: countBy(sourceScopedRuns.filter(function (run) {
+      return run.scope && run.scope.sourceKey;
+    }), function (run) { return run.scope.sourceKey; }),
+    runningBySourceId: countBy(runningRuns.filter(function (run) {
+      return run.scope && run.scope.sourceId;
+    }), function (run) { return run.scope.sourceId; }),
+    runningBySourceKey: countBy(runningRuns.filter(function (run) {
+      return run.scope && run.scope.sourceKey;
+    }), function (run) { return run.scope.sourceKey; }),
+    staleBySourceId: countBy(staleRuns.filter(function (run) {
+      return run.scope && run.scope.sourceId;
+    }), function (run) { return run.scope.sourceId; }),
+    staleBySourceKey: countBy(staleRuns.filter(function (run) {
+      return run.scope && run.scope.sourceKey;
+    }), function (run) { return run.scope.sourceKey; }),
+    latestHeartbeatAt: latestTimestamp(summarizedRuns.map(function (run) {
       return run.heartbeatAt;
     })),
     leases: summarizeWorkerLeases(workerLeases, now),
-    latestRun: workerRuns[0],
+    latestRun: summarizedRuns[0],
     staleRuns: staleRuns.slice(0, 10).map(function (run) {
       return {
         id: run.id,
         workerType: run.workerType,
         workerId: run.workerId,
         status: run.status,
+        scope: run.scope,
+        scoped: run.scoped,
         heartbeatAt: run.heartbeatAt,
         startedAt: run.startedAt
       };
     })
   };
+}
+
+function summarizeWorkerRun(run) {
+  const scope = deriveWorkerRunSourceScope(run);
+  return Object.assign({}, run, {
+    scope,
+    scoped: Boolean(scope.sourceId || scope.sourceKey)
+  });
 }
 
 function summarizeWorkerLeases(workerLeases, now) {

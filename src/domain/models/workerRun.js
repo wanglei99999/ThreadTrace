@@ -5,12 +5,18 @@ const crypto = require('crypto');
 function createWorkerRun(options) {
   const safeOptions = options || {};
   const now = safeOptions.now || new Date().toISOString();
+  const input = safeOptions.input || {};
+  const scope = deriveWorkerRunSourceScope({
+    scope: safeOptions.scope,
+    input
+  });
   return {
     id: safeOptions.id || crypto.randomUUID(),
     workerType: safeOptions.workerType,
     workerId: safeOptions.workerId || 'local',
     status: safeOptions.status || 'running',
-    input: safeOptions.input || {},
+    input,
+    scope,
     progress: safeOptions.progress || {},
     startedAt: safeOptions.startedAt || now,
     updatedAt: now,
@@ -69,10 +75,28 @@ function createSkippedWorkerRun(options) {
   }));
 }
 
+function deriveWorkerRunSourceScope(runOrInput) {
+  const value = runOrInput || {};
+  const explicitScope = value.scope && typeof value.scope === 'object' ? value.scope : {};
+  const input = value.input && typeof value.input === 'object' ? value.input : value;
+  const sourceId = normalizeScopeValue(explicitScope.sourceId || value.sourceId || input.sourceId);
+  const sourceKey = normalizeScopeValue(explicitScope.sourceKey || value.sourceKey || input.sourceKey || input.forum);
+  const scope = {};
+  if (sourceId) scope.sourceId = sourceId;
+  if (sourceKey) scope.sourceKey = sourceKey;
+  return scope;
+}
+
+function normalizeScopeValue(value) {
+  const text = String(value || '').trim();
+  return text || undefined;
+}
+
 module.exports = {
   createWorkerRun,
   markWorkerRunHeartbeat,
   markWorkerRunCompleted,
   markWorkerRunFailed,
-  createSkippedWorkerRun
+  createSkippedWorkerRun,
+  deriveWorkerRunSourceScope
 };

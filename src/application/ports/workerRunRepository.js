@@ -10,6 +10,7 @@
  * @property {string} workerType
  * @property {string} workerId
  * @property {'running'|'completed'|'failed'|'skipped'} status
+ * @property {{ sourceId?: string, sourceKey?: string }=} scope
  * @property {Object=} input
  * @property {Object=} progress
  * @property {Object=} output
@@ -24,7 +25,7 @@
  * @typedef {Object} WorkerRunRepository
  * @property {(run: WorkerRunRecord) => Promise<void>} saveWorkerRun
  * @property {(id: string) => Promise<WorkerRunRecord | undefined>} findWorkerRun
- * @property {(query?: { workerType?: string, status?: string, limit?: number }) => Promise<WorkerRunRecord[]>} listWorkerRuns
+ * @property {(query?: { workerType?: string, status?: string, sourceId?: string, sourceKey?: string, limit?: number }) => Promise<WorkerRunRecord[]>} listWorkerRuns
  */
 
 function assertWorkerRunRepository(repository) {

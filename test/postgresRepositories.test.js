@@ -370,7 +370,9 @@ test('postgres worker run repository maps rows and filters runs', async function
                 worker_type: 'operations',
                 worker_id: 'worker-a',
                 status: 'running',
-                input: { limit: 5 },
+                source_id: 'source-1',
+                source_key: 'nga',
+                input: { limit: 5, sourceId: 'source-1', sourceKey: 'nga' },
                 progress: { step: 'overview' },
                 output: null,
                 error: null,
@@ -392,7 +394,7 @@ test('postgres worker run repository maps rows and filters runs', async function
     workerType: 'operations',
     workerId: 'worker-a',
     status: 'running',
-    input: { limit: 5 },
+    input: { limit: 5, sourceId: 'source-1', sourceKey: 'nga' },
     progress: { step: 'overview' },
     startedAt: '2026-06-18T10:00:00.000Z',
     updatedAt: '2026-06-18T10:01:00.000Z',
@@ -401,14 +403,25 @@ test('postgres worker run repository maps rows and filters runs', async function
   const runs = await repository.listWorkerRuns({
     workerType: 'operations',
     status: 'running',
+    sourceId: 'source-1',
+    sourceKey: 'nga',
     limit: 10
   });
 
   assert.match(queries[0].sql, /insert into worker_runs/);
+  assert.match(queries[0].sql, /source_id, source_key/);
+  assert.equal(queries[0].params[4], 'source-1');
+  assert.equal(queries[0].params[5], 'nga');
   assert.match(queries[1].sql, /worker_type = \$1/);
   assert.match(queries[1].sql, /status = \$2/);
-  assert.deepEqual(queries[1].params, ['operations', 'running', 10]);
+  assert.match(queries[1].sql, /source_id = \$3/);
+  assert.match(queries[1].sql, /source_key = \$4/);
+  assert.deepEqual(queries[1].params, ['operations', 'running', 'source-1', 'nga', 10]);
   assert.equal(runs[0].workerType, 'operations');
+  assert.deepEqual(runs[0].scope, {
+    sourceId: 'source-1',
+    sourceKey: 'nga'
+  });
   assert.equal(runs[0].progress.step, 'overview');
   assert.equal(runs[0].heartbeatAt, '2026-06-18T10:01:00.000Z');
 });

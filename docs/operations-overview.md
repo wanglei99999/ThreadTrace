@@ -121,6 +121,8 @@ Background workers write one durable `worker_runs` record per execution:
 
 The default stale window is five minutes. File storage writes JSON records under `worker-runs`; PostgreSQL storage uses the `worker_runs` table in `docs/postgresql-schema.sql`.
 
+Worker run records carry a normalized `scope` derived from `sourceId`, `sourceKey`, or legacy `forum` input. `operations-overview` reports `sourceScoped`, `unscoped`, `byWorkerType`, `bySourceId`, `bySourceKey`, `runningBySourceId`, `runningBySourceKey`, `staleBySourceId`, and `staleBySourceKey`, so operators can correlate a stale worker with the source shard it was actually processing. PostgreSQL deployments store `source_id` and `source_key` as indexed columns for source-filtered run history queries.
+
 ## Worker Leases
 
 Workers also use short-lived leases to avoid duplicate background execution across processes:
@@ -135,7 +137,7 @@ Each run acquires its worker lease before executing, renews it between phases, a
 
 `operations-overview` parses these lease keys into `scope`, `scoped`, and `expired` fields in recent lease samples. The worker lease summary also reports `sourceScoped`, `unscoped`, `byWorkerType`, `bySourceId`, `bySourceKey`, `activeBySourceId`, `activeBySourceKey`, `expiredBySourceId`, and `expiredBySourceKey`, so dashboards can distinguish a global worker outage from one unhealthy source shard.
 
-The OpenAPI document exposes these fields through `OperationalOverview`, `WorkerLeaseSummary`, `WorkerLease`, and `SourceScope` schemas for generated clients and external monitoring integrations.
+The OpenAPI document exposes these fields through `OperationalOverview`, `WorkerRun`, `WorkerLeaseSummary`, `WorkerLease`, and `SourceScope` schemas for generated clients and external monitoring integrations.
 
 File storage writes lease JSON under `worker-leases` for local deployments. PostgreSQL storage uses `worker_leases` and acquires leases with a conditional `on conflict` update, which is the preferred path for multi-process or multi-host deployments.
 
