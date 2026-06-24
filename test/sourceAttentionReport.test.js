@@ -97,16 +97,24 @@ test('source attention report merges source schedule lifecycle and runbook signa
   assert.equal(report.summary.warning, 2);
   assert.equal(report.summary.info, 1);
   assert.equal(report.summary.runnable, 1);
+  assert.equal(report.summary.actionable, 3);
+  assert.equal(report.summary.highestPriorityScore, 128);
   assert.equal(report.summary.bySignal.due, 1);
   assert.equal(report.summary.bySignal['retry wait'], 2);
   assert.equal(report.summary.bySignal.runbook, 2);
   assert.equal(report.sources[0].severity, 'critical');
+  assert.equal(report.sources[0].attentionRank, 1);
+  assert.equal(report.sources[0].priorityScore, 128);
   assert.equal(report.sources[0].source.sourceKey, 'nga');
   assert.equal(report.sources[0].source.id, undefined);
   const retrySource = report.sources.find(function (item) {
     return item.source.id === 'source-retry';
   });
+  assert.equal(retrySource.attentionRank, 2);
+  assert.equal(retrySource.priorityScore, 110);
   assert.equal(retrySource.signalCount, 3);
+  assert.equal(retrySource.recommendedCommand, 'node src/presentation/cli/threadtrace.js source-lifecycle-report');
+  assert.equal(retrySource.recommendedNextAction, 'wait-for-failure-backoff');
   assert.equal(retrySource.commands[0], 'node src/presentation/cli/threadtrace.js source-lifecycle-report');
   assert.equal(retrySource.nextAction, 'wait-for-failure-backoff');
   const dueSource = report.sources.find(function (item) {
@@ -125,6 +133,8 @@ test('source attention report returns ok for empty inputs', function () {
 
   assert.equal(report.status, 'ok');
   assert.equal(report.summary.total, 0);
+  assert.equal(report.summary.actionable, 0);
+  assert.equal(report.summary.highestPriorityScore, 0);
   assert.deepEqual(report.sources, []);
 });
 

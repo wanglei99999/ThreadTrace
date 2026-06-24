@@ -2572,7 +2572,15 @@ function buildSourceAttention(result) {
     });
   });
 
-  return Array.from(attentionBySource.values()).sort(compareSourceAttention).slice(0, 12);
+  return Array.from(attentionBySource.values())
+    .map(finalizeWebSourceAttention)
+    .sort(compareSourceAttention)
+    .slice(0, 12)
+    .map(function (item, index) {
+      return Object.assign({}, item, {
+        attentionRank: item.attentionRank || index + 1
+      });
+    });
 }
 
 function addSourceAttention(map, source, signal) {
@@ -2652,10 +2660,12 @@ function attentionSeverityRank(severity) {
 }
 
 function compareSourceAttention(left, right) {
-  const severityDiff = attentionSeverityRank(right.severity) - attentionSeverityRank(left.severity);
-  if (severityDiff !== 0) return severityDiff;
+  const scoreDiff = (right.priorityScore || 0) - (left.priorityScore || 0);
+  if (scoreDiff !== 0) return scoreDiff;
   const signalDiff = (right.signals || []).length - (left.signals || []).length;
   if (signalDiff !== 0) return signalDiff;
+  const severityDiff = attentionSeverityRank(right.severity) - attentionSeverityRank(left.severity);
+  if (severityDiff !== 0) return severityDiff;
   return String(left.source.displayName || left.source.id || left.source.sourceKey || '').localeCompare(String(right.source.displayName || right.source.id || right.source.sourceKey || ''));
 }
 
@@ -2664,18 +2674,21 @@ function renderSourceAttentionRows(items) {
   return '<div class="source-attention-list">' + items.map(function (item) {
     const source = item.source || {};
     const runState = source.runState || {};
+    const priorityScore = item.priorityScore === undefined ? scoreWebSourceAttention(item) : item.priorityScore;
     const signalLabels = uniqueText((item.signals || []).map(function (signal) {
       return signal.label;
     })).join(' + ');
     const details = [
       source.id || source.sourceKey || item.key,
       source.sourceKey && source.sourceType ? source.sourceKey + '/' + source.sourceType : source.sourceKey || source.sourceType,
+      'priority=' + priorityScore,
       runState.status ? 'run=' + runState.status : undefined,
       attentionSignalDetail(item.signals || []),
       item.commands && item.commands.length > 0 ? 'commands=' + item.commands.length : undefined
     ].filter(Boolean).join(' | ');
     const canRunSourceActions = Boolean(source.id);
     const controls = '<span class="button-group source-op-buttons source-attention-controls">' +
+      (item.attentionRank ? statusBadge('#' + item.attentionRank, attentionStatusVariant(item.severity)) : '') +
       statusBadge(signalLabels || item.severity || 'attention', attentionStatusVariant(item.severity)) +
       renderSourceDrilldownButton(source) +
       (item.runnable && canRunSourceActions ? renderSourceRunButtons(source) : '') +
@@ -2690,6 +2703,40 @@ function renderSourceAttentionRows(items) {
       controls +
       '</div>';
   }).join('') + '</div>';
+}
+
+function finalizeWebSourceAttention(item) {
+  const commands = uniqueText(item.commands || []);
+  const recommendedCommand = commands[0] || firstText(item.source && item.source.recommendedCommands);
+  const recommendedNextAction = item.source && item.source.nextAction || firstText((item.signals || []).map(function (signal) {
+    return signal.action;
+  }));
+  return Object.assign({}, item, {
+    signalCount: (item.signals || []).length,
+    priorityScore: scoreWebSourceAttention(item, commands, recommendedCommand, recommendedNextAction),
+    commands,
+    recommendedCommand,
+    recommendedNextAction
+  });
+}
+
+function scoreWebSourceAttention(item, commands, recommendedCommand, recommendedNextAction) {
+  const safeCommands = commands || item.commands || [];
+  const signalCount = (item.signals || []).length;
+  const severityBase = {
+    critical: 120,
+    warning: 70,
+    warn: 70,
+    info: 30,
+    ok: 5,
+    muted: 0
+  }[item.severity] || 30;
+  return severityBase +
+    Math.min(signalCount * 8, 32) +
+    (item.runnable ? 10 : 0) +
+    Math.min(safeCommands.length * 4, 12) +
+    (recommendedCommand || item.recommendedCommand ? 6 : 0) +
+    (recommendedNextAction || item.recommendedNextAction || item.nextAction ? 6 : 0);
 }
 
 function attentionSignalDetail(signals) {
@@ -2724,6 +2771,12 @@ function uniqueText(items) {
     if (!item || seen.has(item)) return false;
     seen.add(item);
     return true;
+  });
+}
+
+function firstText(items) {
+  return (items || []).find(function (item) {
+    return typeof item === 'string' && item.length > 0;
   });
 }
 

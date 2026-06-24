@@ -28,6 +28,8 @@ test('CLI prints source attention report for an empty store', async function () 
 
   assert.match(result.stdout, /Source attention: ok/);
   assert.match(result.stdout, /Sources: total=0/);
+  assert.match(result.stdout, /actionable=0/);
+  assert.match(result.stdout, /topPriority=0/);
   assert.match(result.stdout, /Signals: none/);
   assert.equal(result.stderr, '');
 });
@@ -53,6 +55,8 @@ test('CLI can print source attention report as JSON', async function () {
 
   assert.equal(report.status, 'ok');
   assert.equal(report.summary.total, 0);
+  assert.equal(report.summary.actionable, 0);
+  assert.equal(report.summary.highestPriorityScore, 0);
   assert.deepEqual(report.sources, []);
   assert.equal(result.stderr, '');
 });

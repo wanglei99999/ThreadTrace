@@ -304,17 +304,23 @@ function summarizeSourceAttention(sourceAttention) {
     critical: summary.critical,
     warning: summary.warning,
     runnable: summary.runnable,
+    actionable: summary.actionable,
+    highestPriorityScore: summary.highestPriorityScore,
     bySignal: summary.bySignal,
     topSources: (sourceAttention.sources || []).slice(0, 5).map(function (item) {
       const source = item.source || {};
       return {
         key: item.key,
+        attentionRank: item.attentionRank,
         sourceId: source.id,
         sourceKey: source.sourceKey,
         displayName: source.displayName,
         severity: item.severity,
+        priorityScore: item.priorityScore,
         signalCount: item.signalCount,
         runnable: item.runnable,
+        recommendedNextAction: item.recommendedNextAction || item.nextAction,
+        recommendedCommand: item.recommendedCommand,
         signals: (item.signals || []).slice(0, 3).map(function (signal) {
           return {
             severity: signal.severity,

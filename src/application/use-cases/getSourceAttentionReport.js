@@ -91,7 +91,12 @@ function getSourceAttentionReport(options) {
   const sources = Array.from(state.items.values())
     .map(finalizeAttentionItem)
     .sort(compareSourceAttention)
-    .slice(0, limit);
+    .slice(0, limit)
+    .map(function (item, index) {
+      return Object.assign({}, item, {
+        attentionRank: index + 1
+      });
+    });
 
   return {
     generatedAt,
@@ -192,15 +197,23 @@ function mergeAttentionSource(current, next) {
 }
 
 function finalizeAttentionItem(item) {
+  const commands = uniqueText(item.commands);
+  const recommendedCommand = commands[0] || firstText(item.source.recommendedCommands);
+  const recommendedNextAction = item.source.nextAction || firstText(item.signals.map(function (signal) {
+    return signal.action;
+  }));
   return {
     key: item.key,
     source: item.source,
     severity: item.severity,
     signalCount: item.signals.length,
+    priorityScore: scoreSourceAttention(item, commands, recommendedCommand, recommendedNextAction),
     runnable: item.runnable,
     signals: item.signals,
-    commands: uniqueText(item.commands).slice(0, 5),
-    nextAction: item.source.nextAction
+    commands: commands.slice(0, 5),
+    nextAction: item.source.nextAction,
+    recommendedNextAction,
+    recommendedCommand
   };
 }
 
@@ -222,6 +235,12 @@ function summarizeAttentionSources(sources) {
     info: countBySeverity(sources, 'info'),
     muted: countBySeverity(sources, 'muted'),
     runnable: sources.filter(function (source) { return source.runnable; }).length,
+    actionable: sources.filter(function (source) {
+      return source.runnable || source.recommendedCommand || source.recommendedNextAction;
+    }).length,
+    highestPriorityScore: sources.reduce(function (highest, source) {
+      return Math.max(highest, source.priorityScore || 0);
+    }, 0),
     bySignal: sources.reduce(function (result, source) {
       (source.signals || []).forEach(function (signal) {
         const label = signal.label || 'attention';
@@ -260,12 +279,32 @@ function attentionSeverityRank(severity) {
 }
 
 function compareSourceAttention(left, right) {
-  const severityDiff = attentionSeverityRank(right.severity) - attentionSeverityRank(left.severity);
-  if (severityDiff !== 0) return severityDiff;
+  const scoreDiff = (right.priorityScore || 0) - (left.priorityScore || 0);
+  if (scoreDiff !== 0) return scoreDiff;
   const signalDiff = (right.signalCount || 0) - (left.signalCount || 0);
   if (signalDiff !== 0) return signalDiff;
+  const severityDiff = attentionSeverityRank(right.severity) - attentionSeverityRank(left.severity);
+  if (severityDiff !== 0) return severityDiff;
   return String(left.source.displayName || left.source.id || left.source.sourceKey || '')
     .localeCompare(String(right.source.displayName || right.source.id || right.source.sourceKey || ''));
+}
+
+function scoreSourceAttention(item, commands, recommendedCommand, recommendedNextAction) {
+  const signalCount = item.signals.length;
+  const severityBase = {
+    critical: 120,
+    warning: 70,
+    warn: 70,
+    info: 30,
+    ok: 5,
+    muted: 0
+  }[item.severity] || 30;
+  return severityBase +
+    Math.min(signalCount * 8, 32) +
+    (item.runnable ? 10 : 0) +
+    Math.min((commands || []).length * 4, 12) +
+    (recommendedCommand ? 6 : 0) +
+    (recommendedNextAction ? 6 : 0);
 }
 
 function uniqueText(items) {
@@ -274,6 +313,12 @@ function uniqueText(items) {
     if (!item || seen.has(item)) return false;
     seen.add(item);
     return true;
+  });
+}
+
+function firstText(items) {
+  return (items || []).find(function (item) {
+    return typeof item === 'string' && item.length > 0;
   });
 }
 

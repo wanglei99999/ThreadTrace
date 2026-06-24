@@ -245,6 +245,11 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.paths['/api/operations/source-attention'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/SourceAttentionReport');
     assert.equal(openApi.components.schemas.SourceAttentionReport.properties.sources.items.$ref, '#/components/schemas/SourceAttentionItem');
     assert.equal(openApi.components.schemas.SourceAttentionItem.properties.signals.items.$ref, '#/components/schemas/SourceAttentionSignal');
+    assert.equal(openApi.components.schemas.SourceAttentionItem.properties.attentionRank.type, 'number');
+    assert.equal(openApi.components.schemas.SourceAttentionItem.properties.priorityScore.type, 'number');
+    assert.equal(openApi.components.schemas.SourceAttentionItem.properties.recommendedCommand.type, 'string');
+    assert.equal(openApi.components.schemas.SourceAttentionSummary.properties.actionable.type, 'number');
+    assert.equal(openApi.components.schemas.SourceAttentionSummary.properties.highestPriorityScore.type, 'number');
     assert.equal(openApi.components.schemas.SourceAttentionSummary.properties.bySignal.additionalProperties.type, 'number');
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.scope.$ref, '#/components/schemas/SourceScope');
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.recent.properties.workerRuns.items.$ref, '#/components/schemas/WorkerRun');
@@ -892,6 +897,8 @@ test('http server exposes source attention API', async function () {
             info: 0,
             muted: 0,
             runnable: 0,
+            actionable: 1,
+            highestPriorityScore: 84,
             bySignal: {
               'retry wait': 1
             },
@@ -908,12 +915,16 @@ test('http server exposes source attention API', async function () {
                 displayName: 'NGA sample'
               },
               severity: 'warning',
+              attentionRank: 1,
+              priorityScore: 84,
               signalCount: 1,
               runnable: false,
               signals: [
                 { severity: 'warning', label: 'retry wait' }
               ],
-              commands: []
+              commands: [],
+              recommendedNextAction: 'wait-for-failure-backoff',
+              recommendedCommand: 'node src/presentation/cli/threadtrace.js source-lifecycle-report'
             }
           ]
         };
@@ -928,8 +939,13 @@ test('http server exposes source attention API', async function () {
     const report = await getJson(baseUrl + '/api/operations/source-attention?sourceKey=nga&sourceId=source-1&limit=10&attentionLimit=5&sourceFailureRetryBackoffMs=60000');
 
     assert.equal(report.status, 'warn');
+    assert.equal(report.summary.actionable, 1);
+    assert.equal(report.summary.highestPriorityScore, 84);
     assert.equal(report.summary.bySignal['retry wait'], 1);
     assert.equal(report.sources[0].source.id, 'source-1');
+    assert.equal(report.sources[0].attentionRank, 1);
+    assert.equal(report.sources[0].priorityScore, 84);
+    assert.match(report.sources[0].recommendedCommand, /source-lifecycle-report/);
     assert.equal(calls[0].sourceKey, 'nga');
     assert.equal(calls[0].sourceId, 'source-1');
     assert.equal(calls[0].limit, 10);

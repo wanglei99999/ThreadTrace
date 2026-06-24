@@ -478,12 +478,12 @@ function main(argv) {
       }
       const summary = report.summary || {};
       console.log('Source attention: ' + report.status);
-      console.log('Sources: total=' + (summary.total || 0) + ', critical=' + (summary.critical || 0) + ', warning=' + (summary.warning || 0) + ', info=' + (summary.info || 0) + ', runnable=' + (summary.runnable || 0));
+      console.log('Sources: total=' + (summary.total || 0) + ', critical=' + (summary.critical || 0) + ', warning=' + (summary.warning || 0) + ', info=' + (summary.info || 0) + ', runnable=' + (summary.runnable || 0) + ', actionable=' + (summary.actionable || 0) + ', topPriority=' + (summary.highestPriorityScore || 0));
       console.log('Signals: ' + formatCountSummary(summary.bySignal || {}));
       console.log('Source keys: ' + formatCountSummary(summary.bySourceKey || {}));
       (report.sources || []).forEach(function (item) {
         const source = item.source || {};
-        console.log((item.severity || 'info') + '\t' + (source.id || source.sourceKey || item.key || 'unknown-source') + '\t' + (source.displayName || 'unknown') + '\tsignals=' + (item.signalCount || 0) + '\trunnable=' + Boolean(item.runnable) + '\tnext=' + (item.nextAction || 'none'));
+        console.log((item.severity || 'info') + '\t#' + (item.attentionRank || '?') + '\tpriority=' + (item.priorityScore || 0) + '\t' + (source.id || source.sourceKey || item.key || 'unknown-source') + '\t' + (source.displayName || 'unknown') + '\tsignals=' + (item.signalCount || 0) + '\trunnable=' + Boolean(item.runnable) + '\tnext=' + (item.recommendedNextAction || item.nextAction || 'none'));
         (item.signals || []).slice(0, 4).forEach(function (signal) {
           const parts = [
             signal.label || 'attention',
@@ -494,6 +494,9 @@ function main(argv) {
           ].filter(Boolean);
           console.log('  signal: ' + parts.join(' | '));
         });
+        if (item.recommendedCommand) {
+          console.log('  recommended: ' + item.recommendedCommand);
+        }
         (item.commands || []).slice(0, 3).forEach(function (command) {
           console.log('  command: ' + command);
         });

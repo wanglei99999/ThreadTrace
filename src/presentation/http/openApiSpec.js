@@ -3563,6 +3563,8 @@ function createOpenApiSpec() {
             key: { type: 'string', example: 'sourceId:tracked-source-nga-001' },
             source: { $ref: '#/components/schemas/SourceAttentionSource' },
             severity: { type: 'string', enum: ['critical', 'warning', 'warn', 'info', 'ok', 'muted'] },
+            attentionRank: { type: 'number', example: 1 },
+            priorityScore: { type: 'number', example: 128 },
             signalCount: { type: 'number', example: 2 },
             runnable: { type: 'boolean' },
             signals: {
@@ -3573,7 +3575,9 @@ function createOpenApiSpec() {
               type: 'array',
               items: { type: 'string' }
             },
-            nextAction: { type: 'string' }
+            nextAction: { type: 'string' },
+            recommendedNextAction: { type: 'string' },
+            recommendedCommand: { type: 'string' }
           }
         },
         SourceAttentionSummary: {
@@ -3585,6 +3589,8 @@ function createOpenApiSpec() {
             info: { type: 'number', example: 1 },
             muted: { type: 'number', example: 0 },
             runnable: { type: 'number', example: 1 },
+            actionable: { type: 'number', example: 1 },
+            highestPriorityScore: { type: 'number', example: 128 },
             bySignal: {
               type: 'object',
               additionalProperties: { type: 'number' }
