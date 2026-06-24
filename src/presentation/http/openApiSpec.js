@@ -2153,7 +2153,14 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Source disable dry-run or execution result with task audit record'
+              description: 'Source disable dry-run or execution result with task audit record',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceLifecycleMutationTaskResult'
+                  }
+                }
+              }
             },
             404: {
               $ref: '#/components/responses/NotFound'
@@ -2188,7 +2195,14 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Source enable dry-run or execution result with task audit record'
+              description: 'Source enable dry-run or execution result with task audit record',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceLifecycleMutationTaskResult'
+                  }
+                }
+              }
             },
             404: {
               $ref: '#/components/responses/NotFound'
@@ -2223,7 +2237,14 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Source failure reset dry-run or execution result with task audit record'
+              description: 'Source failure reset dry-run or execution result with task audit record',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceFailureResetTaskResult'
+                  }
+                }
+              }
             },
             404: {
               $ref: '#/components/responses/NotFound'
@@ -2254,7 +2275,14 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Completed ingest task and report'
+              description: 'Completed ingest task and report',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceIngestTaskResult'
+                  }
+                }
+              }
             },
             404: {
               $ref: '#/components/responses/NotFound'
@@ -2293,7 +2321,14 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Completed source insight pipeline task'
+              description: 'Completed source insight pipeline task',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceInsightPipelineTaskResult'
+                  }
+                }
+              }
             },
             404: {
               $ref: '#/components/responses/NotFound'
@@ -2326,7 +2361,14 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Batch task summary'
+              description: 'Batch task summary',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceIngestBatchTaskResult'
+                  }
+                }
+              }
             }
           }
         }
@@ -2355,7 +2397,14 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Due-source batch task summary'
+              description: 'Due-source batch task summary',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceDueIngestBatchTaskResult'
+                  }
+                }
+              }
             }
           }
         }
@@ -2389,7 +2438,14 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Due source insight pipeline batch summary'
+              description: 'Due source insight pipeline batch summary',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceDueInsightPipelineBatchTaskResult'
+                  }
+                }
+              }
             }
           }
         }
@@ -3114,6 +3170,92 @@ function createOpenApiSpec() {
             }
           }
         },
+        SourceMutationSourceSummary: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            sourceKey: { type: 'string', example: 'nga' },
+            sourceType: { type: 'string', example: 'thread-url' },
+            displayName: { type: 'string' },
+            enabled: { type: 'boolean' },
+            updatedAt: { type: 'string' }
+          }
+        },
+        SourceLifecycleMutationGuard: {
+          type: 'object',
+          properties: {
+            running: { type: 'boolean', example: false },
+            stale: { type: 'boolean', example: false },
+            forced: { type: 'boolean', example: false },
+            blocked: { type: 'boolean', example: false },
+            runStatus: { type: 'string', example: 'completed' },
+            lastStartedAt: { type: 'string' },
+            staleAfterMs: { type: 'number', example: 600000 }
+          }
+        },
+        SourceLifecycleMutationResult: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok'] },
+            dryRun: { type: 'boolean', example: true },
+            executed: { type: 'boolean', example: false },
+            changed: { type: 'boolean', example: true },
+            guard: { $ref: '#/components/schemas/SourceLifecycleMutationGuard' },
+            sourceBefore: { $ref: '#/components/schemas/SourceMutationSourceSummary' },
+            sourceAfter: { $ref: '#/components/schemas/SourceMutationSourceSummary' }
+          }
+        },
+        SourceLifecycleMutationTaskResult: {
+          type: 'object',
+          properties: {
+            task: { $ref: '#/components/schemas/TaskRecord' },
+            result: { $ref: '#/components/schemas/SourceLifecycleMutationResult' },
+            idempotency: {
+              type: 'object',
+              additionalProperties: true
+            }
+          }
+        },
+        SourceFailureResetSourceSummary: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            sourceKey: { type: 'string', example: 'nga' },
+            sourceType: { type: 'string', example: 'thread-url' },
+            displayName: { type: 'string' },
+            enabled: { type: 'boolean' },
+            updatedAt: { type: 'string' },
+            schedule: { $ref: '#/components/schemas/SourceScheduleConfig' },
+            runState: { $ref: '#/components/schemas/SourceRunState' }
+          }
+        },
+        SourceFailureResetResult: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok'] },
+            dryRun: { type: 'boolean', example: true },
+            executed: { type: 'boolean', example: false },
+            changed: { type: 'boolean', example: true },
+            reason: { type: 'string', example: 'failure-reset-and-requeued' },
+            retryNow: { type: 'boolean', example: true },
+            nextRunAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            sourceBefore: { $ref: '#/components/schemas/SourceFailureResetSourceSummary' },
+            sourceAfter: { $ref: '#/components/schemas/SourceFailureResetSourceSummary' }
+          }
+        },
+        SourceFailureResetTaskResult: {
+          type: 'object',
+          properties: {
+            task: { $ref: '#/components/schemas/TaskRecord' },
+            result: { $ref: '#/components/schemas/SourceFailureResetResult' },
+            idempotency: {
+              type: 'object',
+              additionalProperties: true
+            }
+          }
+        },
         SourceRunState: {
           type: 'object',
           properties: {
@@ -3316,6 +3458,168 @@ function createOpenApiSpec() {
             sources: {
               type: 'array',
               items: { $ref: '#/components/schemas/SourceScheduleItem' }
+            }
+          }
+        },
+        SourceCursorDiff: {
+          type: 'object',
+          properties: {
+            changed: { type: 'boolean', example: true },
+            reason: { type: 'string', example: 'new-posts' },
+            previousPostCount: { type: 'number', example: 10 },
+            currentPostCount: { type: 'number', example: 12 },
+            newPostCount: { type: 'number', example: 2 },
+            previousLastPostId: { type: 'string' },
+            currentLastPostId: { type: 'string' }
+          },
+          additionalProperties: true
+        },
+        SourceCursor: {
+          type: 'object',
+          properties: {
+            sourceKey: { type: 'string', example: 'nga' },
+            sourceThreadId: { type: 'string' },
+            title: { type: 'string' },
+            lastPostId: { type: 'string' },
+            postCount: { type: 'number', example: 12 },
+            updatedAt: { type: 'string' }
+          },
+          additionalProperties: true
+        },
+        SourceIngestTaskResult: {
+          type: 'object',
+          properties: {
+            sourceId: { type: 'string' },
+            task: { $ref: '#/components/schemas/TaskRecord' },
+            report: {
+              type: 'object',
+              additionalProperties: true
+            }
+          }
+        },
+        SourceInsightPipelineSemanticResult: {
+          type: 'object',
+          properties: {
+            status: { type: 'string', enum: ['completed', 'skipped'] },
+            reason: { type: 'string', example: 'unchanged' },
+            taskId: { type: 'string' },
+            reportType: { type: 'string', example: 'basic-history' },
+            provider: { type: 'string', example: 'mock' },
+            traceId: { type: 'string' },
+            summary: {
+              type: 'object',
+              additionalProperties: true
+            }
+          }
+        },
+        SourceInsightPipelineIngestResult: {
+          type: 'object',
+          properties: {
+            task: { $ref: '#/components/schemas/TaskRecord' },
+            cursor: { $ref: '#/components/schemas/SourceCursor' },
+            cursorDiff: { $ref: '#/components/schemas/SourceCursorDiff' }
+          }
+        },
+        SourceInsightPipelineTaskResult: {
+          type: 'object',
+          properties: {
+            sourceId: { type: 'string' },
+            task: { $ref: '#/components/schemas/TaskRecord' },
+            ingest: { $ref: '#/components/schemas/SourceInsightPipelineIngestResult' },
+            semantic: { $ref: '#/components/schemas/SourceInsightPipelineSemanticResult' }
+          }
+        },
+        SourceBatchTaskItem: {
+          type: 'object',
+          properties: {
+            source: { $ref: '#/components/schemas/TrackedSource' },
+            status: { type: 'string', enum: ['completed', 'failed'] },
+            scheduleReason: { type: 'string', example: 'never-finished' },
+            task: { $ref: '#/components/schemas/TaskRecord' },
+            ingestTask: { $ref: '#/components/schemas/TaskRecord' },
+            report: {
+              type: 'object',
+              additionalProperties: true
+            },
+            cursorDiff: { $ref: '#/components/schemas/SourceCursorDiff' },
+            semantic: { $ref: '#/components/schemas/SourceInsightPipelineSemanticResult' },
+            error: {
+              type: 'object',
+              properties: {
+                message: { type: 'string' }
+              },
+              additionalProperties: true
+            }
+          }
+        },
+        SourceDueBatchSkippedItem: {
+          type: 'object',
+          properties: {
+            source: { $ref: '#/components/schemas/TrackedSource' },
+            reason: { type: 'string', example: 'waiting-interval' },
+            nextRunAt: { type: 'string' },
+            retryAt: { type: 'string' },
+            failureCount: { type: 'number', example: 1 },
+            backoffMs: { type: 'number', example: 60000 },
+            baseReason: { type: 'string', example: 'never-finished' }
+          }
+        },
+        SourceIngestBatchTaskResult: {
+          type: 'object',
+          properties: {
+            task: { $ref: '#/components/schemas/TaskRecord' },
+            startedAt: { type: 'string' },
+            finishedAt: { type: 'string' },
+            sourceCount: { type: 'number', example: 1 },
+            completedCount: { type: 'number', example: 1 },
+            failedCount: { type: 'number', example: 0 },
+            results: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceBatchTaskItem' }
+            }
+          }
+        },
+        SourceDueIngestBatchTaskResult: {
+          type: 'object',
+          properties: {
+            task: { $ref: '#/components/schemas/TaskRecord' },
+            startedAt: { type: 'string' },
+            checkedAt: { type: 'string' },
+            finishedAt: { type: 'string' },
+            sourceCount: { type: 'number', example: 1 },
+            dueCount: { type: 'number', example: 1 },
+            skippedCount: { type: 'number', example: 0 },
+            completedCount: { type: 'number', example: 1 },
+            failedCount: { type: 'number', example: 0 },
+            skipped: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceDueBatchSkippedItem' }
+            },
+            results: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceBatchTaskItem' }
+            }
+          }
+        },
+        SourceDueInsightPipelineBatchTaskResult: {
+          type: 'object',
+          properties: {
+            task: { $ref: '#/components/schemas/TaskRecord' },
+            startedAt: { type: 'string' },
+            checkedAt: { type: 'string' },
+            finishedAt: { type: 'string' },
+            sourceCount: { type: 'number', example: 1 },
+            dueCount: { type: 'number', example: 1 },
+            skippedCount: { type: 'number', example: 0 },
+            completedCount: { type: 'number', example: 1 },
+            failedCount: { type: 'number', example: 0 },
+            skipped: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceDueBatchSkippedItem' }
+            },
+            results: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceBatchTaskItem' }
             }
           }
         },
