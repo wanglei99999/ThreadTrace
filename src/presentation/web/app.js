@@ -303,6 +303,10 @@ function bindForms() {
       await setSourceEnabledFromButton(button);
       return;
     }
+    if (button.dataset.action === 'load-source-drilldown') {
+      await loadSourceOperationsDrilldownFromButton(button);
+      return;
+    }
     if (button.dataset.action === 'run-source' || button.dataset.action === 'run-source-pipeline') {
       await runSourceTaskFromButton(button, 'sourceOperationActionResult');
     }
@@ -1048,6 +1052,18 @@ async function resetSourceFailureFromButton(button, execute) {
   await loadTasks();
   await loadSources();
   await loadSourceOperations();
+}
+
+async function loadSourceOperationsDrilldownFromButton(button) {
+  const query = new URLSearchParams();
+  appendOptionalQuery(query, 'sourceId', button.dataset.sourceId);
+  appendOptionalQuery(query, 'sourceKey', button.dataset.sourceKey);
+  query.set('limit', button.dataset.limit || '50');
+  await renderAsync('sourceOperationActionResult', function () {
+    return fetchJson('/api/operations/source-drilldown?' + query.toString(), {
+      acceptErrorStatus: true
+    });
+  }, renderSourceOperationsDrilldown);
 }
 
 async function synthesizeRunbookEventsFromButton(button, execute) {
@@ -2323,6 +2339,82 @@ function renderSourceOperations(result) {
   return panels.join('');
 }
 
+function renderSourceOperationsDrilldown(report) {
+  const health = report.health || {};
+  const source = report.source || {};
+  const sourceHealth = health.source || {};
+  const tasks = health.tasks || {};
+  const events = health.events || {};
+  const workers = health.workers || {};
+  const workerRuns = workers.runs || {};
+  const workerLeases = workers.leases || {};
+  const authorQueue = health.authorReviewQueue || {};
+  const reviewActions = health.reviewActions || {};
+  const reviewExecutions = reviewActions.executions || {};
+  const recent = report.recent || {};
+  const scope = report.scope || {};
+  return [
+    panel('Source ops drill-down', [
+      '<div class="summary-strip">',
+      summaryTile('Status', report.status || 'unknown', statusVariant(report.status)),
+      summaryTile('Source', sourceHealth.status || (report.sourceFound ? 'found' : 'missing'), statusVariant(report.sourceFound ? report.status : 'warn')),
+      summaryTile('Tasks failed', String(tasks.failed || 0), (tasks.failed || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('Events failed', String(events.failed || 0), (events.failed || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('Stale runs', String(workerRuns.stale || 0), (workerRuns.stale || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('Expired leases', String(workerLeases.expired || 0), (workerLeases.expired || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('Review stale', String(reviewExecutions.staleRunning || 0), (reviewExecutions.staleRunning || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('Queue high', String(authorQueue.highPriorityOpenCount || 0), (authorQueue.highPriorityOpenCount || 0) > 0 ? 'warn' : 'ok'),
+      '</div>',
+      metric('Scope', formatEventSourceScope(scope)),
+      metric('Source', [source.displayName, source.id, source.sourceKey, source.sourceType].filter(Boolean).join(' | ') || 'not found'),
+      metric('Schedule', sourceHealth.schedule ? ((sourceHealth.schedule.due ? 'due' : 'skip') + ' | ' + (sourceHealth.schedule.reason || 'unknown')) : 'unknown'),
+      metric('Worker types', compactCountMap(workerRuns.byWorkerType)),
+      metric('Lease types', compactCountMap(workerLeases.byWorkerType)),
+      metric('Tasks', 'total ' + (tasks.total || 0) + ' | running ' + (tasks.running || 0) + ' | failed ' + (tasks.failed || 0)),
+      metric('Events', 'open ' + (events.unacknowledged || 0) + ' | pending ' + (events.pending || 0) + ' | due ' + (events.dueForDelivery || 0)),
+      metric('Review actions', 'audits ' + (reviewActions.auditCount || 0) + ' | executions ' + (reviewExecutions.count || 0) + ' | failed ' + (reviewExecutions.failed || 0)),
+      metric('Author queue', 'open ' + (authorQueue.openCount || 0) + ' | high ' + (authorQueue.highPriorityOpenCount || 0))
+    ].join(''), 'wide'),
+    panel('Source next actions', renderSourceDrilldownActions(report.nextActions || []), 'wide'),
+    panel('Recent source tasks', evidenceList((recent.tasks || []).map(formatSourceDrilldownTaskRow)), 'wide'),
+    panel('Recent source events', evidenceList((recent.events || []).map(formatSourceDrilldownEventRow)), 'wide'),
+    panel('Recent source workers', evidenceList((recent.workerRuns || []).map(formatWorkerRunRow).concat((recent.workerLeases || []).map(formatWorkerLeaseRow))), 'wide')
+  ].join('');
+}
+
+function renderSourceDrilldownActions(actions) {
+  if (!actions.length) return '<div class="muted">No source-specific actions.</div>';
+  return actions.map(function (action) {
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml((action.severity || 'info') + ' | ' + (action.key || 'action')) + '</strong>' +
+      '<small>' + escapeHtml(action.summary || '') + '</small>' +
+      (action.recommendedCommand ? '<small>' + escapeHtml(action.recommendedCommand) + '</small>' : '') +
+      '</span>' +
+      statusBadge(action.severity || 'info', action.severity === 'critical' ? 'warn' : statusVariant(action.severity)) +
+      '</div>';
+  }).join('');
+}
+
+function formatSourceDrilldownTaskRow(task) {
+  return [
+    task.status || 'unknown-status',
+    task.type || 'unknown-task',
+    task.sourceId || task.sourceKey || 'unknown-source',
+    task.updatedAt || task.createdAt || 'unknown-time',
+    task.error && task.error.message ? task.error.message : task.id || 'unknown-task-id'
+  ].join(' | ');
+}
+
+function formatSourceDrilldownEventRow(event) {
+  return [
+    event.deliveryStatus || 'unknown-delivery',
+    event.type || 'event',
+    event.sourceId || event.sourceKey || 'unknown-source',
+    event.nextDeliveryAt || event.createdAt || 'unknown-time',
+    event.title || event.summary || event.id || 'unknown-event'
+  ].join(' | ');
+}
+
 function renderRunbookEventControls(alertableCount) {
   const disabled = alertableCount > 0 ? '' : ' disabled';
   return '<div class="action-row ops-row"><span>' +
@@ -2403,6 +2495,7 @@ function renderLifecycleSourceRow(source) {
   ].filter(Boolean).join(' | ');
   const controls = '<span class="button-group source-op-buttons">' +
     statusBadge(label, variant) +
+    renderSourceDrilldownButton(source) +
     renderSourceRunButtons(source) +
     renderSourceEnablementButtons(source) +
     renderSourceFailureResetButtons(source) +
@@ -2425,6 +2518,12 @@ function renderLifecycleCommandRows(commands) {
       '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="copy-lifecycle-command">Copy</button>' +
       '</div>';
   }).join('') + '</div>';
+}
+
+function renderSourceDrilldownButton(source) {
+  const sourceId = escapeHtml(source.id || '');
+  const sourceKey = escapeHtml(source.sourceKey || '');
+  return '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-drilldown" data-source-id="' + sourceId + '" data-source-key="' + sourceKey + '" data-limit="50">Ops</button>';
 }
 
 function renderSourceRunButtons(source) {

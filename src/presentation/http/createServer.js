@@ -559,6 +559,22 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/operations/source-drilldown') {
+    const report = await context.runtime.getSourceOperationsDrilldown({
+      sourceId: url.searchParams.get('sourceId') || undefined,
+      sourceKey: url.searchParams.get('sourceKey') || url.searchParams.get('forum') || undefined,
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 50,
+      taskScanLimit: url.searchParams.get('taskScanLimit') ? Number(url.searchParams.get('taskScanLimit')) : undefined,
+      leaseScanLimit: url.searchParams.get('leaseScanLimit') ? Number(url.searchParams.get('leaseScanLimit')) : undefined,
+      runningStaleAfterMs: url.searchParams.get('runningStaleAfterMs') ? Number(url.searchParams.get('runningStaleAfterMs')) : undefined,
+      workerStaleAfterMs: url.searchParams.get('workerStaleAfterMs') ? Number(url.searchParams.get('workerStaleAfterMs')) : undefined,
+      now: url.searchParams.get('now') || undefined,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, report.status === 'fail' ? 503 : 200, report);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/operations/readiness') {
     const readiness = await context.runtime.getOperationalReadiness({
       sourceId: url.searchParams.get('sourceId') || undefined,

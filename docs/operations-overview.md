@@ -16,6 +16,7 @@ HTTP:
 ```text
 GET /api/operations/overview
 GET /api/operations/overview?sourceKey=nga
+GET /api/operations/source-drilldown?sourceId=tracked-source-nga-001
 GET /api/operations/readiness
 GET /api/operations/trace-context
 GET /api/operations/runbook
@@ -31,12 +32,13 @@ GET /api/runtime/diagnostics
 
 Web UI:
 
-The system view includes a source operations panel that combines `/api/sources/schedule`, `/api/sources/lifecycle`, and `/api/operations/runbook`. It highlights due sources, skipped/backoff reasons, disable guards, lifecycle attention items, source-scoped runbook actions, and review action audit totals. Operators can run a source, run its insight pipeline, dry-run/execute enablement changes, reset failed sources, inspect review action audits, synthesize runbook notification events, filter notification events by acknowledgement, delivery status, source key, or event type, bulk-acknowledge the open events in the current filter window, and dry-run/execute handled-event archive retention from the same panel while preserving the dry-run and confirmation boundaries used by the CLI and HTTP APIs.
+The system view includes a source operations panel that combines `/api/sources/schedule`, `/api/sources/lifecycle`, and `/api/operations/runbook`. It highlights due sources, skipped/backoff reasons, disable guards, lifecycle attention items, source-scoped runbook actions, and review action audit totals. Each lifecycle row includes an `Ops` drill-down action backed by `/api/operations/source-drilldown`, so operators can inspect one source's tasks, events, worker runs, worker leases, author queue items, review action ledger state, and next actions without mentally joining global tables. Operators can run a source, run its insight pipeline, dry-run/execute enablement changes, reset failed sources, inspect review action audits, synthesize runbook notification events, filter notification events by acknowledgement, delivery status, source key, or event type, bulk-acknowledge the open events in the current filter window, and dry-run/execute handled-event archive retention from the same panel while preserving the dry-run and confirmation boundaries used by the CLI and HTTP APIs.
 
 Runtime:
 
 ```js
 runtime.getOperationalOverview({ limit: 100 })
+runtime.getSourceOperationsDrilldown({ sourceId: 'tracked-source-nga-001' })
 runtime.getOperationalReadiness({ limit: 100 })
 runtime.getOperationsRunbook({ limit: 100 })
 runtime.synthesizeRunbookNotificationEvents({ execute: false })

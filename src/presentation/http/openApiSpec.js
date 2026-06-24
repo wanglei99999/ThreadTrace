@@ -921,6 +921,44 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/operations/source-drilldown': {
+        get: {
+          summary: 'Get source-scoped operational drill-down across workers, tasks, events, and review queues',
+          parameters: [
+            { name: 'sourceId', in: 'query', required: false, schema: { type: 'string', example: 'tracked-source-nga-001' } },
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'taskScanLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'leaseScanLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'workerStaleAfterMs', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'runningStaleAfterMs', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Source drill-down is ok or has warnings',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceOperationsDrilldown'
+                  }
+                }
+              }
+            },
+            503: {
+              description: 'Source drill-down contains failing health signals',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceOperationsDrilldown'
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       '/api/operations/readiness': {
         get: {
           summary: 'Get operations readiness status for probes and monitoring',
@@ -2318,6 +2356,74 @@ function createOpenApiSpec() {
             },
             runtime: {
               type: 'object',
+              additionalProperties: true
+            }
+          }
+        },
+        SourceOperationsDrilldown: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            storageMode: { type: 'string', example: 'file' },
+            scope: { $ref: '#/components/schemas/SourceScope' },
+            sourceFound: { type: 'boolean', example: true },
+            source: { type: 'object', additionalProperties: true },
+            sourceCandidates: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true }
+            },
+            health: {
+              type: 'object',
+              properties: {
+                source: { type: 'object', additionalProperties: true },
+                tasks: { type: 'object', additionalProperties: true },
+                events: { type: 'object', additionalProperties: true },
+                workers: {
+                  type: 'object',
+                  properties: {
+                    runs: { type: 'object', additionalProperties: true },
+                    leases: { type: 'object', additionalProperties: true }
+                  },
+                  additionalProperties: true
+                },
+                authorReviewQueue: { type: 'object', additionalProperties: true },
+                reviewActions: { type: 'object', additionalProperties: true }
+              },
+              additionalProperties: true
+            },
+            nextActions: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true }
+            },
+            recent: {
+              type: 'object',
+              properties: {
+                tasks: {
+                  type: 'array',
+                  items: { type: 'object', additionalProperties: true }
+                },
+                events: {
+                  type: 'array',
+                  items: { type: 'object', additionalProperties: true }
+                },
+                workerRuns: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/WorkerRun' }
+                },
+                workerLeases: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/WorkerLease' }
+                },
+                authorReviewQueue: {
+                  type: 'array',
+                  items: { type: 'object', additionalProperties: true }
+                },
+                reviewActionExecutions: {
+                  type: 'array',
+                  items: { type: 'object', additionalProperties: true }
+                }
+              },
               additionalProperties: true
             }
           }

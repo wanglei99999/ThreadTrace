@@ -46,6 +46,7 @@ const { runResetTrackedSourceFailureTask } = require('../application/use-cases/r
 const { getSourceLifecycleReport } = require('../application/use-cases/getSourceLifecycleReport');
 const { getSourceScheduleReport } = require('../application/use-cases/getSourceScheduleReport');
 const { getOperationalOverview } = require('../application/use-cases/getOperationalOverview');
+const { getSourceOperationsDrilldown } = require('../application/use-cases/getSourceOperationsDrilldown');
 const { getNotificationEventOverview } = require('../application/use-cases/getNotificationEventOverview');
 const { getAuthorIntelligenceDashboard } = require('../application/use-cases/getAuthorIntelligenceDashboard');
 const { syncAuthorReviewQueue } = require('../application/use-cases/syncAuthorReviewQueue');
@@ -1074,6 +1075,55 @@ function createThreadTraceRuntime(options) {
       return Object.assign({
         storageMode: defaults.storageMode
       }, overview);
+    },
+
+    async getSourceOperationsDrilldown(request) {
+      const safeRequest = request || {};
+      const storeDir = resolveStoreDir(defaults, safeRequest.storeDir);
+      const repositories = createRepositoriesFor(storeDir);
+      const sourceKey = safeRequest.sourceKey || safeRequest.forum;
+      const reviewActionAuditOverview = await getContextReviewActionAuditOverview({
+        contextReviewActionAuditRepository: createFileContextReviewActionAuditRepository({
+          baseDir: path.join(storeDir, 'review-action-audits')
+        }),
+        sourceId: safeRequest.sourceId,
+        sourceKey,
+        limit: safeRequest.limit || 50,
+        now: safeRequest.now
+      });
+      const reviewActionExecutions = await listReviewActionExecutionsFor({
+        sourceId: safeRequest.sourceId,
+        sourceKey,
+        limit: safeRequest.limit || 50,
+        now: safeRequest.now,
+        runningStaleAfterMs: safeRequest.runningStaleAfterMs,
+        storeDir
+      });
+      const authorReviewQueue = await listAuthorReviewQueue({
+        authorReviewQueueRepository: repositories.authorReviewQueueRepository,
+        sourceKey,
+        limit: safeRequest.limit || 50,
+        now: safeRequest.now
+      });
+      return Object.assign({
+        storageMode: defaults.storageMode
+      }, await getSourceOperationsDrilldown({
+        sourceRepository: repositories.sourceRepository,
+        taskRepository: repositories.taskRepository,
+        notificationEventRepository: repositories.notificationEventRepository,
+        workerRunRepository: repositories.workerRunRepository,
+        workerLeaseRepository: repositories.workerLeaseRepository,
+        sourceId: safeRequest.sourceId,
+        sourceKey,
+        limit: safeRequest.limit || 50,
+        taskScanLimit: safeRequest.taskScanLimit,
+        leaseScanLimit: safeRequest.leaseScanLimit,
+        workerStaleAfterMs: safeRequest.workerStaleAfterMs,
+        reviewActionAuditOverview,
+        reviewActionExecutions,
+        authorReviewQueue,
+        now: safeRequest.now
+      }));
     },
 
     async getSourceLifecycleReport(request) {

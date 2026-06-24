@@ -211,6 +211,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /attention-worthy review results/);
     assert.match(webAppJs, /renderContextReviewResultEventSynthesis/);
     assert.match(webAppJs, /renderAuthorReviewQueueEventSynthesis/);
+    assert.match(webAppJs, /renderSourceOperationsDrilldown/);
     assert.match(webAppJs, /api\/context-review-results/);
     assert.ok(openApi.paths['/api/events/dispatch'].post.requestBody.content['application/json'].schema.properties.sourceId);
     assert.ok(openApi.paths['/api/events/dispatch'].post.requestBody.content['application/json'].schema.properties.sourceKey);
@@ -221,6 +222,10 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.components.schemas.OperationalOverview.properties.recent.properties.workerRuns.items.$ref, '#/components/schemas/WorkerRun');
     assert.equal(openApi.components.schemas.WorkerRun.properties.scope.$ref, '#/components/schemas/SourceScope');
     assert.equal(openApi.components.schemas.WorkerRun.properties.scoped.type, 'boolean');
+    assert.equal(openApi.paths['/api/operations/source-drilldown'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceOperationsDrilldown');
+    assert.equal(openApi.paths['/api/operations/source-drilldown'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/SourceOperationsDrilldown');
+    assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.scope.$ref, '#/components/schemas/SourceScope');
+    assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.recent.properties.workerRuns.items.$ref, '#/components/schemas/WorkerRun');
     assert.equal(openApi.components.schemas.WorkerLease.properties.scope.$ref, '#/components/schemas/SourceScope');
     assert.equal(openApi.components.schemas.WorkerLeaseSummary.properties.sourceScoped.type, 'number');
     assert.equal(adapters.adapters[0].sourceKey, 'nga');
@@ -645,6 +650,73 @@ test('http server exposes operational overview API', async function () {
     assert.equal(overview.sources.due, 1);
     assert.equal(overview.tasks.failed, 1);
     assert.equal(overview.events.dueForDelivery, 1);
+  } finally {
+    await close(server);
+  }
+});
+
+test('http server exposes source operations drilldown API', async function () {
+  const calls = [];
+  const server = createThreadTraceServer({
+    runtime: {
+      listAdapters() {
+        return [{ sourceKey: 'nga', displayName: 'NGA' }];
+      },
+      async getSourceOperationsDrilldown(request) {
+        calls.push(request);
+        return {
+          generatedAt: request.now || '2026-06-18T10:00:00.000Z',
+          status: 'warn',
+          storageMode: 'file',
+          scope: {
+            sourceId: request.sourceId,
+            sourceKey: request.sourceKey
+          },
+          sourceFound: true,
+          source: {
+            id: request.sourceId,
+            sourceKey: request.sourceKey,
+            displayName: 'NGA sample'
+          },
+          health: {
+            source: { status: 'completed' },
+            tasks: { failed: 1 },
+            events: { failed: 1 },
+            workers: {
+              runs: { stale: 0 },
+              leases: { expired: 0 }
+            },
+            authorReviewQueue: { openCount: 0 },
+            reviewActions: { auditCount: 0, executions: { failed: 0 } }
+          },
+          nextActions: [
+            { key: 'tasks.failed', severity: 'warning' }
+          ],
+          recent: {
+            tasks: [],
+            events: [],
+            workerRuns: [],
+            workerLeases: []
+          }
+        };
+      }
+    }
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const report = await getJson(baseUrl + '/api/operations/source-drilldown?sourceKey=nga&sourceId=source-1&limit=10&taskScanLimit=20&leaseScanLimit=30');
+
+    assert.equal(report.status, 'warn');
+    assert.equal(report.scope.sourceId, 'source-1');
+    assert.equal(report.scope.sourceKey, 'nga');
+    assert.equal(calls[0].sourceKey, 'nga');
+    assert.equal(calls[0].sourceId, 'source-1');
+    assert.equal(calls[0].limit, 10);
+    assert.equal(calls[0].taskScanLimit, 20);
+    assert.equal(calls[0].leaseScanLimit, 30);
   } finally {
     await close(server);
   }

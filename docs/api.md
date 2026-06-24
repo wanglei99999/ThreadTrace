@@ -587,6 +587,25 @@ Set `execute: true` or `dryRun: false` to persist the reset. `retryNow: true` se
 
 批量入口会对每个来源应用同一套重复运行保护；单个来源重复运行会记录为该来源失败，不会中断整个父任务。失败来源默认采用指数退避重试，跳过项会返回 `retryAt`、`backoffMs` 和原始调度原因；将 `sourceFailureRetryBackoffMs` 设为 `0` 可关闭额外失败退避。
 
+### `GET /api/operations/source-drilldown`
+
+Returns a source-scoped operations drill-down for one source id or source key. It correlates the tracked source state, schedule decision, recent source tasks, notification events, worker runs, worker leases, author review queue items, review action audits, review action execution ledger records, and source-specific next actions.
+
+Query parameters:
+
+```text
+sourceId=tracked-source-nga-001
+sourceKey=nga
+limit=50
+taskScanLimit=250
+leaseScanLimit=250
+workerStaleAfterMs=300000
+runningStaleAfterMs=600000
+now=2026-06-18T10:00:00.000Z
+```
+
+The response is exposed in OpenAPI as `SourceOperationsDrilldown` and reuses `SourceScope`, `WorkerRun`, and `WorkerLease`. HTTP `503` means the source drill-down found a failing signal, such as stale worker runs or stale review action executions. Warnings return `200`.
+
 ### `GET /api/operations/worker-topology-plan`
 
 Returns a read-only worker deployment topology plan for choosing between the combined operations worker and split due-source / notification-event workers.
