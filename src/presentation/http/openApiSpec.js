@@ -1347,10 +1347,24 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Manifest apply dry-run or execution completed and returned a task audit record, report, and rollback plan'
+              description: 'Manifest apply dry-run or execution completed and returned a task audit record, report, and rollback plan',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/RolloutManifestApplyResult'
+                  }
+                }
+              }
             },
             503: {
-              description: 'Manifest apply was blocked by missing source data, gate failure, or registration failure'
+              description: 'Manifest apply was blocked by missing source data, gate failure, or registration failure',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/RolloutManifestApplyResult'
+                  }
+                }
+              }
             },
             400: {
               $ref: '#/components/responses/BadRequest'
@@ -3290,6 +3304,107 @@ function createOpenApiSpec() {
               additionalProperties: true
             },
             operationsRunbook: { $ref: '#/components/schemas/OperationsRunbook' }
+          }
+        },
+        TaskRecord: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            type: { type: 'string', example: 'rollout-manifest-apply' },
+            status: { type: 'string', enum: ['pending', 'running', 'completed', 'failed'] },
+            input: {
+              type: 'object',
+              additionalProperties: true
+            },
+            progress: {
+              type: 'object',
+              additionalProperties: true
+            },
+            output: {
+              type: 'object',
+              additionalProperties: true
+            },
+            error: {
+              type: 'object',
+              additionalProperties: true
+            },
+            createdAt: { type: 'string' },
+            updatedAt: { type: 'string' },
+            startedAt: { type: 'string' },
+            finishedAt: { type: 'string' }
+          }
+        },
+        RolloutManifestRollbackPlan: {
+          type: 'object',
+          properties: {
+            available: { type: 'boolean' },
+            mode: { type: 'string', enum: ['dry-run-template', 'post-apply'] },
+            sourceId: { type: 'string' },
+            sourceKey: { type: 'string', example: 'nga' },
+            sourceType: { type: 'string', example: 'saved-html-directory' },
+            summary: { type: 'string' },
+            commands: {
+              type: 'array',
+              items: { type: 'string' }
+            }
+          }
+        },
+        RolloutManifestRegistration: {
+          type: 'object',
+          properties: {
+            created: { type: 'boolean' },
+            source: {
+              type: 'object',
+              additionalProperties: true
+            }
+          }
+        },
+        RolloutManifestApplyReport: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            dryRun: { type: 'boolean', example: true },
+            executed: { type: 'boolean', example: false },
+            applied: { type: 'boolean', example: false },
+            manifestName: { type: 'string', example: 'nga-sample-rollout' },
+            sourceDraft: {
+              type: 'object',
+              additionalProperties: true
+            },
+            registration: { $ref: '#/components/schemas/RolloutManifestRegistration' },
+            registrationError: {
+              type: 'object',
+              properties: {
+                message: { type: 'string' },
+                code: { type: 'string' },
+                details: {
+                  type: 'object',
+                  additionalProperties: true
+                }
+              }
+            },
+            rollbackPlan: { $ref: '#/components/schemas/RolloutManifestRollbackPlan' },
+            steps: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/OperationsPlanStep' }
+            },
+            nextActions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/OperationsPlanAction' }
+            },
+            deploymentGate: { $ref: '#/components/schemas/DeploymentGateReport' }
+          }
+        },
+        RolloutManifestApplyResult: {
+          type: 'object',
+          properties: {
+            task: { $ref: '#/components/schemas/TaskRecord' },
+            report: { $ref: '#/components/schemas/RolloutManifestApplyReport' },
+            idempotency: {
+              type: 'object',
+              additionalProperties: true
+            }
           }
         },
         RunbookAction: {

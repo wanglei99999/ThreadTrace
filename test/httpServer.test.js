@@ -469,6 +469,12 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.components.schemas.DeploymentGateReport.properties.gates.items.$ref, '#/components/schemas/DeploymentGateItem');
     assert.equal(openApi.components.schemas.DeploymentGateReport.properties.resourceProvisioningPlan.$ref, '#/components/schemas/ResourceProvisioningPlan');
     assert.ok(openApi.paths['/api/operations/rollout-manifest/apply']);
+    assert.equal(openApi.paths['/api/operations/rollout-manifest/apply'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/RolloutManifestApplyResult');
+    assert.equal(openApi.paths['/api/operations/rollout-manifest/apply'].post.responses[503].content['application/json'].schema.$ref, '#/components/schemas/RolloutManifestApplyResult');
+    assert.equal(openApi.components.schemas.RolloutManifestApplyResult.properties.task.$ref, '#/components/schemas/TaskRecord');
+    assert.equal(openApi.components.schemas.RolloutManifestApplyResult.properties.report.$ref, '#/components/schemas/RolloutManifestApplyReport');
+    assert.equal(openApi.components.schemas.RolloutManifestApplyReport.properties.rollbackPlan.$ref, '#/components/schemas/RolloutManifestRollbackPlan');
+    assert.equal(openApi.components.schemas.RolloutManifestApplyReport.properties.deploymentGate.$ref, '#/components/schemas/DeploymentGateReport');
     assert.ok(openApi.paths['/api/operations/runbook/events']);
     assert.ok(openApi.paths['/api/sources/{sourceId}/disable']);
     assert.ok(openApi.paths['/api/sources/{sourceId}/enable']);
