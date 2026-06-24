@@ -14,6 +14,7 @@ async function getContextReviewResultActionPlan(options) {
     sourceKey: safeOptions.sourceKey || safeOptions.forum,
     limit: safeOptions.limit || 100
   });
+  const scope = sourceScope(records, safeOptions);
   const collected = collectPlanInputs(records);
   const conflictTaskIds = intersection(collected.resolvedTaskIds, collected.keepOpenTaskIds);
   const keepOpenTaskIds = union(collected.keepOpenTaskIds, collected.blockedTaskIds);
@@ -35,6 +36,13 @@ async function getContextReviewResultActionPlan(options) {
   return {
     generatedAt: now,
     status: attention.risk.level === 'ok' ? 'ok' : 'warn',
+    sourceId: scope.sourceId,
+    sourceKey: scope.sourceKey,
+    sourceScope: {
+      sourceIds: scope.sourceIds,
+      sourceKeys: scope.sourceKeys,
+      mixed: scope.mixed
+    },
     windowLimit: safeOptions.limit || 100,
     count: records.length,
     closeTaskIds,
@@ -150,10 +158,41 @@ function sourceRecordFields(record, severity) {
   return {
     recordId: record.id,
     handoffId: record.handoffId,
+    sourceId: reviewResultSourceId(record),
+    sourceKey: reviewResultSourceKey(record),
     submittedAt: record.submittedAt,
     reviewer: record.reviewer,
     severity
   };
+}
+
+function sourceScope(records, options) {
+  const safeOptions = options || {};
+  const sourceIds = uniqueText((records || []).map(reviewResultSourceId));
+  const sourceKeys = uniqueText((records || []).map(reviewResultSourceKey));
+  const sourceId = safeOptions.sourceId || (sourceIds.length === 1 ? sourceIds[0] : undefined);
+  const sourceKey = safeOptions.sourceKey || safeOptions.forum || (sourceKeys.length === 1 ? sourceKeys[0] : undefined);
+  return {
+    sourceId,
+    sourceKey,
+    sourceIds,
+    sourceKeys,
+    mixed: sourceIds.length > 1 || sourceKeys.length > 1
+  };
+}
+
+function reviewResultSourceId(record) {
+  const safeRecord = record || {};
+  return safeRecord.sourceId ||
+    (safeRecord.result && safeRecord.result.sourceId) ||
+    (safeRecord.trace && safeRecord.trace.sourceId);
+}
+
+function reviewResultSourceKey(record) {
+  const safeRecord = record || {};
+  return safeRecord.sourceKey ||
+    (safeRecord.result && (safeRecord.result.sourceKey || safeRecord.result.forum)) ||
+    (safeRecord.trace && (safeRecord.trace.sourceKey || safeRecord.trace.forum));
 }
 
 function recommendedNextAction(input) {
@@ -191,6 +230,10 @@ function union(left, right) {
     if (hasText(value) && values.indexOf(value) === -1) values.push(value);
   });
   return values;
+}
+
+function uniqueText(values) {
+  return union([], values);
 }
 
 function intersection(left, right) {

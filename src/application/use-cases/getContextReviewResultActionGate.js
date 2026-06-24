@@ -11,6 +11,8 @@ async function getContextReviewResultActionGate(options) {
   return {
     generatedAt: safeOptions.now || actionPlan.generatedAt || new Date().toISOString(),
     status,
+    sourceId: actionPlan.sourceId,
+    sourceKey: actionPlan.sourceKey,
     gateCount: gates.length,
     gates,
     executable: {
@@ -34,11 +36,18 @@ function buildGates(actionPlan) {
   const mergeCandidates = actionPlan.mergeCandidates || [];
   const blockedTasks = actionPlan.blockedTasks || [];
   const conflictTaskIds = attention.conflictTaskIds || [];
+  const sourceScope = actionPlan.sourceScope || {};
 
   return [
     gate('reviewResults.available', 'review-results', actionPlan.count > 0 ? 'ok' : 'warn', 'At least one submitted review result is available for closure planning.', {
       reviewResultCount: actionPlan.count || 0,
       windowLimit: actionPlan.windowLimit
+    }),
+    gate('reviewResults.sourceScope', 'review-results', sourceScope.mixed ? 'fail' : 'ok', 'Review action execution is scoped to one source at a time.', {
+      sourceId: actionPlan.sourceId,
+      sourceKey: actionPlan.sourceKey,
+      sourceIds: sourceScope.sourceIds || [],
+      sourceKeys: sourceScope.sourceKeys || []
     }),
     gate('reviewResults.risk', 'review-results', riskStatus(risk.level), 'Review result risk is low enough for downstream dry-run workers.', {
       level: risk.level || 'unknown',

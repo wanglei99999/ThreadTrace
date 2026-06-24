@@ -22,13 +22,14 @@ function getOperationsRunbook(options) {
     (checklist.readiness && checklist.readiness.overview && checklist.readiness.overview.recent && checklist.readiness.overview.recent.tasks) ||
     [];
   const scope = {
+    sourceId: safeOptions.sourceId,
     sourceKey: safeOptions.sourceKey || safeOptions.forum
   };
   const actions = checklistActions(checklist, scope)
     .concat(sourceDiagnosticsActions(checklist))
     .concat(connectorModuleActions(checklist))
     .concat(sourceLifecycleActions(safeOptions.sourceLifecycleReport))
-    .concat(reviewActionGateActions(safeOptions.reviewActionGate))
+    .concat(reviewActionGateActions(safeOptions.reviewActionGate, scope))
     .concat(notificationOutboxActions(safeOptions.notificationEventOverview || checklistNotificationEventOverview(checklist)))
     .concat(authorReviewQueueActions(safeOptions.authorReviewQueue || checklistAuthorReviewQueue(checklist)))
     .concat(idempotencyActions(recentTasks))
@@ -335,10 +336,14 @@ function uniqueCommands(commands) {
   });
 }
 
-function reviewActionGateActions(gateReport) {
+function reviewActionGateActions(gateReport, fallbackScope) {
   if (!gateReport || gateReport.status === 'ok') return [];
   const actionPlan = gateReport.actionPlan || {};
   if (!actionPlan.count) return [];
+  const scope = {
+    sourceId: gateReport.sourceId || actionPlan.sourceId || (fallbackScope && fallbackScope.sourceId),
+    sourceKey: gateReport.sourceKey || actionPlan.sourceKey || (fallbackScope && fallbackScope.sourceKey)
+  };
   const executable = gateReport.executable || {};
   return [
     action({
@@ -349,12 +354,15 @@ function reviewActionGateActions(gateReport) {
         ? 'Resolve blocked review result action gate.'
         : 'Review pending context review closure actions.',
       summary: gateReport.recommendedNextAction || 'Review result action gate requires attention before downstream workers execute.',
-      recommendedCommand: 'node src/presentation/cli/threadtrace.js review-action-gate',
+      recommendedCommand: scopedCommand('node src/presentation/cli/threadtrace.js review-action-gate', scope),
       relatedCommands: [
-        'node src/presentation/cli/threadtrace.js review-action-apply',
-        'node src/presentation/cli/threadtrace.js review-action-plan'
+        scopedCommand('node src/presentation/cli/threadtrace.js review-action-apply', scope),
+        scopedCommand('node src/presentation/cli/threadtrace.js review-action-plan', scope)
       ],
       evidence: {
+        sourceId: scope.sourceId,
+        sourceKey: scope.sourceKey,
+        sourceScope: actionPlan.sourceScope,
         gateStatus: gateReport.status,
         reviewResultCount: actionPlan.count || 0,
         closeTaskCount: executable.closeTaskCount || 0,
@@ -439,6 +447,14 @@ function quoteCommandValue(value) {
   const text = String(value || '');
   if (/^[a-zA-Z0-9_.:-]+$/.test(text)) return text;
   return '"' + text.replace(/"/g, '\\"') + '"';
+}
+
+function scopedCommand(command, scope) {
+  const safeScope = scope || {};
+  const parts = [command];
+  if (safeScope.sourceId) parts.push('--source-id ' + quoteCommandValue(safeScope.sourceId));
+  if (safeScope.sourceKey) parts.push('--source-key ' + quoteCommandValue(safeScope.sourceKey));
+  return parts.join(' ');
 }
 
 function relatedCommandsForChecklistItem(item) {

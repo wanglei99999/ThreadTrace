@@ -150,6 +150,8 @@ function buildContextReviewActionTaskReport(options) {
       execute,
       gateFailed,
       missingExecutors,
+      sourceId: actionPlan.sourceId,
+      sourceKey: actionPlan.sourceKey,
       closeTaskIds,
       mergeCandidates
     }),
@@ -167,6 +169,8 @@ async function runExecutors(options) {
 
   const taskClosureRequest = {
     taskId: safeOptions.taskId,
+    sourceId: actionPlan.sourceId,
+    sourceKey: actionPlan.sourceKey,
     closeTaskIds: actionPlan.closeTaskIds || [],
     actionGate,
     now: safeOptions.now,
@@ -174,6 +178,8 @@ async function runExecutors(options) {
   };
   const contextMergeRequest = {
     taskId: safeOptions.taskId,
+    sourceId: actionPlan.sourceId,
+    sourceKey: actionPlan.sourceKey,
     mergeCandidates: actionPlan.mergeCandidates || [],
     actionGate,
     now: safeOptions.now,
@@ -185,6 +191,8 @@ async function runExecutors(options) {
     request: taskClosureRequest,
     logicalInput: {
       closeTaskIds: taskClosureRequest.closeTaskIds,
+      sourceId: actionPlan.sourceId,
+      sourceKey: actionPlan.sourceKey,
       actionPlan: compactActionPlanForLedger(actionPlan)
     },
     taskId: safeOptions.taskId,
@@ -199,6 +207,8 @@ async function runExecutors(options) {
     request: contextMergeRequest,
     logicalInput: {
       mergeCandidates: contextMergeRequest.mergeCandidates,
+      sourceId: actionPlan.sourceId,
+      sourceKey: actionPlan.sourceKey,
       actionPlan: compactActionPlanForLedger(actionPlan)
     },
     taskId: safeOptions.taskId,
@@ -322,18 +332,22 @@ function mergeStepSummary(input) {
 }
 
 function nextActions(input) {
+  const scope = {
+    sourceId: input.sourceId,
+    sourceKey: input.sourceKey
+  };
   if (input.gateFailed) {
-    return [action('review.actionGate', 'critical', 'Resolve the failing review action gate before execution.', 'node src/presentation/cli/threadtrace.js review-action-gate')];
+    return [action('review.actionGate', 'critical', 'Resolve the failing review action gate before execution.', scopedCommand('node src/presentation/cli/threadtrace.js review-action-gate', scope))];
   }
   const actions = [];
   if (input.missingExecutors) {
-    actions.push(action('executors.configure', 'critical', 'Configure task closure and context merge executors before running with execute=true.', 'node src/presentation/cli/threadtrace.js review-action-gate'));
+    actions.push(action('executors.configure', 'critical', 'Configure task closure and context merge executors before running with execute=true.', scopedCommand('node src/presentation/cli/threadtrace.js review-action-gate', scope)));
   }
   if (!input.execute && (input.closeTaskIds.length > 0 || input.mergeCandidates.length > 0)) {
-    actions.push(action('review.apply.dryRun', 'info', 'Review the dry-run output before enabling executor-backed execution.', 'node src/presentation/cli/threadtrace.js review-action-apply'));
+    actions.push(action('review.apply.dryRun', 'info', 'Review the dry-run output before enabling executor-backed execution.', scopedCommand('node src/presentation/cli/threadtrace.js review-action-apply', scope)));
   }
   return actions.concat((input.actionGate.nextActions || []).map(function (item) {
-    return action(item.key, item.severity, item.summary, 'node src/presentation/cli/threadtrace.js review-action-gate');
+    return action(item.key, item.severity, item.summary, scopedCommand('node src/presentation/cli/threadtrace.js review-action-gate', scope));
   }));
 }
 
@@ -342,6 +356,8 @@ function compactActionGate(actionGate) {
   return {
     generatedAt: actionGate.generatedAt,
     status: actionGate.status,
+    sourceId: actionGate.sourceId,
+    sourceKey: actionGate.sourceKey,
     gateCount: actionGate.gateCount,
     gates: actionGate.gates,
     executable: actionGate.executable,
@@ -349,6 +365,9 @@ function compactActionGate(actionGate) {
     actionPlan: actionGate.actionPlan ? {
       count: actionGate.actionPlan.count,
       status: actionGate.actionPlan.status,
+      sourceId: actionGate.actionPlan.sourceId,
+      sourceKey: actionGate.actionPlan.sourceKey,
+      sourceScope: actionGate.actionPlan.sourceScope,
       closeTaskIds: actionGate.actionPlan.closeTaskIds,
       keepOpenTaskIds: actionGate.actionPlan.keepOpenTaskIds,
       mergeCandidates: actionGate.actionPlan.mergeCandidates,
@@ -363,6 +382,9 @@ function compactActionGate(actionGate) {
 function compactActionPlanForLedger(actionPlan) {
   const safeActionPlan = actionPlan || {};
   return {
+    sourceId: safeActionPlan.sourceId,
+    sourceKey: safeActionPlan.sourceKey,
+    sourceScope: safeActionPlan.sourceScope,
     closeTaskIds: safeActionPlan.closeTaskIds || [],
     mergeCandidates: (safeActionPlan.mergeCandidates || []).map(function (candidate) {
       return {
@@ -370,7 +392,9 @@ function compactActionPlanForLedger(actionPlan) {
         decision: candidate.decision,
         confidence: candidate.confidence,
         recordId: candidate.recordId,
-        handoffId: candidate.handoffId
+        handoffId: candidate.handoffId,
+        sourceId: candidate.sourceId,
+        sourceKey: candidate.sourceKey
       };
     })
   };
@@ -421,6 +445,20 @@ function action(key, severity, summary, command) {
     summary,
     command
   };
+}
+
+function scopedCommand(command, scope) {
+  const safeScope = scope || {};
+  const parts = [command];
+  if (safeScope.sourceId) parts.push('--source-id ' + quoteCommandValue(safeScope.sourceId));
+  if (safeScope.sourceKey) parts.push('--source-key ' + quoteCommandValue(safeScope.sourceKey));
+  return parts.join(' ');
+}
+
+function quoteCommandValue(value) {
+  const text = String(value || '');
+  if (/^[a-zA-Z0-9_.:-]+$/.test(text)) return text;
+  return '"' + text.replace(/"/g, '\\"') + '"';
 }
 
 function aggregateStatus(statuses) {

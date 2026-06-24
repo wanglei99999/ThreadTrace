@@ -9,6 +9,8 @@ test('context review result action plan separates close, keep-open, merge, and c
     contextReviewResultRepository: reviewRepository([
       reviewRecord({
         id: 'review-1',
+        sourceId: 'source-a',
+        sourceKey: 'forum-a',
         severity: 'warning',
         resolvedTasks: ['task-close', 'task-conflict'],
         remainingTasks: ['task-open', 'task-conflict'],
@@ -22,6 +24,8 @@ test('context review result action plan separates close, keep-open, merge, and c
       }),
       reviewRecord({
         id: 'review-2',
+        sourceId: 'source-a',
+        sourceKey: 'forum-a',
         severity: 'info',
         resolvedTasks: ['task-close-2'],
         remainingTasks: [],
@@ -31,18 +35,24 @@ test('context review result action plan separates close, keep-open, merge, and c
         blockedTasks: []
       })
     ]),
+    sourceKey: 'forum-a',
     now: '2026-06-21T12:00:00.000Z'
   });
 
   assert.equal(plan.generatedAt, '2026-06-21T12:00:00.000Z');
+  assert.equal(plan.sourceKey, 'forum-a');
+  assert.equal(plan.sourceScope.mixed, false);
+  assert.deepEqual(plan.sourceScope.sourceKeys, ['forum-a']);
   assert.equal(plan.count, 2);
   assert.deepEqual(plan.closeTaskIds, ['task-close', 'task-close-2']);
   assert.deepEqual(plan.keepOpenTaskIds, ['task-open', 'task-conflict']);
   assert.deepEqual(plan.attention.conflictTaskIds, ['task-conflict']);
   assert.equal(plan.mergeCandidates.length, 2);
+  assert.equal(plan.mergeCandidates[0].sourceKey, 'forum-a');
   assert.deepEqual(plan.mergeCandidates.map(function (candidate) { return candidate.taskId; }), ['task-close', 'task-close-2']);
   assert.equal(plan.blockedTasks.length, 1);
   assert.equal(plan.blockedTasks[0].recordId, 'review-1');
+  assert.equal(plan.blockedTasks[0].sourceId, 'source-a');
   assert.equal(plan.risk.level, 'critical');
   assert.ok(plan.risk.reasons.includes('task-close-open-conflicts'));
   assert.match(plan.recommendedNextAction, /Reconcile/);
@@ -76,6 +86,8 @@ function reviewRecord(options) {
     id: options.id,
     status: options.status || 'partially-accepted',
     handoffId: 'handoff-' + options.id,
+    sourceId: options.sourceId,
+    sourceKey: options.sourceKey,
     reviewer: { id: 'operator-1' },
     submittedAt: '2026-06-21T10:00:00.000Z',
     result: {

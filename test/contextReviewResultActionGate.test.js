@@ -8,6 +8,8 @@ test('context review result action gate fails conflicting plans', async function
   const gate = await getContextReviewResultActionGate({
     actionPlan: {
       generatedAt: '2026-06-21T12:00:00.000Z',
+      sourceId: 'source-a',
+      sourceKey: 'forum-a',
       count: 1,
       windowLimit: 100,
       closeTaskIds: ['task-1'],
@@ -28,6 +30,8 @@ test('context review result action gate fails conflicting plans', async function
   });
 
   assert.equal(gate.generatedAt, '2026-06-21T12:00:00.000Z');
+  assert.equal(gate.sourceId, 'source-a');
+  assert.equal(gate.sourceKey, 'forum-a');
   assert.equal(gate.status, 'fail');
   assert.equal(gate.executable.canCloseTasks, false);
   assert.equal(gate.executable.canMergeContext, false);
@@ -67,4 +71,38 @@ test('context review result action gate clears non-conflicting executable plans'
   assert.equal(gate.executable.requiresHumanReview, false);
   assert.equal(gate.nextActions.length, 0);
   assert.match(gate.recommendedNextAction, /Gate is clear/);
+});
+
+test('context review result action gate blocks mixed source execution windows', async function () {
+  const gate = await getContextReviewResultActionGate({
+    actionPlan: {
+      generatedAt: '2026-06-21T12:00:00.000Z',
+      count: 2,
+      windowLimit: 100,
+      sourceScope: {
+        mixed: true,
+        sourceIds: ['source-a', 'source-b'],
+        sourceKeys: ['forum-a', 'forum-b']
+      },
+      closeTaskIds: ['task-1'],
+      keepOpenTaskIds: [],
+      mergeCandidates: [{ taskId: 'task-1' }],
+      blockedTasks: [],
+      attention: {
+        criticalCount: 0,
+        warningCount: 0,
+        conflictTaskIds: []
+      },
+      risk: {
+        level: 'ok',
+        reasons: []
+      }
+    }
+  });
+
+  assert.equal(gate.status, 'fail');
+  assert.equal(gate.executable.canCloseTasks, false);
+  assert.ok(gate.gates.some(function (item) {
+    return item.key === 'reviewResults.sourceScope' && item.status === 'fail';
+  }));
 });

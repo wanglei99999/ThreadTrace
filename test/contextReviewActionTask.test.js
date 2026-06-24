@@ -78,13 +78,13 @@ test('context review action task executes context review action executor port', 
     execute: true,
     contextReviewActionExecutor: {
       closeTasks: async function (request) {
-        calls.push(['closure', request.closeTaskIds, request.storeDir]);
+        calls.push(['closure', request.closeTaskIds, request.storeDir, request.sourceKey]);
         return {
           closedTaskIds: request.closeTaskIds
         };
       },
       mergeContext: async function (request) {
-        calls.push(['merge', request.mergeCandidates.map(function (candidate) { return candidate.taskId; }), request.storeDir]);
+        calls.push(['merge', request.mergeCandidates.map(function (candidate) { return candidate.taskId; }), request.storeDir, request.sourceKey]);
         return {
           mergedTaskIds: request.mergeCandidates.map(function (candidate) { return candidate.taskId; })
         };
@@ -95,8 +95,8 @@ test('context review action task executes context review action executor port', 
   });
 
   assert.deepEqual(calls, [
-    ['closure', ['task-1'], 'store-execute'],
-    ['merge', ['task-1'], 'store-execute']
+    ['closure', ['task-1'], 'store-execute', 'forum-a'],
+    ['merge', ['task-1'], 'store-execute', 'forum-a']
   ]);
   assert.equal(result.report.status, 'warn');
   assert.equal(result.report.dryRun, false);
@@ -151,6 +151,56 @@ test('context review action task replays completed executor actions through exec
   assert.equal(second.report.executorResults.contextMerge.executionLedger.replayed, true);
   assert.deepEqual(second.report.executorResults.taskClosure.closedTaskIds, ['task-1']);
   assert.deepEqual(second.report.executorResults.contextMerge.mergedTaskIds, ['task-1']);
+});
+
+test('context review action execution ledger is isolated by source scope', async function () {
+  const calls = [];
+  const executionRepository = memoryExecutionRepository();
+  const executor = {
+    closeTasks: async function (request) {
+      calls.push(['closure', request.sourceKey, request.closeTaskIds]);
+      return {
+        closedTaskIds: request.closeTaskIds,
+        sourceKey: request.sourceKey
+      };
+    },
+    mergeContext: async function (request) {
+      calls.push(['merge', request.sourceKey, request.mergeCandidates.map(function (candidate) { return candidate.taskId; })]);
+      return {
+        mergedTaskIds: request.mergeCandidates.map(function (candidate) { return candidate.taskId; }),
+        sourceKey: request.sourceKey
+      };
+    }
+  };
+
+  const first = await runContextReviewActionTask({
+    taskRepository: taskRepository([]),
+    getContextReviewResultActionGate: getScopedContextReviewResultActionGate,
+    sourceKey: 'forum-a',
+    execute: true,
+    contextReviewActionExecutor: executor,
+    contextReviewActionExecutionRepository: executionRepository,
+    now: '2026-06-21T10:00:00.000Z'
+  });
+  const second = await runContextReviewActionTask({
+    taskRepository: taskRepository([]),
+    getContextReviewResultActionGate: getScopedContextReviewResultActionGate,
+    sourceKey: 'forum-b',
+    execute: true,
+    contextReviewActionExecutor: executor,
+    contextReviewActionExecutionRepository: executionRepository,
+    now: '2026-06-21T10:05:00.000Z'
+  });
+
+  assert.deepEqual(calls, [
+    ['closure', 'forum-a', ['task-1']],
+    ['merge', 'forum-a', ['task-1']],
+    ['closure', 'forum-b', ['task-1']],
+    ['merge', 'forum-b', ['task-1']]
+  ]);
+  assert.notEqual(first.report.executorResults.taskClosure.executionLedger.key, second.report.executorResults.taskClosure.executionLedger.key);
+  assert.equal(second.report.executorResults.taskClosure.executionLedger.replayed, false);
+  assert.equal(second.report.executorResults.contextMerge.executionLedger.replayed, false);
 });
 
 test('context review action task keeps legacy function executor compatibility', async function () {
@@ -249,6 +299,8 @@ async function getContextReviewResultActionGate() {
   return {
     generatedAt: '2026-06-21T10:00:00.000Z',
     status: 'warn',
+    sourceId: 'source-a',
+    sourceKey: 'forum-a',
     gateCount: 5,
     gates: [
       { key: 'reviewResults.blockers', status: 'warn' }
@@ -267,6 +319,8 @@ async function getContextReviewResultActionGate() {
     actionPlan: {
       count: 1,
       status: 'warn',
+      sourceId: 'source-a',
+      sourceKey: 'forum-a',
       closeTaskIds: ['task-1'],
       keepOpenTaskIds: ['task-2'],
       mergeCandidates: [
@@ -284,4 +338,15 @@ async function getContextReviewResultActionGate() {
       }
     }
   };
+}
+
+async function getScopedContextReviewResultActionGate(request) {
+  const scope = {
+    sourceId: request && request.sourceId,
+    sourceKey: request && request.sourceKey
+  };
+  const gate = await getContextReviewResultActionGate();
+  return Object.assign({}, gate, scope, {
+    actionPlan: Object.assign({}, gate.actionPlan, scope)
+  });
 }

@@ -26,6 +26,7 @@ const runtime = createThreadTraceRuntime({
 `closeTasks(request)` receives:
 
 - `taskId`: the durable `context-review-action-apply` task id.
+- `sourceId` / `sourceKey`: optional source scope from the review action plan.
 - `closeTaskIds`: conservative task ids approved by the review action plan.
 - `actionGate`: the evaluated gate, including risk, blockers, and compact action plan evidence.
 - `now`: optional fixed timestamp.
@@ -34,6 +35,7 @@ const runtime = createThreadTraceRuntime({
 `mergeContext(request)` receives:
 
 - `taskId`: the durable `context-review-action-apply` task id.
+- `sourceId` / `sourceKey`: optional source scope from the review action plan.
 - `mergeCandidates`: candidate context updates approved by the review action plan.
 - `actionGate`: the same evaluated gate.
 - `now`: optional fixed timestamp.
@@ -46,8 +48,9 @@ Adapters should return compact audit-friendly objects. The task output stores th
 - `execute` defaults to `false`; dry-run records the gate, closure ids, merge candidates, and next actions without calling executors.
 - `execute: true` requires both `closeTasks` and `mergeContext`.
 - A failing action gate prevents executor calls.
+- A mixed-source review result window fails the action gate; rerun with `sourceId` or `sourceKey` / `forum` so one executor-backed mutation only targets one source scope.
 - Missing executor methods produce a failed report with `executorReadiness.missing`.
-- File-backed runtimes keep an action execution ledger under `THREADTRACE_STORE_DIR/review-action-executions`. Each logical `tasks.closure` or `context.merge` call is claimed before the adapter runs; a completed ledger entry is replayed instead of calling the adapter again.
+- File-backed runtimes keep an action execution ledger under `THREADTRACE_STORE_DIR/review-action-executions`. Each logical `tasks.closure` or `context.merge` call is claimed before the adapter runs; a completed ledger entry is replayed instead of calling the adapter again. Ledger identity includes the review action plan's `sourceId` / `sourceKey` scope, so equal task ids from different sources do not replay each other's downstream mutation.
 - If another process has already claimed the same logical action and it is still running, the task fails fast instead of risking a duplicate downstream mutation. Retry after the first execution finishes or after an operator resolves the stale ledger entry.
 - Ledger inspection marks running records as stale when their `updatedAt` or `createdAt` timestamp is older than the stale-running window. The default is 10 minutes and can be adjusted with `--running-stale-after-ms` or the `runningStaleAfterMs` API query parameter. This is a read-side operational signal; ThreadTrace does not automatically delete or overwrite stale running ledger entries.
 - The action plan is conservative: blocker, keep-open, and conflict signals win over closure or merge.
@@ -56,7 +59,7 @@ Adapters should return compact audit-friendly objects. The task output stores th
 
 Task-level idempotency protects repeated client calls with the same idempotency key. The execution ledger protects the downstream mutation boundary even when a task crashes after an adapter call but before the task record is marked completed.
 
-Ledger keys are derived from the logical action type and the conservative action-plan payload, not from the transient task id. Adapter results are stored in the ledger and surfaced back under `report.executorResults.*.executionLedger`.
+Ledger keys are derived from the logical action type, source scope, and the conservative action-plan payload, not from the transient task id. Adapter results are stored in the ledger and surfaced back under `report.executorResults.*.executionLedger`.
 
 PostgreSQL deployments use the same `ContextReviewActionExecutionRepository` port with a unique `execution_key` and conflict-aware claim operation. The file implementation is suitable for local and single-node deployments; PostgreSQL is the preferred ledger store for multi-process or multi-host execution.
 
