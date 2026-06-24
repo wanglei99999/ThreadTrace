@@ -37,6 +37,7 @@ Before starting workers in a new environment, generate a read-only topology plan
 ```powershell
 node src/presentation/cli/threadtrace.js worker-topology-plan --topology operations-worker
 node src/presentation/cli/threadtrace.js worker-topology-plan --topology split-workers --source-task-mode insight-pipeline
+node src/presentation/cli/threadtrace.js worker-topology-plan --topology split-workers --source-key nga --source-id tracked-source-nga-001
 ```
 
 The same report is available at `GET /api/operations/worker-topology-plan`. See `docs/worker-topology-plan.md`.

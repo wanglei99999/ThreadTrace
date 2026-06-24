@@ -3,6 +3,23 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 const { createDueSourceWorker } = require('../src/presentation/worker/dueSourceWorker');
+const { parseArgs } = require('../src/presentation/worker/dueSourceWorkerMain');
+
+test('due source worker main parses source scope flags', function () {
+  const options = parseArgs([
+    '--once',
+    '--forum', 'forum-a',
+    '--source-key', 'forum-a',
+    '--source-id', 'source-a',
+    '--source-task-mode', 'insight-pipeline'
+  ]);
+
+  assert.equal(options.loop, false);
+  assert.equal(options.forum, 'forum-a');
+  assert.equal(options.sourceKey, 'forum-a');
+  assert.equal(options.sourceId, 'source-a');
+  assert.equal(options.sourceTaskMode, 'insight-pipeline');
+});
 
 test('due source worker skips overlapping runs', async function () {
   let releaseRun;

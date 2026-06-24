@@ -43,6 +43,8 @@ It is intended for multi-forum growth: each future source can provide the same m
 
 `workers` is optional. When omitted, the runtime evaluates the default worker topology from current configuration.
 
+When `source.sourceId` (or `source.id`) is present, the composed worker topology plan uses it with `sourceKey` to generate source-scoped worker commands. This is useful after a source has been registered and production workers are sharded per tracked source.
+
 ## CLI
 
 ```powershell

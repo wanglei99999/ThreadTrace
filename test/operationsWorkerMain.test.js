@@ -27,6 +27,7 @@ test('operations worker main request scopes event dispatch runbook synthesis and
   });
 
   assert.equal(request.sources.sourceKey, 'forum-a');
+  assert.equal(request.sources.sourceId, 'source-a');
   assert.equal(request.events.sourceId, 'source-a');
   assert.equal(request.events.sourceKey, 'forum-a');
   assert.equal(request.runbookEvents.sourceId, 'source-a');

@@ -655,6 +655,7 @@ async function routeRequest(request, response, context) {
     const enabledParam = url.searchParams.get('enabled');
     const plan = await context.runtime.getWorkerTopologyPlan({
       forum: url.searchParams.get('forum') || undefined,
+      sourceId: url.searchParams.get('sourceId') || undefined,
       sourceKey: url.searchParams.get('sourceKey') || undefined,
       enabled: enabledParam === null ? undefined : enabledParam === 'true',
       topology: url.searchParams.get('topology') || undefined,

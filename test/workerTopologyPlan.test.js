@@ -39,9 +39,52 @@ test('worker topology plan recommends split workers for postgres storage', funct
   assert.equal(plan.topology, 'split-workers');
   assert.equal(plan.storageMode, 'postgres');
   assert.equal(plan.sourceTaskMode, 'insight-pipeline');
+  assert.equal(plan.sourceKey, undefined);
   assert.deepEqual(plan.workers.map(function (worker) { return worker.workerType; }), ['due-source', 'notification-event']);
   assert.match(plan.workers[0].command, /dueSourceWorkerMain/);
   assert.equal(plan.nextActions.length, 0);
+});
+
+test('worker topology plan scopes generated worker commands by source', function () {
+  const plan = getWorkerTopologyPlan({
+    now: '2026-06-19T10:00:00.000Z',
+    sourceId: 'source-a',
+    sourceKey: 'forum-a',
+    config: {
+      storageMode: 'postgres',
+      workers: {
+        sourceTaskMode: 'ingest',
+        leaseTtlMs: 300000,
+        dueSourceIntervalMs: 300000,
+        eventIntervalMs: 60000,
+        operationsIntervalMs: 60000
+      }
+    },
+    deploymentChecklist: {
+      status: 'ok',
+      items: []
+    },
+    operationalOverview: {
+      workers: {
+        running: 0,
+        failed: 0,
+        stale: 0
+      }
+    }
+  });
+
+  assert.equal(plan.status, 'ok');
+  assert.equal(plan.sourceId, 'source-a');
+  assert.equal(plan.sourceKey, 'forum-a');
+  assert.deepEqual(plan.scope, {
+    sourceId: 'source-a',
+    sourceKey: 'forum-a'
+  });
+  assert.equal(plan.workers[0].scope.sourceId, 'source-a');
+  assert.match(plan.workers[0].command, /--source-key forum-a/);
+  assert.match(plan.workers[0].command, /--source-id source-a/);
+  assert.match(plan.workers[1].command, /--source-key forum-a/);
+  assert.match(plan.workers[1].command, /--source-id source-a/);
 });
 
 test('worker topology plan warns when split workers use file storage', function () {

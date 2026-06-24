@@ -41,6 +41,8 @@ async function main(argv) {
   });
   const request = {
     forum: options.forum,
+    sourceId: options.sourceId,
+    sourceKey: options.sourceKey || options.forum,
     limit: options.limit ? Number(options.limit) : undefined,
     sourceTaskMode: config.workers.sourceTaskMode,
     provider: config.llm.provider,
@@ -94,6 +96,12 @@ function parseArgs(args) {
     } else if (item === '--forum') {
       options.forum = args[index + 1];
       index += 1;
+    } else if (item === '--source-key') {
+      options.sourceKey = args[index + 1];
+      index += 1;
+    } else if (item === '--source-id') {
+      options.sourceId = args[index + 1];
+      index += 1;
     } else if (item === '--limit') {
       options.limit = args[index + 1];
       index += 1;
@@ -140,7 +148,13 @@ function parseOptionalBoolean(value) {
   return value !== 'false';
 }
 
-main(process.argv).catch(function (error) {
-  console.error(error && error.stack ? error.stack : error);
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  main(process.argv).catch(function (error) {
+    console.error(error && error.stack ? error.stack : error);
+    process.exitCode = 1;
+  });
+}
+
+module.exports = {
+  parseArgs
+};

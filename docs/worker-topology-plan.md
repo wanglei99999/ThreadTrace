@@ -12,6 +12,7 @@ The topology plan is a read-only deployment planning report. It does not start w
 ```powershell
 node src/presentation/cli/threadtrace.js worker-topology-plan
 node src/presentation/cli/threadtrace.js worker-topology-plan --topology split-workers --source-task-mode insight-pipeline
+node src/presentation/cli/threadtrace.js worker-topology-plan --topology split-workers --source-key nga --source-id tracked-source-nga-001
 ```
 
 The command exits with code `2` when a topology check has `status=fail`.
@@ -20,6 +21,7 @@ The command exits with code `2` when a topology check has `status=fail`.
 
 ```http
 GET /api/operations/worker-topology-plan?topology=split-workers&sourceTaskMode=insight-pipeline
+GET /api/operations/worker-topology-plan?topology=split-workers&sourceKey=nga&sourceId=tracked-source-nga-001
 ```
 
 The endpoint returns HTTP `200` for `ok` and `warn` plans, and HTTP `503` for a plan with failing checks.
@@ -39,6 +41,15 @@ node src/presentation/worker/dueSourceWorkerMain.js --loop --source-task-mode in
 node src/presentation/worker/notificationEventWorkerMain.js --loop
 ```
 
+For source-sharded production deployments, pass `sourceKey` and optionally `sourceId` to the topology plan. The returned worker commands include the same scope flags, for example:
+
+```powershell
+node src/presentation/worker/dueSourceWorkerMain.js --loop --source-task-mode insight-pipeline --source-key nga --source-id tracked-source-nga-001
+node src/presentation/worker/notificationEventWorkerMain.js --loop --source-key nga --source-id tracked-source-nga-001
+```
+
+The source worker then evaluates only that tracked source when `sourceId` is present, and the notification worker dispatches only that source's pending or failed outbox events.
+
 Each worker uses a lease key so multiple processes can be started while only one active owner runs a given loop at a time:
 
 - `worker:operations`
@@ -55,11 +66,13 @@ File storage is appropriate for local development and simple single-node operati
   "topology": "split-workers",
   "storageMode": "postgres",
   "sourceTaskMode": "insight-pipeline",
+  "sourceId": "tracked-source-nga-001",
+  "sourceKey": "nga",
   "workers": [
     {
       "workerType": "due-source",
       "leaseKey": "worker:due-source",
-      "command": "node src/presentation/worker/dueSourceWorkerMain.js --loop --source-task-mode insight-pipeline"
+      "command": "node src/presentation/worker/dueSourceWorkerMain.js --loop --source-task-mode insight-pipeline --source-key nga --source-id tracked-source-nga-001"
     }
   ],
   "checks": [],

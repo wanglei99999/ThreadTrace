@@ -773,6 +773,7 @@ function main(argv) {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.getWorkerTopologyPlan({
       forum: options.forum,
+      sourceId: options.sourceId,
       sourceKey: options.sourceKey,
       enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
       topology: options.topology,
@@ -782,8 +783,9 @@ function main(argv) {
       storeDir,
       workerStaleAfterMs: options.workerStaleAfterMs ? Number(options.workerStaleAfterMs) : undefined
     }).then(function (plan) {
+      const scopeLabel = [plan.sourceKey, plan.sourceId].filter(Boolean).join('/') || 'all';
       console.log('Worker topology plan: ' + plan.status);
-      console.log('Topology: ' + plan.topology + '\tstorage=' + plan.storageMode + '\tsourceTaskMode=' + plan.sourceTaskMode);
+      console.log('Topology: ' + plan.topology + '\tstorage=' + plan.storageMode + '\tsourceTaskMode=' + plan.sourceTaskMode + '\tsource=' + scopeLabel);
       console.log('Workers: ' + plan.workers.length);
       plan.workers.forEach(function (worker) {
         console.log(worker.workerType + '\t' + worker.scale + '\tintervalMs=' + worker.intervalMs + '\tlease=' + worker.leaseKey);
@@ -2574,7 +2576,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js review-action-executions [--source-key key] [--source-id id] [--action tasks.closure|context.merge] [--status running|completed|failed] [--task-id id] [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-audit-overview [--source-key key] [--source-id id] [--action tasks.closure|context.merge] [--task-id id] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-executor-diagnostics [--store-dir dir] [--limit n]');
-  console.log('  node src/presentation/cli/threadtrace.js worker-topology-plan [--topology operations-worker|split-workers] [--source-task-mode ingest|insight-pipeline] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js worker-topology-plan [--topology operations-worker|split-workers] [--source-task-mode ingest|insight-pipeline] [--source-key key] [--source-id id] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js runtime-diagnostics [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js adapter-diagnostics [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js deployment-checklist [--forum nga] [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');

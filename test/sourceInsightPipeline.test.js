@@ -124,6 +124,25 @@ test('runtime runs insight pipelines for due sources', async function () {
   assert.equal(reports.length, 1);
 });
 
+test('runtime can scope due insight pipelines by source id', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-source-pipeline-due-source-id-'));
+  const runtime = createPipelineRuntime(tempDir);
+  const registerResult = await registerSampleSource(runtime);
+
+  const result = await runtime.runDueSourceInsightPipelineTasks({
+    sourceId: registerResult.source.id,
+    sourceKey: 'nga',
+    traceId: 'pipeline-due-source-id'
+  });
+
+  assert.equal(result.task.status, 'completed');
+  assert.equal(result.task.input.sourceId, registerResult.source.id);
+  assert.equal(result.task.input.sourceKey, 'nga');
+  assert.equal(result.sourceCount, 1);
+  assert.equal(result.results[0].source.id, registerResult.source.id);
+  assert.equal(result.results[0].semantic.traceId, 'pipeline-due-source-id');
+});
+
 function createPipelineRuntime(storeDir) {
   return createThreadTraceRuntime({
     defaultInputDir: path.resolve(__dirname, '..', 'example'),

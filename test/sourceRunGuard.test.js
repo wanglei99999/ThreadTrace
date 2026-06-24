@@ -252,6 +252,45 @@ test('due source batch can recover stale running source state', async function (
   assert.equal(repositories.savedSources.at(-1).runState.status, 'completed');
 });
 
+test('due source batch can target one source by id', async function () {
+  const handledSources = [];
+  const sourceA = createSource({
+    id: 'source-a',
+    schedule: {
+      enabled: true,
+      nextRunAt: '2026-06-19T09:00:00.000Z'
+    }
+  });
+  const sourceB = createSource({
+    id: 'source-b',
+    schedule: {
+      enabled: true,
+      nextRunAt: '2026-06-19T09:00:00.000Z'
+    }
+  });
+  const repositories = createRepositoriesForSources([sourceA, sourceB]);
+
+  const result = await runDueSourcesIngestTasks({
+    sourceRepository: repositories.sourceRepository,
+    threadRepository: repositories.threadRepository,
+    reportRepository: repositories.reportRepository,
+    taskRepository: repositories.taskRepository,
+    sourceIngestHandlerRegistry: createHandlerRegistry(function (context) {
+      handledSources.push(context.source.id);
+      return createHandlerResult();
+    }),
+    sourceId: 'source-b',
+    getAdapter() {},
+    now: '2026-06-19T10:00:00.000Z'
+  });
+
+  assert.deepEqual(handledSources, ['source-b']);
+  assert.equal(result.sourceCount, 1);
+  assert.equal(result.dueCount, 1);
+  assert.equal(result.results[0].source.id, 'source-b');
+  assert.equal(repositories.savedTasks[0].input.sourceId, 'source-b');
+});
+
 test('due source batch waits for failed source retry backoff', async function () {
   let handlerCalls = 0;
   const source = createSource({
@@ -360,7 +399,14 @@ function createRepositoriesForSources(sources) {
     sourceRepository: {
       async saveSource(source) { savedSources.push(source); },
       async findSource(id) { return sources.find(function (source) { return source.id === id; }); },
-      async listSources() { return sources; }
+      async listSources(query) {
+        const safeQuery = query || {};
+        return sources.filter(function (source) {
+          if (safeQuery.sourceKey && source.sourceKey !== safeQuery.sourceKey) return false;
+          if (typeof safeQuery.enabled === 'boolean' && source.enabled !== safeQuery.enabled) return false;
+          return true;
+        }).slice(0, safeQuery.limit || sources.length);
+      }
     },
     threadRepository: {
       async saveSnapshot() {},

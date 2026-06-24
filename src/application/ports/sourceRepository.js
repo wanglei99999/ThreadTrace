@@ -9,6 +9,10 @@
  * @property {(id: string) => Promise<Object|undefined>} findSource
  * @property {(query?: { sourceKey?: string, enabled?: boolean, limit?: number }) => Promise<Object[]>} listSources
  * @property {(request: { sourceId: string, now?: string, staleAfterMs?: number }) => Promise<{ acquired: boolean, source?: Object, reason?: string }>=} acquireSourceRun
+ *
+ * Batch use cases that receive `sourceId` should call `findSource(id)` first
+ * and then apply any `sourceKey` / `enabled` guard before falling back to
+ * `listSources(query)` for broader source-key scans.
  */
 
 function assertSourceRepository(repository) {

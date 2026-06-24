@@ -724,6 +724,7 @@ test('http server exposes deployment checklist API', async function () {
   try {
     const checklist = await getJson(baseUrl + '/api/deployment/checklist?now=2026-06-19T10:00:00.000Z');
     const topologyPlan = await getJson(baseUrl + '/api/operations/worker-topology-plan?now=2026-06-19T10:00:00.000Z');
+    const scopedTopologyPlan = await getJson(baseUrl + '/api/operations/worker-topology-plan?topology=split-workers&sourceKey=nga&sourceId=source-1&now=2026-06-19T10:00:00.000Z');
     const openApi = await getJson(baseUrl + '/openapi.json');
 
     assert.equal(checklist.status, 'warn');
@@ -740,8 +741,15 @@ test('http server exposes deployment checklist API', async function () {
     assert.equal(topologyPlan.status, 'warn');
     assert.equal(topologyPlan.topology, 'operations-worker');
     assert.equal(topologyPlan.workers[0].workerType, 'operations');
+    assert.equal(scopedTopologyPlan.sourceKey, 'nga');
+    assert.equal(scopedTopologyPlan.sourceId, 'source-1');
+    assert.match(scopedTopologyPlan.workers[0].command, /--source-key nga/);
+    assert.match(scopedTopologyPlan.workers[0].command, /--source-id source-1/);
     assert.ok(openApi.paths['/api/deployment/checklist']);
     assert.ok(openApi.paths['/api/operations/worker-topology-plan']);
+    assert.ok(openApi.paths['/api/operations/worker-topology-plan'].get.parameters.find(function (parameter) {
+      return parameter.name === 'sourceId';
+    }));
   } finally {
     await close(server);
   }

@@ -6,6 +6,7 @@ function getWorkerTopologyPlan(options) {
   const workersConfig = config.workers || {};
   const storageMode = safeOptions.storageMode || config.storageMode || 'file';
   const sourceTaskMode = safeOptions.sourceTaskMode || workersConfig.sourceTaskMode || 'ingest';
+  const sourceScope = normalizeSourceScope(safeOptions);
   const topology = normalizeTopology(safeOptions.topology || safeOptions.deploymentTopology || defaultTopology(storageMode));
   const checks = [
     storageModeCheck(storageMode, topology),
@@ -16,8 +17,8 @@ function getWorkerTopologyPlan(options) {
     workerHealthCheck(safeOptions.operationalOverview)
   ];
   const workers = topology === 'split-workers'
-    ? splitWorkerPlan(workersConfig, sourceTaskMode)
-    : operationsWorkerPlan(workersConfig, sourceTaskMode);
+    ? splitWorkerPlan(workersConfig, sourceTaskMode, sourceScope)
+    : operationsWorkerPlan(workersConfig, sourceTaskMode, sourceScope);
 
   return {
     generatedAt: safeOptions.now || new Date().toISOString(),
@@ -25,6 +26,9 @@ function getWorkerTopologyPlan(options) {
     topology,
     storageMode,
     sourceTaskMode,
+    sourceId: sourceScope.sourceId,
+    sourceKey: sourceScope.sourceKey,
+    scope: sourceScope,
     workers,
     checks,
     nextActions: nextActions(checks),
@@ -50,7 +54,7 @@ function normalizeTopology(value) {
   return normalized;
 }
 
-function operationsWorkerPlan(workersConfig, sourceTaskMode) {
+function operationsWorkerPlan(workersConfig, sourceTaskMode, sourceScope) {
   return [
     {
       key: 'worker.operations',
@@ -60,12 +64,17 @@ function operationsWorkerPlan(workersConfig, sourceTaskMode) {
       scale: 'single-active',
       leaseKey: 'worker:operations',
       intervalMs: workersConfig.operationsIntervalMs,
-      command: 'node src/presentation/worker/operationsWorkerMain.js --loop --source-task-mode ' + sourceTaskMode
+      scope: sourceScope,
+      command: buildCommand('node src/presentation/worker/operationsWorkerMain.js', [
+        '--loop',
+        '--source-task-mode',
+        sourceTaskMode
+      ], sourceScope)
     }
   ];
 }
 
-function splitWorkerPlan(workersConfig, sourceTaskMode) {
+function splitWorkerPlan(workersConfig, sourceTaskMode, sourceScope) {
   return [
     {
       key: 'worker.dueSource',
@@ -75,7 +84,12 @@ function splitWorkerPlan(workersConfig, sourceTaskMode) {
       scale: 'single-active-per-lease',
       leaseKey: 'worker:due-source',
       intervalMs: workersConfig.dueSourceIntervalMs,
-      command: 'node src/presentation/worker/dueSourceWorkerMain.js --loop --source-task-mode ' + sourceTaskMode
+      scope: sourceScope,
+      command: buildCommand('node src/presentation/worker/dueSourceWorkerMain.js', [
+        '--loop',
+        '--source-task-mode',
+        sourceTaskMode
+      ], sourceScope)
     },
     {
       key: 'worker.notificationEvent',
@@ -85,9 +99,43 @@ function splitWorkerPlan(workersConfig, sourceTaskMode) {
       scale: 'single-active-per-lease',
       leaseKey: 'worker:notification-event',
       intervalMs: workersConfig.eventIntervalMs,
-      command: 'node src/presentation/worker/notificationEventWorkerMain.js --loop'
+      scope: sourceScope,
+      command: buildCommand('node src/presentation/worker/notificationEventWorkerMain.js', [
+        '--loop'
+      ], sourceScope)
     }
   ];
+}
+
+function normalizeSourceScope(options) {
+  const sourceId = normalizeOptionalText(options.sourceId);
+  const sourceKey = normalizeOptionalText(options.sourceKey || options.forum);
+  const scope = {};
+  if (sourceId) scope.sourceId = sourceId;
+  if (sourceKey) scope.sourceKey = sourceKey;
+  return scope;
+}
+
+function normalizeOptionalText(value) {
+  const normalized = String(value || '').trim();
+  return normalized || undefined;
+}
+
+function buildCommand(executable, args, sourceScope) {
+  const commandArgs = args.slice();
+  if (sourceScope && sourceScope.sourceKey) {
+    commandArgs.push('--source-key', sourceScope.sourceKey);
+  }
+  if (sourceScope && sourceScope.sourceId) {
+    commandArgs.push('--source-id', sourceScope.sourceId);
+  }
+  return [executable].concat(commandArgs.map(quoteCommandValue)).join(' ');
+}
+
+function quoteCommandValue(value) {
+  const text = String(value);
+  if (/^[A-Za-z0-9._/:=-]+$/.test(text)) return text;
+  return '"' + text.replace(/"/g, '\\"') + '"';
 }
 
 function storageModeCheck(storageMode, topology) {
@@ -218,4 +266,3 @@ function aggregateStatus(statuses) {
 module.exports = {
   getWorkerTopologyPlan
 };
-

@@ -28,6 +28,7 @@ async function runDueSourceInsightPipelineTasks(options) {
   const checkedAt = safeOptions.now || new Date().toISOString();
   const semanticEnrichment = buildSemanticOptions(safeOptions);
   let batchTask = createTaskRecord('source-insight-pipeline-due-sources', {
+    sourceId: safeOptions.sourceId,
     sourceKey: safeOptions.sourceKey,
     limit: safeOptions.limit || 50,
     checkedAt,
@@ -42,7 +43,8 @@ async function runDueSourceInsightPipelineTasks(options) {
   await taskRepository.saveTask(batchTask);
 
   try {
-    const sources = await sourceRepository.listSources({
+    const sources = await listCandidateSources(sourceRepository, {
+      sourceId: safeOptions.sourceId,
       sourceKey: safeOptions.sourceKey,
       enabled: true,
       limit: safeOptions.limit || 50
@@ -164,6 +166,23 @@ async function runDueSourceInsightPipelineTasks(options) {
   }
 }
 
+async function listCandidateSources(sourceRepository, query) {
+  const safeQuery = query || {};
+  if (safeQuery.sourceId) {
+    const source = await sourceRepository.findSource(safeQuery.sourceId);
+    if (!source) return [];
+    if (safeQuery.sourceKey && source.sourceKey !== safeQuery.sourceKey) return [];
+    if (safeQuery.enabled === true && source.enabled !== true) return [];
+    if (safeQuery.enabled === false && source.enabled !== false) return [];
+    return [source];
+  }
+  return sourceRepository.listSources({
+    sourceKey: safeQuery.sourceKey,
+    enabled: safeQuery.enabled,
+    limit: safeQuery.limit
+  });
+}
+
 function buildSemanticOptions(options) {
   const safeOptions = options || {};
   return {
@@ -195,5 +214,6 @@ function summarizeDuePipelineBatch(startedAt, checkedAt, sources, skipped, resul
 }
 
 module.exports = {
+  listCandidateSources,
   runDueSourceInsightPipelineTasks
 };

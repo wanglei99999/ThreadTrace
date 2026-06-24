@@ -1310,6 +1310,8 @@ function createThreadTraceRuntime(options) {
         config: runtimeConfig,
         storageMode: safeRequest.storageMode || runtimeConfig.storageMode,
         sourceTaskMode: safeRequest.sourceTaskMode || runtimeConfig.workers.sourceTaskMode,
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
         topology: safeRequest.topology || safeRequest.deploymentTopology,
         deploymentChecklist: checklist,
         operationalOverview: overview,
@@ -1552,6 +1554,7 @@ function createThreadTraceRuntime(options) {
         notificationEventRepository: repositories.notificationEventRepository,
         rawThreadPageRepository: repositories.rawThreadPageRepository,
         crawler: safeOptions.crawler || createHttpForumCrawler(safeOptions.crawlerOptions),
+        sourceId: safeRequest.sourceId,
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
         limit: safeRequest.limit || 50,
         now: safeRequest.now,
@@ -1612,7 +1615,8 @@ function createThreadTraceRuntime(options) {
       const safeRequest = request || {};
       const repositories = createRepositoriesFor(safeRequest.storeDir);
       return runDueSourceInsightPipelineTasks({
-        sourceKey: safeRequest.forum || safeRequest.sourceKey,
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
         limit: safeRequest.limit,
         now: safeRequest.now,
         sourceRunStaleAfterMs: resolveSourceRunStaleAfterMs(safeRequest, runtimeConfig),
@@ -1934,6 +1938,7 @@ function buildManifestConnectorRolloutRequest(options) {
   const deployment = manifest.deployment || {};
   return Object.assign({}, source, {
     forum: source.forum || source.sourceKey,
+    sourceId: source.sourceId || source.id,
     sourceKey: source.sourceKey || source.forum,
     displayName: source.displayName || source.name,
     modulePath: connector.modulePath || source.modulePath,
@@ -1956,6 +1961,7 @@ function buildManifestWorkerTopologyRequest(options) {
   const deployment = manifest.deployment || {};
   return {
     forum: source.forum || source.sourceKey,
+    sourceId: source.sourceId || source.id,
     sourceKey: source.sourceKey || source.forum,
     enabled: source.enabled,
     topology: workers.topology,

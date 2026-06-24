@@ -27,6 +27,7 @@ async function runDueSourcesIngestTasks(options) {
 
   const checkedAt = safeOptions.now || new Date().toISOString();
   let batchTask = createTaskRecord('ingest-due-sources', {
+    sourceId: safeOptions.sourceId,
     sourceKey: safeOptions.sourceKey,
     limit: safeOptions.limit || 50,
     checkedAt,
@@ -40,7 +41,8 @@ async function runDueSourcesIngestTasks(options) {
   await taskRepository.saveTask(batchTask);
 
   try {
-    const sources = await sourceRepository.listSources({
+    const sources = await listCandidateSources(sourceRepository, {
+      sourceId: safeOptions.sourceId,
       sourceKey: safeOptions.sourceKey,
       enabled: true,
       limit: safeOptions.limit || 50
@@ -157,6 +159,23 @@ async function runDueSourcesIngestTasks(options) {
   }
 }
 
+async function listCandidateSources(sourceRepository, query) {
+  const safeQuery = query || {};
+  if (safeQuery.sourceId) {
+    const source = await sourceRepository.findSource(safeQuery.sourceId);
+    if (!source) return [];
+    if (safeQuery.sourceKey && source.sourceKey !== safeQuery.sourceKey) return [];
+    if (safeQuery.enabled === true && source.enabled !== true) return [];
+    if (safeQuery.enabled === false && source.enabled !== false) return [];
+    return [source];
+  }
+  return sourceRepository.listSources({
+    sourceKey: safeQuery.sourceKey,
+    enabled: safeQuery.enabled,
+    limit: safeQuery.limit
+  });
+}
+
 function summarizeDueBatch(startedAt, checkedAt, sources, skipped, results) {
   return {
     startedAt,
@@ -177,5 +196,6 @@ function summarizeDueBatch(startedAt, checkedAt, sources, skipped, results) {
 }
 
 module.exports = {
+  listCandidateSources,
   runDueSourcesIngestTasks
 };

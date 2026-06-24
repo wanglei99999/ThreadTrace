@@ -83,6 +83,7 @@ function buildRequest(options, storeDir, config) {
   return {
     sources: {
       forum: options.forum,
+      sourceId: options.sourceId,
       sourceKey: options.sourceKey,
       limit: options.limit ? Number(options.limit) : undefined,
       sourceTaskMode: config.workers.sourceTaskMode,

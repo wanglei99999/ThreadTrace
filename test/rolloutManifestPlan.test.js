@@ -122,6 +122,48 @@ test('runtime rollout manifest plan composes rollout and worker planning', async
   assert.equal(plan.workerTopologyPlan.topology, 'operations-worker');
 });
 
+test('runtime rollout manifest plan scopes worker commands when source id is known', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-rollout-manifest-source-scope-'));
+  const inputFile = path.join(tempDir, 'thread.json');
+  await fs.writeFile(inputFile, JSON.stringify({
+    sourceKey: 'external',
+    sourceThreadId: 'manifest-thread-1',
+    title: 'Manifest thread',
+    posts: []
+  }, null, 2) + '\n', 'utf8');
+
+  const runtime = createThreadTraceRuntime({
+    storeDir: path.join(tempDir, 'store')
+  });
+  const plan = await runtime.getRolloutManifestPlan({
+    now: '2026-06-19T10:00:00.000Z',
+    manifest: {
+      version: '1.0',
+      name: 'json-rollout',
+      source: {
+        sourceId: 'source-external-1',
+        sourceKey: 'external',
+        sourceType: 'normalized-thread-json',
+        displayName: 'External JSON',
+        inputFile
+      },
+      ingest: {
+        dryRun: true
+      },
+      workers: {
+        topology: 'split-workers',
+        sourceTaskMode: 'ingest'
+      }
+    }
+  });
+
+  assert.equal(plan.workerTopologyPlan.sourceId, 'source-external-1');
+  assert.equal(plan.workerTopologyPlan.sourceKey, 'external');
+  assert.match(plan.workerTopologyPlan.workers[0].command, /--source-key external/);
+  assert.match(plan.workerTopologyPlan.workers[0].command, /--source-id source-external-1/);
+  assert.match(plan.workerTopologyPlan.workers[1].command, /--source-id source-external-1/);
+});
+
 test('documented external rollout manifest composes connector dry-run', async function () {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-external-rollout-manifest-'));
   const cwd = path.resolve(__dirname, '..');

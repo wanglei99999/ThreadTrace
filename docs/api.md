@@ -596,11 +596,13 @@ Query parameters:
 ```text
 topology=operations-worker|split-workers
 sourceTaskMode=ingest|insight-pipeline
+sourceKey=nga
+sourceId=tracked-source-nga-001
 limit=100
 now=2026-06-18T10:00:00.000Z
 ```
 
-The response includes recommended worker commands, lease keys, polling intervals, current worker health, deployment checklist status, and next diagnostic commands. A failing plan returns HTTP `503`.
+The response includes recommended worker commands, lease keys, polling intervals, current worker health, deployment checklist status, and next diagnostic commands. When `sourceKey`, `forum`, or `sourceId` is supplied, generated worker commands include the same source scope so source-sharded worker fleets do not run or dispatch another source's work. A failing plan returns HTTP `503`.
 
 ### `POST /api/operations/rollout-manifest-plan`
 

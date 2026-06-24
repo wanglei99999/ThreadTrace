@@ -1030,6 +1030,7 @@ function createOpenApiSpec() {
           summary: 'Plan worker deployment topology for local, single-process, or split-worker operations',
           parameters: [
             { name: 'forum', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceId', in: 'query', required: false, schema: { type: 'string', example: 'tracked-source-nga-001' } },
             { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
             { name: 'enabled', in: 'query', required: false, schema: { type: 'boolean' } },
             { name: 'topology', in: 'query', required: false, schema: { type: 'string', enum: ['operations-worker', 'split-workers'] } },
