@@ -347,6 +347,13 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(connectorCatalog.sourceTypes.some(function (sourceType) {
       return sourceType.sourceType === 'thread-url';
     }));
+    assert.ok(connectorCatalog.sourceTypes.some(function (sourceType) {
+      return sourceType.sourceType === 'thread-url' &&
+        sourceType.onboardingRecipe &&
+        sourceType.onboardingRecipe.recommendedFlow.some(function (step) {
+          return step.key === 'preflight' && step.api === 'POST /api/sources/onboarding/preflight';
+        });
+    }));
     assert.equal(connectorReadiness.generatedAt, '2026-06-19T10:00:00.000Z');
     assert.equal(connectorReadiness.status, 'ok');
     assert.ok(connectorReadiness.connectors.some(function (connector) {
@@ -500,6 +507,10 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.components.schemas.NotificationEventAttention.properties.failedEvents.items.$ref, '#/components/schemas/NotificationEventSummary');
     assert.equal(openApi.components.schemas.NotificationEventSourceHotspot.properties.retryExhaustedCount.type, 'number');
     assert.ok(openApi.paths['/api/connectors/catalog']);
+    assert.equal(openApi.paths['/api/connectors/catalog'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceConnectorCatalog');
+    assert.equal(openApi.components.schemas.SourceConnectorCatalog.properties.sourceTypes.items.$ref, '#/components/schemas/SourceConnectorCatalogSourceType');
+    assert.equal(openApi.components.schemas.SourceConnectorCatalogSourceType.properties.onboardingRecipe.$ref, '#/components/schemas/SourceOnboardingRecipe');
+    assert.equal(openApi.components.schemas.SourceOnboardingRecipe.properties.recommendedFlow.items.$ref, '#/components/schemas/SourceOnboardingRecipeFlowStep');
     assert.ok(openApi.paths['/api/connectors/readiness']);
     assert.ok(openApi.paths['/api/connectors/modules/validate']);
     assert.ok(openApi.paths['/api/connectors/rollout-plan']);

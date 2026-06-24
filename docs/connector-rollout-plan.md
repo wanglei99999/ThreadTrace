@@ -13,6 +13,8 @@ It aggregates the checks an operator would otherwise run one by one:
 
 The report does not register sources, mutate runtime connector registries, write business data, or change deployment configuration. External connector module simulation uses temporary registries through the existing onboarding preflight path.
 
+Before building a manifest from scratch, inspect `GET /api/connectors/catalog` and use the selected source type's `onboardingRecipe`. The recipe exposes required location fields, adapter guidance, a recommended catalog -> preflight -> dry-run -> rollout flow, and a conservative manifest template that can be passed into rollout planning after operators fill real source values.
+
 Module validation in the plan checks both loading and contract shape. A module must register at least one adapter or handler, keep adapter `sourceKey` and handler `sourceType` values unique, and expose the required metadata used by UI and operations tooling (`displayName` for adapters, `description` and `locationSchema.properties` for handlers). The returned `contractSummary` is safe to show in release notes or operator handoffs.
 
 ## CLI

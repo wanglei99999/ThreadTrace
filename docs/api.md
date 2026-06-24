@@ -30,6 +30,12 @@ http://127.0.0.1:3017
 
 返回：整体 `status`、每个 adapter 的状态和检查项。存在失败检查时 HTTP 状态码为 503，响应体仍包含完整诊断。
 
+### `GET /api/connectors/catalog`
+
+Lists registered source ingest handlers and forum adapters. Each `sourceTypes[]` item includes `locationSchema`, `compatibleSourceKeys`, and an `onboardingRecipe` for source onboarding UI or operator tooling.
+
+`onboardingRecipe` exposes required and optional location fields, adapter guidance, the recommended catalog -> preflight -> dry-run -> rollout flow, and a conservative `rolloutManifestTemplate` using `ingest.dryRun=true` plus the `operations-worker` topology.
+
 ### `GET /openapi.json`
 
 返回 OpenAPI 3.0 契约，便于前端、测试工具或后续 SDK 生成器消费。

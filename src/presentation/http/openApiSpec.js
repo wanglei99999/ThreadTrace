@@ -479,7 +479,14 @@ function createOpenApiSpec() {
           ],
           responses: {
             200: {
-              description: 'Source types, required locations, and compatible forum adapters'
+              description: 'Source types, required locations, compatible forum adapters, and onboarding recipes',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceConnectorCatalog'
+                  }
+                }
+              }
             }
           }
         }
@@ -3891,6 +3898,102 @@ function createOpenApiSpec() {
             details: {
               type: 'array',
               items: { type: 'object', additionalProperties: true }
+            }
+          }
+        },
+        SourceConnectorCatalogAdapter: {
+          type: 'object',
+          properties: {
+            sourceKey: { type: 'string', example: 'nga' },
+            displayName: { type: 'string', example: 'NGA forum' },
+            capabilities: {
+              type: 'object',
+              additionalProperties: true
+            }
+          }
+        },
+        SourceOnboardingRecipeFlowStep: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', example: 'preflight' },
+            phase: { type: 'string', example: 'validate' },
+            summary: { type: 'string' },
+            cli: { type: 'string', example: 'node src/presentation/cli/threadtrace.js source-onboarding-preflight --forum nga --source-type thread-url --location-file <file>' },
+            api: { type: 'string', example: 'POST /api/sources/onboarding/preflight' }
+          }
+        },
+        SourceOnboardingRecipeAdapterGuidance: {
+          type: 'object',
+          properties: {
+            required: { type: 'boolean', example: true },
+            compatibleSourceKeys: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['nga']
+            },
+            summary: { type: 'string' }
+          }
+        },
+        SourceOnboardingRecipe: {
+          type: 'object',
+          properties: {
+            sourceType: { type: 'string', example: 'thread-url' },
+            requiresAdapter: { type: 'boolean', example: true },
+            requiredLocationFields: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['url']
+            },
+            optionalLocationFields: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            compatibleSourceKeys: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['nga']
+            },
+            adapterGuidance: { $ref: '#/components/schemas/SourceOnboardingRecipeAdapterGuidance' },
+            recommendedFlow: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceOnboardingRecipeFlowStep' }
+            },
+            rolloutManifestTemplate: { $ref: '#/components/schemas/SourceRolloutManifestDraft' }
+          }
+        },
+        SourceConnectorCatalogSourceType: {
+          type: 'object',
+          properties: {
+            sourceType: { type: 'string', example: 'thread-url' },
+            description: { type: 'string' },
+            requiresAdapter: { type: 'boolean', example: true },
+            locationSchema: {
+              type: 'object',
+              additionalProperties: true
+            },
+            capabilities: {
+              type: 'object',
+              additionalProperties: true
+            },
+            compatibleSourceKeys: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['nga']
+            },
+            onboardingRecipe: { $ref: '#/components/schemas/SourceOnboardingRecipe' }
+          }
+        },
+        SourceConnectorCatalog: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-19T10:00:00.000Z' },
+            sourceTypes: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceConnectorCatalogSourceType' }
+            },
+            adapters: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceConnectorCatalogAdapter' }
             }
           }
         },

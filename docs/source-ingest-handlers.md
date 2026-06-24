@@ -135,6 +135,15 @@ Discovery returns each handler's adapter requirement, location schema, and capab
 
 `/api/connectors/catalog` combines source types with registered forum adapters, including `compatibleSourceKeys` for handler types that require an adapter.
 
+Each catalog source type also includes `onboardingRecipe`. The recipe is the source-type playbook that UI, generated clients, and operators can use before writing a source:
+
+- `requiredLocationFields` and `optionalLocationFields` derived from the handler location schema
+- `adapterGuidance` with compatible adapter source keys or no-adapter guidance for canonical JSON sources
+- `recommendedFlow` for catalog discovery, onboarding preflight, ingest dry-run, rollout planning, and final apply
+- `rolloutManifestTemplate` with conservative defaults (`ingest.dryRun=true` and `operations-worker` topology)
+
+Treat the recipe as the first screen for future source onboarding. It keeps RSS/API/JSON/package connectors on the same path as built-in forum handlers while still letting custom modules supply their own `sourceType` and location schema.
+
 `/api/connectors/readiness` combines the catalog with stored source diagnostics. It reports loaded connector modules, each module's safe contract summary, each connector's handler registration, adapter coverage, configured source count, status counts, and per-source checks. The matching CLI command is:
 
 ```powershell
@@ -149,11 +158,11 @@ Use the same flow for built-in forums and future connectors:
 
 1. Add or inject a `SourceIngestHandler`.
 2. For external modules, run `validate-connector-module` before setting `THREADTRACE_CONNECTOR_MODULES`.
-3. Use `source-onboarding-preflight --module-path ... --location-file ...` to simulate catalog, readiness, and source validation before changing runtime configuration.
-4. Confirm it appears in `GET /api/connectors/catalog`.
-5. Check connector readiness with `GET /api/connectors/readiness`.
-6. Validate a draft source with `POST /api/sources/validate` or `node src/presentation/cli/threadtrace.js validate-source`.
-7. Register the source with `POST /api/sources` only after the validation report is acceptable for the rollout stage.
+3. Read the handler's `onboardingRecipe` from `GET /api/connectors/catalog` and fill its location fields.
+4. Use `source-onboarding-preflight --module-path ... --location-file ...` to simulate catalog, readiness, and source validation before changing runtime configuration.
+5. Run source ingest dry-run with the same source type and location.
+6. Pass the recipe or preflight manifest draft through rollout manifest plan, resource provisioning, deployment gate, and apply.
+7. Register or apply the source only after the validation report is acceptable for the rollout stage.
 8. Confirm saved-source readiness with `GET /api/sources/diagnostics`.
 
 The validation report separates `valid` from operational readiness. A staged unknown source can be `valid=true` with `allowUnknownSourceType=true`, while diagnostics still report `status=fail` until a handler exists. This lets operators plan migrations without making a source look runnable too early.

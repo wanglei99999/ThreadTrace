@@ -115,7 +115,8 @@ For connector bridges that already produce canonical ThreadTrace snapshots, use 
 ## Onboarding Flow
 
 1. Add or select a source ingest handler from `GET /api/connectors/catalog`.
-2. Call `POST /api/sources/onboarding/preflight` with the draft location and optional ThreadSnapshot JSON file.
-3. Fix any failed `steps`; use `POST /api/sources/validate` when you only need source draft validation.
-4. Call `POST /api/sources` only after the draft is acceptable for the intended rollout stage.
-5. Use `GET /api/sources/diagnostics` after saving to verify stored source readiness across the fleet.
+2. Read the handler's `onboardingRecipe` and use its `requiredLocationFields`, `adapterGuidance`, and `rolloutManifestTemplate` to prepare the draft.
+3. Call `POST /api/sources/onboarding/preflight` with the draft location and optional ThreadSnapshot JSON file.
+4. Fix any failed `steps`; use `POST /api/sources/validate` when you only need source draft validation.
+5. Call `POST /api/sources` only after the draft is acceptable for the intended rollout stage.
+6. Use `GET /api/sources/diagnostics` after saving to verify stored source readiness across the fleet.
