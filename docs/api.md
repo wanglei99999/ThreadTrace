@@ -672,7 +672,7 @@ Request:
 }
 ```
 
-The response includes `gates`, `nextActions`, and the composed lower-level reports. A failing gate returns HTTP `503`; warnings return `200`.
+The response includes `gates`, `nextActions`, and the composed lower-level reports. Gate `nextActions` may include lower-level `details` with `evidenceSummary` for operator-facing failure causes. A failing gate returns HTTP `503`; warnings return `200`.
 
 ### `POST /api/operations/rollout-manifest/apply`
 

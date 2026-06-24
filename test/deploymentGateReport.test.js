@@ -23,10 +23,26 @@ test('deployment gate aggregates rollout resources checklist and runbook', funct
       environment: {
         storageMode: 'postgres'
       },
-      resources: [],
+      resources: [
+        {
+          key: 'source.externalLocation',
+          area: 'sources',
+          required: true,
+          status: 'fail',
+          summary: 'Provision source-specific location settings for the connector handler.',
+          evidenceSummary: 'missingRequiredFields=tenantId'
+        }
+      ],
       nextActions: [
         {
-          commands: ['node src/presentation/cli/threadtrace.js runtime-diagnostics']
+          key: 'source.externalLocation',
+          severity: 'critical',
+          summary: 'Provision source-specific location settings for the connector handler.',
+          commands: ['node src/presentation/cli/threadtrace.js runtime-diagnostics'],
+          evidence: {
+            missingRequiredFields: ['tenantId']
+          },
+          evidenceSummary: 'missingRequiredFields=tenantId'
         }
       ]
     },
@@ -58,6 +74,14 @@ test('deployment gate aggregates rollout resources checklist and runbook', funct
   ]);
   assert.equal(report.nextActions[0].key, 'resources.provisioning');
   assert.ok(report.nextActions[0].commands.includes('node src/presentation/cli/threadtrace.js runtime-diagnostics'));
+  const resourceGate = report.gates.find(function (gate) {
+    return gate.key === 'resources.provisioning';
+  });
+  assert.equal(resourceGate.evidence.failingResources[0].key, 'source.externalLocation');
+  assert.equal(resourceGate.evidence.failingResources[0].evidenceSummary, 'missingRequiredFields=tenantId');
+  assert.equal(resourceGate.evidence.actionDetails[0].evidenceSummary, 'missingRequiredFields=tenantId');
+  assert.equal(report.nextActions[0].details[0].key, 'source.externalLocation');
+  assert.deepEqual(report.nextActions[0].details[0].evidence.missingRequiredFields, ['tenantId']);
 });
 
 test('runtime deployment gate composes rollout and resource reports', async function () {

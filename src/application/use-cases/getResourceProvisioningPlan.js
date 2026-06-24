@@ -425,6 +425,8 @@ function nextActions(resources) {
       summary: item.summary,
       env: item.env,
       commands: item.commands,
+      evidence: item.evidence,
+      evidenceSummary: item.evidenceSummary,
       schemaDrift: item.schemaDrift
     };
   });

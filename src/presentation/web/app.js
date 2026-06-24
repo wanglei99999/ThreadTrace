@@ -1908,7 +1908,10 @@ function renderResourceProvisioningPlan(result) {
   ];
   if (actions.length > 0) {
     panels.push(panel('Resource actions', evidenceList(actions.map(function (action) {
-      return action.severity + ' 路 ' + action.key + ' 路 ' + action.summary + ' 路 ' + (action.commands || []).join(' | ');
+      const details = (action.details || []).map(function (detail) {
+        return detail.key + (detail.evidenceSummary ? ' evidence=' + detail.evidenceSummary : '');
+      }).join(' | ');
+      return action.severity + ' 路 ' + action.key + ' 路 ' + action.summary + ' 路 ' + (action.commands || []).join(' | ') + (details ? ' details=' + details : '');
     })), 'wide'));
   }
   return panels.join('');
@@ -1929,7 +1932,10 @@ function renderDeploymentGateReport(result) {
   ];
   if (actions.length > 0) {
     panels.push(panel('Gate actions', evidenceList(actions.map(function (action) {
-      return action.severity + ' 路 ' + action.key + ' 路 ' + action.summary + ' 路 ' + (action.commands || []).join(' | ');
+      const details = (action.details || []).map(function (detail) {
+        return detail.key + (detail.evidenceSummary ? ' evidence=' + detail.evidenceSummary : '');
+      }).join(' | ');
+      return action.severity + ' 路 ' + action.key + ' 路 ' + action.summary + ' 路 ' + (action.commands || []).join(' | ') + (details ? ' details=' + details : '');
     })), 'wide'));
   }
   return panels.join('');
@@ -1969,7 +1975,10 @@ function renderRolloutManifestApply(result) {
   }
   if (actions.length > 0) {
     panels.push(panel('Apply actions', evidenceList(actions.map(function (action) {
-      return action.severity + ' 路 ' + action.key + ' 路 ' + action.summary + ' 路 ' + (action.commands || []).join(' | ');
+      const details = (action.details || []).map(function (detail) {
+        return detail.key + (detail.evidenceSummary ? ' evidence=' + detail.evidenceSummary : '');
+      }).join(' | ');
+      return action.severity + ' 路 ' + action.key + ' 路 ' + action.summary + ' 路 ' + (action.commands || []).join(' | ') + (details ? ' details=' + details : '');
     })), 'wide'));
   }
   return panels.join('');

@@ -392,6 +392,8 @@ test('resource provisioning plan fails external source inputs missing handler-re
   assert.equal(sourceInput.evidence.sourceTypeKnown, true);
   assert.match(sourceInput.evidenceSummary, /missingRequiredFields=tenantId/);
   assert.equal(plan.nextActions[0].key, 'source.externalLocation');
+  assert.match(plan.nextActions[0].evidenceSummary, /missingRequiredFields=tenantId/);
+  assert.deepEqual(plan.nextActions[0].evidence.missingRequiredFields, ['tenantId']);
 });
 test('runtime resource provisioning plan composes diagnostics and manifest planning', async function () {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-resource-plan-'));

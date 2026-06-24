@@ -1533,6 +1533,9 @@ function main(argv) {
       console.log('Next actions: ' + report.nextActions.length);
       report.nextActions.forEach(function (action) {
         console.log(action.severity + '\t' + action.key + '\t' + action.summary);
+        (action.details || []).forEach(function (detail) {
+          console.log('  detail: ' + (detail.severity || 'info') + '\t' + detail.key + '\t' + (detail.summary || '') + (detail.evidenceSummary ? '\tevidence=' + detail.evidenceSummary : ''));
+        });
         (action.commands || []).forEach(function (command) {
           console.log('  command: ' + command);
         });

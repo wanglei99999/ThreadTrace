@@ -1248,10 +1248,10 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Deployment gate is ok or has warnings'
+              description: 'Deployment gate is ok or has warnings, with lower-level action details when available'
             },
             503: {
-              description: 'Deployment gate has failing checks'
+              description: 'Deployment gate has failing checks, with lower-level action details and evidenceSummary when available'
             },
             400: {
               $ref: '#/components/responses/BadRequest'

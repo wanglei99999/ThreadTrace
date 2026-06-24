@@ -56,11 +56,31 @@ function rolloutEvidence(plan) {
 
 function resourceEvidence(plan) {
   if (!plan) return {};
+  const resources = plan.resources || [];
+  const actions = plan.nextActions || [];
   return {
     storageMode: plan.environment && plan.environment.storageMode,
     sourceTaskMode: plan.environment && plan.environment.sourceTaskMode,
-    resourceCount: (plan.resources || []).length,
-    nextActionCount: (plan.nextActions || []).length
+    resourceCount: resources.length,
+    nextActionCount: actions.length,
+    failingResources: resources.filter(function (item) {
+      return item.status === 'fail';
+    }).map(compactResource),
+    warningResources: resources.filter(function (item) {
+      return item.status === 'warn';
+    }).map(compactResource),
+    actionDetails: actions.map(compactAction)
+  };
+}
+
+function compactResource(resource) {
+  return {
+    key: resource.key,
+    area: resource.area,
+    required: resource.required,
+    status: resource.status,
+    summary: resource.summary,
+    evidenceSummary: resource.evidenceSummary
   };
 }
 
@@ -106,9 +126,42 @@ function nextActions(gates, reports) {
       key: item.key,
       severity: item.status === 'fail' ? 'critical' : 'warning',
       summary: item.summary,
-      commands: commandsForGate(item, reports)
+      commands: commandsForGate(item, reports),
+      details: detailsForGate(item, reports)
     };
   });
+}
+
+function detailsForGate(item, reports) {
+  if (item.key === 'rollout.manifest' && reports.rolloutManifestPlan) {
+    return (reports.rolloutManifestPlan.nextActions || []).map(compactAction);
+  }
+  if (item.key === 'resources.provisioning' && reports.resourceProvisioningPlan) {
+    return (reports.resourceProvisioningPlan.nextActions || []).map(compactAction);
+  }
+  if (item.key === 'operations.runbook' && reports.operationsRunbook) {
+    return (reports.operationsRunbook.actions || []).map(function (action) {
+      return {
+        key: action.key,
+        severity: action.severity,
+        summary: action.title || action.summary,
+        command: action.recommendedCommand,
+        evidence: action.evidence || {}
+      };
+    });
+  }
+  return [];
+}
+
+function compactAction(action) {
+  return {
+    key: action.key,
+    severity: action.severity,
+    summary: action.summary,
+    commands: action.commands || (action.command ? [action.command] : []),
+    evidence: action.evidence || {},
+    evidenceSummary: action.evidenceSummary
+  };
 }
 
 function commandsForGate(item, reports) {
