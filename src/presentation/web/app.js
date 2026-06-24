@@ -203,6 +203,8 @@ function bindForms() {
       topology: form.get('topology'),
       sourceTaskMode: form.get('sourceTaskMode')
     });
+    appendOptionalQuery(query, 'sourceKey', form.get('sourceKey'));
+    appendOptionalQuery(query, 'sourceId', form.get('sourceId'));
     await renderAsync('workerTopologyResult', function () {
       return fetchJson('/api/operations/worker-topology-plan?' + query.toString(), {
         acceptErrorStatus: true
@@ -674,6 +676,7 @@ async function loadSystemStatus() {
       statusRow('Source config', sourceDiagnostics.status + ' · ' + sourceDiagnostics.sourceCount),
       statusRow('Notify', diagnosticStatus(notificationDiagnostics, 'notifications.channel') + ' · ' + notificationDiagnostics.channel),
       statusRow('Source mode', diagnostics.configuration.workers.sourceTaskMode),
+      statusRow('Worker leases', workerLeaseStatusSummary(overview.workers && overview.workers.leases)),
       statusRow('LLM', diagnostics.configuration.llm.provider),
     ].concat(resourceStatusRows, [
       statusRow('适配器', String((adapters.adapters || []).length)),
@@ -688,7 +691,7 @@ async function loadSystemStatus() {
       statusRow('生成时间', overview.generatedAt)
     ]);
     target.innerHTML = rows.join('');
-    document.getElementById('runbookResult').innerHTML = renderOperationsReadiness(operationsReadiness) + renderOperationsRunbook(operationsRunbook);
+    document.getElementById('runbookResult').innerHTML = renderOperationsReadiness(operationsReadiness) + renderWorkerLeaseOverview(overview.workers && overview.workers.leases) + renderOperationsRunbook(operationsRunbook);
   } catch (error) {
     target.innerHTML = '<div class="error">' + escapeHtml(error.message) + '</div>';
   }
@@ -872,6 +875,11 @@ function buildEventQuery() {
   if (sourceKey) query.set('sourceKey', sourceKey);
   if (sourceId) query.set('sourceId', sourceId);
   return query;
+}
+
+function appendOptionalQuery(query, key, value) {
+  const text = String(value || '').trim();
+  if (text) query.set(key, text);
 }
 
 function eventFilterFormData() {
@@ -1890,7 +1898,11 @@ function renderWorkerTopologyPlan(result) {
       metric('Status', result.status),
       metric('Topology', result.topology),
       metric('Storage', result.storageMode),
-      metric('Source mode', result.sourceTaskMode)
+      metric('Source mode', result.sourceTaskMode),
+      metric('Scope', formatEventSourceScope(result.scope || {
+        sourceKey: result.sourceKey,
+        sourceId: result.sourceId
+      }))
     ].join('')),
     panel('Workers', evidenceList(workers.map(function (worker) {
       return worker.workerType + ' 路 ' + worker.scale + ' 路 ' + worker.leaseKey + ' 路 ' + worker.command;
@@ -2146,6 +2158,60 @@ function renderReadinessCheckRow(check) {
     '</span>' +
     statusBadge(check.status || 'warn', statusVariant(check.status)) +
     '</div>';
+}
+
+function renderWorkerLeaseOverview(leases) {
+  const safeLeases = leases || {};
+  const sampleLeases = uniqueLeases((safeLeases.sourceScopedLeases || []).concat(safeLeases.expiredLeases || []));
+  return panel('Worker lease shards', [
+    '<div class="summary-strip">',
+    summaryTile('Active', String(safeLeases.active || 0), (safeLeases.active || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('Expired', String(safeLeases.expired || 0), (safeLeases.expired || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('Scoped', String(safeLeases.sourceScoped || 0), (safeLeases.sourceScoped || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('Global', String(safeLeases.unscoped || 0), (safeLeases.unscoped || 0) > 0 ? 'muted' : 'ok'),
+    '</div>',
+    metric('Worker types', compactCountMap(safeLeases.byWorkerType)),
+    metric('Active source ids', compactCountMap(safeLeases.activeBySourceId)),
+    metric('Expired source ids', compactCountMap(safeLeases.expiredBySourceId)),
+    metric('Active source keys', compactCountMap(safeLeases.activeBySourceKey)),
+    metric('Expired source keys', compactCountMap(safeLeases.expiredBySourceKey)),
+    evidenceList(sampleLeases.slice(0, 8).map(formatWorkerLeaseRow))
+  ].join(''), 'wide');
+}
+
+function workerLeaseStatusSummary(leases) {
+  const safeLeases = leases || {};
+  return [
+    'active ' + (safeLeases.active || 0),
+    'expired ' + (safeLeases.expired || 0),
+    'scoped ' + (safeLeases.sourceScoped || 0),
+    'global ' + (safeLeases.unscoped || 0)
+  ].join(' 路 ');
+}
+
+function uniqueLeases(leases) {
+  const seen = new Set();
+  return (leases || []).filter(function (lease) {
+    const key = lease && lease.leaseKey || '';
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function formatWorkerLeaseRow(lease) {
+  const scope = lease.scope || {};
+  const scopeLabel = scope.sourceId
+    ? 'sourceId=' + scope.sourceId
+    : (scope.sourceKey ? 'sourceKey=' + scope.sourceKey : 'global');
+  return [
+    lease.expired ? 'expired' : 'active',
+    lease.workerType || 'unknown-worker',
+    scopeLabel,
+    lease.ownerId || 'unknown-owner',
+    lease.leaseKey || 'unknown-lease',
+    lease.expiresAt || 'no-expiry'
+  ].join(' | ');
 }
 
 function renderOperationsRunbook(runbook) {

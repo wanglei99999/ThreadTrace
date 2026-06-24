@@ -382,6 +382,14 @@
               <option value="insight-pipeline">insight-pipeline</option>
             </select>
           </label>
+          <label>
+            <span>Source key</span>
+            <input name="sourceKey" value="nga" autocomplete="off">
+          </label>
+          <label>
+            <span>Source ID</span>
+            <input name="sourceId" placeholder="optional tracked source id" autocomplete="off">
+          </label>
           <button type="submit">Worker plan</button>
         </form>
         <form id="rolloutManifestForm" class="control-strip">
@@ -503,6 +511,6 @@
   </div>
   <datalist id="forumSuggestions"></datalist>
   <datalist id="sourceTypeSuggestions"></datalist>
-  <script src="/app.js"></script>
+  <script src="/app.js?v=worker-lease-ui"></script>
 </body>
 </html>

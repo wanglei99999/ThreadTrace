@@ -1,6 +1,6 @@
 # Operations Overview
 
-ThreadTrace exposes a compact operational overview for local console use, Web UI status panels, and future monitoring integrations.
+ThreadTrace exposes a compact operational overview for local console use, Web UI status panels, and future monitoring integrations. The Web system view shows the same worker lease source-shard summary as the CLI so operators can spot unhealthy source-scoped workers without opening raw JSON.
 
 ## Entry Points
 

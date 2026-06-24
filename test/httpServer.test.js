@@ -132,6 +132,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(homeHtml, /sourceDryRunForm/);
     assert.match(homeHtml, /connectorRolloutForm/);
     assert.match(homeHtml, /workerTopologyForm/);
+    assert.match(homeHtml, /workerTopologyForm[\s\S]*name="sourceKey"/);
+    assert.match(homeHtml, /workerTopologyForm[\s\S]*name="sourceId"/);
     assert.match(homeHtml, /rolloutManifestForm/);
     assert.match(homeHtml, /resourceProvisioningForm/);
     assert.match(homeHtml, /deploymentGateForm/);
@@ -170,6 +172,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /operations\/runbook\/events/);
     assert.match(webAppJs, /operations\/readiness/);
     assert.match(webAppJs, /renderOperationsReadiness/);
+    assert.match(webAppJs, /appendOptionalQuery\(query, 'sourceKey'/);
+    assert.match(webAppJs, /Worker lease shards/);
+    assert.match(webAppJs, /workerLeaseStatusSummary/);
     assert.match(webAppJs, /intelligence\/author-review-queue\/events/);
     assert.match(webAppJs, /Create alerts/);
     assert.match(webAppJs, /buildEventQuery/);
@@ -743,6 +748,8 @@ test('http server exposes deployment checklist API', async function () {
     assert.equal(topologyPlan.workers[0].workerType, 'operations');
     assert.equal(scopedTopologyPlan.sourceKey, 'nga');
     assert.equal(scopedTopologyPlan.sourceId, 'source-1');
+    assert.equal(scopedTopologyPlan.workers[0].leaseKey, 'worker:due-source:source-id:source-1');
+    assert.equal(scopedTopologyPlan.workers[1].leaseKey, 'worker:notification-event:source-id:source-1');
     assert.match(scopedTopologyPlan.workers[0].command, /--source-key nga/);
     assert.match(scopedTopologyPlan.workers[0].command, /--source-id source-1/);
     assert.ok(openApi.paths['/api/deployment/checklist']);
