@@ -222,6 +222,8 @@ function summarizeOperationsResult(dueSources, reviewActionTask, contextReviewRe
       eventCount: runbookEvents.eventCount,
       createdCount: runbookEvents.createdCount,
       updatedCount: runbookEvents.updatedCount,
+      resolvedCount: runbookEvents.resolvedCount,
+      reopenedCount: runbookEvents.reopenedCount,
       skippedCount: runbookEvents.skippedCount
     } : undefined,
     contextReviewResultEvents: contextReviewResultEvents ? {

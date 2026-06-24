@@ -70,8 +70,18 @@ test('operations worker runs due sources, event dispatch, and overview in order'
 
 test('operations worker can synthesize runbook notification events before dispatch', async function () {
   const calls = [];
+  const workerRuns = [];
   const worker = createOperationsWorker({
     logger: silentLogger(),
+    workerRunRepository: {
+      async saveWorkerRun(run) {
+        workerRuns.push(Object.assign({}, run));
+      },
+      async findWorkerRun() {},
+      async listWorkerRuns() {
+        return workerRuns;
+      }
+    },
     runtime: {
       async runDueSourcesIngestTasks() {
         calls.push(['sources']);
@@ -89,6 +99,8 @@ test('operations worker can synthesize runbook notification events before dispat
           eventCount: 1,
           createdCount: 1,
           updatedCount: 0,
+          resolvedCount: 2,
+          reopenedCount: 1,
           skippedCount: 0
         };
       },
@@ -130,6 +142,8 @@ test('operations worker can synthesize runbook notification events before dispat
     ['overview']
   ]);
   assert.equal(result.runbookEvents.eventCount, 1);
+  assert.equal(workerRuns.at(-1).output.runbookEvents.resolvedCount, 2);
+  assert.equal(workerRuns.at(-1).output.runbookEvents.reopenedCount, 1);
 });
 
 test('operations worker can synthesize author review queue events before dispatch', async function () {
