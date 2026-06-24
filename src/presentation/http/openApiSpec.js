@@ -262,7 +262,14 @@ function createOpenApiSpec() {
           ],
           responses: {
             200: {
-              description: 'Read-only review result action plan with close, keep-open, merge, blocked, attention, and risk sections'
+              description: 'Read-only review result action plan with close, keep-open, merge, blocked, attention, and risk sections',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/ContextReviewActionPlan'
+                  }
+                }
+              }
             }
           }
         }
@@ -282,7 +289,14 @@ function createOpenApiSpec() {
           ],
           responses: {
             200: {
-              description: 'Action gate report with readiness gates, executable flags, next actions, and the underlying action plan'
+              description: 'Action gate report with readiness gates, executable flags, next actions, and the underlying action plan',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/ContextReviewActionGate'
+                  }
+                }
+              }
             }
           }
         }
@@ -338,7 +352,14 @@ function createOpenApiSpec() {
           ],
           responses: {
             200: {
-              description: 'Review action audit records with action type, compact executor request, and audit file path'
+              description: 'Review action audit records with action type, compact executor request, and audit file path',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/ContextReviewActionAuditListResult'
+                  }
+                }
+              }
             }
           }
         }
@@ -357,7 +378,14 @@ function createOpenApiSpec() {
           ],
           responses: {
             200: {
-              description: 'Review action audit counts by action and adapter, planned closure and merge totals, and recent records'
+              description: 'Review action audit counts by action and adapter, planned closure and merge totals, and recent records',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/ContextReviewActionAuditOverview'
+                  }
+                }
+              }
             }
           }
         }
@@ -378,7 +406,14 @@ function createOpenApiSpec() {
           ],
           responses: {
             200: {
-              description: 'Execution ledger records with action type, status, request hash, result, and file path when available'
+              description: 'Execution ledger records with action type, status, request hash, result, and file path when available',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/ContextReviewActionExecutionListResult'
+                  }
+                }
+              }
             },
             503: {
               description: 'Execution ledger repository is not configured for this storage mode'
@@ -2460,6 +2495,311 @@ function createOpenApiSpec() {
               items: { $ref: '#/components/schemas/AuthorReviewQueueItem' }
             },
             recommendedNextAction: { type: 'string' }
+          }
+        },
+        ContextReviewActionSourceScope: {
+          type: 'object',
+          properties: {
+            sourceIds: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            sourceKeys: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            mixed: { type: 'boolean', example: false }
+          }
+        },
+        ContextReviewActionPlanRecord: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            status: { type: 'string', example: 'partially-accepted' },
+            handoffId: { type: 'string' },
+            submittedAt: { type: 'string', example: '2026-06-21T10:00:00.000Z' },
+            reviewer: { type: 'string', example: 'operator-1' },
+            severity: { type: 'string', enum: ['info', 'warning', 'critical'] },
+            closeCandidateCount: { type: 'number' },
+            keepOpenCandidateCount: { type: 'number' },
+            mergeCandidateCount: { type: 'number' },
+            blockedTaskCount: { type: 'number' },
+            recommendedNextAction: { type: 'string' }
+          }
+        },
+        ContextReviewMergeCandidate: {
+          type: 'object',
+          properties: {
+            taskId: { type: 'string' },
+            recordId: { type: 'string' },
+            handoffId: { type: 'string' },
+            sourceId: { type: 'string' },
+            sourceKey: { type: 'string', example: 'nga' },
+            submittedAt: { type: 'string' },
+            reviewer: { type: 'string' },
+            severity: { type: 'string', enum: ['info', 'warning', 'critical'] }
+          },
+          additionalProperties: true
+        },
+        ContextReviewBlockedTask: {
+          type: 'object',
+          properties: {
+            taskId: { type: 'string' },
+            reason: { type: 'string' },
+            recordId: { type: 'string' },
+            handoffId: { type: 'string' },
+            sourceId: { type: 'string' },
+            sourceKey: { type: 'string', example: 'nga' },
+            submittedAt: { type: 'string' },
+            reviewer: { type: 'string' },
+            severity: { type: 'string', enum: ['info', 'warning', 'critical'] }
+          },
+          additionalProperties: true
+        },
+        ContextReviewActionPlanAttention: {
+          type: 'object',
+          properties: {
+            criticalCount: { type: 'number' },
+            warningCount: { type: 'number' },
+            conflictTaskIds: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            lowConfidenceRecordIds: {
+              type: 'array',
+              items: { type: 'string' }
+            }
+          }
+        },
+        ContextReviewActionPlanRisk: {
+          type: 'object',
+          properties: {
+            level: { type: 'string', enum: ['ok', 'warning', 'critical'] },
+            reasons: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['warning-review-results']
+            }
+          }
+        },
+        ContextReviewActionPlan: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-21T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn'] },
+            sourceId: { type: 'string' },
+            sourceKey: { type: 'string', example: 'nga' },
+            sourceScope: { $ref: '#/components/schemas/ContextReviewActionSourceScope' },
+            windowLimit: { type: 'number', example: 100 },
+            count: { type: 'number', example: 1 },
+            closeTaskIds: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            keepOpenTaskIds: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            mergeCandidates: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/ContextReviewMergeCandidate' }
+            },
+            blockedTasks: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/ContextReviewBlockedTask' }
+            },
+            records: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/ContextReviewActionPlanRecord' }
+            },
+            attention: { $ref: '#/components/schemas/ContextReviewActionPlanAttention' },
+            risk: { $ref: '#/components/schemas/ContextReviewActionPlanRisk' },
+            recommendedNextAction: { type: 'string' }
+          }
+        },
+        ContextReviewActionGateItem: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', example: 'reviewResults.sourceScope' },
+            area: { type: 'string', example: 'review-results' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            summary: { type: 'string' },
+            evidence: {
+              type: 'object',
+              additionalProperties: true
+            },
+            commands: {
+              type: 'array',
+              items: { type: 'string' }
+            }
+          }
+        },
+        ContextReviewActionGateExecutable: {
+          type: 'object',
+          properties: {
+            canCloseTasks: { type: 'boolean' },
+            canMergeContext: { type: 'boolean' },
+            requiresHumanReview: { type: 'boolean' },
+            closeTaskCount: { type: 'number' },
+            mergeCandidateCount: { type: 'number' }
+          }
+        },
+        ContextReviewActionGateNextAction: {
+          type: 'object',
+          properties: {
+            key: { type: 'string' },
+            severity: { type: 'string', enum: ['warning', 'critical'] },
+            summary: { type: 'string' },
+            commands: {
+              type: 'array',
+              items: { type: 'string' }
+            }
+          }
+        },
+        ContextReviewActionGate: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-21T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            sourceId: { type: 'string' },
+            sourceKey: { type: 'string', example: 'nga' },
+            gateCount: { type: 'number', example: 6 },
+            gates: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/ContextReviewActionGateItem' }
+            },
+            executable: { $ref: '#/components/schemas/ContextReviewActionGateExecutable' },
+            nextActions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/ContextReviewActionGateNextAction' }
+            },
+            recommendedNextAction: { type: 'string' },
+            actionPlan: { $ref: '#/components/schemas/ContextReviewActionPlan' }
+          }
+        },
+        ContextReviewActionAuditRecord: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            generatedAt: { type: 'string', example: '2026-06-21T10:00:00.000Z' },
+            action: { type: 'string', example: 'tasks.closure' },
+            adapter: { type: 'string', example: 'file-audit' },
+            sourceId: { type: 'string' },
+            sourceKey: { type: 'string', example: 'nga' },
+            request: {
+              type: 'object',
+              additionalProperties: true
+            },
+            result: {
+              type: 'object',
+              additionalProperties: true
+            },
+            filePath: { type: 'string' }
+          }
+        },
+        ContextReviewActionAuditListResult: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-21T10:00:00.000Z' },
+            sourceId: { type: 'string' },
+            sourceKey: { type: 'string', example: 'nga' },
+            count: { type: 'number', example: 2 },
+            audits: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/ContextReviewActionAuditRecord' }
+            }
+          }
+        },
+        ContextReviewActionAuditOverview: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-21T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn'] },
+            sourceId: { type: 'string' },
+            sourceKey: { type: 'string', example: 'nga' },
+            query: {
+              type: 'object',
+              additionalProperties: true
+            },
+            count: { type: 'number', example: 2 },
+            taskCount: { type: 'number', example: 1 },
+            byAction: {
+              type: 'object',
+              additionalProperties: { type: 'number' }
+            },
+            byAdapter: {
+              type: 'object',
+              additionalProperties: { type: 'number' }
+            },
+            bySourceKey: {
+              type: 'object',
+              additionalProperties: { type: 'number' }
+            },
+            bySourceId: {
+              type: 'object',
+              additionalProperties: { type: 'number' }
+            },
+            plannedClosureCount: { type: 'number' },
+            plannedMergeCandidateCount: { type: 'number' },
+            latestGeneratedAt: { type: 'string' },
+            recentAudits: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/ContextReviewActionAuditRecord' }
+            },
+            recommendedNextAction: { type: 'string' }
+          }
+        },
+        ContextReviewActionExecutionRecord: {
+          type: 'object',
+          properties: {
+            key: { type: 'string' },
+            action: { type: 'string', example: 'tasks.closure' },
+            status: { type: 'string', enum: ['running', 'completed', 'failed'] },
+            taskId: { type: 'string' },
+            sourceId: { type: 'string' },
+            sourceKey: { type: 'string', example: 'nga' },
+            requestHash: { type: 'string' },
+            request: {
+              type: 'object',
+              additionalProperties: true
+            },
+            result: {
+              type: 'object',
+              additionalProperties: true
+            },
+            error: {
+              type: 'object',
+              additionalProperties: true
+            },
+            attemptCount: { type: 'number' },
+            createdAt: { type: 'string' },
+            updatedAt: { type: 'string' },
+            completedAt: { type: 'string' },
+            failedAt: { type: 'string' },
+            runningAgeMs: { type: 'number' },
+            staleRunning: { type: 'boolean' },
+            filePath: { type: 'string' }
+          }
+        },
+        ContextReviewActionExecutionListResult: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-21T10:00:00.000Z' },
+            status: { type: 'string', example: 'ok' },
+            healthStatus: { type: 'string', enum: ['ok', 'warn'] },
+            sourceId: { type: 'string' },
+            sourceKey: { type: 'string', example: 'nga' },
+            count: { type: 'number', example: 2 },
+            runningStaleAfterMs: { type: 'number', example: 600000 },
+            staleRunningCount: { type: 'number', example: 0 },
+            staleRunningExecutions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/ContextReviewActionExecutionRecord' }
+            },
+            executions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/ContextReviewActionExecutionRecord' }
+            }
           }
         },
         RunbookAction: {

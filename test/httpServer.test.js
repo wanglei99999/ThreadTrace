@@ -426,6 +426,14 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/context-review-results/overview']);
     assert.ok(openApi.paths['/api/context-review-results/action-plan']);
     assert.ok(openApi.paths['/api/context-review-results/action-gate']);
+    assert.equal(openApi.paths['/api/context-review-results/action-plan'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/ContextReviewActionPlan');
+    assert.equal(openApi.paths['/api/context-review-results/action-gate'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/ContextReviewActionGate');
+    assert.equal(openApi.components.schemas.ContextReviewActionPlan.properties.sourceScope.$ref, '#/components/schemas/ContextReviewActionSourceScope');
+    assert.equal(openApi.components.schemas.ContextReviewActionPlan.properties.records.items.$ref, '#/components/schemas/ContextReviewActionPlanRecord');
+    assert.equal(openApi.components.schemas.ContextReviewActionPlan.properties.mergeCandidates.items.$ref, '#/components/schemas/ContextReviewMergeCandidate');
+    assert.equal(openApi.components.schemas.ContextReviewActionGate.properties.gates.items.$ref, '#/components/schemas/ContextReviewActionGateItem');
+    assert.equal(openApi.components.schemas.ContextReviewActionGate.properties.executable.$ref, '#/components/schemas/ContextReviewActionGateExecutable');
+    assert.equal(openApi.components.schemas.ContextReviewActionGate.properties.actionPlan.$ref, '#/components/schemas/ContextReviewActionPlan');
     assert.ok(openApi.paths['/api/context-review-results/action-tasks/apply']);
     assert.ok(openApi.paths['/api/context-review-results/action-audits']);
     assert.ok(openApi.paths['/api/context-review-results/action-audits/overview']);
@@ -576,6 +584,13 @@ test('http server lists file-audit review action executor records', async functi
     assert.equal(closureExecutions.executions[0].taskId, apply.task.id);
     assert.equal(closureExecutions.executions[0].sourceKey, 'nga');
     assert.ok(openApi.paths['/api/context-review-results/action-executions']);
+    assert.equal(openApi.paths['/api/context-review-results/action-audits'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/ContextReviewActionAuditListResult');
+    assert.equal(openApi.paths['/api/context-review-results/action-audits/overview'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/ContextReviewActionAuditOverview');
+    assert.equal(openApi.paths['/api/context-review-results/action-executions'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/ContextReviewActionExecutionListResult');
+    assert.equal(openApi.components.schemas.ContextReviewActionAuditListResult.properties.audits.items.$ref, '#/components/schemas/ContextReviewActionAuditRecord');
+    assert.equal(openApi.components.schemas.ContextReviewActionAuditOverview.properties.recentAudits.items.$ref, '#/components/schemas/ContextReviewActionAuditRecord');
+    assert.equal(openApi.components.schemas.ContextReviewActionExecutionListResult.properties.executions.items.$ref, '#/components/schemas/ContextReviewActionExecutionRecord');
+    assert.equal(openApi.components.schemas.ContextReviewActionExecutionRecord.properties.staleRunning.type, 'boolean');
     assert.ok(openApi.paths['/api/context-review-results/action-audits'].get.parameters.find(function (parameter) {
       return parameter.name === 'sourceKey';
     }));
