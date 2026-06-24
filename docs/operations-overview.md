@@ -63,7 +63,7 @@ Use the worker topology plan before choosing a deployment shape:
 node src/presentation/cli/threadtrace.js worker-topology-plan
 ```
 
-It reports the recommended worker commands, lease keys, intervals, current worker health, and deployment checklist status.
+It reports the recommended worker commands, lease keys, intervals, current worker health, and deployment checklist status. When a source scope is supplied, the lease keys are source-scoped too, allowing different sources to run in parallel while preserving single-active execution for each source.
 
 Use a rollout manifest to evaluate source onboarding, optional connector module validation, source ingest dry-run, and worker topology from one repeatable JSON input:
 

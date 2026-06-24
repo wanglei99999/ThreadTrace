@@ -81,10 +81,54 @@ test('worker topology plan scopes generated worker commands by source', function
     sourceKey: 'forum-a'
   });
   assert.equal(plan.workers[0].scope.sourceId, 'source-a');
+  assert.equal(plan.workers[0].leaseKey, 'worker:due-source:source-id:source-a');
+  assert.equal(plan.workers[1].leaseKey, 'worker:notification-event:source-id:source-a');
   assert.match(plan.workers[0].command, /--source-key forum-a/);
   assert.match(plan.workers[0].command, /--source-id source-a/);
   assert.match(plan.workers[1].command, /--source-key forum-a/);
   assert.match(plan.workers[1].command, /--source-id source-a/);
+});
+
+test('worker topology plan emits distinct source-scoped lease keys', function () {
+  const baseOptions = {
+    topology: 'operations-worker',
+    config: {
+      storageMode: 'postgres',
+      workers: {
+        sourceTaskMode: 'ingest',
+        leaseTtlMs: 300000,
+        operationsIntervalMs: 60000
+      }
+    },
+    deploymentChecklist: {
+      status: 'ok',
+      items: []
+    },
+    operationalOverview: {
+      workers: {
+        running: 0,
+        failed: 0,
+        stale: 0
+      }
+    }
+  };
+
+  const sourceA = getWorkerTopologyPlan(Object.assign({}, baseOptions, {
+    sourceId: 'source-a',
+    sourceKey: 'forum-a'
+  }));
+  const sourceB = getWorkerTopologyPlan(Object.assign({}, baseOptions, {
+    sourceId: 'source-b',
+    sourceKey: 'forum-a'
+  }));
+  const sourceKeyOnly = getWorkerTopologyPlan(Object.assign({}, baseOptions, {
+    sourceKey: 'forum-a'
+  }));
+
+  assert.equal(sourceA.workers[0].leaseKey, 'worker:operations:source-id:source-a');
+  assert.equal(sourceB.workers[0].leaseKey, 'worker:operations:source-id:source-b');
+  assert.notEqual(sourceA.workers[0].leaseKey, sourceB.workers[0].leaseKey);
+  assert.equal(sourceKeyOnly.workers[0].leaseKey, 'worker:operations:source-key:forum-a');
 });
 
 test('worker topology plan warns when split workers use file storage', function () {

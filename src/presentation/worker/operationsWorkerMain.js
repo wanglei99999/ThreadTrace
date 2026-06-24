@@ -4,6 +4,7 @@
 const { loadEnvFile } = require('../../runtime/envFileLoader');
 const { createThreadTraceRuntime } = require('../../runtime/threadTraceRuntime');
 const { createThreadTraceConfig } = require('../../runtime/threadTraceConfig');
+const { buildWorkerLeaseKey } = require('../../domain/models/workerLeaseKey');
 const { createOperationsWorker } = require('./operationsWorker');
 
 async function main(argv) {
@@ -35,6 +36,10 @@ async function main(argv) {
     runtime,
     workerRunRepository: repositories.workerRunRepository,
     workerLeaseRepository: repositories.workerLeaseRepository,
+    leaseKey: buildWorkerLeaseKey('operations', {
+      sourceId: options.sourceId,
+      sourceKey: options.sourceKey || options.forum
+    }),
     sourceTaskMode: config.workers.sourceTaskMode,
     leaseTtlMs: config.workers.leaseTtlMs,
     pollIntervalMs: config.workers.operationsIntervalMs

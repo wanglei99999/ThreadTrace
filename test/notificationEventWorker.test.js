@@ -3,6 +3,21 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 const { createNotificationEventWorker } = require('../src/presentation/worker/notificationEventWorker');
+const { parseArgs } = require('../src/presentation/worker/notificationEventWorkerMain');
+
+test('notification event worker main parses source scope flags', function () {
+  const options = parseArgs([
+    '--once',
+    '--forum', 'forum-a',
+    '--source-key', 'forum-a',
+    '--source-id', 'source-a'
+  ]);
+
+  assert.equal(options.loop, false);
+  assert.equal(options.forum, 'forum-a');
+  assert.equal(options.sourceKey, 'forum-a');
+  assert.equal(options.sourceId, 'source-a');
+});
 
 test('notification event worker skips overlapping runs', async function () {
   let releaseRun;

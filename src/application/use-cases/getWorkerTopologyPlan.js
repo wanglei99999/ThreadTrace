@@ -1,5 +1,7 @@
 'use strict';
 
+const { buildWorkerLeaseKey } = require('../../domain/models/workerLeaseKey');
+
 function getWorkerTopologyPlan(options) {
   const safeOptions = options || {};
   const config = safeOptions.config || {};
@@ -62,7 +64,7 @@ function operationsWorkerPlan(workersConfig, sourceTaskMode, sourceScope) {
       role: 'Runs due source work, notification dispatch, and operational overview in one non-overlapping loop.',
       required: true,
       scale: 'single-active',
-      leaseKey: 'worker:operations',
+      leaseKey: buildWorkerLeaseKey('operations', sourceScope),
       intervalMs: workersConfig.operationsIntervalMs,
       scope: sourceScope,
       command: buildCommand('node src/presentation/worker/operationsWorkerMain.js', [
@@ -82,7 +84,7 @@ function splitWorkerPlan(workersConfig, sourceTaskMode, sourceScope) {
       role: 'Runs due tracked source ingest or insight pipeline work.',
       required: true,
       scale: 'single-active-per-lease',
-      leaseKey: 'worker:due-source',
+      leaseKey: buildWorkerLeaseKey('due-source', sourceScope),
       intervalMs: workersConfig.dueSourceIntervalMs,
       scope: sourceScope,
       command: buildCommand('node src/presentation/worker/dueSourceWorkerMain.js', [
@@ -97,7 +99,7 @@ function splitWorkerPlan(workersConfig, sourceTaskMode, sourceScope) {
       role: 'Dispatches pending notification events.',
       required: true,
       scale: 'single-active-per-lease',
-      leaseKey: 'worker:notification-event',
+      leaseKey: buildWorkerLeaseKey('notification-event', sourceScope),
       intervalMs: workersConfig.eventIntervalMs,
       scope: sourceScope,
       command: buildCommand('node src/presentation/worker/notificationEventWorkerMain.js', [

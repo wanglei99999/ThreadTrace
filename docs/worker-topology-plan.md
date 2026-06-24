@@ -48,13 +48,17 @@ node src/presentation/worker/dueSourceWorkerMain.js --loop --source-task-mode in
 node src/presentation/worker/notificationEventWorkerMain.js --loop --source-key nga --source-id tracked-source-nga-001
 ```
 
-The source worker then evaluates only that tracked source when `sourceId` is present, and the notification worker dispatches only that source's pending or failed outbox events.
+The source worker then evaluates only that tracked source when `sourceId` is present, and the notification worker dispatches only that source's pending or failed outbox events. Source-scoped workers also use source-scoped lease keys, so one worker for `source-a` and one worker for `source-b` can run at the same time while two workers for the same source still compete for one lease.
 
 Each worker uses a lease key so multiple processes can be started while only one active owner runs a given loop at a time:
 
 - `worker:operations`
 - `worker:due-source`
 - `worker:notification-event`
+- `worker:operations:source-id:<sourceId>`
+- `worker:due-source:source-id:<sourceId>`
+- `worker:notification-event:source-id:<sourceId>`
+- `worker:<workerType>:source-key:<sourceKey>` when only `sourceKey` is supplied
 
 File storage is appropriate for local development and simple single-node operation. Use PostgreSQL before running split workers across hosts, because PostgreSQL coordinates worker runs, worker leases, source run guards, tasks, and notification events in one shared store.
 
@@ -71,7 +75,7 @@ File storage is appropriate for local development and simple single-node operati
   "workers": [
     {
       "workerType": "due-source",
-      "leaseKey": "worker:due-source",
+      "leaseKey": "worker:due-source:source-id:tracked-source-nga-001",
       "command": "node src/presentation/worker/dueSourceWorkerMain.js --loop --source-task-mode insight-pipeline --source-key nga --source-id tracked-source-nga-001"
     }
   ],
