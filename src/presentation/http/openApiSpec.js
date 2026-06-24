@@ -1411,7 +1411,14 @@ function createOpenApiSpec() {
           ],
           responses: {
             200: {
-              description: 'Notification events'
+              description: 'Notification events',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/NotificationEventListResult'
+                  }
+                }
+              }
             }
           }
         }
@@ -1432,7 +1439,14 @@ function createOpenApiSpec() {
           ],
           responses: {
             200: {
-              description: 'Notification outbox overview with counts by type, severity, status, acknowledgement, source pressure, sourceHotspots, and attention samples'
+              description: 'Notification outbox overview with counts by type, severity, status, acknowledgement, source pressure, sourceHotspots, and attention samples',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/NotificationEventOverview'
+                  }
+                }
+              }
             }
           }
         }
@@ -2526,12 +2540,156 @@ function createOpenApiSpec() {
             deliveryStatus: { type: 'string', enum: ['pending', 'delivered', 'failed', 'resolved'] },
             deliveryAttempts: { type: 'number', example: 0 },
             nextDeliveryAt: { type: 'string', example: '2026-06-19T10:00:00.000Z' },
-            lastDeliveryError: { type: 'string' },
+            deliveryResult: {
+              type: 'object',
+              additionalProperties: true
+            },
+            lastDeliveryError: {
+              type: 'object',
+              additionalProperties: true
+            },
             lastDeliveryAttemptAt: { type: 'string' },
             lastDeliveredAt: { type: 'string' },
             acknowledgedAt: { type: 'string' },
             acknowledgedBy: { type: 'string' },
-            acknowledgementNote: { type: 'string' }
+            acknowledgementNote: { type: 'string' },
+            archivedAt: { type: 'string' },
+            archivedBy: { type: 'string' },
+            archiveReason: { type: 'string' },
+            archiveBatchId: { type: 'string' }
+          }
+        },
+        NotificationEventListResult: {
+          type: 'object',
+          properties: {
+            events: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/NotificationEvent' }
+            }
+          }
+        },
+        NotificationEventSummary: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', example: 'runbook-action-afdda22a04d1' },
+            type: { type: 'string', example: 'runbook-action' },
+            severity: { type: 'string', enum: ['debug', 'info', 'warning', 'critical'] },
+            sourceId: { type: 'string', example: 'tracked-source-nga-001' },
+            sourceKey: { type: 'string', example: 'nga' },
+            title: { type: 'string' },
+            summary: { type: 'string' },
+            createdAt: { type: 'string', example: '2026-06-19T10:00:00.000Z' },
+            deliveryStatus: { type: 'string', enum: ['pending', 'delivered', 'failed', 'resolved'] },
+            deliveryAttempts: { type: 'number', example: 0 },
+            nextDeliveryAt: { type: 'string' },
+            lastDeliveryError: {
+              type: 'object',
+              additionalProperties: true
+            }
+          }
+        },
+        NotificationEventSourceHotspot: {
+          type: 'object',
+          properties: {
+            sourceId: { type: 'string', example: 'tracked-source-nga-001' },
+            sourceKey: { type: 'string', example: 'nga' },
+            eventCount: { type: 'number', example: 5 },
+            openCount: { type: 'number', example: 3 },
+            failedCount: { type: 'number', example: 1 },
+            dueForDeliveryCount: { type: 'number', example: 2 },
+            retryExhaustedCount: { type: 'number', example: 0 },
+            latestCreatedAt: { type: 'string', example: '2026-06-19T10:00:00.000Z' },
+            oldestUnacknowledgedAt: { type: 'string', example: '2026-06-19T09:00:00.000Z' }
+          }
+        },
+        NotificationEventAttention: {
+          type: 'object',
+          properties: {
+            failedEvents: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/NotificationEventSummary' }
+            },
+            dueEvents: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/NotificationEventSummary' }
+            },
+            retryExhaustedEvents: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/NotificationEventSummary' }
+            },
+            reviewableEvents: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/NotificationEventSummary' }
+            },
+            unacknowledgedByType: {
+              type: 'object',
+              additionalProperties: { type: 'number' }
+            }
+          }
+        },
+        NotificationEventOverview: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-19T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            windowLimit: { type: 'number', example: 200 },
+            filters: {
+              type: 'object',
+              properties: {
+                type: { type: 'string' },
+                sourceId: { type: 'string' },
+                sourceKey: { type: 'string' },
+                acknowledged: { type: 'boolean' },
+                deliveryStatus: { type: 'string' }
+              }
+            },
+            eventCount: { type: 'number', example: 5 },
+            pendingCount: { type: 'number', example: 2 },
+            failedCount: { type: 'number', example: 1 },
+            unacknowledgedCount: { type: 'number', example: 3 },
+            acknowledgedCount: { type: 'number', example: 2 },
+            dueForDeliveryCount: { type: 'number', example: 1 },
+            retryExhaustedCount: { type: 'number', example: 0 },
+            nextDeliveryAt: { type: 'string' },
+            oldestUnacknowledgedAt: { type: 'string' },
+            latestCreatedAt: { type: 'string' },
+            byType: {
+              type: 'object',
+              additionalProperties: { type: 'number' }
+            },
+            bySeverity: {
+              type: 'object',
+              additionalProperties: { type: 'number' }
+            },
+            byDeliveryStatus: {
+              type: 'object',
+              additionalProperties: { type: 'number' }
+            },
+            byOpenDeliveryStatus: {
+              type: 'object',
+              additionalProperties: { type: 'number' }
+            },
+            byAcknowledgement: {
+              type: 'object',
+              properties: {
+                acknowledged: { type: 'number' },
+                unacknowledged: { type: 'number' }
+              }
+            },
+            bySourceKey: {
+              type: 'object',
+              additionalProperties: { type: 'number' }
+            },
+            byOpenSourceKey: {
+              type: 'object',
+              additionalProperties: { type: 'number' }
+            },
+            sourceHotspots: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/NotificationEventSourceHotspot' }
+            },
+            attention: { $ref: '#/components/schemas/NotificationEventAttention' },
+            recommendedNextAction: { type: 'string' }
           }
         },
         RunbookNotificationEventSynthesisItem: {

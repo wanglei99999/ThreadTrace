@@ -432,6 +432,14 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/context-review-results/action-executor/diagnostics']);
     assert.ok(openApi.paths['/api/context-review-results/events']);
     assert.ok(openApi.paths['/api/events/overview']);
+    assert.equal(openApi.paths['/api/events'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/NotificationEventListResult');
+    assert.equal(openApi.paths['/api/events/overview'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/NotificationEventOverview');
+    assert.equal(openApi.components.schemas.NotificationEventListResult.properties.events.items.$ref, '#/components/schemas/NotificationEvent');
+    assert.equal(openApi.components.schemas.NotificationEvent.properties.lastDeliveryError.type, 'object');
+    assert.equal(openApi.components.schemas.NotificationEventOverview.properties.sourceHotspots.items.$ref, '#/components/schemas/NotificationEventSourceHotspot');
+    assert.equal(openApi.components.schemas.NotificationEventOverview.properties.attention.$ref, '#/components/schemas/NotificationEventAttention');
+    assert.equal(openApi.components.schemas.NotificationEventAttention.properties.failedEvents.items.$ref, '#/components/schemas/NotificationEventSummary');
+    assert.equal(openApi.components.schemas.NotificationEventSourceHotspot.properties.retryExhaustedCount.type, 'number');
     assert.ok(openApi.paths['/api/connectors/catalog']);
     assert.ok(openApi.paths['/api/connectors/readiness']);
     assert.ok(openApi.paths['/api/connectors/modules/validate']);
