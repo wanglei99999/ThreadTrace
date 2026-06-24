@@ -464,6 +464,11 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/connectors/readiness']);
     assert.ok(openApi.paths['/api/connectors/modules/validate']);
     assert.ok(openApi.paths['/api/connectors/rollout-plan']);
+    assert.equal(openApi.paths['/api/connectors/rollout-plan'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/ConnectorRolloutPlan');
+    assert.equal(openApi.paths['/api/connectors/rollout-plan'].post.responses[503].content['application/json'].schema.$ref, '#/components/schemas/ConnectorRolloutPlan');
+    assert.equal(openApi.components.schemas.ConnectorRolloutPlan.properties.steps.items.$ref, '#/components/schemas/OperationsPlanStep');
+    assert.equal(openApi.components.schemas.ConnectorRolloutPlan.properties.nextActions.items.$ref, '#/components/schemas/OperationsPlanAction');
+    assert.equal(openApi.components.schemas.ConnectorRolloutPlan.properties.sourceOnboardingPreflight.$ref, '#/components/schemas/SourceOnboardingPreflight');
     assert.ok(openApi.paths['/api/operations/rollout-manifest-plan']);
     assert.ok(openApi.paths['/api/operations/resource-provisioning-plan']);
     assert.ok(openApi.paths['/api/deployment/gate']);
@@ -475,6 +480,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.paths['/api/deployment/gate'].post.responses[503].content['application/json'].schema.$ref, '#/components/schemas/DeploymentGateReport');
     assert.equal(openApi.components.schemas.RolloutManifestPlan.properties.steps.items.$ref, '#/components/schemas/OperationsPlanStep');
     assert.equal(openApi.components.schemas.RolloutManifestPlan.properties.nextActions.items.$ref, '#/components/schemas/OperationsPlanAction');
+    assert.equal(openApi.components.schemas.RolloutManifestPlan.properties.connectorRolloutPlan.$ref, '#/components/schemas/ConnectorRolloutPlan');
     assert.equal(openApi.components.schemas.ResourceProvisioningPlan.properties.environment.$ref, '#/components/schemas/ResourceProvisioningEnvironment');
     assert.equal(openApi.components.schemas.ResourceProvisioningPlan.properties.resources.items.$ref, '#/components/schemas/ResourceProvisioningItem');
     assert.equal(openApi.components.schemas.ResourceProvisioningItem.properties.schemaDrift.$ref, '#/components/schemas/PostgresSchemaDrift');

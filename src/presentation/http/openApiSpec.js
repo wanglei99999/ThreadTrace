@@ -928,10 +928,24 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Rollout plan is ok or has warnings'
+              description: 'Rollout plan is ok or has warnings',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/ConnectorRolloutPlan'
+                  }
+                }
+              }
             },
             503: {
-              description: 'Rollout plan contains a failing step'
+              description: 'Rollout plan contains a failing step',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/ConnectorRolloutPlan'
+                  }
+                }
+              }
             },
             400: {
               $ref: '#/components/responses/BadRequest'
@@ -3790,6 +3804,41 @@ function createOpenApiSpec() {
             }
           }
         },
+        ConnectorRolloutPlan: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            sourceKey: { type: 'string', example: 'external' },
+            sourceType: { type: 'string', example: 'external-feed' },
+            modulePath: { type: 'string', example: 'D:/connectors/custom-forum.cjs' },
+            steps: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/OperationsPlanStep' }
+            },
+            nextActions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/OperationsPlanAction' }
+            },
+            connectorModuleValidation: {
+              type: 'object',
+              additionalProperties: true
+            },
+            sourceOnboardingPreflight: { $ref: '#/components/schemas/SourceOnboardingPreflight' },
+            sourceIngestDryRun: {
+              type: 'object',
+              additionalProperties: true
+            },
+            connectorReadiness: {
+              type: 'object',
+              additionalProperties: true
+            },
+            deploymentChecklist: {
+              type: 'object',
+              additionalProperties: true
+            }
+          }
+        },
         RolloutManifestPlan: {
           type: 'object',
           properties: {
@@ -3812,10 +3861,7 @@ function createOpenApiSpec() {
               type: 'object',
               additionalProperties: true
             },
-            connectorRolloutPlan: {
-              type: 'object',
-              additionalProperties: true
-            },
+            connectorRolloutPlan: { $ref: '#/components/schemas/ConnectorRolloutPlan' },
             workerTopologyPlan: { $ref: '#/components/schemas/WorkerTopologyPlan' }
           }
         },
