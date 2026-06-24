@@ -272,6 +272,7 @@ function sourceLifecycleActions(report) {
       relatedCommands: commands.slice(1),
       evidence: {
         sourceId: source.sourceId,
+        sourceKey: source.sourceKey,
         lastStartedAt: source.lastStartedAt,
         staleAfterMs: source.staleAfterMs,
         nextAction: source.nextAction
@@ -297,6 +298,7 @@ function sourceLifecycleActions(report) {
       relatedCommands: commands.slice(1),
       evidence: {
         sourceId: source.id,
+        sourceKey: source.sourceKey,
         retryAt: source.failureRetry.retryAt,
         failureCount: source.failureRetry.failureCount,
         backoffMs: source.failureRetry.backoffMs,

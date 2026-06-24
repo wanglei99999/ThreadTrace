@@ -407,6 +407,7 @@ test('operations runbook turns source lifecycle signals into actions', function 
       blockedDisables: [
         {
           sourceId: 'source-running',
+          sourceKey: 'nga',
           displayName: 'Running source',
           lastStartedAt: '2026-06-19T09:59:00.000Z',
           staleAfterMs: 600000,
@@ -420,6 +421,7 @@ test('operations runbook turns source lifecycle signals into actions', function 
       sources: [
         {
           id: 'source-failed',
+          sourceKey: 'nga',
           displayName: 'Failed source',
           failureRetry: {
             active: true,
@@ -448,7 +450,9 @@ test('operations runbook turns source lifecycle signals into actions', function 
   assert.match(runbook.actions[0].recommendedCommand, /source-run-stale-after-ms 600000/);
   assert.match(runbook.actions[0].relatedCommands[0], /--force true --execute true/);
   assert.match(runbook.actions[0].relatedCommands[2], /list-sources/);
+  assert.equal(runbook.actions[0].evidence.sourceKey, 'nga');
   assert.equal(runbook.actions[1].key, 'sourceLifecycle.failureRetry.source-failed');
+  assert.equal(runbook.actions[1].evidence.sourceKey, 'nga');
   assert.equal(runbook.actions[1].evidence.retryAt, '2026-06-19T10:01:00.000Z');
   assert.match(runbook.actions[1].summary, /Failed source/);
   assert.match(runbook.actions[1].recommendedCommand, /source-schedule-report --forum nga/);

@@ -123,6 +123,7 @@ test('source lifecycle report summarizes disable guards and lifecycle tasks', as
   assert.equal(report.summary.disableBlocked, 1);
   assert.equal(report.blockedDisables.length, 1);
   assert.equal(report.blockedDisables[0].sourceId, 'source-1');
+  assert.equal(report.blockedDisables[0].sourceKey, 'nga');
   assert.match(report.blockedDisables[0].recommendedCommands[1], /disable-source --source-id source-1 --force true --execute true/);
   assert.equal(report.sources[0].disableGuard.canDisable, false);
   assert.equal(report.sources[0].latestLifecycleTask.id, 'task-disable-1');

@@ -506,7 +506,8 @@ function main(argv) {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.synthesizeRunbookNotificationEvents({
       forum: options.forum,
-      sourceKey: options.sourceKey,
+      sourceKey: options.sourceKey || options.forum,
+      sourceId: options.sourceId,
       enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
       execute: options.execute === 'true' || options.dryRun === 'false',
       limit: options.limit ? Number(options.limit) : 100,
@@ -515,6 +516,8 @@ function main(argv) {
       sourceRunStaleAfterMs: options.sourceRunStaleAfterMs ? Number(options.sourceRunStaleAfterMs) : undefined,
       sourceFailureRetryBackoffMs: options.sourceFailureRetryBackoffMs ? Number(options.sourceFailureRetryBackoffMs) : undefined,
       sourceFailureMaxRetryBackoffMs: options.sourceFailureMaxRetryBackoffMs ? Number(options.sourceFailureMaxRetryBackoffMs) : undefined,
+      resolveStale: parseOptionalBoolean(options.resolveStale),
+      staleLimit: options.staleLimit ? Number(options.staleLimit) : undefined,
       now: options.now,
       storeDir
     }).then(function (result) {
@@ -2542,7 +2545,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js source-schedule-report [--forum nga] [--enabled true] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js trace-context [--request-id id | --trace-id id | --idempotency-key key] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-runbook [--forum nga] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--running-stale-after-ms ms] [--event-limit n] [--store-dir dir] [--limit n]');
-  console.log('  node src/presentation/cli/threadtrace.js synthesize-runbook-events [--execute true] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js synthesize-runbook-events [--forum nga] [--source-id id] [--resolve-stale true|false] [--execute true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js synthesize-author-review-queue-events [--execute true] [--source-key key] [--status open] [--resolve-stale true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js synthesize-context-review-result-events [--execute true] [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-plan [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');

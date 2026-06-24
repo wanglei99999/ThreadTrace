@@ -800,12 +800,20 @@ test('http server synthesizes runbook notification events', async function () {
   try {
     const result = await postJson(baseUrl + '/api/operations/runbook/events', {
       execute: true,
+      sourceKey: 'forum-a',
+      sourceId: 'source-a',
+      resolveStale: false,
+      staleLimit: 7,
       limit: 25,
       now: '2026-06-19T10:00:00.000Z'
     });
 
     assert.equal(calls.length, 1);
     assert.equal(calls[0].execute, true);
+    assert.equal(calls[0].sourceKey, 'forum-a');
+    assert.equal(calls[0].sourceId, 'source-a');
+    assert.equal(calls[0].resolveStale, false);
+    assert.equal(calls[0].staleLimit, 7);
     assert.equal(calls[0].limit, 25);
     assert.equal(calls[0].now, '2026-06-19T10:00:00.000Z');
     assert.equal(result.executed, true);

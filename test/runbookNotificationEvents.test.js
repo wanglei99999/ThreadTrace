@@ -31,7 +31,8 @@ test('runbook notification event synthesis executes stable outbox events', async
     notificationEventRepository: repository([], saved),
     runbook: runbook([
       action('sourceLifecycle.failureRetry.source-1', 'warning', {
-        sourceId: 'source-1'
+        sourceId: 'source-1',
+        sourceKey: 'forum-a'
       })
     ]),
     execute: true,
@@ -43,6 +44,7 @@ test('runbook notification event synthesis executes stable outbox events', async
   assert.equal(saved.length, 1);
   assert.equal(saved[0].id, result.results[0].event.id);
   assert.equal(saved[0].sourceId, 'source-1');
+  assert.equal(saved[0].sourceKey, 'forum-a');
   assert.equal(saved[0].payload.action.key, 'sourceLifecycle.failureRetry.source-1');
 });
 
@@ -146,6 +148,40 @@ test('runbook notification event synthesis executes stale event resolution', asy
   assert.equal(saved[0].payload.resolution.reason, 'runbook-action-cleared');
 });
 
+test('runbook notification event synthesis scopes stale resolution to source filters', async function () {
+  const saved = [];
+  const queries = [];
+  const forumAAction = action('source.stale.forum-a', 'critical', {
+    sourceKey: 'forum-a'
+  });
+  const forumBAction = action('source.stale.forum-b', 'critical', {
+    sourceKey: 'forum-b'
+  });
+  const events = [
+    existingEvent(forumAAction, {
+      deliveryStatus: 'pending',
+      nextDeliveryAt: '2026-06-19T09:30:00.000Z'
+    }),
+    existingEvent(forumBAction, {
+      deliveryStatus: 'pending',
+      nextDeliveryAt: '2026-06-19T09:30:00.000Z'
+    })
+  ];
+  const result = await synthesizeRunbookNotificationEvents({
+    notificationEventRepository: repository(events, saved, queries),
+    runbook: runbook([]),
+    sourceKey: 'forum-a',
+    execute: true,
+    now: '2026-06-19T10:00:00.000Z'
+  });
+
+  assert.equal(result.resolvedCount, 1);
+  assert.equal(saved.length, 1);
+  assert.equal(saved[0].sourceKey, 'forum-a');
+  assert.equal(saved[0].payload.action.key, 'source.stale.forum-a');
+  assert.equal(queries[0].sourceKey, 'forum-a');
+});
+
 test('runbook notification event synthesis leaves delivered stale events untouched', async function () {
   const saved = [];
   const staleAction = action('source.delivered.stale', 'warning');
@@ -229,7 +265,7 @@ function existingEvent(item, overrides) {
   }), overrides);
 }
 
-function repository(events, saved) {
+function repository(events, saved, queries) {
   return {
     async saveEvent(event) {
       saved.push(event);
@@ -239,8 +275,16 @@ function repository(events, saved) {
         return event.id === id;
       });
     },
-    async listEvents() {
-      return events;
+    async listEvents(query) {
+      if (queries) queries.push(query || {});
+      const safeQuery = query || {};
+      return events.filter(function (event) {
+        if (safeQuery.type && event.type !== safeQuery.type) return false;
+        if (safeQuery.sourceId && event.sourceId !== safeQuery.sourceId) return false;
+        if (safeQuery.sourceKey && event.sourceKey !== safeQuery.sourceKey) return false;
+        if (safeQuery.acknowledged === false && event.acknowledgedAt) return false;
+        return true;
+      });
     }
   };
 }

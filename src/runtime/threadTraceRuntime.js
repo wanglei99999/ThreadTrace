@@ -1707,6 +1707,7 @@ function createThreadTraceRuntime(options) {
           return runtime.getOperationsRunbook(Object.assign({}, runbookRequest, {
             forum: safeRequest.forum,
             sourceKey: safeRequest.sourceKey,
+            sourceId: safeRequest.sourceId,
             enabled: safeRequest.enabled,
             limit: safeRequest.limit || 100,
             pipelineLimit: safeRequest.pipelineLimit,
@@ -1720,6 +1721,10 @@ function createThreadTraceRuntime(options) {
         },
         execute: safeRequest.execute,
         limit: safeRequest.limit,
+        staleLimit: safeRequest.staleLimit,
+        resolveStale: safeRequest.resolveStale,
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
         now: safeRequest.now,
         includeRunbook: safeRequest.includeRunbook
       });

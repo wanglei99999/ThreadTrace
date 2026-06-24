@@ -40,6 +40,8 @@ async function synthesizeRunbookNotificationEvents(options) {
       activeEventIds,
       execute,
       now,
+      sourceId: safeOptions.sourceId,
+      sourceKey: safeOptions.sourceKey || safeOptions.forum,
       limit: safeOptions.staleLimit || safeOptions.limit || 100
     });
   results.push.apply(results, staleResults);
@@ -133,11 +135,16 @@ async function buildRunbookEventResult(action, options) {
 async function resolveStaleRunbookEvents(options) {
   const events = await options.notificationEventRepository.listEvents({
     type: 'runbook-action',
+    sourceId: options.sourceId,
+    sourceKey: options.sourceKey,
     acknowledged: false,
     limit: options.limit
   });
   const staleEvents = events.filter(function (event) {
-    return !options.activeEventIds.has(event.id) && event.deliveryStatus !== 'resolved' && event.deliveryStatus !== 'delivered';
+    return eventMatchesScope(event, options) &&
+      !options.activeEventIds.has(event.id) &&
+      event.deliveryStatus !== 'resolved' &&
+      event.deliveryStatus !== 'delivered';
   });
   const results = [];
 
@@ -155,6 +162,12 @@ async function resolveStaleRunbookEvents(options) {
   }
 
   return results;
+}
+
+function eventMatchesScope(event, scope) {
+  if (scope.sourceId && event.sourceId !== scope.sourceId) return false;
+  if (scope.sourceKey && event.sourceKey !== scope.sourceKey) return false;
+  return true;
 }
 
 function markRunbookEventResolved(event, now) {

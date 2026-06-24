@@ -591,6 +591,7 @@ async function routeRequest(request, response, context) {
     const result = await context.runtime.synthesizeRunbookNotificationEvents({
       forum: body.forum,
       sourceKey: body.sourceKey,
+      sourceId: body.sourceId,
       enabled: body.enabled,
       execute: body.execute === true || body.dryRun === false,
       limit: body.limit,
@@ -599,6 +600,8 @@ async function routeRequest(request, response, context) {
       sourceRunStaleAfterMs: body.sourceRunStaleAfterMs,
       sourceFailureRetryBackoffMs: body.sourceFailureRetryBackoffMs,
       sourceFailureMaxRetryBackoffMs: body.sourceFailureMaxRetryBackoffMs,
+      resolveStale: body.resolveStale,
+      staleLimit: body.staleLimit,
       includeRunbook: body.includeRunbook === true,
       now: body.now,
       runningStaleAfterMs: body.runningStaleAfterMs,

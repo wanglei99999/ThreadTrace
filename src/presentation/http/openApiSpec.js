@@ -974,8 +974,11 @@ function createOpenApiSpec() {
                     dryRun: { type: 'boolean', example: true },
                     forum: { type: 'string', example: 'nga' },
                     sourceKey: { type: 'string', example: 'nga' },
+                    sourceId: { type: 'string' },
                     enabled: { type: 'boolean' },
                     limit: { type: 'number', example: 100 },
+                    staleLimit: { type: 'number', example: 100 },
+                    resolveStale: { type: 'boolean', example: true },
                     pipelineLimit: { type: 'number', example: 20 },
                     taskLimit: { type: 'number', example: 100 },
                     sourceRunStaleAfterMs: { type: 'number', example: 600000 },
@@ -991,7 +994,7 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Runbook notification event synthesis result'
+              description: 'Runbook notification event synthesis result; stale resolution is scoped by sourceId/sourceKey/forum when provided'
             }
           }
         }

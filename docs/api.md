@@ -446,12 +446,14 @@ Request:
 {
   "execute": false,
   "forum": "nga",
+  "sourceId": "source-1",
   "limit": 100,
+  "resolveStale": true,
   "includeRunbook": false
 }
 ```
 
-The endpoint defaults to dry-run. Set `execute: true` or `dryRun: false` to persist `runbook-action` events. Event IDs are stable per runbook action key, so repeated synthesis updates pending or failed events without duplicating alerts. The response includes created, updated, resolved, reopened, and skipped counts. Operator-acknowledged and delivered events are skipped.
+The endpoint defaults to dry-run. Set `execute: true` or `dryRun: false` to persist `runbook-action` events. Event IDs are stable per runbook action key, so repeated synthesis updates pending or failed events without duplicating alerts. When `sourceId`, `sourceKey`, or `forum` is provided, stale runbook event resolution is scoped to that source filter so a partial source run does not resolve alerts owned by other sources. The response includes created, updated, resolved, reopened, and skipped counts. Operator-acknowledged and delivered events are skipped.
 
 ### `GET /api/notifications/diagnostics`
 

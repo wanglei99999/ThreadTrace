@@ -55,6 +55,7 @@ async function getSourceLifecycleReport(options) {
     blockedDisables: blocked.map(function (source) {
       return {
         sourceId: source.id,
+        sourceKey: source.sourceKey,
         displayName: source.displayName,
         lastStartedAt: source.runState.lastStartedAt,
         staleAfterMs: source.disableGuard.staleAfterMs,
