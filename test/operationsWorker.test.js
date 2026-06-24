@@ -43,6 +43,41 @@ test('operations worker runs due sources, event dispatch, and overview in order'
             unacknowledged: 0
           }
         };
+      },
+      async getSourceAttentionReport(request) {
+        calls.push(['source-attention', request.limit]);
+        return {
+          status: 'warn',
+          summary: {
+            total: 1,
+            critical: 0,
+            warning: 1,
+            runnable: 1,
+            bySignal: {
+              'retry wait': 1
+            }
+          },
+          sources: [
+            {
+              key: 'sourceId:source-a',
+              source: {
+                id: 'source-a',
+                sourceKey: 'forum-a',
+                displayName: 'Forum A'
+              },
+              severity: 'warning',
+              signalCount: 1,
+              runnable: true,
+              signals: [
+                {
+                  severity: 'warning',
+                  label: 'retry wait',
+                  reason: 'waiting-failure-backoff'
+                }
+              ]
+            }
+          ]
+        };
       }
     }
   });
@@ -50,22 +85,27 @@ test('operations worker runs due sources, event dispatch, and overview in order'
   const result = await worker.runOnce({
     sources: { limit: 3 },
     events: { limit: 4 },
-    overview: { limit: 5 }
+    overview: { limit: 5 },
+    sourceAttention: { limit: 6 }
   });
 
   assert.deepEqual(calls, [
     ['sources', 3, workerRuns[0].id],
     ['events', 4],
-    ['overview', 5]
+    ['overview', 5],
+    ['source-attention', 6]
   ]);
   assert.equal(result.dueSources.completedCount, 1);
   assert.equal(result.events.dispatchedCount, 2);
   assert.equal(result.overview.events.unacknowledged, 0);
+  assert.equal(result.sourceAttention.status, 'warn');
   assert.equal(workerRuns[0].workerType, 'operations');
   assert.equal(workerRuns[0].workerId, 'test-worker');
   assert.equal(workerRuns.at(-1).status, 'completed');
-  assert.equal(workerRuns.at(-1).progress.step, 'overview');
+  assert.equal(workerRuns.at(-1).progress.step, 'source-attention');
   assert.equal(workerRuns.at(-1).output.events.dispatchedCount, 2);
+  assert.equal(workerRuns.at(-1).output.sourceAttention.status, 'warn');
+  assert.equal(workerRuns.at(-1).output.sourceAttention.topSources[0].sourceId, 'source-a');
 });
 
 test('operations worker can synthesize runbook notification events before dispatch', async function () {

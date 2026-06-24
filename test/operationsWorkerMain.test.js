@@ -34,6 +34,12 @@ test('operations worker main request scopes event dispatch runbook synthesis and
   assert.equal(request.runbookEvents.sourceKey, 'forum-a');
   assert.equal(request.overview.sourceId, 'source-a');
   assert.equal(request.overview.sourceKey, 'forum-a');
+  assert.equal(request.sourceAttention.sourceId, 'source-a');
+  assert.equal(request.sourceAttention.sourceKey, 'forum-a');
+  assert.equal(request.sourceAttention.limit, 25);
+  assert.equal(request.sourceAttention.sourceRunStaleAfterMs, 600000);
+  assert.equal(request.sourceAttention.sourceFailureRetryBackoffMs, 300000);
+  assert.equal(request.sourceAttention.sourceFailureMaxRetryBackoffMs, 3600000);
   assert.equal(request.events.includeFailed, true);
   assert.equal(request.events.limit, 25);
 });

@@ -81,6 +81,9 @@ async function main(argv) {
     }
     console.log('Open events: ' + result.overview.events.unacknowledged);
     console.log('Worker stale: ' + result.overview.workers.stale);
+    if (result.sourceAttention) {
+      console.log('Source attention: ' + result.sourceAttention.status + ', total=' + (result.sourceAttention.summary && result.sourceAttention.summary.total || 0));
+    }
   }
 }
 
@@ -186,6 +189,16 @@ function buildRequest(options, storeDir, config) {
       sourceId: options.sourceId,
       sourceKey: options.sourceKey,
       limit: options.limit ? Number(options.limit) : undefined,
+      storeDir
+    },
+    sourceAttention: {
+      forum: options.forum,
+      sourceId: options.sourceId,
+      sourceKey: options.sourceKey,
+      limit: options.limit ? Number(options.limit) : undefined,
+      sourceRunStaleAfterMs: config.workers.sourceRunStaleAfterMs,
+      sourceFailureRetryBackoffMs: config.workers.sourceFailureRetryBackoffMs,
+      sourceFailureMaxRetryBackoffMs: config.workers.sourceFailureMaxRetryBackoffMs,
       storeDir
     }
   };
