@@ -24,6 +24,15 @@ test('deployment checklist aggregates runtime, source, readiness, notification, 
     sourceDiagnostics: {
       status: 'fail',
       sourceCount: 2,
+      nextActions: [
+        {
+          key: 'source.handler',
+          sourceId: 'source-fail',
+          severity: 'critical',
+          summary: 'Register a source ingest handler.',
+          evidenceSummary: 'sourceId=source-fail sourceType=external-feed registeredHandler=false'
+        }
+      ],
       sources: [
         {
           sourceId: 'source-ok',
@@ -141,6 +150,9 @@ test('deployment checklist aggregates runtime, source, readiness, notification, 
   assert.equal(sourceItem.status, 'fail');
   assert.equal(sourceItem.evidence.summary.sourceCount, 2);
   assert.equal(sourceItem.evidence.summary.fail, 1);
+  assert.equal(sourceItem.evidence.summary.nextActionCount, 1);
+  assert.equal(sourceItem.evidence.summary.actionDetails[0].sourceId, 'source-fail');
+  assert.match(sourceItem.evidence.summary.actionDetails[0].evidenceSummary, /registeredHandler=false/);
   assert.equal(sourceItem.evidence.summary.failedSources[0].sourceId, 'source-fail');
   assert.equal(sourceItem.evidence.summary.failedSources[0].failedChecks[0].key, 'source.handler');
   assert.equal(checklist.items.find(function (item) {

@@ -360,6 +360,8 @@ Returns a retention plan with `candidateCount`, `archivedCount`, `cutoffAt`, `ba
 
 返回：整体 `status`、每个来源的 `status` 和检查项。存在失败检查时 HTTP 状态码为 503，响应体仍包含完整诊断。
 
+Source diagnostics responses also include top-level `nextActions` and per-source `nextActions`. Each action carries `sourceId`, `severity`, operator commands, structured `evidence`, and compact `evidenceSummary`, so dashboards and runbooks can point directly at missing handlers, missing adapters, disabled sources, or missing connector-specific location fields.
+
 ### `GET /api/sources/lifecycle`
 
 Reports tracked source lifecycle state, safe disable guard results, failure retry state, and recent lifecycle task audit records.

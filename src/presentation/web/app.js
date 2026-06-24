@@ -2944,15 +2944,20 @@ function renderSourceList(result) {
 
 function renderSourceDiagnostics(diagnostics) {
   const sources = diagnostics.sources || [];
-  if (sources.length === 0) return panel('来源接入诊断', '<div class="muted">暂无</div>', 'wide');
-  return panel('来源接入诊断', evidenceList(sources.slice(0, 10).map(function (source) {
+  if (sources.length === 0) return panel('来源接入诊断', '<div class="muted">No source diagnostics.</div>', 'wide');
+  const rows = sources.slice(0, 10).map(function (source) {
     const failed = (source.checks || []).filter(function (check) {
       return check.status !== 'ok';
     }).map(function (check) {
       return check.key + '=' + check.status;
     }).join(', ');
-    return source.status + ' · ' + source.displayName + (failed ? ' · ' + failed : '');
-  })), 'wide');
+    return source.status + ' | ' + source.displayName + (failed ? ' | ' + failed : '');
+  });
+  const actions = (diagnostics.nextActions || []).slice(0, 8).map(function (action) {
+    const commands = action.commands || (action.command ? [action.command] : []);
+    return action.severity + ' | ' + action.sourceId + ' | ' + action.key + ' | ' + commands.join(' | ') + (action.evidenceSummary ? ' evidence=' + action.evidenceSummary : '');
+  });
+  return panel('来源接入诊断', evidenceList(rows.concat(actions)), 'wide');
 }
 
 function sourceDiagnosticMap(diagnostics) {

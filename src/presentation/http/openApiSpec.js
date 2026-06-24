@@ -1741,6 +1741,7 @@ function createOpenApiSpec() {
       '/api/sources/diagnostics': {
         get: {
           summary: 'Diagnose tracked source ingest configuration',
+          description: 'Returns source checks plus top-level and per-source nextActions with sourceId, commands, evidence, and evidenceSummary for stored source repair.',
           parameters: [
             { name: 'forum', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
             { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },

@@ -1658,6 +1658,10 @@ function main(argv) {
         }).join(',');
         console.log(source.status + '\t' + source.sourceId + '\t' + source.sourceKey + '\t' + source.sourceType + '\t' + source.displayName + (nonOkChecks ? '\t' + nonOkChecks : ''));
       });
+      if ((diagnostics.nextActions || []).length > 0) {
+        console.log('Next actions: ' + diagnostics.nextActions.length);
+        diagnostics.nextActions.forEach(printActionWithDetails);
+      }
       if (diagnostics.status === 'fail') {
         process.exitCode = 2;
       }

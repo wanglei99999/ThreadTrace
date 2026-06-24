@@ -147,11 +147,26 @@ function summarizeSourceDiagnostics(sourceDiagnostics) {
   const sources = sourceDiagnostics && Array.isArray(sourceDiagnostics.sources)
     ? sourceDiagnostics.sources
     : [];
+  const actions = sourceDiagnostics && Array.isArray(sourceDiagnostics.nextActions)
+    ? sourceDiagnostics.nextActions
+    : sources.flatMap(function (source) {
+      return source.nextActions || [];
+    });
   return {
     sourceCount: sourceDiagnostics && sourceDiagnostics.sourceCount !== undefined ? sourceDiagnostics.sourceCount : sources.length,
     ok: sources.filter(function (source) { return source.status === 'ok'; }).length,
     warn: sources.filter(function (source) { return source.status === 'warn'; }).length,
     fail: sources.filter(function (source) { return source.status === 'fail'; }).length,
+    nextActionCount: actions.length,
+    actionDetails: actions.slice(0, 10).map(function (action) {
+      return {
+        key: action.key,
+        sourceId: action.sourceId,
+        severity: action.severity,
+        summary: action.summary,
+        evidenceSummary: action.evidenceSummary
+      };
+    }),
     failedSources: sources.filter(function (source) {
       return source.status === 'fail';
     }).slice(0, 10).map(function (source) {

@@ -59,6 +59,8 @@ test('source diagnostics reports handler, adapter, and location health', async f
   assert.equal(byId['source-missing-adapter'].checks.find(function (check) {
     return check.key === 'source.adapter';
   }).status, 'fail');
+  assert.equal(byId['source-missing-adapter'].nextActions[0].key, 'source.adapter');
+  assert.match(byId['source-missing-adapter'].nextActions[0].evidenceSummary, /sourceKey=missing-forum/);
   assert.equal(byId['source-missing-handler'].status, 'fail');
   assert.equal(byId['source-missing-handler'].checks.find(function (check) {
     return check.key === 'source.handler';
@@ -66,6 +68,10 @@ test('source diagnostics reports handler, adapter, and location health', async f
   assert.equal(byId['source-missing-handler'].checks.find(function (check) {
     return check.key === 'source.location';
   }).status, 'fail');
+  assert.equal(diagnostics.nextActions.length, 3);
+  assert.ok(diagnostics.nextActions.some(function (action) {
+    return action.sourceId === 'source-missing-handler' && action.key === 'source.handler';
+  }));
 });
 
 test('source diagnostics uses handler location schema for custom source types', async function () {
@@ -108,4 +114,7 @@ test('source diagnostics uses handler location schema for custom source types', 
   assert.equal(diagnostics.status, 'fail');
   assert.equal(locationCheck.status, 'fail');
   assert.equal(locationCheck.value, 'missing: endpoint');
+  assert.equal(diagnostics.sources[0].nextActions[0].key, 'source.location');
+  assert.match(diagnostics.sources[0].nextActions[0].evidenceSummary, /missingRequiredFields=endpoint/);
+  assert.deepEqual(diagnostics.sources[0].nextActions[0].evidence.missingRequiredFields, ['endpoint']);
 });
