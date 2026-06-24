@@ -1571,7 +1571,14 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Dispatch summary'
+              description: 'Dispatch summary',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/NotificationEventDispatchResult'
+                  }
+                }
+              }
             }
           }
         }
@@ -1606,7 +1613,14 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Retention plan or archive execution result'
+              description: 'Retention plan or archive execution result',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/NotificationEventArchiveResult'
+                  }
+                }
+              }
             }
           }
         }
@@ -1748,7 +1762,14 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Bulk acknowledgement result with acknowledged and skipped counts'
+              description: 'Bulk acknowledgement result with acknowledged and skipped counts',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/NotificationEventAckResult'
+                  }
+                }
+              }
             }
           }
         }
@@ -1776,7 +1797,14 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Acknowledged notification event'
+              description: 'Acknowledged notification event',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/NotificationEventAckSingleResult'
+                  }
+                }
+              }
             }
           }
         }
@@ -3513,6 +3541,37 @@ function createOpenApiSpec() {
             }
           }
         },
+        NotificationEventDispatchItem: {
+          type: 'object',
+          properties: {
+            status: { type: 'string', enum: ['delivered', 'failed'] },
+            event: { $ref: '#/components/schemas/NotificationEvent' },
+            deliveryResult: {
+              type: 'object',
+              additionalProperties: true
+            },
+            error: {
+              type: 'object',
+              properties: {
+                message: { type: 'string' }
+              },
+              additionalProperties: true
+            }
+          }
+        },
+        NotificationEventDispatchResult: {
+          type: 'object',
+          properties: {
+            channelKey: { type: 'string', example: 'webhook' },
+            dispatchedCount: { type: 'number', example: 1 },
+            failedCount: { type: 'number', example: 0 },
+            skippedCount: { type: 'number', example: 0 },
+            results: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/NotificationEventDispatchItem' }
+            }
+          }
+        },
         NotificationEventSummary: {
           type: 'object',
           properties: {
@@ -3531,6 +3590,100 @@ function createOpenApiSpec() {
               type: 'object',
               additionalProperties: true
             }
+          }
+        },
+        NotificationEventAckItem: {
+          type: 'object',
+          properties: {
+            eventId: { type: 'string', example: 'runbook-action-afdda22a04d1' },
+            status: { type: 'string', enum: ['candidate', 'acknowledged', 'skipped'] },
+            reason: { type: 'string', example: 'already-acknowledged' },
+            event: { $ref: '#/components/schemas/NotificationEventSummary' }
+          }
+        },
+        NotificationEventAckResult: {
+          type: 'object',
+          properties: {
+            status: { type: 'string', enum: ['preview', 'ok', 'noop'] },
+            dryRun: { type: 'boolean', example: true },
+            executed: { type: 'boolean', example: false },
+            requestedCount: { type: 'number', example: 1 },
+            eventCount: { type: 'number', example: 1 },
+            candidateCount: { type: 'number', example: 1 },
+            acknowledgedCount: { type: 'number', example: 0 },
+            skippedCount: { type: 'number', example: 0 },
+            acknowledgedBy: { type: 'string', example: 'operator' },
+            filters: {
+              type: 'object',
+              properties: {
+                type: { type: 'string' },
+                sourceId: { type: 'string' },
+                sourceKey: { type: 'string', example: 'nga' },
+                acknowledged: { type: 'boolean', example: false },
+                deliveryStatus: { type: 'string', example: 'delivered' },
+                limit: { type: 'number', example: 50 }
+              }
+            },
+            results: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/NotificationEventAckItem' }
+            }
+          }
+        },
+        NotificationEventAckSingleResult: {
+          type: 'object',
+          properties: {
+            event: { $ref: '#/components/schemas/NotificationEvent' }
+          }
+        },
+        NotificationEventArchiveItem: {
+          type: 'object',
+          properties: {
+            eventId: { type: 'string', example: 'runbook-action-afdda22a04d1' },
+            status: { type: 'string', enum: ['archived', 'skipped'] },
+            reason: { type: 'string', example: 'not-found' },
+            event: { $ref: '#/components/schemas/NotificationEventSummary' }
+          }
+        },
+        NotificationEventArchiveResult: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-19T10:00:00.000Z' },
+            status: { type: 'string', enum: ['actionable', 'ok', 'warn', 'noop'] },
+            dryRun: { type: 'boolean', example: true },
+            execute: { type: 'boolean', example: false },
+            batchId: { type: 'string', example: 'notification-event-archive-20260619T100000-c9e923df' },
+            cutoffAt: { type: 'string', example: '2026-05-20T10:00:00.000Z' },
+            olderThanDays: { type: 'number', example: 30 },
+            scanLimit: { type: 'number', example: 500 },
+            archiveLimit: { type: 'number', example: 100 },
+            scannedCount: { type: 'number', example: 5 },
+            candidateCount: { type: 'number', example: 1 },
+            archivedCount: { type: 'number', example: 0 },
+            skippedCount: { type: 'number', example: 0 },
+            filters: {
+              type: 'object',
+              properties: {
+                type: { type: 'string' },
+                sourceId: { type: 'string' },
+                sourceKey: { type: 'string', example: 'nga' },
+                deliveryStatuses: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  example: ['delivered', 'resolved']
+                },
+                requireAcknowledged: { type: 'boolean', example: true }
+              }
+            },
+            candidates: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/NotificationEventSummary' }
+            },
+            results: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/NotificationEventArchiveItem' }
+            },
+            recommendedNextAction: { type: 'string' }
           }
         },
         NotificationEventSourceHotspot: {
