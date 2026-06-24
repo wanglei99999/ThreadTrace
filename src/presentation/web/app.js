@@ -648,6 +648,9 @@ async function loadSystemStatus() {
     const deploymentChecklist = await fetchJson('/api/deployment/checklist?limit=100', {
       acceptErrorStatus: true
     });
+    const operationsReadiness = await fetchJson('/api/operations/readiness?limit=100', {
+      acceptErrorStatus: true
+    });
     const operationsRunbook = await fetchJson('/api/operations/runbook?limit=100', {
       acceptErrorStatus: true
     });
@@ -664,6 +667,7 @@ async function loadSystemStatus() {
       statusRow('服务', health.ok ? '运行中' : '异常'),
       statusRow('诊断', diagnostics.status),
       statusRow('Deploy', deploymentChecklist.status),
+      statusRow('Readiness', readinessStatusSummary(operationsReadiness)),
       statusRow('Runbook', operationsRunbook.status + ' · ' + operationsRunbook.actionCount),
       statusRow('存储', overview.storageMode),
       statusRow('Adapters', adapterDiagnostics.status + ' · ' + adapterDiagnostics.adapterCount),
@@ -684,7 +688,7 @@ async function loadSystemStatus() {
       statusRow('生成时间', overview.generatedAt)
     ]);
     target.innerHTML = rows.join('');
-    document.getElementById('runbookResult').innerHTML = renderOperationsRunbook(operationsRunbook);
+    document.getElementById('runbookResult').innerHTML = renderOperationsReadiness(operationsReadiness) + renderOperationsRunbook(operationsRunbook);
   } catch (error) {
     target.innerHTML = '<div class="error">' + escapeHtml(error.message) + '</div>';
   }
@@ -695,6 +699,17 @@ function diagnosticStatus(diagnostics, key) {
     return check.key === key;
   });
   return item ? item.status : 'unknown';
+}
+
+function readinessStatusSummary(readiness) {
+  const checks = readiness && readiness.checks || [];
+  const failing = checks.filter(function (check) {
+    return check.status === 'fail';
+  }).length;
+  const warning = checks.filter(function (check) {
+    return check.status === 'warn';
+  }).length;
+  return (readiness && readiness.status || 'unknown') + ' | fail ' + failing + ' | warn ' + warning;
 }
 
 async function loadTasks() {
@@ -2062,6 +2077,50 @@ function renderTaskList(result) {
       return task.status + ' · ' + task.type + ' · ' + (output.title || task.id);
     })), 'wide')
   ].join('');
+}
+
+function renderOperationsReadiness(readiness) {
+  const checks = readiness && readiness.checks || [];
+  const failing = checks.filter(function (check) {
+    return check.status === 'fail';
+  });
+  const warning = checks.filter(function (check) {
+    return check.status === 'warn';
+  });
+  const okCount = checks.filter(function (check) {
+    return check.status === 'ok';
+  }).length;
+  const attention = failing.concat(warning).slice(0, 8);
+  return panel('Operations readiness', [
+    '<div class="summary-strip">',
+    summaryTile('Status', readiness && readiness.status || 'unknown', statusVariant(readiness && readiness.status)),
+    summaryTile('Fail', String(failing.length), failing.length > 0 ? 'fail' : 'ok'),
+    summaryTile('Warn', String(warning.length), warning.length > 0 ? 'warn' : 'ok'),
+    summaryTile('OK', String(okCount), 'ok'),
+    '</div>',
+    attention.length === 0
+      ? '<div class="muted">No readiness checks need attention.</div>'
+      : attention.map(renderReadinessCheckRow).join('')
+  ].join(''), 'wide');
+}
+
+function renderReadinessCheckRow(check) {
+  const value = check.value || {};
+  const details = [
+    check.summary,
+    value.sourceKey ? 'source=' + value.sourceKey : undefined,
+    value.sourceId ? 'sourceId=' + value.sourceId : undefined,
+    value.count === undefined ? undefined : 'count=' + value.count,
+    value.failed === undefined ? undefined : 'failed=' + value.failed,
+    value.staleRunning === undefined ? undefined : 'stale=' + value.staleRunning,
+    value.bySourceKey ? 'bySource=' + formatStanceSummary(value.bySourceKey) : undefined
+  ].filter(Boolean).join(' | ');
+  return '<div class="action-row ops-row"><span>' +
+    '<strong>' + escapeHtml(check.key || 'unknown-check') + '</strong>' +
+    '<small>' + escapeHtml(details) + '</small>' +
+    '</span>' +
+    statusBadge(check.status || 'warn', statusVariant(check.status)) +
+    '</div>';
 }
 
 function renderOperationsRunbook(runbook) {
