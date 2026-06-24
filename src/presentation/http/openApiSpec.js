@@ -1856,10 +1856,24 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Preflight is ok or warn, including rolloutManifestDraft for downstream manifest plan, deployment gate, and apply flows'
+              description: 'Preflight is ok or warn, including rolloutManifestDraft for downstream manifest plan, deployment gate, and apply flows',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceOnboardingPreflight'
+                  }
+                }
+              }
             },
             503: {
-              description: 'Preflight failed, including diagnostic steps and rolloutManifestDraft when the source draft is available'
+              description: 'Preflight failed, including diagnostic steps and rolloutManifestDraft when the source draft is available',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceOnboardingPreflight'
+                  }
+                }
+              }
             },
             400: {
               $ref: '#/components/responses/BadRequest'
@@ -2901,6 +2915,130 @@ function createOpenApiSpec() {
               type: 'array',
               items: { $ref: '#/components/schemas/SourceDiagnosticAction' }
             }
+          }
+        },
+        SourceOnboardingPreflightStep: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', example: 'source.registrationDraft' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            summary: { type: 'string' },
+            evidence: {
+              type: 'object',
+              additionalProperties: true
+            }
+          }
+        },
+        SourceOnboardingPreflightAction: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', example: 'source.registrationDraft' },
+            severity: { type: 'string', enum: ['warning', 'critical'] },
+            summary: { type: 'string' },
+            commands: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            evidence: {
+              type: 'object',
+              additionalProperties: true
+            },
+            evidenceSummary: { type: 'string' },
+            details: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true }
+            }
+          }
+        },
+        SourceOnboardingCatalogSummary: {
+          type: 'object',
+          properties: {
+            sourceType: {
+              type: 'object',
+              additionalProperties: true
+            },
+            sourceTypeCount: { type: 'number', example: 4 },
+            adapterCount: { type: 'number', example: 1 }
+          }
+        },
+        SourceRolloutManifestDraft: {
+          type: 'object',
+          properties: {
+            version: { type: 'string', example: '1.0' },
+            name: { type: 'string', example: 'nga-saved-html-directory-rollout-2026-06-18' },
+            source: {
+              type: 'object',
+              additionalProperties: true
+            },
+            connector: {
+              type: 'object',
+              properties: {
+                modulePath: { type: 'string' }
+              },
+              additionalProperties: true
+            },
+            ingest: {
+              type: 'object',
+              properties: {
+                dryRun: { type: 'boolean', example: true }
+              },
+              additionalProperties: true
+            },
+            workers: {
+              type: 'object',
+              properties: {
+                topology: { type: 'string', example: 'operations-worker' },
+                sourceTaskMode: { type: 'string', example: 'ingest' }
+              },
+              additionalProperties: true
+            }
+          }
+        },
+        SourceOnboardingPreflight: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            sourceKey: { type: 'string', example: 'nga' },
+            sourceType: { type: 'string', example: 'saved-html-directory' },
+            steps: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceOnboardingPreflightStep' }
+            },
+            nextActions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceOnboardingPreflightAction' }
+            },
+            catalog: { $ref: '#/components/schemas/SourceOnboardingCatalogSummary' },
+            connectorReadiness: {
+              type: 'object',
+              additionalProperties: true
+            },
+            sourceValidation: {
+              type: 'object',
+              additionalProperties: true
+            },
+            connectorModuleValidation: {
+              type: 'object',
+              additionalProperties: true
+            },
+            threadJsonValidation: {
+              type: 'object',
+              additionalProperties: true
+            },
+            threadSnapshotContract: {
+              type: 'object',
+              properties: {
+                version: { type: 'string' },
+                required: {
+                  type: 'array',
+                  items: { type: 'string' }
+                },
+                schemaType: { type: 'string', example: 'object' }
+              },
+              additionalProperties: true
+            },
+            rolloutManifestDraft: { $ref: '#/components/schemas/SourceRolloutManifestDraft' }
           }
         },
         RunbookAction: {

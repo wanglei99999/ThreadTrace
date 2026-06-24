@@ -463,6 +463,13 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/sources/lifecycle']);
     assert.ok(openApi.paths['/api/sources/schedule']);
     assert.ok(openApi.paths['/api/sources/onboarding/preflight']);
+    assert.equal(openApi.paths['/api/sources/onboarding/preflight'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceOnboardingPreflight');
+    assert.equal(openApi.paths['/api/sources/onboarding/preflight'].post.responses[503].content['application/json'].schema.$ref, '#/components/schemas/SourceOnboardingPreflight');
+    assert.equal(openApi.components.schemas.SourceOnboardingPreflight.properties.steps.items.$ref, '#/components/schemas/SourceOnboardingPreflightStep');
+    assert.equal(openApi.components.schemas.SourceOnboardingPreflight.properties.nextActions.items.$ref, '#/components/schemas/SourceOnboardingPreflightAction');
+    assert.equal(openApi.components.schemas.SourceOnboardingPreflight.properties.catalog.$ref, '#/components/schemas/SourceOnboardingCatalogSummary');
+    assert.equal(openApi.components.schemas.SourceOnboardingPreflight.properties.rolloutManifestDraft.$ref, '#/components/schemas/SourceRolloutManifestDraft');
+    assert.equal(openApi.components.schemas.SourceRolloutManifestDraft.properties.ingest.properties.dryRun.type, 'boolean');
     assert.ok(openApi.paths['/api/runtime/diagnostics']);
     assert.ok(openApi.paths['/api/sources/validate']);
     assert.ok(openApi.paths['/api/operations/trace-context']);
