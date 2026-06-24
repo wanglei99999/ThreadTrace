@@ -1596,6 +1596,15 @@ function renderSourceOnboardingPreflight(result) {
       return step.status + ' · ' + step.key + ' · ' + step.summary;
     })), 'wide')
   ];
+  if ((result.nextActions || []).length > 0) {
+    panels.push(panel('Onboarding next actions', evidenceList((result.nextActions || []).map(function (action) {
+      const commands = action.commands || (action.command ? [action.command] : []);
+      const details = (action.details || []).map(function (detail) {
+        return detail.key + (detail.evidenceSummary ? ' evidence=' + detail.evidenceSummary : '');
+      }).join(' | ');
+      return action.severity + ' | ' + action.key + ' | ' + action.summary + ' | ' + commands.join(' | ') + (action.evidenceSummary ? ' evidence=' + action.evidenceSummary : '') + (details ? ' details=' + details : '');
+    })), 'wide'));
+  }
   if (result.sourceValidation && result.sourceValidation.source) {
     panels.push(panel('来源草稿', [
       metric('来源 ID', result.sourceValidation.source.id),

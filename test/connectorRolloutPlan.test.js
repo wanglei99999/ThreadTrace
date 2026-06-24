@@ -37,6 +37,27 @@ test('connector rollout plan aggregates rollout steps and next actions', functio
           key: 'source.registrationDraft',
           status: 'fail'
         }
+      ],
+      nextActions: [
+        {
+          key: 'source.registrationDraft',
+          severity: 'critical',
+          summary: 'Tracked source draft can be registered.',
+          commands: ['node src/presentation/cli/threadtrace.js validate-source --source-type <type> --location-file <file>'],
+          evidenceSummary: 'valid=false error=source_location_invalid',
+          details: [
+            {
+              key: 'source.location',
+              severity: 'critical',
+              summary: 'Provide the required source location fields before saving or running this source.',
+              commands: ['node src/presentation/cli/threadtrace.js validate-source --source-type <type> --location-file <file>'],
+              evidence: {
+                missingRequiredFields: ['tenantId']
+              },
+              evidenceSummary: 'missingRequiredFields=tenantId'
+            }
+          ]
+        }
       ]
     },
     sourceIngestDryRun: {
@@ -76,14 +97,13 @@ test('connector rollout plan aggregates rollout steps and next actions', functio
   assert.equal(plan.steps.find(function (step) {
     return step.key === 'source.onboardingPreflight';
   }).status, 'fail');
-  assert.deepEqual(plan.nextActions, [
-    {
-      key: 'source.onboardingPreflight',
-      severity: 'critical',
-      command: 'node src/presentation/cli/threadtrace.js source-onboarding-preflight --module-path <file> --location-file <file>',
-      summary: 'Source onboarding preflight validates the source draft.'
-    }
-  ]);
+  assert.equal(plan.nextActions.length, 1);
+  assert.equal(plan.nextActions[0].key, 'source.onboardingPreflight');
+  assert.equal(plan.nextActions[0].severity, 'critical');
+  assert.equal(plan.nextActions[0].command, 'node src/presentation/cli/threadtrace.js source-onboarding-preflight --module-path <file> --location-file <file>');
+  assert.equal(plan.nextActions[0].details[0].key, 'source.registrationDraft');
+  assert.equal(plan.nextActions[0].details[0].details[0].key, 'source.location');
+  assert.match(plan.nextActions[0].details[0].details[0].evidenceSummary, /missingRequiredFields=tenantId/);
 });
 
 test('runtime connector rollout plan can simulate an external connector module', async function () {

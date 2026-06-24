@@ -393,6 +393,14 @@ Query parameters:
 
 Returns `summary.byReason`, `dueSources`, `skippedSources`, and per-source schedule decisions.
 
+### `POST /api/sources/validate`
+
+Validates a tracked source draft without saving it. The response includes `valid`, readiness `status`, normalized `source`, diagnostic `checks`, optional `error`, and `nextActions`. Failed location checks include structured `evidence` and compact `evidenceSummary`, such as `missingRequiredFields=inputFile`, so operators and rollout automation can show the exact source input that must be supplied.
+
+### `POST /api/sources/onboarding/preflight`
+
+Runs a read-only onboarding preflight across connector catalog support, connector readiness, source draft validation, optional connector module simulation, ThreadSnapshot contract availability, and optional normalized JSON validation. The response includes `steps`, composed subreports, and `nextActions`. `nextActions` may include lower-level `details` from source validation with `evidenceSummary` for missing connector-specific location fields.
+
 ### `GET /api/deployment/checklist`
 
 查询部署前验收清单。它聚合 runtime diagnostics、source diagnostics 和 operations readiness，用于部署脚本或控制台判断当前实例是否具备上线条件。

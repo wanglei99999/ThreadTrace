@@ -36,7 +36,11 @@ function getConnectorRolloutPlan(options) {
     sourceType,
     modulePath,
     steps,
-    nextActions: nextActions(steps),
+    nextActions: nextActions(steps, {
+      sourceOnboardingPreflight: onboarding,
+      sourceIngestDryRun: dryRun,
+      connectorModuleValidation: moduleValidation
+    }),
     connectorModuleValidation: moduleValidation,
     sourceOnboardingPreflight: onboarding,
     sourceIngestDryRun: dryRun,
@@ -91,7 +95,7 @@ function dryRunSummary(report) {
   };
 }
 
-function nextActions(steps) {
+function nextActions(steps, reports) {
   return steps.filter(function (item) {
     return item.status !== 'ok';
   }).map(function (item) {
@@ -99,9 +103,63 @@ function nextActions(steps) {
       key: item.key,
       severity: item.status === 'fail' ? 'critical' : 'warning',
       command: commandForStep(item.key),
-      summary: item.summary
+      commands: [commandForStep(item.key)].filter(Boolean),
+      summary: item.summary,
+      evidence: item.evidence || {},
+      evidenceSummary: evidenceSummary(item.evidence),
+      details: detailsForStep(item.key, reports)
     };
   });
+}
+
+function detailsForStep(key, reports) {
+  const safeReports = reports || {};
+  if (key === 'source.onboardingPreflight' && safeReports.sourceOnboardingPreflight) {
+    return (safeReports.sourceOnboardingPreflight.nextActions || []).map(compactAction);
+  }
+  if (key === 'source.ingestDryRun' && safeReports.sourceIngestDryRun) {
+    return (safeReports.sourceIngestDryRun.nextActions || []).map(compactAction);
+  }
+  if (key === 'connectorModule.validation' && safeReports.connectorModuleValidation) {
+    return (safeReports.connectorModuleValidation.checks || []).filter(function (check) {
+      return check.status !== 'ok';
+    }).map(function (check) {
+      return {
+        key: check.key,
+        severity: check.status === 'fail' ? 'critical' : 'warning',
+        summary: check.summary,
+        evidence: {
+          value: check.value
+        }
+      };
+    });
+  }
+  return [];
+}
+
+function compactAction(action) {
+  return {
+    key: action.key,
+    severity: action.severity,
+    summary: action.summary,
+    commands: action.commands || (action.command ? [action.command] : []),
+    evidence: action.evidence || {},
+    evidenceSummary: action.evidenceSummary,
+    details: (action.details || []).map(compactAction)
+  };
+}
+
+function evidenceSummary(evidence) {
+  const safeEvidence = evidence || {};
+  const parts = [];
+  if (safeEvidence.status) parts.push('status=' + safeEvidence.status);
+  if (safeEvidence.sourceType) parts.push('sourceType=' + safeEvidence.sourceType);
+  if (safeEvidence.sourceKey) parts.push('sourceKey=' + safeEvidence.sourceKey);
+  if (safeEvidence.stepCount !== undefined) parts.push('stepCount=' + safeEvidence.stepCount);
+  if (safeEvidence.errorCount !== undefined) parts.push('errorCount=' + safeEvidence.errorCount);
+  if (safeEvidence.moduleErrorCount !== undefined) parts.push('moduleErrorCount=' + safeEvidence.moduleErrorCount);
+  if (safeEvidence.itemCount !== undefined) parts.push('itemCount=' + safeEvidence.itemCount);
+  return parts.join(' ');
 }
 
 function commandForStep(key) {

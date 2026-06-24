@@ -51,12 +51,18 @@ function getSourceOnboardingPreflight(options) {
     }));
   }
 
+  const status = aggregateStatus(steps.map(function (item) { return item.status; }));
   return {
     generatedAt: safeOptions.now || catalog.generatedAt || connectorReadiness.generatedAt || new Date().toISOString(),
-    status: aggregateStatus(steps.map(function (item) { return item.status; })),
+    status,
     sourceKey,
     sourceType,
     steps,
+    nextActions: nextActions(steps, {
+      sourceValidation: safeOptions.sourceValidation,
+      connectorModuleValidation: safeOptions.connectorModuleValidation,
+      threadJsonValidation: safeOptions.threadJsonValidation
+    }),
     catalog: {
       sourceType: catalogSourceType,
       sourceTypeCount: (catalog.sourceTypes || []).length,
@@ -119,6 +125,115 @@ function step(key, status, summary, evidence) {
     summary,
     evidence: evidence || {}
   };
+}
+
+function nextActions(steps, reports) {
+  return steps.filter(function (item) {
+    return item.status !== 'ok';
+  }).map(function (item) {
+    return {
+      key: item.key,
+      severity: item.status === 'fail' ? 'critical' : 'warning',
+      summary: item.summary,
+      commands: commandsForStep(item.key),
+      evidence: item.evidence || {},
+      evidenceSummary: evidenceSummary(item.evidence),
+      details: detailsForStep(item.key, reports)
+    };
+  });
+}
+
+function detailsForStep(key, reports) {
+  const safeReports = reports || {};
+  if (key === 'source.registrationDraft' && safeReports.sourceValidation) {
+    return (safeReports.sourceValidation.nextActions || []).map(compactAction);
+  }
+  if (key === 'connectorModule.validation' && safeReports.connectorModuleValidation) {
+    return (safeReports.connectorModuleValidation.checks || []).filter(function (check) {
+      return check.status !== 'ok';
+    }).map(function (check) {
+      return {
+        key: check.key,
+        severity: check.status === 'fail' ? 'critical' : 'warning',
+        summary: check.summary,
+        evidence: {
+          value: check.value
+        }
+      };
+    });
+  }
+  if (key === 'threadJson.contractValidation' && safeReports.threadJsonValidation) {
+    return (safeReports.threadJsonValidation.checks || []).filter(function (check) {
+      return check.status !== 'ok';
+    }).map(function (check) {
+      return {
+        key: check.key,
+        severity: check.status === 'fail' ? 'critical' : 'warning',
+        summary: check.summary,
+        evidence: {
+          value: check.value
+        }
+      };
+    });
+  }
+  return [];
+}
+
+function compactAction(action) {
+  return {
+    key: action.key,
+    severity: action.severity,
+    summary: action.summary,
+    commands: action.commands || (action.command ? [action.command] : []),
+    evidence: action.evidence || {},
+    evidenceSummary: action.evidenceSummary
+  };
+}
+
+function commandsForStep(key) {
+  const commands = {
+    'catalog.sourceType': [
+      'node src/presentation/cli/threadtrace.js connector-catalog',
+      'node src/presentation/cli/threadtrace.js validate-connector-module --module-path <file>'
+    ],
+    'connectors.readiness': [
+      'node src/presentation/cli/threadtrace.js connector-readiness',
+      'node src/presentation/cli/threadtrace.js validate-connector-module --module-path <file>'
+    ],
+    'threadSnapshot.contract': [
+      'node src/presentation/cli/threadtrace.js thread-snapshot-contract'
+    ],
+    'connectorModule.validation': [
+      'node src/presentation/cli/threadtrace.js validate-connector-module --module-path <file>'
+    ],
+    'source.registrationDraft': [
+      'node src/presentation/cli/threadtrace.js validate-source --source-type <type> --location-file <file>'
+    ],
+    'threadJson.contractValidation': [
+      'node src/presentation/cli/threadtrace.js validate-thread-json --input-file <file>'
+    ]
+  };
+  return commands[key] || [];
+}
+
+function evidenceSummary(evidence) {
+  const safeEvidence = evidence || {};
+  const parts = [];
+  if (safeEvidence.sourceType) parts.push('sourceType=' + safeEvidence.sourceType);
+  if (safeEvidence.connectorStatus) parts.push('connectorStatus=' + safeEvidence.connectorStatus);
+  if (safeEvidence.moduleErrorCount !== undefined) parts.push('moduleErrorCount=' + safeEvidence.moduleErrorCount);
+  if (safeEvidence.valid !== undefined) parts.push('valid=' + safeEvidence.valid);
+  if (safeEvidence.error && safeEvidence.error.code) parts.push('error=' + safeEvidence.error.code);
+  if (safeEvidence.thread && safeEvidence.thread.sourceThreadId) parts.push('thread=' + safeEvidence.thread.sourceThreadId);
+  if ((safeEvidence.checks || []).length > 0) {
+    const failingChecks = safeEvidence.checks.filter(function (check) {
+      return check.status !== 'ok';
+    }).map(function (check) {
+      return check.key;
+    });
+    if (failingChecks.length > 0) parts.push('checks=' + failingChecks.join(','));
+  }
+  return parts.join(' ');
 }
 
 function aggregateStatus(statuses) {

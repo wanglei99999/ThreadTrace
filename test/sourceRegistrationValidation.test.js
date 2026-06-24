@@ -108,4 +108,7 @@ test('source registration validation supports normalized thread json sources', f
   assert.equal(missingInputFile.valid, false);
   assert.equal(missingInputFile.error.code, 'source_location_invalid');
   assert.deepEqual(missingInputFile.error.details.missingFields, ['inputFile']);
+  assert.equal(missingInputFile.nextActions[0].key, 'source.location');
+  assert.match(missingInputFile.nextActions[0].evidenceSummary, /missingRequiredFields=inputFile/);
+  assert.deepEqual(missingInputFile.nextActions[0].evidence.missingRequiredFields, ['inputFile']);
 });

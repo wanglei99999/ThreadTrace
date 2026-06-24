@@ -1612,6 +1612,7 @@ function createOpenApiSpec() {
       '/api/sources/validate': {
         post: {
           summary: 'Validate a tracked source before saving it',
+          description: 'Returns valid/status/checks plus nextActions with evidence and evidenceSummary when the draft is missing handler-required location fields or other source readiness checks fail.',
           requestBody: {
             required: true,
             content: {
@@ -1652,6 +1653,7 @@ function createOpenApiSpec() {
       '/api/sources/onboarding/preflight': {
         post: {
           summary: 'Run source onboarding preflight across catalog, readiness, source draft, and optional ThreadSnapshot JSON',
+          description: 'Returns steps, composed subreports, and nextActions. Source registration failures carry detail actions with evidenceSummary for connector-specific missing location fields.',
           requestBody: {
             required: true,
             content: {

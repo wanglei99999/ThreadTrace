@@ -1258,6 +1258,10 @@ function main(argv) {
     result.checks.forEach(function (check) {
       console.log(check.status + '\t' + check.key + '\t' + check.summary + '\t' + check.value);
     });
+    if ((result.nextActions || []).length > 0) {
+      console.log('Next actions: ' + result.nextActions.length);
+      result.nextActions.forEach(printActionWithDetails);
+    }
     if (!result.valid || result.status === 'fail') {
       process.exitCode = 2;
     }
@@ -1323,6 +1327,10 @@ function main(argv) {
       preflight.steps.forEach(function (step) {
         console.log(step.status + '\t' + step.key + '\t' + step.summary);
       });
+      if ((preflight.nextActions || []).length > 0) {
+        console.log('Next actions: ' + preflight.nextActions.length);
+        preflight.nextActions.forEach(printActionWithDetails);
+      }
       if (preflight.status === 'fail') {
         process.exitCode = 2;
       }
@@ -2466,6 +2474,20 @@ function formatCheckValue(value) {
   if (value === null) return 'null';
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);
+}
+
+function printActionWithDetails(action) {
+  const commands = action.commands || (action.command ? [action.command] : []);
+  console.log((action.severity || 'info') + '\t' + action.key + '\t' + (action.summary || '') + (action.evidenceSummary ? '\tevidence=' + action.evidenceSummary : ''));
+  commands.forEach(function (command) {
+    console.log('  command: ' + command);
+  });
+  (action.details || []).forEach(function (detail) {
+    console.log('  detail: ' + (detail.severity || 'info') + '\t' + detail.key + '\t' + (detail.summary || '') + (detail.evidenceSummary ? '\tevidence=' + detail.evidenceSummary : ''));
+    (detail.commands || []).forEach(function (command) {
+      console.log('    command: ' + command);
+    });
+  });
 }
 
 function formatSchemaDrift(schemaDrift) {

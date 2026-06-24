@@ -64,6 +64,8 @@ test('source onboarding preflight aggregates catalog, connector, and source vali
   assert.equal(preflight.steps.find(function (step) {
     return step.key === 'source.registrationDraft';
   }).status, 'ok');
+  assert.equal(preflight.nextActions.length, 1);
+  assert.equal(preflight.nextActions[0].key, 'connectors.readiness');
 });
 
 test('runtime source onboarding preflight validates normalized thread JSON input', async function () {
@@ -139,4 +141,45 @@ test('runtime source onboarding preflight can simulate an external connector mod
   assert.equal(runtime.listSourceIngestHandlers().some(function (handler) {
     return handler.sourceType === 'external-feed';
   }), false);
+});
+
+test('source onboarding preflight surfaces source validation next-action details', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-source-onboarding-actions-'));
+  const modulePath = path.join(tempDir, 'externalConnector.cjs');
+  await fs.writeFile(modulePath, [
+    "'use strict';",
+    "module.exports = {",
+    "  sourceIngestHandlers: [{",
+    "    sourceType: 'external-feed',",
+    "    requiresAdapter: false,",
+    "    description: 'External feed supplied by a module.',",
+    "    locationSchema: { required: ['feedUrl', 'tenantId'], properties: { feedUrl: { type: 'string' }, tenantId: { type: 'string' } } },",
+    "    async run() { throw new Error('not used in this test'); }",
+    "  }]",
+    "};",
+    ""
+  ].join('\n'), 'utf8');
+
+  const runtime = createThreadTraceRuntime({
+    storeDir: path.join(tempDir, 'store')
+  });
+  const preflight = await runtime.getSourceOnboardingPreflight({
+    sourceKey: 'external',
+    sourceType: 'external-feed',
+    modulePath,
+    location: {
+      feedUrl: 'https://example.test/feed'
+    },
+    now: '2026-06-19T10:00:00.000Z'
+  });
+
+  const action = preflight.nextActions.find(function (item) {
+    return item.key === 'source.registrationDraft';
+  });
+
+  assert.equal(preflight.status, 'fail');
+  assert.ok(action);
+  assert.equal(action.details[0].key, 'source.location');
+  assert.match(action.details[0].evidenceSummary, /missingRequiredFields=tenantId/);
+  assert.deepEqual(action.details[0].evidence.missingRequiredFields, ['tenantId']);
 });

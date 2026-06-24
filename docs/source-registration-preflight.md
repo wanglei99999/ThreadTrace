@@ -75,6 +75,19 @@ The response is a report, not a persisted source:
 }
 ```
 
+Validation and onboarding reports include `nextActions` when a draft cannot be saved or is not runnable. Each action contains `severity`, operator `commands`, structured `evidence`, and compact `evidenceSummary`. For connector-defined location schemas, missing custom fields are surfaced directly, for example:
+
+```json
+{
+  "key": "source.location",
+  "severity": "critical",
+  "summary": "Provide the required source location fields before saving or running this source.",
+  "evidenceSummary": "missingRequiredFields=tenantId requiredFields=feedUrl,tenantId providedFields=feedUrl sourceType=external-feed sourceKey=external"
+}
+```
+
+The broader onboarding preflight carries those source validation actions inside the `source.registrationDraft` action `details`, so rollout plans and deployment gates can keep the root cause visible instead of only reporting a generic preflight failure.
+
 For connector bridges that already produce canonical ThreadTrace snapshots, use `normalized-thread-json`:
 
 ```json
