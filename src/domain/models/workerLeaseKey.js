@@ -10,6 +10,31 @@ function buildWorkerLeaseKey(workerType, scope) {
   return ['worker', type].join(':');
 }
 
+function parseWorkerLeaseKey(leaseKey) {
+  const text = String(leaseKey || '').trim();
+  const parts = text.split(':');
+  if (parts[0] !== 'worker' || !parts[1]) {
+    return {
+      leaseKey: text,
+      workerType: undefined,
+      scope: {},
+      scoped: false
+    };
+  }
+  const scope = {};
+  if (parts[2] === 'source-id' && parts[3]) {
+    scope.sourceId = parts.slice(3).join(':');
+  } else if (parts[2] === 'source-key' && parts[3]) {
+    scope.sourceKey = parts.slice(3).join(':');
+  }
+  return {
+    leaseKey: text,
+    workerType: parts[1],
+    scope,
+    scoped: Boolean(scope.sourceId || scope.sourceKey)
+  };
+}
+
 function normalizeWorkerType(value) {
   return normalizeLeaseSegment(value) || 'worker';
 }
@@ -22,6 +47,7 @@ function normalizeLeaseSegment(value) {
 
 module.exports = {
   buildWorkerLeaseKey,
+  parseWorkerLeaseKey,
   normalizeLeaseSegment,
   normalizeWorkerType
 };

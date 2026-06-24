@@ -119,6 +119,22 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
             acquiredAt: '2026-06-18T09:59:00.000Z',
             updatedAt: '2026-06-18T09:59:00.000Z',
             expiresAt: '2026-06-18T10:04:00.000Z'
+          },
+          {
+            leaseKey: 'worker:due-source:source-id:source-1',
+            workerType: 'due-source',
+            ownerId: 'worker-c',
+            acquiredAt: '2026-06-18T09:58:00.000Z',
+            updatedAt: '2026-06-18T09:58:00.000Z',
+            expiresAt: '2026-06-18T10:03:00.000Z'
+          },
+          {
+            leaseKey: 'worker:notification-event:source-key:external',
+            workerType: 'notification-event',
+            ownerId: 'worker-d',
+            acquiredAt: '2026-06-18T09:40:00.000Z',
+            updatedAt: '2026-06-18T09:40:00.000Z',
+            expiresAt: '2026-06-18T09:45:00.000Z'
           }
         ];
       }
@@ -231,8 +247,21 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
   assert.equal(overview.workers.stale, 1);
   assert.equal(overview.workers.completed, 1);
   assert.equal(overview.workers.latestHeartbeatAt, '2026-06-18T09:56:00.000Z');
-  assert.equal(overview.workers.leases.active, 1);
-  assert.equal(overview.workers.leases.expired, 1);
+  assert.equal(overview.workers.leases.active, 2);
+  assert.equal(overview.workers.leases.expired, 2);
+  assert.equal(overview.workers.leases.sourceScoped, 2);
+  assert.equal(overview.workers.leases.unscoped, 2);
+  assert.equal(overview.workers.leases.byWorkerType['notification-event'], 2);
+  assert.equal(overview.workers.leases.bySourceId['source-1'], 1);
+  assert.equal(overview.workers.leases.bySourceKey.external, 1);
+  assert.equal(overview.workers.leases.activeBySourceId['source-1'], 1);
+  assert.equal(overview.workers.leases.expiredBySourceKey.external, 1);
+  assert.deepEqual(overview.workers.leases.sourceScopedLeases[0].scope, {
+    sourceId: 'source-1'
+  });
+  assert.deepEqual(overview.recent.workerLeases[2].scope, {
+    sourceId: 'source-1'
+  });
   assert.equal(overview.rawPages.total, 1);
   assert.equal(overview.rawPages.latestFetchedAt, '2026-06-18T09:50:00.000Z');
   assert.equal(overview.authorReviewQueue.openCount, 2);

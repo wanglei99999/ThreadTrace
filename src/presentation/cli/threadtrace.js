@@ -343,13 +343,14 @@ function main(argv) {
       console.log('Tasks: total=' + overview.tasks.total + ', running=' + overview.tasks.running + ', failed=' + overview.tasks.failed);
       console.log('Events: pending=' + overview.events.pending + ', failed=' + overview.events.failed + ', unacknowledged=' + overview.events.unacknowledged + ', due=' + overview.events.dueForDelivery);
       console.log('Workers: running=' + overview.workers.running + ', stale=' + overview.workers.stale + ', failed=' + overview.workers.failed + ', latestHeartbeat=' + (overview.workers.latestHeartbeatAt || 'none'));
-      console.log('Worker leases: active=' + overview.workers.leases.active + ', expired=' + overview.workers.leases.expired);
+      console.log('Worker leases: active=' + overview.workers.leases.active + ', expired=' + overview.workers.leases.expired + ', sourceScoped=' + (overview.workers.leases.sourceScoped || 0) + ', unscoped=' + (overview.workers.leases.unscoped || 0));
+      console.log('Worker lease sources: activeBySourceId=' + JSON.stringify(overview.workers.leases.activeBySourceId || {}) + ', expiredBySourceId=' + JSON.stringify(overview.workers.leases.expiredBySourceId || {}));
       console.log('Raw pages: total=' + overview.rawPages.total + ', latest=' + (overview.rawPages.latestFetchedAt || 'none'));
-        console.log('Author review queue: open=' + (overview.authorReviewQueue.openCount || 0) + ', high=' + (overview.authorReviewQueue.highPriorityOpenCount || 0) + ', latest=' + (overview.authorReviewQueue.latestUpdatedAt || 'none'));
-        console.log('Review action audits: total=' + overview.reviewActions.auditCount + ', sources=' + JSON.stringify(overview.reviewActions.bySourceKey || {}));
-        console.log('Review action executions: total=' + overview.reviewActions.executions.count + ', running=' + overview.reviewActions.executions.running + ', staleRunning=' + overview.reviewActions.executions.staleRunning + ', failed=' + overview.reviewActions.executions.failed);
-        console.log('Review action execution sources: ' + JSON.stringify(overview.reviewActions.executions.bySourceKey || {}));
-      }).catch(function (error) {
+      console.log('Author review queue: open=' + (overview.authorReviewQueue.openCount || 0) + ', high=' + (overview.authorReviewQueue.highPriorityOpenCount || 0) + ', latest=' + (overview.authorReviewQueue.latestUpdatedAt || 'none'));
+      console.log('Review action audits: total=' + overview.reviewActions.auditCount + ', sources=' + JSON.stringify(overview.reviewActions.bySourceKey || {}));
+      console.log('Review action executions: total=' + overview.reviewActions.executions.count + ', running=' + overview.reviewActions.executions.running + ', staleRunning=' + overview.reviewActions.executions.staleRunning + ', failed=' + overview.reviewActions.executions.failed);
+      console.log('Review action execution sources: ' + JSON.stringify(overview.reviewActions.executions.bySourceKey || {}));
+    }).catch(function (error) {
       console.error(error && error.stack ? error.stack : error);
       process.exitCode = 1;
     });

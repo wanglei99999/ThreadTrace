@@ -1,5 +1,6 @@
 'use strict';
 
+const { parseWorkerLeaseKey } = require('../../domain/models/workerLeaseKey');
 const { evaluateTrackedSourceSchedule } = require('../../domain/scheduling/trackedSourceSchedule');
 const { assertNotificationEventRepository } = require('../ports/notificationEventRepository');
 const { assertRawThreadPageRepository } = require('../ports/rawThreadPageRepository');
@@ -51,7 +52,9 @@ async function getOperationalOverview(options) {
       rawPages: rawPages.slice(0, 10),
       authorReviewQueue: recentAuthorReviewQueueItems(safeOptions.authorReviewQueue),
       workerRuns: workerRuns.slice(0, 10),
-      workerLeases: workerLeases.slice(0, 10)
+      workerLeases: workerLeases.slice(0, 10).map(function (lease) {
+        return summarizeWorkerLease(lease, now);
+      })
     }
   };
 }
@@ -298,16 +301,51 @@ function summarizeWorkers(workerRuns, workerLeases, now, staleAfterMs) {
 }
 
 function summarizeWorkerLeases(workerLeases, now) {
-  const expiredLeases = workerLeases.filter(function (lease) {
-    return isExpiredLease(lease, now);
+  const summarized = workerLeases.map(function (lease) {
+    return summarizeWorkerLease(lease, now);
   });
+  const expiredLeases = summarized.filter(function (lease) { return lease.expired; });
+  const sourceScopedLeases = summarized.filter(function (lease) { return lease.scoped; });
   return {
     total: workerLeases.length,
     active: workerLeases.length - expiredLeases.length,
     expired: expiredLeases.length,
-    latest: workerLeases[0],
-    expiredLeases: expiredLeases.slice(0, 10)
+    sourceScoped: sourceScopedLeases.length,
+    unscoped: workerLeases.length - sourceScopedLeases.length,
+    byWorkerType: countBy(summarized, function (lease) { return lease.workerType || 'unknown'; }),
+    bySourceId: countBy(sourceScopedLeases.filter(function (lease) {
+      return lease.scope && lease.scope.sourceId;
+    }), function (lease) { return lease.scope.sourceId; }),
+    bySourceKey: countBy(sourceScopedLeases.filter(function (lease) {
+      return lease.scope && lease.scope.sourceKey;
+    }), function (lease) { return lease.scope.sourceKey; }),
+    activeBySourceId: countBy(sourceScopedLeases.filter(function (lease) {
+      return !lease.expired && lease.scope && lease.scope.sourceId;
+    }), function (lease) { return lease.scope.sourceId; }),
+    activeBySourceKey: countBy(sourceScopedLeases.filter(function (lease) {
+      return !lease.expired && lease.scope && lease.scope.sourceKey;
+    }), function (lease) { return lease.scope.sourceKey; }),
+    expiredBySourceId: countBy(sourceScopedLeases.filter(function (lease) {
+      return lease.expired && lease.scope && lease.scope.sourceId;
+    }), function (lease) { return lease.scope.sourceId; }),
+    expiredBySourceKey: countBy(sourceScopedLeases.filter(function (lease) {
+      return lease.expired && lease.scope && lease.scope.sourceKey;
+    }), function (lease) { return lease.scope.sourceKey; }),
+    latest: summarized[0],
+    expiredLeases: expiredLeases.slice(0, 10),
+    sourceScopedLeases: sourceScopedLeases.slice(0, 10)
   };
+}
+
+function summarizeWorkerLease(lease, now) {
+  const parsed = parseWorkerLeaseKey(lease && lease.leaseKey);
+  const workerType = lease && lease.workerType || parsed.workerType;
+  return Object.assign({}, lease, {
+    workerType,
+    scope: parsed.scope,
+    scoped: parsed.scoped,
+    expired: isExpiredLease(lease, now)
+  });
 }
 
 function countByStatus(tasks, status) {

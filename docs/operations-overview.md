@@ -103,7 +103,7 @@ See `docs/rollout-manifest-apply.md` for the apply contract.
 - Tasks: recent task totals grouped by status and last failure.
 - Events: unacknowledged pending/failed delivery counts, total unacknowledged events, delivery-due count, and next delivery time.
 - Notification outbox overview: event counts by type, severity, delivery status, acknowledgement, source, retry exhaustion, attention samples, and recommended next action.
-- Workers: recent run totals, running/stale counts, latest heartbeat time, active/expired leases, and stale run samples.
+- Workers: recent run totals, running/stale counts, latest heartbeat time, active/expired leases, source-scoped lease counts, lease source breakdowns, and stale run samples.
 - Raw pages: recent raw evidence count and latest fetch time.
 - Review actions: file-audit executor record count, unique task count, planned closure/merge totals, latest audit time, adapter/action/source counts, execution-ledger totals grouped by completed/running/stale-running/failed, and stale-running execution counts by source. `sourceKey` / `forum` and `sourceId` can scope the review action audit and execution portions of the overview to one source while the broader operations snapshot stays global.
 - Storage mode and generation time.
@@ -128,8 +128,12 @@ Workers also use short-lived leases to avoid duplicate background execution acro
 - `worker:operations`: the combined operations worker.
 - `worker:due-source`: the due-source ingestion worker.
 - `worker:notification-event`: the notification dispatch worker.
+- `worker:<workerType>:source-id:<sourceId>`: a source-sharded worker pinned to one registered source.
+- `worker:<workerType>:source-key:<sourceKey>`: a source-sharded worker pinned by source key when no source id is available.
 
 Each run acquires its worker lease before executing, renews it between phases, and releases it at the end. If another process owns an unexpired lease, the run is skipped and recorded as `skipped` with reason `lease-held`. If a running worker cannot renew its lease because ownership changed or the lease disappeared, it fails the current `worker_runs` record with `worker_lease_lost` and stops before the next guarded phase. This prevents an old process from continuing source ingest, review actions, or notification dispatch after another worker has taken over.
+
+`operations-overview` parses these lease keys into `scope`, `scoped`, and `expired` fields in recent lease samples. The worker lease summary also reports `sourceScoped`, `unscoped`, `byWorkerType`, `bySourceId`, `bySourceKey`, `activeBySourceId`, `activeBySourceKey`, `expiredBySourceId`, and `expiredBySourceKey`, so dashboards can distinguish a global worker outage from one unhealthy source shard.
 
 File storage writes lease JSON under `worker-leases` for local deployments. PostgreSQL storage uses `worker_leases` and acquires leases with a conditional `on conflict` update, which is the preferred path for multi-process or multi-host deployments.
 
