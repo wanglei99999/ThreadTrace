@@ -61,6 +61,12 @@ function getDeploymentChecklist(options) {
       failed: reviewActionExecutionSummary.failed,
       latestUpdatedAt: reviewActionExecutionSummary.latestUpdatedAt,
       runningStaleAfterMs: reviewActionExecutionSummary.runningStaleAfterMs,
+      sourceId: reviewActionExecutionSummary.sourceId,
+      sourceKey: reviewActionExecutionSummary.sourceKey,
+      bySourceKey: reviewActionExecutionSummary.bySourceKey,
+      bySourceId: reviewActionExecutionSummary.bySourceId,
+      staleRunningBySourceKey: reviewActionExecutionSummary.staleRunningBySourceKey,
+      failedExecutions: reviewActionExecutionSummary.failedExecutions,
       staleRunningExecutions: reviewActionExecutionSummary.staleRunningExecutions,
       message: reviewActionExecutionSummary.message
     }),
@@ -90,6 +96,9 @@ function summarizeReviewActionExecutions(result) {
   const staleRunningExecutions = result && Array.isArray(result.staleRunningExecutions)
     ? result.staleRunningExecutions
     : executions.filter(function (execution) { return execution.staleRunning; }).slice(0, 10);
+  const failedExecutions = executions.filter(function (execution) {
+    return execution.status === 'failed';
+  }).slice(0, 10);
   return {
     status: result && result.status || (result ? 'ok' : 'warn'),
     healthStatus: result && result.healthStatus,
@@ -103,7 +112,13 @@ function summarizeReviewActionExecutions(result) {
     latestUpdatedAt: latestTimestamp(executions.map(function (execution) {
       return execution.updatedAt || execution.completedAt || execution.failedAt || execution.createdAt;
     })),
+    sourceId: result && result.sourceId,
+    sourceKey: result && result.sourceKey,
+    bySourceKey: result && result.bySourceKey || countBy(executions, function (execution) { return execution.sourceKey || 'unknown'; }),
+    bySourceId: result && result.bySourceId || countBy(executions, function (execution) { return execution.sourceId || 'unknown'; }),
+    staleRunningBySourceKey: result && result.staleRunningBySourceKey || countBy(staleRunningExecutions, function (execution) { return execution.sourceKey || 'unknown'; }),
     runningStaleAfterMs: result && result.runningStaleAfterMs,
+    failedExecutions,
     staleRunningExecutions,
     message: result && result.message
   };
@@ -145,6 +160,14 @@ function selectCheckKeys(checks, pattern) {
       summary: check.summary
     };
   });
+}
+
+function countBy(items, keySelector) {
+  return (items || []).reduce(function (counts, item) {
+    const key = keySelector(item);
+    counts[key] = (counts[key] || 0) + 1;
+    return counts;
+  }, {});
 }
 
 function summarizeSourceDiagnostics(sourceDiagnostics) {

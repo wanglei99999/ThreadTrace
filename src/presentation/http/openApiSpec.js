@@ -918,6 +918,8 @@ function createOpenApiSpec() {
         get: {
           summary: 'Get operations readiness status for probes and monitoring',
           parameters: [
+            { name: 'sourceId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
             { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
             { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
             { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }

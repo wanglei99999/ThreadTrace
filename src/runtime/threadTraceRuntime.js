@@ -1115,6 +1115,8 @@ function createThreadTraceRuntime(options) {
         diagnostics: await this.getRuntimeDiagnostics({
           now: safeRequest.now
         }),
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
         now: safeRequest.now,
         limit: safeRequest.limit || 100,
         storeDir: safeRequest.storeDir,
@@ -1180,6 +1182,8 @@ function createThreadTraceRuntime(options) {
       const readiness = await getOperationalReadiness({
         getOperationalOverview: this.getOperationalOverview,
         diagnostics,
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
         now: safeRequest.now,
         limit: safeRequest.limit || 100,
         storeDir: safeRequest.storeDir,

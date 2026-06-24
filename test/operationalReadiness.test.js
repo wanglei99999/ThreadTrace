@@ -90,3 +90,52 @@ test('operational readiness includes runtime diagnostic checks', async function 
     return item.key === 'config.llm.apiKey';
   }).status, 'warn');
 });
+
+test('operational readiness reports source-scoped review action execution ledger health', async function () {
+  const calls = [];
+  const readiness = await getOperationalReadiness({
+    sourceKey: 'nga',
+    sourceId: 'source-nga',
+    async getOperationalOverview(request) {
+      calls.push(request);
+      return {
+        generatedAt: '2026-06-18T10:00:00.000Z',
+        sources: { failed: 0 },
+        tasks: { failed: 0 },
+        events: { failed: 0, dueForDelivery: 0 },
+        workers: {
+          stale: 0,
+          failed: 0,
+          leases: {
+            expired: 0
+          }
+        },
+        reviewActions: {
+          sourceId: 'source-nga',
+          sourceKey: 'nga',
+          executions: {
+            sourceId: 'source-nga',
+            sourceKey: 'nga',
+            count: 2,
+            running: 1,
+            staleRunning: 1,
+            failed: 0,
+            bySourceKey: { nga: 2 },
+            staleRunningBySourceKey: { nga: 1 }
+          }
+        }
+      };
+    }
+  });
+  const check = readiness.checks.find(function (item) {
+    return item.key === 'reviewActions.executionLedger';
+  });
+
+  assert.equal(calls[0].sourceKey, 'nga');
+  assert.equal(calls[0].sourceId, 'source-nga');
+  assert.equal(readiness.status, 'fail');
+  assert.equal(check.status, 'fail');
+  assert.equal(check.count, 1);
+  assert.equal(check.value.sourceKey, 'nga');
+  assert.equal(check.value.staleRunningBySourceKey.nga, 1);
+});

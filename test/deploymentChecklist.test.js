@@ -225,6 +225,8 @@ test('deployment checklist fails when review action execution ledger has failed 
           action: 'tasks.closure',
           status: 'failed',
           taskId: 'task-failed',
+          sourceId: 'source-nga',
+          sourceKey: 'nga',
           updatedAt: '2026-06-19T09:59:00.000Z'
         }
       ]
@@ -239,9 +241,12 @@ test('deployment checklist fails when review action execution ledger has failed 
   });
 
   assert.equal(checklist.status, 'fail');
-  assert.equal(checklist.items.find(function (item) {
+  const item = checklist.items.find(function (item) {
     return item.key === 'reviewActions.executionLedger';
-  }).status, 'fail');
+  });
+  assert.equal(item.status, 'fail');
+  assert.equal(item.evidence.bySourceKey.nga, 1);
+  assert.equal(item.evidence.failedExecutions[0].sourceKey, 'nga');
 });
 
 test('deployment checklist fails when review action execution ledger has stale running records', function () {
@@ -287,6 +292,8 @@ test('deployment checklist fails when review action execution ledger has stale r
           action: 'context.merge',
           status: 'running',
           taskId: 'task-stale',
+          sourceId: 'source-external',
+          sourceKey: 'external',
           updatedAt: '2026-06-21T09:40:00.000Z',
           runningAgeMs: 1200000
         }
@@ -297,6 +304,8 @@ test('deployment checklist fails when review action execution ledger has stale r
           action: 'context.merge',
           status: 'running',
           taskId: 'task-stale',
+          sourceId: 'source-external',
+          sourceKey: 'external',
           updatedAt: '2026-06-21T09:40:00.000Z',
           runningAgeMs: 1200000,
           staleRunning: true
@@ -318,5 +327,7 @@ test('deployment checklist fails when review action execution ledger has stale r
   assert.equal(checklist.status, 'fail');
   assert.equal(item.status, 'fail');
   assert.equal(item.evidence.staleRunning, 1);
+  assert.equal(item.evidence.staleRunningBySourceKey.external, 1);
   assert.equal(item.evidence.staleRunningExecutions[0].taskId, 'task-stale');
+  assert.equal(item.evidence.staleRunningExecutions[0].sourceKey, 'external');
 });

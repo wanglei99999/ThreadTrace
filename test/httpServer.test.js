@@ -629,12 +629,14 @@ test('http server exposes operational overview API', async function () {
 });
 
 test('http server exposes operational readiness API', async function () {
+  const calls = [];
   const server = createThreadTraceServer({
     runtime: {
       listAdapters() {
         return [{ sourceKey: 'nga', displayName: 'NGA' }];
       },
-      async getOperationalReadiness() {
+      async getOperationalReadiness(request) {
+        calls.push(request);
         return {
           generatedAt: '2026-06-18T10:00:00.000Z',
           status: 'fail',
@@ -655,14 +657,20 @@ test('http server exposes operational readiness API', async function () {
   const baseUrl = 'http://127.0.0.1:' + address.port;
 
   try {
-    const response = await fetch(baseUrl + '/api/operations/readiness?limit=10');
+    const response = await fetch(baseUrl + '/api/operations/readiness?sourceKey=nga&sourceId=source-1&limit=10');
     const readiness = await response.json();
     const openApi = await getJson(baseUrl + '/openapi.json');
 
     assert.equal(response.status, 503);
+    assert.equal(calls[0].sourceKey, 'nga');
+    assert.equal(calls[0].sourceId, 'source-1');
+    assert.equal(calls[0].limit, 10);
     assert.equal(readiness.status, 'fail');
     assert.equal(readiness.checks[0].key, 'workers.stale');
     assert.ok(openApi.paths['/api/operations/readiness']);
+    assert.ok(openApi.paths['/api/operations/readiness'].get.parameters.find(function (parameter) {
+      return parameter.name === 'sourceKey';
+    }));
   } finally {
     await close(server);
   }

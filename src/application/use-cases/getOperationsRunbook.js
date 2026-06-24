@@ -481,11 +481,7 @@ function relatedCommandsForChecklistItem(item) {
       'node src/presentation/cli/threadtrace.js review-action-audit-overview',
       'node src/presentation/cli/threadtrace.js review-action-apply --execute true'
     ],
-    'reviewActions.executionLedger': [
-      'node src/presentation/cli/threadtrace.js review-action-executions --status running',
-      'node src/presentation/cli/threadtrace.js review-action-gate',
-      'node src/presentation/cli/threadtrace.js review-action-apply'
-    ]
+    'reviewActions.executionLedger': reviewActionExecutionLedgerCommands(item)
   };
   return commands[item.key] || [];
 }
@@ -493,11 +489,72 @@ function relatedCommandsForChecklistItem(item) {
 function recommendedCommandForChecklistItem(item) {
   if (item.key === 'reviewActions.executionLedger') {
     const evidence = item.evidence || {};
+    const scope = reviewActionExecutionLedgerScope(evidence);
     if ((evidence.staleRunning || 0) > 0 && !(evidence.failed > 0)) {
-      return 'node src/presentation/cli/threadtrace.js review-action-executions --status running';
+      return scopedCommand('node src/presentation/cli/threadtrace.js review-action-executions --status running', scope);
     }
+    return scopedCommand(COMMANDS_BY_KEY[item.key], scope);
   }
   return COMMANDS_BY_KEY[item.key];
+}
+
+function reviewActionExecutionLedgerCommands(item) {
+  const evidence = item && item.evidence || {};
+  const scope = reviewActionExecutionLedgerScope(evidence);
+  return [
+    scopedCommand('node src/presentation/cli/threadtrace.js review-action-executions --status running', scope),
+    scopedCommand('node src/presentation/cli/threadtrace.js review-action-gate', scope),
+    scopedCommand('node src/presentation/cli/threadtrace.js review-action-apply', scope)
+  ];
+}
+
+function reviewActionExecutionLedgerScope(evidence) {
+  const safeEvidence = evidence || {};
+  const sourceId = safeEvidence.sourceId || uniqueValue([
+    safeEvidence.failedExecutions,
+    safeEvidence.staleRunningExecutions,
+    safeEvidence.executions
+  ], 'sourceId');
+  const sourceKey = safeEvidence.sourceKey ||
+    singleKnownCountKey(safeEvidence.failed > 0 ? countExecutionsBySource(safeEvidence.failedExecutions) : undefined) ||
+    singleKnownCountKey(safeEvidence.staleRunning > 0 ? safeEvidence.staleRunningBySourceKey : undefined) ||
+    singleKnownCountKey(safeEvidence.bySourceKey) ||
+    uniqueValue([
+      safeEvidence.failedExecutions,
+      safeEvidence.staleRunningExecutions,
+      safeEvidence.executions
+    ], 'sourceKey');
+  return {
+    sourceId,
+    sourceKey
+  };
+}
+
+function uniqueValue(groups, key) {
+  const values = [];
+  (groups || []).forEach(function (group) {
+    (group || []).forEach(function (item) {
+      const value = item && item[key];
+      if (value && values.indexOf(value) === -1) values.push(value);
+    });
+  });
+  return values.length === 1 ? values[0] : undefined;
+}
+
+function countExecutionsBySource(executions) {
+  if (!Array.isArray(executions) || executions.length === 0) return undefined;
+  return executions.reduce(function (counts, execution) {
+    const key = execution.sourceKey || 'unknown';
+    counts[key] = (counts[key] || 0) + 1;
+    return counts;
+  }, {});
+}
+
+function singleKnownCountKey(counts) {
+  const keys = Object.keys(counts || {}).filter(function (key) {
+    return key && key !== 'unknown' && (counts[key] || 0) > 0;
+  });
+  return keys.length === 1 ? keys[0] : undefined;
 }
 
 function action(input) {

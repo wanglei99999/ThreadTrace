@@ -561,6 +561,8 @@ async function routeRequest(request, response, context) {
 
   if (request.method === 'GET' && url.pathname === '/api/operations/readiness') {
     const readiness = await context.runtime.getOperationalReadiness({
+      sourceId: url.searchParams.get('sourceId') || undefined,
+      sourceKey: url.searchParams.get('sourceKey') || url.searchParams.get('forum') || undefined,
       limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,
       now: url.searchParams.get('now') || undefined,
       storeDir: url.searchParams.get('storeDir') || undefined

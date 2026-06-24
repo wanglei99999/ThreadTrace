@@ -286,7 +286,14 @@ test('operations runbook points review action ledger failures to execution inspe
             count: 3,
             completed: 1,
             running: 1,
-            failed: 1
+            failed: 1,
+            failedExecutions: [
+              {
+                taskId: 'task-failed',
+                sourceKey: 'nga',
+                sourceId: 'source-nga'
+              }
+            ]
           }
         }
       ]
@@ -298,7 +305,10 @@ test('operations runbook points review action ledger failures to execution inspe
   assert.equal(runbook.actions[0].key, 'checklist.reviewActions.executionLedger');
   assert.equal(runbook.actions[0].severity, 'critical');
   assert.match(runbook.actions[0].recommendedCommand, /review-action-executions --status failed/);
+  assert.match(runbook.actions[0].recommendedCommand, /--source-id source-nga/);
+  assert.match(runbook.actions[0].recommendedCommand, /--source-key nga/);
   assert.match(runbook.actions[0].relatedCommands[0], /review-action-executions --status running/);
+  assert.match(runbook.actions[0].relatedCommands[0], /--source-key nga/);
   assert.match(runbook.actions[0].relatedCommands[1], /review-action-gate/);
 });
 
@@ -318,7 +328,10 @@ test('operations runbook points stale review action ledger runs to running inspe
             completed: 0,
             running: 1,
             staleRunning: 1,
-            failed: 0
+            failed: 0,
+            staleRunningBySourceKey: {
+              external: 1
+            }
           }
         }
       ]
@@ -329,7 +342,9 @@ test('operations runbook points stale review action ledger runs to running inspe
   assert.equal(runbook.actionCount, 1);
   assert.equal(runbook.actions[0].key, 'checklist.reviewActions.executionLedger');
   assert.match(runbook.actions[0].recommendedCommand, /review-action-executions --status running/);
+  assert.match(runbook.actions[0].recommendedCommand, /--source-key external/);
   assert.match(runbook.actions[0].relatedCommands[1], /review-action-gate/);
+  assert.match(runbook.actions[0].relatedCommands[1], /--source-key external/);
 });
 
 test('operations runbook flags duplicate idempotency task risk', function () {
