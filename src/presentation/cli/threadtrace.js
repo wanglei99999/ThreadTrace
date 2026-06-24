@@ -447,6 +447,60 @@ function main(argv) {
     return;
   }
 
+  if (command === 'source-attention-report') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.getSourceAttentionReport({
+      forum: options.forum,
+      sourceKey: options.sourceKey,
+      sourceId: options.sourceId,
+      enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
+      limit: options.limit ? Number(options.limit) : 100,
+      attentionLimit: options.attentionLimit ? Number(options.attentionLimit) : undefined,
+      pipelineLimit: options.pipelineLimit ? Number(options.pipelineLimit) : undefined,
+      eventLimit: options.eventLimit ? Number(options.eventLimit) : undefined,
+      taskLimit: options.taskLimit ? Number(options.taskLimit) : undefined,
+      maxAttempts: options.maxAttempts ? Number(options.maxAttempts) : undefined,
+      sourceRunStaleAfterMs: options.sourceRunStaleAfterMs ? Number(options.sourceRunStaleAfterMs) : undefined,
+      sourceFailureRetryBackoffMs: options.sourceFailureRetryBackoffMs ? Number(options.sourceFailureRetryBackoffMs) : undefined,
+      sourceFailureMaxRetryBackoffMs: options.sourceFailureMaxRetryBackoffMs ? Number(options.sourceFailureMaxRetryBackoffMs) : undefined,
+      runningStaleAfterMs: options.runningStaleAfterMs ? Number(options.runningStaleAfterMs) : undefined,
+      now: options.now,
+      storeDir
+    }).then(function (report) {
+      const summary = report.summary || {};
+      console.log('Source attention: ' + report.status);
+      console.log('Sources: total=' + (summary.total || 0) + ', critical=' + (summary.critical || 0) + ', warning=' + (summary.warning || 0) + ', info=' + (summary.info || 0) + ', runnable=' + (summary.runnable || 0));
+      console.log('Signals: ' + formatCountSummary(summary.bySignal || {}));
+      console.log('Source keys: ' + formatCountSummary(summary.bySourceKey || {}));
+      (report.sources || []).forEach(function (item) {
+        const source = item.source || {};
+        console.log((item.severity || 'info') + '\t' + (source.id || source.sourceKey || item.key || 'unknown-source') + '\t' + (source.displayName || 'unknown') + '\tsignals=' + (item.signalCount || 0) + '\trunnable=' + Boolean(item.runnable) + '\tnext=' + (item.nextAction || 'none'));
+        (item.signals || []).slice(0, 4).forEach(function (signal) {
+          const parts = [
+            signal.label || 'attention',
+            signal.summary || 'Review this source.',
+            signal.reason ? 'reason=' + signal.reason : undefined,
+            signal.action ? 'action=' + signal.action : undefined,
+            signal.retryAt ? 'retry=' + signal.retryAt : undefined
+          ].filter(Boolean);
+          console.log('  signal: ' + parts.join(' | '));
+        });
+        (item.commands || []).slice(0, 3).forEach(function (command) {
+          console.log('  command: ' + command);
+        });
+      });
+      if (report.status === 'fail') {
+        process.exitCode = 2;
+      } else if (report.status === 'warn') {
+        process.exitCode = 1;
+      }
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'trace-context') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.getTaskTraceContext({
@@ -2577,6 +2631,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js operations-readiness [--forum nga] [--source-key key] [--source-id id] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-lifecycle-report [--forum nga] [--enabled true] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-schedule-report [--forum nga] [--enabled true] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js source-attention-report [--forum nga] [--source-key key] [--source-id id] [--source-failure-retry-backoff-ms ms] [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js trace-context [--request-id id | --trace-id id | --idempotency-key key] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-runbook [--forum nga] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--running-stale-after-ms ms] [--event-limit n] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js synthesize-runbook-events [--forum nga] [--source-id id] [--resolve-stale true|false] [--execute true] [--store-dir dir] [--limit n]');
