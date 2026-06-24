@@ -2185,41 +2185,82 @@ function renderSourcePipelineRunResult(result) {
 }
 
 function renderSourceBatchRunResult(result) {
-  return panel('来源批量任务完成', [
-    metric('来源数', result.sourceCount),
-    metric('完成', result.completedCount),
-    metric('失败', result.failedCount),
-    evidenceList((result.results || []).map(function (item) {
-      return item.status + ' · ' + item.source.displayName + ' · ' + (item.task ? item.task.id : item.error.message);
-    }))
+  return panel('Source batch run', [
+    metric('Sources', result.sourceCount),
+    metric('Completed', result.completedCount),
+    metric('Failed', result.failedCount),
+    renderSourceOperationResultRows(result.results || [])
   ].join(''), 'wide');
 }
 
 function renderDueSourceBatchRunResult(result) {
-  return panel('到期来源任务完成', [
-    metric('来源数', result.sourceCount),
-    metric('到期', result.dueCount),
-    metric('跳过', result.skippedCount),
-    metric('完成', result.completedCount),
-    metric('失败', result.failedCount),
-    evidenceList((result.results || []).map(function (item) {
-      return item.status + ' · ' + item.scheduleReason + ' · ' + item.source.displayName + ' · ' + (item.task ? item.task.id : item.error.message);
-    }))
+  return panel('Due source batch run', [
+    metric('Sources', result.sourceCount),
+    metric('Due', result.dueCount),
+    metric('Skipped', result.skippedCount),
+    metric('Completed', result.completedCount),
+    metric('Failed', result.failedCount),
+    renderSourceOperationResultRows(result.results || []),
+    renderSourceOperationSkippedRows(result.skipped || [])
   ].join(''), 'wide');
 }
 
 function renderDueSourcePipelineBatchRunResult(result) {
-  return panel('到期来源洞察流水线完成', [
-    metric('来源数', result.sourceCount),
-    metric('到期', result.dueCount),
-    metric('跳过', result.skippedCount),
-    metric('完成', result.completedCount),
-    metric('失败', result.failedCount),
-    evidenceList((result.results || []).map(function (item) {
-      const semantic = item.semantic ? ' / semantic ' + item.semantic.status : '';
-      return item.status + ' 路 ' + item.scheduleReason + ' 路 ' + item.source.displayName + ' 路 ' + (item.task ? item.task.id : item.error.message) + semantic;
-    }))
+  return panel('Due source insight batch run', [
+    metric('Sources', result.sourceCount),
+    metric('Due', result.dueCount),
+    metric('Skipped', result.skippedCount),
+    metric('Completed', result.completedCount),
+    metric('Failed', result.failedCount),
+    renderSourceOperationResultRows(result.results || []),
+    renderSourceOperationSkippedRows(result.skipped || [])
   ].join(''), 'wide');
+}
+
+function renderSourceOperationResultRows(results) {
+  if (!results || results.length === 0) return '<div class="muted">No source operation results.</div>';
+  return '<div class="source-operation-result-list">' + results.map(function (item) {
+    const source = item.source || {};
+    const task = item.task || item.ingestTask || {};
+    const error = item.error || {};
+    const cursorDiff = item.cursorDiff || {};
+    const semantic = item.semantic || {};
+    const details = [
+      source.id || source.sourceKey || 'unknown-source',
+      item.scheduleReason ? 'reason=' + item.scheduleReason : undefined,
+      task.id ? 'task=' + task.id : undefined,
+      cursorDiff.changed === undefined ? undefined : 'changed=' + cursorDiff.changed,
+      cursorDiff.newPostCount === undefined ? undefined : 'newPosts=' + cursorDiff.newPostCount,
+      semantic.status ? 'semantic=' + semantic.status + (semantic.reason ? '/' + semantic.reason : '') : undefined,
+      error.message ? 'error=' + error.message : undefined
+    ].filter(Boolean).join(' | ');
+    return '<div class="action-row ops-row source-operation-result-row"><span>' +
+      '<strong>' + escapeHtml(source.displayName || source.id || 'Unknown source') + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '</span>' +
+      statusBadge(item.status || 'unknown', item.status === 'failed' ? 'fail' : 'ok') +
+      '</div>';
+  }).join('') + '</div>';
+}
+
+function renderSourceOperationSkippedRows(skipped) {
+  if (!skipped || skipped.length === 0) return '';
+  return '<div class="source-operation-result-list skipped-source-list">' + skipped.slice(0, 12).map(function (item) {
+    const source = item.source || {};
+    const details = [
+      source.id || source.sourceKey || 'unknown-source',
+      'reason=' + (item.reason || 'unknown'),
+      item.nextRunAt ? 'next=' + item.nextRunAt : undefined,
+      item.retryAt ? 'retry=' + item.retryAt : undefined,
+      item.backoffMs ? 'backoff=' + formatDurationMs(item.backoffMs) : undefined
+    ].filter(Boolean).join(' | ');
+    return '<div class="action-row ops-row source-operation-result-row"><span>' +
+      '<strong>' + escapeHtml(source.displayName || source.id || 'Skipped source') + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '</span>' +
+      statusBadge('skipped', 'muted') +
+      '</div>';
+  }).join('') + '</div>';
 }
 
 function renderTaskList(result) {
@@ -2430,8 +2471,8 @@ function renderSourceOperations(result) {
       '</div>',
       renderRunbookEventControls(alertableCount)
     ].join(''), 'wide'),
-    panel('Due sources', renderScheduleDecisionRows(schedule.dueSources || [], 'No due sources.'), 'wide'),
-    panel('Skipped sources', renderScheduleDecisionRows((schedule.skippedSources || []).slice(0, 10), 'No skipped sources.'), 'wide'),
+    panel('Due sources', renderScheduleDecisionRows(schedule.dueSources || [], 'No due sources.', true), 'wide'),
+    panel('Skipped sources', renderScheduleDecisionRows((schedule.skippedSources || []).slice(0, 10), 'No skipped sources.', false), 'wide'),
     panel('Lifecycle attention', renderLifecycleAttentionRows(lifecycle.sources || []), 'wide')
   ];
   if (sourceActions.length > 0) {
@@ -2542,14 +2583,16 @@ function renderReasonTags(byReason) {
   }).join('');
 }
 
-function renderScheduleDecisionRows(sources, emptyText) {
+function renderScheduleDecisionRows(sources, emptyText, runnable) {
   if (!sources || sources.length === 0) return '<div class="muted">' + escapeHtml(emptyText) + '</div>';
   return sources.map(function (source) {
     const decision = source.decision || {};
     const runState = source.runState || {};
+    const schedule = source.schedule || {};
     const details = [
       source.id,
       source.sourceKey + '/' + source.sourceType,
+      schedule.intervalMinutes ? 'every=' + schedule.intervalMinutes + 'm' : undefined,
       'run=' + (runState.status || 'unknown'),
       'reason=' + (decision.reason || 'unknown'),
       decision.nextRunAt ? 'next=' + decision.nextRunAt : undefined,
@@ -2560,9 +2603,17 @@ function renderScheduleDecisionRows(sources, emptyText) {
       '<strong>' + escapeHtml(source.displayName || source.id) + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
       '</span>' +
-      statusBadge(decision.due ? 'due' : 'skip', decision.due ? 'ok' : 'muted') +
+      renderScheduleSourceControls(source, runnable) +
       '</div>';
   }).join('');
+}
+
+function renderScheduleSourceControls(source, runnable) {
+  return '<span class="button-group source-op-buttons schedule-op-buttons">' +
+    statusBadge(runnable ? 'due' : 'skip', runnable ? 'ok' : 'muted') +
+    renderSourceDrilldownButton(source) +
+    (runnable ? renderSourceRunButtons(source) : '') +
+    '</span>';
 }
 
 function renderLifecycleAttentionRows(sources) {

@@ -169,6 +169,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /run-source-pipeline/);
     assert.match(webAppJs, /reset-source-failure/);
     assert.match(webAppJs, /failure\/reset/);
+    assert.match(webAppJs, /renderScheduleSourceControls/);
+    assert.match(webAppJs, /renderSourceOperationResultRows/);
+    assert.match(webAppJs, /Due source batch run/);
     assert.match(webAppJs, /synthesize-runbook-events/);
     assert.match(webAppJs, /synthesize-author-review-queue-events/);
     assert.match(webAppJs, /operations\/runbook\/events/);

@@ -397,6 +397,20 @@ form button[type="submit"]:hover {
   align-items: center;
 }
 
+.schedule-op-buttons {
+  min-width: 260px;
+}
+
+.source-operation-result-list {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.source-operation-result-row {
+  min-height: 48px;
+}
+
 .lifecycle-command-list {
   display: grid;
   gap: 6px;
