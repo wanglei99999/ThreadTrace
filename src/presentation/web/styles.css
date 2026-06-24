@@ -411,6 +411,24 @@ form button[type="submit"]:hover {
   min-height: 48px;
 }
 
+.source-attention-list {
+  display: grid;
+  gap: 6px;
+}
+
+.source-attention-row {
+  min-height: 56px;
+}
+
+.source-attention-signal {
+  display: block;
+  margin-top: 3px;
+}
+
+.source-attention-controls {
+  min-width: 300px;
+}
+
 .lifecycle-command-list {
   display: grid;
   gap: 6px;

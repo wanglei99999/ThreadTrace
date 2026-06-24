@@ -2471,6 +2471,7 @@ function renderSourceOperations(result) {
       '</div>',
       renderRunbookEventControls(alertableCount)
     ].join(''), 'wide'),
+    panel('Source attention', renderSourceAttentionRows(buildSourceAttention(result)), 'wide'),
     panel('Due sources', renderScheduleDecisionRows(schedule.dueSources || [], 'No due sources.', true), 'wide'),
     panel('Skipped sources', renderScheduleDecisionRows((schedule.skippedSources || []).slice(0, 10), 'No skipped sources.', false), 'wide'),
     panel('Lifecycle attention', renderLifecycleAttentionRows(lifecycle.sources || []), 'wide')
@@ -2479,6 +2480,246 @@ function renderSourceOperations(result) {
     panels.push(panel('Source runbook actions', renderRunbookActionRows(sourceActions), 'wide'));
   }
   return panels.join('');
+}
+
+function buildSourceAttention(result) {
+  const safeResult = result || {};
+  const schedule = safeResult.schedule || {};
+  const lifecycle = safeResult.lifecycle || {};
+  const runbook = safeResult.runbook || {};
+  const attentionBySource = new Map();
+
+  (schedule.dueSources || []).forEach(function (source) {
+    addSourceAttention(attentionBySource, source, {
+      severity: 'info',
+      label: 'due',
+      summary: 'Scheduled source work is due now.',
+      reason: source.decision && source.decision.reason,
+      runnable: true
+    });
+  });
+
+  (schedule.skippedSources || []).forEach(function (source) {
+    const decision = source.decision || {};
+    if (decision.reason !== 'waiting-failure-backoff') return;
+    addSourceAttention(attentionBySource, source, {
+      severity: 'warning',
+      label: 'retry wait',
+      summary: 'Failed source is waiting for retry backoff.',
+      reason: decision.reason,
+      retryAt: decision.retryAt,
+      backoffMs: decision.backoffMs
+    });
+  });
+
+  (lifecycle.sources || []).forEach(function (source) {
+    const guard = source.disableGuard || {};
+    const retry = source.failureRetry || {};
+    if (guard.blocked) {
+      addSourceAttention(attentionBySource, source, {
+        severity: 'warning',
+        label: 'disable blocked',
+        summary: 'Disable is blocked by an active source run.',
+        action: source.nextAction
+      });
+    }
+    if (guard.stale) {
+      addSourceAttention(attentionBySource, source, {
+        severity: 'warning',
+        label: 'stale run',
+        summary: 'Source run looks stale and needs operator review.',
+        action: source.nextAction
+      });
+    }
+    if (retry.active && !retry.elapsed) {
+      addSourceAttention(attentionBySource, source, {
+        severity: 'warning',
+        label: 'retry wait',
+        summary: 'Failure retry window has not elapsed.',
+        action: source.nextAction,
+        retryAt: retry.retryAt,
+        backoffMs: retry.backoffMs
+      });
+    }
+    if (source.enabled === false) {
+      addSourceAttention(attentionBySource, source, {
+        severity: 'muted',
+        label: 'disabled',
+        summary: 'Source is disabled.',
+        action: source.nextAction
+      });
+    }
+  });
+
+  (runbook.actions || []).filter(function (action) {
+    return action.area === 'sources';
+  }).forEach(function (action) {
+    const evidence = action.evidence || {};
+    addSourceAttention(attentionBySource, {
+      id: evidence.sourceId,
+      sourceKey: evidence.sourceKey,
+      displayName: evidence.sourceName || evidence.displayName || evidence.sourceId || evidence.sourceKey
+    }, {
+      severity: action.severity || 'warning',
+      label: 'runbook',
+      summary: action.title || action.summary || 'Source runbook action requires attention.',
+      command: action.recommendedCommand
+    });
+  });
+
+  return Array.from(attentionBySource.values()).sort(compareSourceAttention).slice(0, 12);
+}
+
+function addSourceAttention(map, source, signal) {
+  const key = sourceAttentionKey(source, signal);
+  if (!key) return;
+  let item = map.get(key);
+  if (!item) {
+    item = {
+      key,
+      source: normalizeAttentionSource(source),
+      severity: 'muted',
+      signals: [],
+      runnable: false,
+      commands: []
+    };
+    map.set(key, item);
+  } else {
+    item.source = mergeAttentionSource(item.source, source);
+  }
+  item.severity = higherAttentionSeverity(item.severity, signal.severity);
+  item.runnable = item.runnable || signal.runnable === true;
+  if (signal.command) item.commands.push(signal.command);
+  item.signals.push({
+    severity: signal.severity || 'info',
+    label: signal.label || 'attention',
+    summary: signal.summary,
+    reason: signal.reason,
+    action: signal.action,
+    retryAt: signal.retryAt,
+    backoffMs: signal.backoffMs
+  });
+}
+
+function sourceAttentionKey(source, signal) {
+  const safeSource = source || {};
+  return safeSource.id || safeSource.sourceId || safeSource.sourceKey || signal && signal.label;
+}
+
+function normalizeAttentionSource(source) {
+  const safeSource = source || {};
+  return {
+    id: safeSource.id || safeSource.sourceId,
+    sourceKey: safeSource.sourceKey,
+    sourceType: safeSource.sourceType,
+    displayName: safeSource.displayName,
+    enabled: safeSource.enabled,
+    runState: safeSource.runState,
+    disableGuard: safeSource.disableGuard,
+    failureRetry: safeSource.failureRetry,
+    nextAction: safeSource.nextAction,
+    recommendedCommands: safeSource.recommendedCommands
+  };
+}
+
+function mergeAttentionSource(current, next) {
+  const normalized = normalizeAttentionSource(next);
+  return Object.assign({}, current, Object.keys(normalized).reduce(function (result, key) {
+    if (normalized[key] !== undefined) result[key] = normalized[key];
+    return result;
+  }, {}));
+}
+
+function higherAttentionSeverity(left, right) {
+  return attentionSeverityRank(right) > attentionSeverityRank(left) ? right : left;
+}
+
+function attentionSeverityRank(severity) {
+  const ranks = {
+    critical: 4,
+    warning: 3,
+    warn: 3,
+    info: 2,
+    ok: 1,
+    muted: 0
+  };
+  return ranks[severity] === undefined ? 2 : ranks[severity];
+}
+
+function compareSourceAttention(left, right) {
+  const severityDiff = attentionSeverityRank(right.severity) - attentionSeverityRank(left.severity);
+  if (severityDiff !== 0) return severityDiff;
+  const signalDiff = (right.signals || []).length - (left.signals || []).length;
+  if (signalDiff !== 0) return signalDiff;
+  return String(left.source.displayName || left.source.id || left.source.sourceKey || '').localeCompare(String(right.source.displayName || right.source.id || right.source.sourceKey || ''));
+}
+
+function renderSourceAttentionRows(items) {
+  if (!items || items.length === 0) return '<div class="muted">No source attention needed.</div>';
+  return '<div class="source-attention-list">' + items.map(function (item) {
+    const source = item.source || {};
+    const runState = source.runState || {};
+    const signalLabels = uniqueText((item.signals || []).map(function (signal) {
+      return signal.label;
+    })).join(' + ');
+    const details = [
+      source.id || source.sourceKey || item.key,
+      source.sourceKey && source.sourceType ? source.sourceKey + '/' + source.sourceType : source.sourceKey || source.sourceType,
+      runState.status ? 'run=' + runState.status : undefined,
+      attentionSignalDetail(item.signals || []),
+      item.commands && item.commands.length > 0 ? 'commands=' + item.commands.length : undefined
+    ].filter(Boolean).join(' | ');
+    const canRunSourceActions = Boolean(source.id);
+    const controls = '<span class="button-group source-op-buttons source-attention-controls">' +
+      statusBadge(signalLabels || item.severity || 'attention', attentionStatusVariant(item.severity)) +
+      renderSourceDrilldownButton(source) +
+      (item.runnable && canRunSourceActions ? renderSourceRunButtons(source) : '') +
+      (canRunSourceActions ? renderSourceEnablementButtons(source) : '') +
+      (canRunSourceActions ? renderSourceFailureResetButtons(source) : '') +
+      '</span>';
+    return '<div class="action-row ops-row source-attention-row"><span>' +
+      '<strong>' + escapeHtml(source.displayName || source.id || source.sourceKey || 'Unknown source') + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      renderSourceAttentionSignalRows(item.signals || []) +
+      '</span>' +
+      controls +
+      '</div>';
+  }).join('') + '</div>';
+}
+
+function attentionSignalDetail(signals) {
+  const details = [];
+  (signals || []).forEach(function (signal) {
+    if (signal.reason) details.push('reason=' + signal.reason);
+    if (signal.action) details.push('action=' + signal.action);
+    if (signal.retryAt) details.push('retry=' + signal.retryAt);
+    if (signal.backoffMs) details.push('backoff=' + formatDurationMs(signal.backoffMs));
+  });
+  return uniqueText(details).slice(0, 4).join(' | ');
+}
+
+function renderSourceAttentionSignalRows(signals) {
+  return (signals || []).slice(0, 4).map(function (signal) {
+    return '<small class="source-attention-signal">' +
+      escapeHtml((signal.label || 'attention') + ': ' + (signal.summary || 'Review this source.')) +
+      '</small>';
+  }).join('');
+}
+
+function attentionStatusVariant(severity) {
+  if (severity === 'critical') return 'fail';
+  if (severity === 'warning' || severity === 'warn') return 'warn';
+  if (severity === 'muted') return 'muted';
+  return 'ok';
+}
+
+function uniqueText(items) {
+  const seen = new Set();
+  return (items || []).filter(function (item) {
+    if (!item || seen.has(item)) return false;
+    seen.add(item);
+    return true;
+  });
 }
 
 function renderSourceOperationsDrilldown(report) {
