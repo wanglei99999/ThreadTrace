@@ -214,6 +214,10 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /api\/context-review-results/);
     assert.ok(openApi.paths['/api/events/dispatch'].post.requestBody.content['application/json'].schema.properties.sourceId);
     assert.ok(openApi.paths['/api/events/dispatch'].post.requestBody.content['application/json'].schema.properties.sourceKey);
+    assert.equal(openApi.paths['/api/operations/overview'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/OperationalOverview');
+    assert.equal(openApi.components.schemas.OperationalOverview.properties.workers.properties.leases.$ref, '#/components/schemas/WorkerLeaseSummary');
+    assert.equal(openApi.components.schemas.WorkerLease.properties.scope.$ref, '#/components/schemas/SourceScope');
+    assert.equal(openApi.components.schemas.WorkerLeaseSummary.properties.sourceScoped.type, 'number');
     assert.equal(adapters.adapters[0].sourceKey, 'nga');
     assert.equal(adapterDiagnostics.status, 'ok');
     assert.equal(adapterDiagnostics.adapterCount, 1);
@@ -757,6 +761,10 @@ test('http server exposes deployment checklist API', async function () {
     assert.ok(openApi.paths['/api/operations/worker-topology-plan'].get.parameters.find(function (parameter) {
       return parameter.name === 'sourceId';
     }));
+    assert.equal(openApi.paths['/api/operations/worker-topology-plan'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/WorkerTopologyPlan');
+    assert.equal(openApi.paths['/api/operations/worker-topology-plan'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/WorkerTopologyPlan');
+    assert.equal(openApi.components.schemas.WorkerTopologyWorker.properties.scope.$ref, '#/components/schemas/SourceScope');
+    assert.equal(openApi.components.schemas.WorkerTopologyWorker.properties.leaseKey.example, 'worker:due-source:source-id:tracked-source-nga-001');
   } finally {
     await close(server);
   }

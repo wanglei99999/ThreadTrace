@@ -602,7 +602,7 @@ limit=100
 now=2026-06-18T10:00:00.000Z
 ```
 
-The response includes recommended worker commands, lease keys, polling intervals, current worker health, deployment checklist status, and next diagnostic commands. When `sourceKey`, `forum`, or `sourceId` is supplied, generated worker commands and lease keys include the same source scope so source-sharded worker fleets do not run, lock, or dispatch another source's work. `sourceId` takes precedence over `sourceKey` for lease identity. A failing plan returns HTTP `503`.
+The response includes recommended worker commands, lease keys, polling intervals, current worker health, deployment checklist status, and next diagnostic commands. When `sourceKey`, `forum`, or `sourceId` is supplied, generated worker commands and lease keys include the same source scope so source-sharded worker fleets do not run, lock, or dispatch another source's work. `sourceId` takes precedence over `sourceKey` for lease identity. The OpenAPI document exposes this response as `WorkerTopologyPlan` and reuses `SourceScope` for worker scope fields, so generated clients can consume source-scoped lease identities without string-only parsing. A failing plan returns HTTP `503`.
 
 ### `POST /api/operations/rollout-manifest-plan`
 

@@ -909,7 +909,14 @@ function createOpenApiSpec() {
           ],
           responses: {
             200: {
-              description: 'Operational overview'
+              description: 'Operational overview',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/OperationalOverview'
+                  }
+                }
+              }
             }
           }
         }
@@ -1042,10 +1049,24 @@ function createOpenApiSpec() {
           ],
           responses: {
             200: {
-              description: 'Worker topology plan is ok or has warnings'
+              description: 'Worker topology plan is ok or has warnings',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/WorkerTopologyPlan'
+                  }
+                }
+              }
             },
             503: {
-              description: 'Worker topology plan has failing checks'
+              description: 'Worker topology plan has failing checks',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/WorkerTopologyPlan'
+                  }
+                }
+              }
             }
           }
         }
@@ -2162,6 +2183,168 @@ function createOpenApiSpec() {
     },
     components: {
       schemas: {
+        SourceScope: {
+          type: 'object',
+          properties: {
+            sourceId: { type: 'string', example: 'tracked-source-nga-001' },
+            sourceKey: { type: 'string', example: 'nga' }
+          },
+          additionalProperties: false
+        },
+        WorkerLease: {
+          type: 'object',
+          properties: {
+            leaseKey: { type: 'string', example: 'worker:due-source:source-id:tracked-source-nga-001' },
+            workerType: { type: 'string', example: 'due-source' },
+            ownerId: { type: 'string', example: 'due-source:host:12345' },
+            acquiredAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            updatedAt: { type: 'string', example: '2026-06-18T10:01:00.000Z' },
+            expiresAt: { type: 'string', example: '2026-06-18T10:06:00.000Z' },
+            scope: { $ref: '#/components/schemas/SourceScope' },
+            scoped: { type: 'boolean', example: true },
+            expired: { type: 'boolean', example: false }
+          }
+        },
+        WorkerLeaseSummary: {
+          type: 'object',
+          properties: {
+            total: { type: 'number', example: 3 },
+            active: { type: 'number', example: 2 },
+            expired: { type: 'number', example: 1 },
+            sourceScoped: { type: 'number', example: 2 },
+            unscoped: { type: 'number', example: 1 },
+            byWorkerType: {
+              type: 'object',
+              additionalProperties: { type: 'number' },
+              example: { 'due-source': 1, 'notification-event': 1 }
+            },
+            bySourceId: {
+              type: 'object',
+              additionalProperties: { type: 'number' },
+              example: { 'tracked-source-nga-001': 1 }
+            },
+            bySourceKey: {
+              type: 'object',
+              additionalProperties: { type: 'number' },
+              example: { nga: 1 }
+            },
+            activeBySourceId: {
+              type: 'object',
+              additionalProperties: { type: 'number' },
+              example: { 'tracked-source-nga-001': 1 }
+            },
+            activeBySourceKey: {
+              type: 'object',
+              additionalProperties: { type: 'number' },
+              example: { nga: 1 }
+            },
+            expiredBySourceId: {
+              type: 'object',
+              additionalProperties: { type: 'number' }
+            },
+            expiredBySourceKey: {
+              type: 'object',
+              additionalProperties: { type: 'number' }
+            },
+            latest: { $ref: '#/components/schemas/WorkerLease' },
+            expiredLeases: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/WorkerLease' }
+            },
+            sourceScopedLeases: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/WorkerLease' }
+            }
+          }
+        },
+        WorkerTopologyWorker: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', example: 'worker.dueSource' },
+            workerType: { type: 'string', example: 'due-source' },
+            role: { type: 'string' },
+            required: { type: 'boolean', example: true },
+            scale: { type: 'string', example: 'single-active-per-lease' },
+            leaseKey: { type: 'string', example: 'worker:due-source:source-id:tracked-source-nga-001' },
+            intervalMs: { type: 'number', example: 300000 },
+            scope: { $ref: '#/components/schemas/SourceScope' },
+            command: {
+              type: 'string',
+              example: 'node src/presentation/worker/dueSourceWorkerMain.js --loop --source-task-mode ingest --source-key nga --source-id tracked-source-nga-001'
+            }
+          }
+        },
+        WorkerTopologyPlan: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            topology: { type: 'string', enum: ['operations-worker', 'split-workers'] },
+            storageMode: { type: 'string', example: 'postgres' },
+            sourceTaskMode: { type: 'string', enum: ['ingest', 'insight-pipeline'] },
+            sourceId: { type: 'string', example: 'tracked-source-nga-001' },
+            sourceKey: { type: 'string', example: 'nga' },
+            scope: { $ref: '#/components/schemas/SourceScope' },
+            workers: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/WorkerTopologyWorker' }
+            },
+            checks: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true }
+            },
+            nextActions: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true }
+            },
+            runtime: {
+              type: 'object',
+              additionalProperties: true
+            }
+          }
+        },
+        OperationalOverview: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            storageMode: { type: 'string', example: 'file' },
+            windowLimit: { type: 'number', example: 100 },
+            sources: { type: 'object', additionalProperties: true },
+            tasks: { type: 'object', additionalProperties: true },
+            events: { type: 'object', additionalProperties: true },
+            workers: {
+              type: 'object',
+              properties: {
+                total: { type: 'number' },
+                running: { type: 'number' },
+                stale: { type: 'number' },
+                completed: { type: 'number' },
+                failed: { type: 'number' },
+                skipped: { type: 'number' },
+                latestHeartbeatAt: { type: 'string' },
+                leases: { $ref: '#/components/schemas/WorkerLeaseSummary' },
+                latestRun: { type: 'object', additionalProperties: true },
+                staleRuns: {
+                  type: 'array',
+                  items: { type: 'object', additionalProperties: true }
+                }
+              }
+            },
+            rawPages: { type: 'object', additionalProperties: true },
+            authorReviewQueue: { type: 'object', additionalProperties: true },
+            reviewActions: { type: 'object', additionalProperties: true },
+            recent: {
+              type: 'object',
+              properties: {
+                workerLeases: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/WorkerLease' }
+                }
+              },
+              additionalProperties: true
+            }
+          }
+        },
         ErrorResponse: {
           type: 'object',
           required: ['error'],
