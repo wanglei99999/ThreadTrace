@@ -231,6 +231,12 @@ Optional filters include `type`, `sourceId`, `sourceKey` / `forum`, `acknowledge
 
 Summarizes notification outbox health for dashboards and workers. Optional filters mirror `GET /api/events` and add `maxAttempts`, `now`, and `storeDir`. The response includes status, window size, pending/failed/unacknowledged/due counts, retry-exhausted count, next delivery time, oldest open event, counts by type/severity/delivery status/source, `byOpenSourceKey`, `sourceHotspots`, attention samples, and a recommended next action.
 
+### `GET /api/events/synthesis-policy`
+
+Returns the read-only notification synthesis policy report used by runbook, source attention, context review result, and author review queue alert synthesis. Optional query parameters: `priorityScoreThreshold` and `now`.
+
+The response includes default dry-run behavior, alert severities, source attention priority threshold, immutable existing event states, mutation statuses, shared synthesis rules, and per-event-type alert rules. Use it before execute mode when operators or generated clients need to explain why an item will become a `runbook-action`, `source-attention`, `context-review-result`, or `author-review-queue` outbox event.
+
 ### `POST /api/events/dispatch`
 
 投递待处理通知事件。当前默认通道是本地文件投递，会把事件写入 `data/store/deliveries`；后续可替换为 Webhook、邮件、企业微信或消息队列。

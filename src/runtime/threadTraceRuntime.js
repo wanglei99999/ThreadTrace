@@ -34,6 +34,7 @@ const { synthesizeRunbookNotificationEvents } = require('../application/use-case
 const { synthesizeContextReviewResultNotificationEvents } = require('../application/use-cases/synthesizeContextReviewResultNotificationEvents');
 const { synthesizeAuthorReviewQueueNotificationEvents } = require('../application/use-cases/synthesizeAuthorReviewQueueNotificationEvents');
 const { synthesizeSourceAttentionNotificationEvents } = require('../application/use-cases/synthesizeSourceAttentionNotificationEvents');
+const { getNotificationSynthesisPolicyReport } = require('../application/use-cases/notificationSynthesisPolicy');
 const { fetchAndStoreThreadPage } = require('../application/use-cases/fetchAndStoreThreadPage');
 const { enrichAnalysisReportWithLlm } = require('../application/use-cases/enrichAnalysisReportWithLlm');
 const { runSemanticEnrichmentTask } = require('../application/use-cases/runSemanticEnrichmentTask');
@@ -1833,6 +1834,14 @@ function createThreadTraceRuntime(options) {
         limit: safeRequest.limit || 200,
         maxAttempts: safeRequest.maxAttempts,
         now: safeRequest.now
+      });
+    },
+
+    async getNotificationSynthesisPolicyReport(request) {
+      const safeRequest = request || {};
+      return getNotificationSynthesisPolicyReport({
+        now: safeRequest.now,
+        priorityScoreThreshold: safeRequest.priorityScoreThreshold
       });
     },
 

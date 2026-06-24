@@ -52,6 +52,7 @@ node src/presentation/cli/threadtrace.js synthesize-runbook-events
 node src/presentation/cli/threadtrace.js synthesize-runbook-events --execute true
 node src/presentation/cli/threadtrace.js synthesize-source-attention-events
 node src/presentation/cli/threadtrace.js synthesize-source-attention-events --execute true --source-key nga
+node src/presentation/cli/threadtrace.js notification-synthesis-policy --json true
 node src/presentation/cli/threadtrace.js synthesize-context-review-result-events
 node src/presentation/cli/threadtrace.js synthesize-context-review-result-events --execute true --source-key nga
 node src/presentation/cli/threadtrace.js synthesize-author-review-queue-events
@@ -89,6 +90,7 @@ HTTP:
 ```text
 POST /api/operations/runbook/events
 POST /api/operations/source-attention/events
+GET /api/events/synthesis-policy
 POST /api/context-review-results/events
 POST /api/intelligence/author-review-queue/events
 GET /api/events/overview
@@ -100,6 +102,8 @@ POST /api/events/archive
 `synthesize-runbook-events`, `synthesize-source-attention-events`, `synthesize-context-review-result-events`, `synthesize-author-review-queue-events`, `POST /api/operations/runbook/events`, `POST /api/operations/source-attention/events`, `POST /api/context-review-results/events`, and `POST /api/intelligence/author-review-queue/events` default to dry-run. Set `--execute true` or request body `{"execute": true}` to persist events into the outbox. Stable event IDs are derived from the runbook action key, source attention key plus source scope, source-scoped context review result record id, or durable author queue item id, so repeated synthesis updates pending/failed events without duplicating alerts or crossing sources. Source attention synthesis supports `sourceId`, `sourceKey` / `forum`, `attentionLimit`, and `priorityScoreThreshold`; it alerts on critical/warning attention and on lower-severity items whose priority score crosses the threshold. Context review result synthesis supports `sourceId` and `sourceKey` / `forum` filters and generated events carry that scope when the record, result payload, or trace contains it. Stale runbook, source attention, and author queue events are marked `resolved` when the underlying action, source attention item, or queue item disappears, and system-resolved events reopen as `pending` if the same signal returns. Operator-acknowledged or already delivered events are left untouched for audit safety.
 
 The application layer keeps these shared notification synthesis rules in `notificationSynthesisPolicy`: `warn` is normalized to `warning`, critical/warning severity is alert-worthy, source attention can also alert by `priorityScoreThreshold`, acknowledged or delivered existing events are immutable for synthesis, refreshed pending/failed events preserve delivery attempts and retry state, source-scoped stale resolution only touches matching source events, and created/updated/resolved/reopened/skipped counters use one status policy. Individual synthesis use cases still own their domain-specific inputs, stable event ids, stale-resolution acknowledgement text, and recommended next actions.
+
+Use `notification-synthesis-policy` or `GET /api/events/synthesis-policy` to inspect the active defaults and per-event-type synthesis rules. The report is read-only and exists so operators, generated clients, and future Web panels can understand why an item will or will not become an outbox event before running execute mode.
 
 Use `dispatch-events`, `POST /api/events/dispatch`, `worker:events-*`, or the operations worker dispatch step with `sourceId` / `sourceKey` / `forum` when running source-scoped delivery. The dispatch use case applies that scope to both pending and failed retry queries, so a worker assigned to one source does not deliver another source's outbox events. PostgreSQL deployments should apply `docs/postgresql-schema.sql` after upgrading; the baseline includes partial dispatch indexes for active, unacknowledged due events, plus source-id and source-key variants for split worker fleets.
 

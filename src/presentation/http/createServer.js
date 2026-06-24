@@ -868,6 +868,17 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/events/synthesis-policy') {
+    const report = await context.runtime.getNotificationSynthesisPolicyReport({
+      priorityScoreThreshold: url.searchParams.get('priorityScoreThreshold')
+        ? Number(url.searchParams.get('priorityScoreThreshold'))
+        : undefined,
+      now: url.searchParams.get('now') || undefined
+    });
+    writeJson(response, 200, report);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/events') {
     const acknowledgedParam = url.searchParams.get('acknowledged');
     const events = await context.runtime.listNotificationEvents({

@@ -2,6 +2,7 @@
 
 const DEFAULT_ALERT_SEVERITIES = ['critical', 'warning'];
 const MUTATION_STATUSES = ['created', 'updated', 'resolved', 'reopened'];
+const DEFAULT_SOURCE_ATTENTION_PRIORITY_SCORE_THRESHOLD = 70;
 
 function normalizeAlertSeverity(severity) {
   if (severity === 'warn') return 'warning';
@@ -20,9 +21,118 @@ function shouldAlertForSourceAttention(item, options) {
   const safeOptions = options || {};
   if (isAlertSeverity(item.severity, safeOptions)) return true;
   const threshold = safeOptions.priorityScoreThreshold === undefined
-    ? 70
+    ? DEFAULT_SOURCE_ATTENTION_PRIORITY_SCORE_THRESHOLD
     : Number(safeOptions.priorityScoreThreshold);
   return Number(item.priorityScore || 0) >= threshold;
+}
+
+function getNotificationSynthesisPolicyReport(options) {
+  const safeOptions = options || {};
+  const generatedAt = safeOptions.now || new Date().toISOString();
+  const sourceAttentionThreshold = safeOptions.priorityScoreThreshold === undefined
+    ? DEFAULT_SOURCE_ATTENTION_PRIORITY_SCORE_THRESHOLD
+    : Number(safeOptions.priorityScoreThreshold);
+  const eventTypes = [
+    synthesisPolicyEventType({
+      type: 'runbook-action',
+      sourceScoped: true,
+      staleResolution: true,
+      reopensAutoResolved: true,
+      alertRules: [
+        severityRule('critical'),
+        severityRule('warning')
+      ]
+    }),
+    synthesisPolicyEventType({
+      type: 'source-attention',
+      sourceScoped: true,
+      staleResolution: true,
+      reopensAutoResolved: true,
+      alertRules: [
+        severityRule('critical'),
+        severityRule('warning'),
+        {
+          key: 'priority-score-threshold',
+          summary: 'Alert source attention items whose priorityScore is at or above the configured threshold.',
+          threshold: sourceAttentionThreshold
+        }
+      ]
+    }),
+    synthesisPolicyEventType({
+      type: 'context-review-result',
+      sourceScoped: true,
+      staleResolution: false,
+      reopensAutoResolved: false,
+      alertRules: [
+        severityRule('critical'),
+        severityRule('warning')
+      ]
+    }),
+    synthesisPolicyEventType({
+      type: 'author-review-queue',
+      sourceScoped: true,
+      staleResolution: true,
+      reopensAutoResolved: true,
+      alertRules: [
+        {
+          key: 'open-queue-item',
+          summary: 'Alert durable author review queue items while status is open.'
+        }
+      ]
+    })
+  ];
+  return {
+    generatedAt,
+    status: 'ok',
+    defaults: {
+      dryRun: true,
+      alertSeverities: DEFAULT_ALERT_SEVERITIES.slice(),
+      sourceAttentionPriorityScoreThreshold: sourceAttentionThreshold,
+      immutableExistingStates: ['acknowledged', 'delivered'],
+      mutationStatuses: MUTATION_STATUSES.slice()
+    },
+    sharedRules: [
+      {
+        key: 'dry-run-default',
+        summary: 'Notification synthesis previews by default and only persists when execute=true or dryRun=false is supplied.'
+      },
+      {
+        key: 'immutable-operator-or-delivered-events',
+        summary: 'Acknowledged or delivered existing notification events are skipped by synthesis to preserve operator and delivery history.'
+      },
+      {
+        key: 'preserve-delivery-state',
+        summary: 'Refreshing a pending or failed event keeps delivery attempts, retry timing, errors, and acknowledgement fields.'
+      },
+      {
+        key: 'source-scoped-stale-resolution',
+        summary: 'When a source scope is supplied, stale resolution only touches events in that source scope.'
+      }
+    ],
+    eventTypes,
+    recommendedNextAction: 'Use dry-run synthesis commands before executing alerts, then dispatch and acknowledge notification events from the outbox.'
+  };
+}
+
+function synthesisPolicyEventType(input) {
+  return {
+    type: input.type,
+    sourceScoped: input.sourceScoped,
+    staleResolution: input.staleResolution,
+    reopensAutoResolved: input.reopensAutoResolved,
+    skipsAcknowledged: true,
+    skipsDelivered: true,
+    preservesDeliveryState: true,
+    alertRules: input.alertRules || []
+  };
+}
+
+function severityRule(severity) {
+  return {
+    key: 'severity-' + severity,
+    severity,
+    summary: 'Alert when synthesized input severity is ' + severity + '.'
+  };
 }
 
 function existingEventSkipReason(event) {
@@ -79,9 +189,11 @@ function createSynthesisResultCounts(results) {
 
 module.exports = {
   DEFAULT_ALERT_SEVERITIES,
+  DEFAULT_SOURCE_ATTENTION_PRIORITY_SCORE_THRESHOLD,
   normalizeAlertSeverity,
   isAlertSeverity,
   shouldAlertForSourceAttention,
+  getNotificationSynthesisPolicyReport,
   existingEventSkipReason,
   mergeExistingNotificationDeliveryState,
   eventMatchesSourceScope,

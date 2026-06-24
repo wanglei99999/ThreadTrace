@@ -31,6 +31,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     const connectorCatalog = await getJson(baseUrl + '/api/connectors/catalog?now=2026-06-19T10:00:00.000Z');
     const connectorReadiness = await getJson(baseUrl + '/api/connectors/readiness?now=2026-06-19T10:00:00.000Z');
     const openApi = await getJson(baseUrl + '/openapi.json');
+    const notificationSynthesisPolicy = await getJson(baseUrl + '/api/events/synthesis-policy?priorityScoreThreshold=85&now=2026-06-25T10:00:00.000Z');
     const connectorRolloutPlan = await postJson(baseUrl + '/api/connectors/rollout-plan', {
       now: '2026-06-19T10:00:00.000Z'
     });
@@ -196,6 +197,11 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /renderNotificationSourceHotspots/);
     assert.match(webAppJs, /renderEventSourceDrilldownButton/);
     assert.match(webAppJs, /event-summary-strip/);
+    assert.equal(notificationSynthesisPolicy.status, 'ok');
+    assert.equal(notificationSynthesisPolicy.defaults.sourceAttentionPriorityScoreThreshold, 85);
+    assert.ok(notificationSynthesisPolicy.eventTypes.find(function (item) {
+      return item.type === 'source-attention';
+    }));
     assert.match(webAppJs, /formatOpinionChainSummary/);
     assert.match(webAppJs, /renderPrimaryAuthorProfile/);
     assert.match(webAppJs, /renderEvidenceReliability/);
@@ -248,6 +254,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.paths['/api/operations/source-attention'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceAttentionReport');
     assert.equal(openApi.paths['/api/operations/source-attention'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/SourceAttentionReport');
     assert.equal(openApi.paths['/api/operations/source-attention/events'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceAttentionNotificationEventSynthesisResult');
+    assert.equal(openApi.paths['/api/events/synthesis-policy'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/NotificationSynthesisPolicyReport');
+    assert.equal(openApi.components.schemas.NotificationSynthesisPolicyReport.properties.eventTypes.items.$ref, '#/components/schemas/NotificationSynthesisPolicyEventType');
+    assert.equal(openApi.components.schemas.NotificationSynthesisPolicyEventType.properties.alertRules.items.$ref, '#/components/schemas/NotificationSynthesisPolicyRule');
     assert.equal(openApi.components.schemas.SourceAttentionReport.properties.sources.items.$ref, '#/components/schemas/SourceAttentionItem');
     assert.equal(openApi.components.schemas.SourceAttentionItem.properties.signals.items.$ref, '#/components/schemas/SourceAttentionSignal');
     assert.equal(openApi.components.schemas.SourceAttentionItem.properties.attentionRank.type, 'number');

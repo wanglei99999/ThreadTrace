@@ -6,6 +6,7 @@ const {
   createSynthesisResultCounts,
   eventMatchesSourceScope,
   existingEventSkipReason,
+  getNotificationSynthesisPolicyReport,
   isAlertSeverity,
   mergeExistingNotificationDeliveryState,
   normalizeAlertSeverity,
@@ -82,4 +83,29 @@ test('notification synthesis policy matches source scopes and counts result stat
     reopenedCount: 1,
     skippedCount: 1
   });
+});
+
+test('notification synthesis policy report exposes shared rules and event type policies', function () {
+  const report = getNotificationSynthesisPolicyReport({
+    now: '2026-06-25T10:00:00.000Z',
+    priorityScoreThreshold: 85
+  });
+
+  assert.equal(report.status, 'ok');
+  assert.equal(report.generatedAt, '2026-06-25T10:00:00.000Z');
+  assert.equal(report.defaults.dryRun, true);
+  assert.deepEqual(report.defaults.immutableExistingStates, ['acknowledged', 'delivered']);
+  assert.equal(report.defaults.sourceAttentionPriorityScoreThreshold, 85);
+  assert.ok(report.sharedRules.find(function (rule) {
+    return rule.key === 'preserve-delivery-state';
+  }));
+
+  const sourceAttention = report.eventTypes.find(function (item) {
+    return item.type === 'source-attention';
+  });
+  assert.equal(sourceAttention.sourceScoped, true);
+  assert.equal(sourceAttention.staleResolution, true);
+  assert.ok(sourceAttention.alertRules.find(function (rule) {
+    return rule.key === 'priority-score-threshold' && rule.threshold === 85;
+  }));
 });

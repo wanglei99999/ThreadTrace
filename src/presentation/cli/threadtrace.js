@@ -1038,6 +1038,34 @@ function main(argv) {
     return;
   }
 
+  if (command === 'notification-synthesis-policy') {
+    runtime.getNotificationSynthesisPolicyReport({
+      priorityScoreThreshold: options.priorityScoreThreshold ? Number(options.priorityScoreThreshold) : undefined,
+      now: options.now
+    }).then(function (report) {
+      if (options.json === 'true') {
+        console.log(JSON.stringify(report, null, 2));
+        return;
+      }
+      console.log('Notification synthesis policy: ' + report.status);
+      console.log('Dry run default: ' + report.defaults.dryRun);
+      console.log('Alert severities: ' + report.defaults.alertSeverities.join(','));
+      console.log('Source attention threshold: ' + report.defaults.sourceAttentionPriorityScoreThreshold);
+      console.log('Immutable existing states: ' + report.defaults.immutableExistingStates.join(','));
+      report.eventTypes.forEach(function (item) {
+        const rules = (item.alertRules || []).map(function (rule) {
+          return rule.threshold === undefined ? rule.key : rule.key + '=' + rule.threshold;
+        }).join(',');
+        console.log(item.type + '\tsourceScoped=' + item.sourceScoped + '\tstale=' + item.staleResolution + '\treopen=' + item.reopensAutoResolved + '\trules=' + rules);
+      });
+      console.log('Next: ' + report.recommendedNextAction);
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'list-events') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.listNotificationEvents({
@@ -2704,6 +2732,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js synthesize-source-attention-events [--source-key key] [--priority-score-threshold n] [--resolve-stale true] [--execute true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js synthesize-author-review-queue-events [--execute true] [--source-key key] [--status open] [--resolve-stale true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js synthesize-context-review-result-events [--execute true] [--source-key key] [--source-id id] [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js notification-synthesis-policy [--priority-score-threshold n] [--json true] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-plan [--source-key key] [--source-id id] [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-gate [--source-key key] [--source-id id] [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-apply [--execute true] [--source-key key] [--source-id id] [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');

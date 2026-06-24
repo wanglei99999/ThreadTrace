@@ -1657,6 +1657,27 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/events/synthesis-policy': {
+        get: {
+          summary: 'Describe notification synthesis policy defaults and per-event alert rules',
+          parameters: [
+            { name: 'priorityScoreThreshold', in: 'query', required: false, schema: { type: 'number', example: 70 } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-25T10:00:00.000Z' } }
+          ],
+          responses: {
+            200: {
+              description: 'Notification synthesis policy report',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/NotificationSynthesisPolicyReport'
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       '/api/events/dispatch': {
         post: {
           summary: 'Dispatch pending notification events',
@@ -4594,6 +4615,69 @@ function createOpenApiSpec() {
               type: 'object',
               additionalProperties: { type: 'number' }
             }
+          }
+        },
+        NotificationSynthesisPolicyRule: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', example: 'severity-warning' },
+            severity: { type: 'string', example: 'warning' },
+            threshold: { type: 'number', example: 70 },
+            summary: { type: 'string' }
+          }
+        },
+        NotificationSynthesisPolicyEventType: {
+          type: 'object',
+          properties: {
+            type: { type: 'string', example: 'source-attention' },
+            sourceScoped: { type: 'boolean', example: true },
+            staleResolution: { type: 'boolean', example: true },
+            reopensAutoResolved: { type: 'boolean', example: true },
+            skipsAcknowledged: { type: 'boolean', example: true },
+            skipsDelivered: { type: 'boolean', example: true },
+            preservesDeliveryState: { type: 'boolean', example: true },
+            alertRules: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/NotificationSynthesisPolicyRule' }
+            }
+          }
+        },
+        NotificationSynthesisPolicyReport: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-25T10:00:00.000Z' },
+            status: { type: 'string', example: 'ok' },
+            defaults: {
+              type: 'object',
+              properties: {
+                dryRun: { type: 'boolean', example: true },
+                alertSeverities: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  example: ['critical', 'warning']
+                },
+                sourceAttentionPriorityScoreThreshold: { type: 'number', example: 70 },
+                immutableExistingStates: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  example: ['acknowledged', 'delivered']
+                },
+                mutationStatuses: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  example: ['created', 'updated', 'resolved', 'reopened']
+                }
+              }
+            },
+            sharedRules: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/NotificationSynthesisPolicyRule' }
+            },
+            eventTypes: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/NotificationSynthesisPolicyEventType' }
+            },
+            recommendedNextAction: { type: 'string' }
           }
         },
         NotificationEventOverview: {
