@@ -688,7 +688,14 @@ function createOpenApiSpec() {
           ],
           responses: {
             200: {
-              description: 'Durable author review queue items, aggregate counts, and source hotspots'
+              description: 'Durable author review queue items, aggregate counts, and source hotspots',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/AuthorReviewQueueListResult'
+                  }
+                }
+              }
             }
           }
         }
@@ -2314,6 +2321,112 @@ function createOpenApiSpec() {
             }
           }
         },
+        AuthorReviewQueueSourceHotspot: {
+          type: 'object',
+          properties: {
+            sourceKey: { type: 'string', example: 'nga' },
+            itemCount: { type: 'number', example: 3 },
+            openCount: { type: 'number', example: 3 },
+            highPriorityOpenCount: { type: 'number', example: 1 },
+            byType: {
+              type: 'object',
+              additionalProperties: { type: 'number' },
+              example: { 'evidence-gap': 1, 'high-confidence-opinion': 2 }
+            },
+            latestUpdatedAt: { type: 'string', example: '2026-06-23T09:59:00.000Z' },
+            sourceThreadIds: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['45974302']
+            }
+          }
+        },
+        AuthorReviewQueueItem: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', example: 'author-review:abc123' },
+            queueKey: { type: 'string' },
+            status: { type: 'string', enum: ['open', 'confirmed', 'ignored'] },
+            type: { type: 'string', example: 'evidence-gap' },
+            priority: { type: 'string', example: 'high' },
+            score: { type: 'number', example: 100 },
+            title: { type: 'string' },
+            summary: { type: 'string' },
+            reason: { type: 'string' },
+            nextAction: { type: 'string' },
+            sourceKey: { type: 'string', example: 'nga' },
+            sourceThreadId: { type: 'string', example: '45974302' },
+            floor: { type: 'number', example: 3 },
+            sourcePostId: { type: 'string' },
+            author: { type: 'object', additionalProperties: true },
+            entity: { type: 'object', additionalProperties: true },
+            refs: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true }
+            },
+            firstSeenAt: { type: 'string', example: '2026-06-23T09:59:00.000Z' },
+            lastSeenAt: { type: 'string', example: '2026-06-23T10:00:00.000Z' },
+            seenCount: { type: 'number', example: 2 },
+            updatedAt: { type: 'string', example: '2026-06-23T10:00:00.000Z' }
+          }
+        },
+        AuthorReviewQueueSummary: {
+          type: 'object',
+          properties: {
+            itemCount: { type: 'number', example: 3 },
+            openCount: { type: 'number', example: 3 },
+            highPriorityOpenCount: { type: 'number', example: 1 },
+            byStatus: {
+              type: 'object',
+              additionalProperties: { type: 'number' },
+              example: { open: 3 }
+            },
+            byPriority: {
+              type: 'object',
+              additionalProperties: { type: 'number' },
+              example: { high: 1, medium: 2 }
+            },
+            byType: {
+              type: 'object',
+              additionalProperties: { type: 'number' },
+              example: { 'evidence-gap': 1, 'high-confidence-opinion': 2 }
+            },
+            bySourceKey: {
+              type: 'object',
+              additionalProperties: { type: 'number' },
+              example: { nga: 3 }
+            },
+            openBySourceKey: {
+              type: 'object',
+              additionalProperties: { type: 'number' },
+              example: { nga: 3 }
+            },
+            highPriorityOpenBySourceKey: {
+              type: 'object',
+              additionalProperties: { type: 'number' },
+              example: { nga: 1 }
+            },
+            sourceHotspots: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/AuthorReviewQueueSourceHotspot' }
+            },
+            latestUpdatedAt: { type: 'string', example: '2026-06-23T10:00:00.000Z' }
+          }
+        },
+        AuthorReviewQueueListResult: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-23T10:00:00.000Z' },
+            status: { type: 'string', example: 'ok' },
+            itemCount: { type: 'number', example: 3 },
+            summary: { $ref: '#/components/schemas/AuthorReviewQueueSummary' },
+            items: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/AuthorReviewQueueItem' }
+            },
+            recommendedNextAction: { type: 'string' }
+          }
+        },
         WorkerTopologyWorker: {
           type: 'object',
           properties: {
@@ -2387,7 +2500,7 @@ function createOpenApiSpec() {
                   },
                   additionalProperties: true
                 },
-                authorReviewQueue: { type: 'object', additionalProperties: true },
+                authorReviewQueue: { $ref: '#/components/schemas/AuthorReviewQueueSummary' },
                 reviewActions: { type: 'object', additionalProperties: true }
               },
               additionalProperties: true
@@ -2417,7 +2530,7 @@ function createOpenApiSpec() {
                 },
                 authorReviewQueue: {
                   type: 'array',
-                  items: { type: 'object', additionalProperties: true }
+                  items: { $ref: '#/components/schemas/AuthorReviewQueueItem' }
                 },
                 reviewActionExecutions: {
                   type: 'array',
@@ -2486,7 +2599,7 @@ function createOpenApiSpec() {
               }
             },
             rawPages: { type: 'object', additionalProperties: true },
-            authorReviewQueue: { type: 'object', additionalProperties: true },
+            authorReviewQueue: { $ref: '#/components/schemas/AuthorReviewQueueSummary' },
             reviewActions: { type: 'object', additionalProperties: true },
             recent: {
               type: 'object',
@@ -2498,6 +2611,10 @@ function createOpenApiSpec() {
                 workerRuns: {
                   type: 'array',
                   items: { $ref: '#/components/schemas/WorkerRun' }
+                },
+                authorReviewQueue: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/AuthorReviewQueueItem' }
                 }
               },
               additionalProperties: true

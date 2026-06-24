@@ -223,6 +223,12 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.components.schemas.OperationalOverview.properties.workers.properties.leases.$ref, '#/components/schemas/WorkerLeaseSummary');
     assert.equal(openApi.components.schemas.OperationalOverview.properties.workers.properties.latestRun.$ref, '#/components/schemas/WorkerRun');
     assert.equal(openApi.components.schemas.OperationalOverview.properties.workers.properties.staleRuns.items.$ref, '#/components/schemas/WorkerRun');
+    assert.equal(openApi.components.schemas.OperationalOverview.properties.authorReviewQueue.$ref, '#/components/schemas/AuthorReviewQueueSummary');
+    assert.equal(openApi.components.schemas.OperationalOverview.properties.recent.properties.authorReviewQueue.items.$ref, '#/components/schemas/AuthorReviewQueueItem');
+    assert.equal(openApi.components.schemas.AuthorReviewQueueSummary.properties.sourceHotspots.items.$ref, '#/components/schemas/AuthorReviewQueueSourceHotspot');
+    assert.equal(openApi.components.schemas.AuthorReviewQueueSummary.properties.openBySourceKey.additionalProperties.type, 'number');
+    assert.equal(openApi.components.schemas.AuthorReviewQueueSummary.properties.highPriorityOpenBySourceKey.additionalProperties.type, 'number');
+    assert.equal(openApi.components.schemas.AuthorReviewQueueSourceHotspot.properties.sourceThreadIds.items.type, 'string');
     assert.equal(openApi.components.schemas.OperationalOverview.properties.recent.properties.workerRuns.items.$ref, '#/components/schemas/WorkerRun');
     assert.equal(openApi.components.schemas.WorkerRun.properties.scope.$ref, '#/components/schemas/SourceScope');
     assert.equal(openApi.components.schemas.WorkerRun.properties.scoped.type, 'boolean');
@@ -230,6 +236,11 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.paths['/api/operations/source-drilldown'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/SourceOperationsDrilldown');
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.scope.$ref, '#/components/schemas/SourceScope');
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.recent.properties.workerRuns.items.$ref, '#/components/schemas/WorkerRun');
+    assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.health.properties.authorReviewQueue.$ref, '#/components/schemas/AuthorReviewQueueSummary');
+    assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.recent.properties.authorReviewQueue.items.$ref, '#/components/schemas/AuthorReviewQueueItem');
+    assert.equal(openApi.paths['/api/intelligence/author-review-queue'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/AuthorReviewQueueListResult');
+    assert.equal(openApi.components.schemas.AuthorReviewQueueListResult.properties.summary.$ref, '#/components/schemas/AuthorReviewQueueSummary');
+    assert.equal(openApi.components.schemas.AuthorReviewQueueListResult.properties.items.items.$ref, '#/components/schemas/AuthorReviewQueueItem');
     assert.equal(openApi.components.schemas.WorkerLease.properties.scope.$ref, '#/components/schemas/SourceScope');
     assert.equal(openApi.components.schemas.WorkerLeaseSummary.properties.sourceScoped.type, 'number');
     assert.equal(adapters.adapters[0].sourceKey, 'nga');
