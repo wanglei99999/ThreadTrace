@@ -193,7 +193,10 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /formatEventSourceScope/);
     assert.match(webAppJs, /sourceId/);
     assert.match(webAppJs, /api\/events\/overview/);
+    assert.match(webAppJs, /api\/events\/synthesis-policy/);
     assert.match(webAppJs, /renderNotificationEventOverview/);
+    assert.match(webAppJs, /renderNotificationSynthesisPolicy/);
+    assert.match(webAppJs, /Notification synthesis policy/);
     assert.match(webAppJs, /renderNotificationSourceHotspots/);
     assert.match(webAppJs, /renderEventSourceDrilldownButton/);
     assert.match(webAppJs, /event-summary-strip/);

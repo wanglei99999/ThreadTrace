@@ -816,11 +816,13 @@ async function loadEvents() {
     const query = buildEventQuery();
     return Promise.all([
       fetchJson('/api/events?' + query.toString()),
-      fetchJson('/api/events/overview?' + query.toString())
+      fetchJson('/api/events/overview?' + query.toString()),
+      fetchJson('/api/events/synthesis-policy')
     ]).then(function (results) {
       return {
         events: results[0].events || [],
-        overview: results[1]
+        overview: results[1],
+        policy: results[2]
       };
     });
   }, renderEventList);
@@ -3592,12 +3594,15 @@ function renderContextReviewActionExecutionRows(executions) {
 function renderEventList(result) {
   const events = result.events || [];
   const overview = result.overview;
+  const policy = result.policy;
   const summary = renderEventListSummary(events);
   const title = '通知事件 · ' + currentEventFilterSummary();
   const listPanel = events.length === 0
     ? panel(title, summary + '<div class="muted">暂无</div>', 'wide')
     : panel(title, summary + events.map(renderNotificationEventRow).join(''), 'wide');
-  return (overview ? renderNotificationEventOverview(overview) : '') + listPanel;
+  return (overview ? renderNotificationEventOverview(overview) : '') +
+    (policy ? renderNotificationSynthesisPolicy(policy) : '') +
+    listPanel;
 }
 
 function renderNotificationEventOverview(overview) {
@@ -3626,6 +3631,47 @@ function renderNotificationEventOverview(overview) {
       return (event.deliveryStatus || 'delivered') + ' | ' + event.type + ' | ' + event.id + ' | reviewable';
     })))
   ].join(''), 'wide');
+}
+
+function renderNotificationSynthesisPolicy(policy) {
+  const defaults = policy.defaults || {};
+  return panel('Notification synthesis policy', [
+    '<div class="summary-strip event-summary-strip">' + [
+      summaryTile('Dry-run', defaults.dryRun ? 'yes' : 'no', defaults.dryRun ? 'ok' : 'warn'),
+      summaryTile('Alert severities', String((defaults.alertSeverities || []).length), 'warn'),
+      summaryTile('Source threshold', String(defaults.sourceAttentionPriorityScoreThreshold || 0), 'warn'),
+      summaryTile('Event types', String((policy.eventTypes || []).length), 'ok')
+    ].join('') + '</div>',
+    metric('Immutable', (defaults.immutableExistingStates || []).join(',') || 'none'),
+    metric('Mutation statuses', (defaults.mutationStatuses || []).join(',') || 'none'),
+    metric('Next', policy.recommendedNextAction || 'none'),
+    renderNotificationSynthesisPolicyRows(policy.eventTypes || []),
+    evidenceList((policy.sharedRules || []).map(function (rule) {
+      return rule.key + ' | ' + rule.summary;
+    }))
+  ].join(''), 'wide');
+}
+
+function renderNotificationSynthesisPolicyRows(eventTypes) {
+  if (!eventTypes.length) return '<div class="muted">No synthesis policy event types.</div>';
+  return '<div class="source-hotspot-list">' + eventTypes.map(function (item) {
+    const rules = (item.alertRules || []).map(function (rule) {
+      return rule.threshold === undefined ? rule.key : rule.key + '=' + rule.threshold;
+    }).join(', ');
+    const details = [
+      item.sourceScoped ? 'source-scoped' : 'global',
+      item.staleResolution ? 'stale-resolution' : 'no-stale-resolution',
+      item.reopensAutoResolved ? 'reopen-auto-resolved' : 'no-reopen',
+      item.preservesDeliveryState ? 'preserve-delivery-state' : undefined,
+      rules ? 'rules=' + rules : undefined
+    ].filter(Boolean).join(' | ');
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(item.type || 'unknown-type') + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '</span>' +
+      statusBadge(item.staleResolution ? 'managed' : 'direct', item.staleResolution ? 'ok' : 'muted') +
+      '</div>';
+  }).join('') + '</div>';
 }
 
 function renderEventListSummary(events) {
