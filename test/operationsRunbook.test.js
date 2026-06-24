@@ -395,6 +395,20 @@ test('operations runbook flags open author review queue items', function () {
             highPriorityOpenCount: 1,
             byPriority: { high: 1, medium: 2 },
             byType: { 'evidence-gap': 1, 'high-confidence-opinion': 2 },
+            bySourceKey: { nga: 3 },
+            openBySourceKey: { nga: 3 },
+            highPriorityOpenBySourceKey: { nga: 1 },
+            sourceHotspots: [
+              {
+                sourceKey: 'nga',
+                itemCount: 3,
+                openCount: 3,
+                highPriorityOpenCount: 1,
+                byType: { 'evidence-gap': 1, 'high-confidence-opinion': 2 },
+                latestUpdatedAt: '2026-06-23T09:59:00.000Z',
+                sourceThreadIds: ['thread-1']
+              }
+            ],
             latestUpdatedAt: '2026-06-23T09:59:00.000Z'
           }
         }
@@ -409,10 +423,14 @@ test('operations runbook flags open author review queue items', function () {
   assert.equal(runbook.actionCount, 1);
   assert.equal(runbook.actions[0].key, 'authorReviewQueue.open');
   assert.equal(runbook.actions[0].area, 'intelligence');
-  assert.match(runbook.actions[0].recommendedCommand, /list-author-review-queue --status open/);
-  assert.match(runbook.actions[0].relatedCommands[1], /synthesize-author-review-queue-events/);
-  assert.match(runbook.actions[0].relatedCommands[2], /operationsWorkerMain.js --once --author-review-queue-events true/);
+  assert.match(runbook.actions[0].summary, /Top source: nga/);
+  assert.match(runbook.actions[0].recommendedCommand, /list-author-review-queue --status open --source-key nga/);
+  assert.match(runbook.actions[0].relatedCommands[1], /synthesize-author-review-queue-events --source-key nga/);
+  assert.match(runbook.actions[0].relatedCommands[2], /operationsWorkerMain.js --once --author-review-queue-events true --source-key nga/);
+  assert.equal(runbook.actions[0].evidence.sourceKey, 'nga');
   assert.equal(runbook.actions[0].evidence.highPriorityOpenCount, 1);
+  assert.equal(runbook.actions[0].evidence.openBySourceKey.nga, 3);
+  assert.equal(runbook.actions[0].evidence.sourceHotspots[0].sourceKey, 'nga');
 });
 
 test('operations runbook turns source lifecycle signals into actions', function () {

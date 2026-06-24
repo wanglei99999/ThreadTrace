@@ -3516,6 +3516,7 @@ function authorReviewQueueStatusSummary(queue) {
   return [
     'open ' + (summary.openCount || 0),
     'high ' + (summary.highPriorityOpenCount || 0),
+    'sources ' + compactCountMap(summary.openBySourceKey || summary.bySourceKey),
     'latest ' + (summary.latestUpdatedAt || 'none')
   ].join(' · ');
 }

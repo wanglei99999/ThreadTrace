@@ -117,6 +117,8 @@ function notificationOutboxActions(overview) {
 function authorReviewQueueActions(queue) {
   if (!queue || !queue.openCount) return [];
   const highPriorityOpenCount = queue.highPriorityOpenCount || 0;
+  const sourceHotspots = queue.sourceHotspots || [];
+  const sourceScope = authorReviewQueueActionScope(queue);
   return [
     action({
       key: 'authorReviewQueue.open',
@@ -124,23 +126,54 @@ function authorReviewQueueActions(queue) {
       area: 'intelligence',
       title: 'Review open author intelligence queue items.',
       summary: 'Author intelligence has ' + queue.openCount + ' open review item(s)' +
-        (highPriorityOpenCount > 0 ? ', including ' + highPriorityOpenCount + ' high-priority item(s).' : '.'),
-      recommendedCommand: 'node src/presentation/cli/threadtrace.js list-author-review-queue --status open',
+        (highPriorityOpenCount > 0 ? ', including ' + highPriorityOpenCount + ' high-priority item(s).' : '.') +
+        sourceHotspotSummary(sourceHotspots),
+      recommendedCommand: scopedCommand('node src/presentation/cli/threadtrace.js list-author-review-queue --status open', sourceScope),
       relatedCommands: [
-        'node src/presentation/cli/threadtrace.js sync-author-review-queue',
-        'node src/presentation/cli/threadtrace.js synthesize-author-review-queue-events',
-        'node src/presentation/worker/operationsWorkerMain.js --once --author-review-queue-events true',
-        'node src/presentation/cli/threadtrace.js author-intelligence'
+        scopedCommand('node src/presentation/cli/threadtrace.js sync-author-review-queue', sourceScope),
+        scopedCommand('node src/presentation/cli/threadtrace.js synthesize-author-review-queue-events', sourceScope),
+        scopedCommand('node src/presentation/worker/operationsWorkerMain.js --once --author-review-queue-events true', sourceScope),
+        scopedCommand('node src/presentation/cli/threadtrace.js author-intelligence', sourceScope)
       ],
       evidence: {
+        sourceKey: sourceScope.sourceKey,
+        sourceId: sourceScope.sourceId,
         openCount: queue.openCount,
         highPriorityOpenCount,
         byPriority: queue.byPriority || {},
         byType: queue.byType || {},
+        bySourceKey: queue.bySourceKey || {},
+        openBySourceKey: queue.openBySourceKey || {},
+        highPriorityOpenBySourceKey: queue.highPriorityOpenBySourceKey || {},
+        sourceHotspots,
         latestUpdatedAt: queue.latestUpdatedAt
       }
     })
   ];
+}
+
+function authorReviewQueueActionScope(queue) {
+  const hotspots = (queue && queue.sourceHotspots || []).filter(function (hotspot) {
+    return hotspot && hotspot.sourceKey && hotspot.sourceKey !== 'unknown-source' && (hotspot.openCount || 0) > 0;
+  });
+  if (hotspots.length === 1) {
+    return {
+      sourceKey: hotspots[0].sourceKey
+    };
+  }
+  const sourceKey = singleKnownCountKey(queue && queue.openBySourceKey);
+  return {
+    sourceKey
+  };
+}
+
+function sourceHotspotSummary(sourceHotspots) {
+  const hotspots = (sourceHotspots || []).filter(function (hotspot) {
+    return (hotspot.openCount || 0) > 0;
+  });
+  if (hotspots.length === 0) return '';
+  const top = hotspots[0];
+  return ' Top source: ' + (top.sourceKey || 'unknown-source') + ' open=' + (top.openCount || 0) + ', high=' + (top.highPriorityOpenCount || 0) + '.';
 }
 
 function checklistAuthorReviewQueue(checklist) {

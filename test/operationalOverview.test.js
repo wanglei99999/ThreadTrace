@@ -210,10 +210,10 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
       ]
     },
     authorReviewQueue: {
-      itemCount: 2,
+      itemCount: 3,
       summary: {
-        byStatus: { open: 2 },
-        byPriority: { high: 1, medium: 1 },
+        byStatus: { open: 2, confirmed: 1 },
+        byPriority: { high: 2, medium: 1 },
         byType: { 'evidence-gap': 1, 'high-confidence-opinion': 1 },
         openCount: 2
       },
@@ -221,6 +221,8 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
         {
           id: 'author-review-high',
           status: 'open',
+          sourceKey: 'nga',
+          sourceThreadId: 'thread-1',
           priority: 'high',
           type: 'evidence-gap',
           updatedAt: '2026-06-18T09:57:00.000Z'
@@ -228,9 +230,20 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
         {
           id: 'author-review-medium',
           status: 'open',
+          sourceKey: 'external',
+          sourceThreadId: 'thread-2',
           priority: 'medium',
           type: 'high-confidence-opinion',
           updatedAt: '2026-06-18T09:56:00.000Z'
+        },
+        {
+          id: 'author-review-confirmed',
+          status: 'confirmed',
+          sourceKey: 'nga',
+          sourceThreadId: 'thread-3',
+          priority: 'high',
+          type: 'evidence-gap',
+          updatedAt: '2026-06-18T09:55:00.000Z'
         }
       ]
     }
@@ -290,6 +303,12 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
   assert.equal(overview.authorReviewQueue.openCount, 2);
   assert.equal(overview.authorReviewQueue.highPriorityOpenCount, 1);
   assert.equal(overview.authorReviewQueue.byType['evidence-gap'], 1);
+  assert.equal(overview.authorReviewQueue.openBySourceKey.nga, 1);
+  assert.equal(overview.authorReviewQueue.openBySourceKey.external, 1);
+  assert.equal(overview.authorReviewQueue.highPriorityOpenBySourceKey.nga, 1);
+  assert.equal(overview.authorReviewQueue.sourceHotspots[0].sourceKey, 'nga');
+  assert.equal(overview.authorReviewQueue.sourceHotspots[0].highPriorityOpenCount, 1);
+  assert.deepEqual(overview.authorReviewQueue.sourceHotspots[0].sourceThreadIds, ['thread-1', 'thread-3']);
   assert.equal(overview.authorReviewQueue.latestUpdatedAt, '2026-06-18T09:57:00.000Z');
   assert.equal(overview.recent.authorReviewQueue[0].id, 'author-review-high');
   assert.equal(overview.reviewActions.auditCount, 2);

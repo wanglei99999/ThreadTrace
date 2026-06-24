@@ -108,6 +108,7 @@ See `docs/rollout-manifest-apply.md` for the apply contract.
 - Workers: recent run totals, running/stale counts, latest heartbeat time, active/expired leases, source-scoped lease counts, lease source breakdowns, and stale run samples.
 - Raw pages: recent raw evidence count and latest fetch time.
 - Review actions: file-audit executor record count, unique task count, planned closure/merge totals, latest audit time, adapter/action/source counts, execution-ledger totals grouped by completed/running/stale-running/failed, and stale-running execution counts by source. `sourceKey` / `forum` and `sourceId` can scope the review action audit and execution portions of the overview to one source while the broader operations snapshot stays global.
+- Author review queue: durable item totals, open/high-priority counts, priority/type/source breakdowns, source hotspots, latest update time, and recent queue samples. Source hotspots let dashboards and runbooks point operators to the source whose author intelligence queue is blocking downstream automation.
 - Storage mode and generation time.
 
 The first implementation uses repository list operations with a bounded window. PostgreSQL deployments can later optimize the same use case with aggregate queries without changing API or Web contracts.
@@ -166,7 +167,7 @@ Each action includes an area, title, evidence, a primary CLI command, and option
 
 Source lifecycle actions reuse the `recommendedCommands` emitted by `source-lifecycle-report` when a source disable is blocked by an active run or when a failed source is still waiting for retry backoff, then append lower-level diagnostic fallbacks. If an operator has reviewed a failed source and wants to bypass the remaining backoff window, the runbook also links to `reset-source-failure --retry-now true --execute true`.
 
-Author review queue actions point operators to `list-author-review-queue --status open`, the manual `synthesize-author-review-queue-events` command, and the operations worker author-queue event flag so queue pressure can become durable outbox notifications without duplicating delivery logic.
+Author review queue actions point operators to `list-author-review-queue --status open`, the manual `synthesize-author-review-queue-events` command, and the operations worker author-queue event flag so queue pressure can become durable outbox notifications without duplicating delivery logic. When all open author queue pressure belongs to one source, these commands include `--source-key <source>` and the action evidence carries `openBySourceKey`, `highPriorityOpenBySourceKey`, and `sourceHotspots` so source-sharded operators do not accidentally inspect or alert on unrelated queues.
 
 Runbook notification synthesis promotes critical and warning runbook actions into the notification outbox as `runbook-action` events. It defaults to dry-run through CLI and HTTP, uses stable IDs based on action keys plus `sourceId` / `sourceKey` scope to avoid duplicate alerts without merging different sources, preserves pending/failed delivery state when an action is refreshed, scopes stale resolution to the requested `sourceId` or `sourceKey` when provided, marks stale actions as `resolved`, reopens system-resolved actions if they return, and skips operator-acknowledged or delivered actions so operator decisions remain durable.
 

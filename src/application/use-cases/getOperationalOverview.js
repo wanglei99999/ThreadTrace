@@ -66,19 +66,71 @@ function summarizeAuthorReviewQueue(result) {
   const byStatus = summary.byStatus || countBy(items, function (item) { return item.status || 'unknown'; });
   const byPriority = summary.byPriority || countBy(items, function (item) { return item.priority || 'unknown'; });
   const byType = summary.byType || countBy(items, function (item) { return item.type || 'unknown'; });
+  const openItems = items.filter(function (item) {
+    return item.status === 'open';
+  });
+  const highPriorityOpenItems = openItems.filter(function (item) {
+    return item.priority === 'high';
+  });
   return {
     itemCount: result && result.itemCount !== undefined ? result.itemCount : items.length,
     openCount: summary.openCount !== undefined ? summary.openCount : (byStatus.open || 0),
-    highPriorityOpenCount: items.filter(function (item) {
-      return item.status === 'open' && item.priority === 'high';
-    }).length || (byPriority.high || 0),
+    highPriorityOpenCount: summary.highPriorityOpenCount !== undefined
+      ? summary.highPriorityOpenCount
+      : highPriorityOpenCountFromSummary(summary) || highPriorityOpenItems.length,
     byStatus,
     byPriority,
     byType,
+    bySourceKey: summary.bySourceKey || countBy(items, function (item) { return item.sourceKey || 'unknown-source'; }),
+    openBySourceKey: summary.openBySourceKey || countBy(openItems, function (item) { return item.sourceKey || 'unknown-source'; }),
+    highPriorityOpenBySourceKey: summary.highPriorityOpenBySourceKey || countBy(highPriorityOpenItems, function (item) { return item.sourceKey || 'unknown-source'; }),
+    sourceHotspots: summary.sourceHotspots || sourceQueueHotspots(items),
     latestUpdatedAt: latestTimestamp(items.map(function (item) {
       return item.updatedAt || item.lastSeenAt;
     }))
   };
+}
+
+function highPriorityOpenCountFromSummary(summary) {
+  const counts = summary && summary.highPriorityOpenBySourceKey || {};
+  return Object.keys(counts).reduce(function (total, key) {
+    return total + (counts[key] || 0);
+  }, 0);
+}
+
+function sourceQueueHotspots(items) {
+  const bySource = new Map();
+  (items || []).forEach(function (item) {
+    const sourceKey = item.sourceKey || 'unknown-source';
+    if (!bySource.has(sourceKey)) {
+      bySource.set(sourceKey, {
+        sourceKey,
+        itemCount: 0,
+        openCount: 0,
+        highPriorityOpenCount: 0,
+        byType: {},
+        latestUpdatedAt: undefined,
+        sourceThreadIds: new Set()
+      });
+    }
+    const hotspot = bySource.get(sourceKey);
+    hotspot.itemCount += 1;
+    if (item.status === 'open') hotspot.openCount += 1;
+    if (item.status === 'open' && item.priority === 'high') hotspot.highPriorityOpenCount += 1;
+    hotspot.byType[item.type || 'unknown'] = (hotspot.byType[item.type || 'unknown'] || 0) + 1;
+    hotspot.latestUpdatedAt = latestTimestamp([hotspot.latestUpdatedAt, item.updatedAt || item.lastSeenAt]);
+    if (item.sourceThreadId) hotspot.sourceThreadIds.add(item.sourceThreadId);
+  });
+  return Array.from(bySource.values()).map(function (hotspot) {
+    return Object.assign({}, hotspot, {
+      sourceThreadIds: Array.from(hotspot.sourceThreadIds).slice(0, 8)
+    });
+  }).sort(function (a, b) {
+    return b.highPriorityOpenCount - a.highPriorityOpenCount
+      || b.openCount - a.openCount
+      || b.itemCount - a.itemCount
+      || String(a.sourceKey).localeCompare(String(b.sourceKey));
+  });
 }
 
 function recentAuthorReviewQueueItems(result) {
