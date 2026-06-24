@@ -1901,8 +1901,9 @@ function renderResourceProvisioningPlan(result) {
     ].join('')),
     panel('Resources', evidenceList(resources.map(function (item) {
       const env = item.env && item.env.length > 0 ? ' env=' + item.env.join(',') : '';
+      const evidence = item.evidenceSummary ? ' evidence=' + item.evidenceSummary : '';
       const drift = item.schemaDrift && item.schemaDrift.status !== 'ok' ? ' drift=' + schemaDriftSummary(item.schemaDrift) : '';
-      return item.status + ' 路 ' + item.area + ' 路 ' + item.key + ' 路 ' + (item.required ? 'required' : 'optional') + ' 路 ' + item.summary + env + drift;
+      return item.status + ' 路 ' + item.area + ' 路 ' + item.key + ' 路 ' + (item.required ? 'required' : 'optional') + ' 路 ' + item.summary + env + evidence + drift;
     })), 'wide')
   ];
   if (actions.length > 0) {

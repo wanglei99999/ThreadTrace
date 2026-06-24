@@ -321,13 +321,15 @@ function httpResource(config) {
 }
 
 function resource(input) {
+  const evidence = input.evidence || {};
   const output = {
     key: input.key,
     area: input.area,
     required: input.required,
     status: input.status || 'warn',
     summary: input.summary,
-    evidence: input.evidence || {},
+    evidence,
+    evidenceSummary: summarizeEvidence(evidence),
     env: input.env || [],
     commands: input.commands || [],
     provisioning: input.provisioning || []
@@ -336,6 +338,42 @@ function resource(input) {
     output.schemaDrift = input.schemaDrift;
   }
   return output;
+}
+
+function summarizeEvidence(evidence) {
+  if (!evidence) return '';
+  if (Array.isArray(evidence)) {
+    return summarizeEvidenceArray('items', evidence);
+  }
+  if (typeof evidence !== 'object') return String(evidence);
+  return Object.keys(evidence).map(function (key) {
+    return summarizeEvidenceEntry(key, evidence[key]);
+  }).filter(Boolean).slice(0, 6).join(', ');
+}
+
+function summarizeEvidenceEntry(key, value) {
+  if (value === undefined || value === null || value === '') return '';
+  if (Array.isArray(value)) return summarizeEvidenceArray(key, value);
+  if (typeof value === 'object') {
+    const nested = summarizeEvidence(value);
+    return nested ? key + '{' + nested + '}' : '';
+  }
+  return key + '=' + summarizeEvidenceScalar(value);
+}
+
+function summarizeEvidenceArray(key, value) {
+  if (value.length === 0) return '';
+  if (value.every(function (item) {
+    return typeof item !== 'object' || item === null;
+  })) {
+    return key + '=' + value.map(summarizeEvidenceScalar).join('|');
+  }
+  return key + '=' + value.length;
+}
+
+function summarizeEvidenceScalar(value) {
+  const text = String(value);
+  return text.length > 120 ? text.slice(0, 117) + '...' : text;
 }
 
 function nextActions(resources) {

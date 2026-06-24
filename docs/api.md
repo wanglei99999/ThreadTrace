@@ -642,7 +642,7 @@ Request:
 }
 ```
 
-The response includes `resources`, required/optional status, expected environment variables, verification commands, and `nextActions` for missing required resources. PostgreSQL resources may include `schemaDrift` with missing extensions, tables, columns, indexes, inspection errors, and the baseline schema apply command. A failing required resource returns HTTP `503`; warnings on optional resources return `200`.
+The response includes `resources`, required/optional status, expected environment variables, verification commands, structured `evidence`, compact `evidenceSummary`, and `nextActions` for missing required resources. PostgreSQL resources may include `schemaDrift` with missing extensions, tables, columns, indexes, inspection errors, and the baseline schema apply command. A failing required resource returns HTTP `503`; warnings on optional resources return `200`.
 
 ### `POST /api/deployment/gate`
 

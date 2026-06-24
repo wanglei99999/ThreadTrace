@@ -1123,10 +1123,10 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Resource provisioning plan is ok or has warnings, including optional PostgreSQL schemaDrift details'
+              description: 'Resource provisioning plan is ok or has warnings, including compact evidenceSummary and optional PostgreSQL schemaDrift details'
             },
             503: {
-              description: 'Required resource provisioning has failing checks, including optional PostgreSQL schemaDrift details'
+              description: 'Required resource provisioning has failing checks, including compact evidenceSummary and optional PostgreSQL schemaDrift details'
             },
             400: {
               $ref: '#/components/responses/BadRequest'

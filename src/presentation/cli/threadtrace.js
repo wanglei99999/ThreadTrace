@@ -1487,6 +1487,9 @@ function main(argv) {
         if (item.env.length > 0) {
           console.log('  env: ' + item.env.join(', '));
         }
+        if (item.evidenceSummary) {
+          console.log('  evidence: ' + item.evidenceSummary);
+        }
         item.commands.forEach(function (command) {
           console.log('  command: ' + command);
         });

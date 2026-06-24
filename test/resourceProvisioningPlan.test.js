@@ -352,7 +352,10 @@ test('runtime resource provisioning plan recognizes package connector manifest i
   assert.equal(plan.environment.sourceType, 'package-normalized-feed');
   assert.equal(sourceInput.status, 'ok');
   assert.deepEqual(sourceInput.evidence.providedFields, ['inputFile']);
+  assert.equal(sourceInput.evidenceSummary, 'hasLocation=true, hasUrl=false, providedFields=inputFile');
   assert.equal(connector.required, true);
   assert.equal(connector.status, 'ok');
+  assert.match(connector.evidenceSummary, /manifestModulePath=.*external-connector-package/);
+  assert.match(connector.evidenceSummary, /errorCount=0/);
   assert.equal(plan.rolloutManifestPlan.connectorRolloutPlan.sourceIngestDryRun.status, 'ok');
 });
