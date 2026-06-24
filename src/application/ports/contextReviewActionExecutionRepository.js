@@ -10,7 +10,7 @@
  * @property {(key: string, result: Object, metadata?: Object) => Promise<Object>} completeExecution
  * @property {(key: string, error: Error, metadata?: Object) => Promise<Object>} failExecution
  * @property {(key: string) => Promise<Object | undefined>} findExecution
- * @property {(query?: { action?: string, status?: string, taskId?: string, limit?: number }) => Promise<Object[]>} listExecutions
+ * @property {(query?: { action?: string, status?: string, taskId?: string, sourceId?: string, sourceKey?: string, limit?: number }) => Promise<Object[]>} listExecutions
  */
 
 function assertContextReviewActionExecutionRepository(repository) {

@@ -20,7 +20,28 @@ test('file context review action execution repository claims and replays complet
     action: 'tasks.closure',
     taskId: 'task-1',
     requestHash: 'hash-1',
+    request: {
+      sourceId: 'source-a',
+      sourceKey: 'forum-a'
+    },
     now: '2026-06-21T10:00:00.000Z'
+  });
+  const otherClaim = await repository.claimExecution({
+    key: 'context-review-action:v1:tasks.closure:other-source',
+    action: 'tasks.closure',
+    taskId: 'task-other',
+    requestHash: 'hash-other',
+    request: {
+      sourceId: 'source-b',
+      sourceKey: 'forum-b'
+    },
+    now: '2026-06-21T10:00:02.000Z'
+  });
+  await repository.completeExecution(otherClaim.record.key, {
+    closedTaskIds: ['task-b']
+  }, {
+    taskId: 'task-other',
+    now: '2026-06-21T10:00:03.000Z'
   });
   await repository.completeExecution(firstClaim.record.key, {
     closedTaskIds: ['task-a']
@@ -44,10 +65,13 @@ test('file context review action execution repository claims and replays complet
   const listed = await repository.listExecutions({
     action: 'tasks.closure',
     status: 'completed',
+    sourceKey: 'forum-a',
     limit: 5
   });
   assert.equal(listed.length, 1);
   assert.equal(listed[0].taskId, 'task-1');
+  assert.equal(listed[0].sourceId, 'source-a');
+  assert.equal(listed[0].sourceKey, 'forum-a');
   assert.match(listed[0].filePath, /context-review-action/);
 });
 

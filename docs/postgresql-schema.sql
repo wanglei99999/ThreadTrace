@@ -87,6 +87,8 @@ create table if not exists context_review_action_executions (
 create index if not exists idx_context_review_action_executions_action_status on context_review_action_executions(action, status);
 create index if not exists idx_context_review_action_executions_task on context_review_action_executions(task_id);
 create index if not exists idx_context_review_action_executions_updated on context_review_action_executions(updated_at desc);
+create index if not exists idx_context_review_action_executions_source_key on context_review_action_executions((coalesce(request->>'sourceKey', request->'actionGate'->>'sourceKey', request->'actionGate'->'actionPlan'->>'sourceKey')));
+create index if not exists idx_context_review_action_executions_source_id on context_review_action_executions((coalesce(request->>'sourceId', request->'actionGate'->>'sourceId', request->'actionGate'->'actionPlan'->>'sourceId')));
 
 create table if not exists author_review_queue_items (
   id text primary key,

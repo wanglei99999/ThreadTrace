@@ -106,6 +106,7 @@ Inspect audit records with:
 node src/presentation/cli/threadtrace.js review-action-audits
 node src/presentation/cli/threadtrace.js review-action-audit-overview
 node src/presentation/cli/threadtrace.js review-action-executions
+node src/presentation/cli/threadtrace.js review-action-executions --source-key nga
 node src/presentation/cli/threadtrace.js review-action-executions --status running --running-stale-after-ms 600000
 node src/presentation/cli/threadtrace.js review-action-executor-diagnostics
 ```

@@ -484,7 +484,7 @@ test('http server lists file-audit review action executor records', async functi
     const audits = await getJson(baseUrl + '/api/context-review-results/action-audits?limit=10');
     const closureAudits = await getJson(baseUrl + '/api/context-review-results/action-audits?action=tasks.closure');
     const executions = await getJson(baseUrl + '/api/context-review-results/action-executions?limit=10');
-    const closureExecutions = await getJson(baseUrl + '/api/context-review-results/action-executions?action=tasks.closure&status=completed');
+    const closureExecutions = await getJson(baseUrl + '/api/context-review-results/action-executions?action=tasks.closure&status=completed&sourceKey=nga');
     const openApi = await getJson(baseUrl + '/openapi.json');
 
     assert.equal(apply.report.executed, true);
@@ -505,7 +505,9 @@ test('http server lists file-audit review action executor records', async functi
     assert.equal(executions.status, 'ok');
     assert.equal(executions.count, 2);
     assert.equal(closureExecutions.count, 1);
+    assert.equal(closureExecutions.sourceKey, 'nga');
     assert.equal(closureExecutions.executions[0].taskId, apply.task.id);
+    assert.equal(closureExecutions.executions[0].sourceKey, 'nga');
     assert.ok(openApi.paths['/api/context-review-results/action-executions']);
   } finally {
     await close(server);

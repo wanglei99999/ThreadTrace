@@ -682,6 +682,8 @@ function main(argv) {
       action: options.action,
       status: options.status,
       taskId: options.taskId,
+      sourceId: options.sourceId,
+      sourceKey: options.sourceKey || options.forum,
       limit: options.limit ? Number(options.limit) : 50,
       runningStaleAfterMs: options.runningStaleAfterMs ? Number(options.runningStaleAfterMs) : undefined,
       now: options.now,
@@ -690,7 +692,7 @@ function main(argv) {
       console.log('Review action executions: ' + result.count + '\tstatus=' + (result.status || 'ok') + '\thealth=' + (result.healthStatus || 'unknown') + '\tstaleRunning=' + (result.staleRunningCount || 0));
       if (result.message) console.log(result.message);
       result.executions.forEach(function (execution) {
-        console.log((execution.updatedAt || execution.createdAt || '') + '\t' + (execution.status || '') + '\t' + (execution.staleRunning ? 'stale' : 'fresh') + '\t' + (execution.runningAgeMs === undefined ? '' : execution.runningAgeMs) + '\t' + (execution.action || '') + '\t' + (execution.taskId || '') + '\t' + (execution.key || '') + '\t' + (execution.filePath || ''));
+        console.log((execution.updatedAt || execution.createdAt || '') + '\t' + (execution.status || '') + '\t' + (execution.staleRunning ? 'stale' : 'fresh') + '\t' + (execution.runningAgeMs === undefined ? '' : execution.runningAgeMs) + '\t' + (execution.sourceKey || '') + '\t' + (execution.sourceId || '') + '\t' + (execution.action || '') + '\t' + (execution.taskId || '') + '\t' + (execution.key || '') + '\t' + (execution.filePath || ''));
       });
       if (result.status === 'warn') {
         process.exitCode = 2;
@@ -2554,7 +2556,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js review-action-gate [--source-key key] [--source-id id] [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-apply [--execute true] [--source-key key] [--source-id id] [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-audits [--action tasks.closure|context.merge] [--task-id id] [--store-dir dir] [--limit n]');
-  console.log('  node src/presentation/cli/threadtrace.js review-action-executions [--action tasks.closure|context.merge] [--status running|completed|failed] [--task-id id] [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js review-action-executions [--source-key key] [--source-id id] [--action tasks.closure|context.merge] [--status running|completed|failed] [--task-id id] [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-audit-overview [--action tasks.closure|context.merge] [--task-id id] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-executor-diagnostics [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js worker-topology-plan [--topology operations-worker|split-workers] [--source-task-mode ingest|insight-pipeline] [--store-dir dir] [--limit n]');

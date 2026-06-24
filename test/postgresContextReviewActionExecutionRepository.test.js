@@ -111,6 +111,52 @@ test('postgres context review action execution row mapper normalizes timestamps'
   assert.equal(execution.failedAt, '2026-06-21T10:01:00.000Z');
 });
 
+test('postgres context review action execution repository filters by source scope', async function () {
+  const queries = [];
+  const repository = createPostgresContextReviewActionExecutionRepository({
+    client: {
+      async query(sql, params) {
+        queries.push({ sql, params });
+        return {
+          rows: [
+            {
+              execution_key: 'context-review-action:v1:tasks.closure:hash',
+              action: 'tasks.closure',
+              status: 'completed',
+              task_id: 'task-1',
+              request_hash: 'hash',
+              request: {
+                sourceId: 'source-a',
+                sourceKey: 'forum-a'
+              },
+              attempt_count: 1,
+              created_at: '2026-06-21T10:00:00.000Z',
+              updated_at: '2026-06-21T10:01:00.000Z'
+            }
+          ]
+        };
+      }
+    }
+  });
+
+  const executions = await repository.listExecutions({
+    action: 'tasks.closure',
+    status: 'completed',
+    taskId: 'task-1',
+    sourceId: 'source-a',
+    sourceKey: 'forum-a',
+    limit: 5
+  });
+
+  assert.match(queries[0].sql, /action = \$1/);
+  assert.match(queries[0].sql, /status = \$2/);
+  assert.match(queries[0].sql, /task_id = \$3/);
+  assert.match(queries[0].sql, /request->>'sourceId'/);
+  assert.match(queries[0].sql, /request->>'sourceKey'/);
+  assert.deepEqual(queries[0].params, ['tasks.closure', 'completed', 'task-1', 'source-a', 'forum-a', 5]);
+  assert.equal(executions[0].request.sourceKey, 'forum-a');
+});
+
 test('postgres repository factory exposes context review action execution repository', function () {
   const repositories = createPostgresRepositories({
     client: {

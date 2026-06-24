@@ -174,6 +174,8 @@ function createThreadTraceRuntime(options) {
       action: safeRequest.action,
       status: safeRequest.status,
       taskId: safeRequest.taskId,
+      sourceId: safeRequest.sourceId,
+      sourceKey: safeRequest.sourceKey || safeRequest.forum,
       limit: safeRequest.limit || 50,
       runningStaleAfterMs: safeRequest.runningStaleAfterMs,
       now: safeRequest.now

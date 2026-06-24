@@ -162,6 +162,14 @@ function createPostgresContextReviewActionExecutionRepository(options) {
         params.push(safeQuery.taskId);
         where.push('task_id = $' + params.length);
       }
+      if (safeQuery.sourceId) {
+        params.push(safeQuery.sourceId);
+        where.push(sourceIdSql() + ' = $' + params.length);
+      }
+      if (safeQuery.sourceKey) {
+        params.push(safeQuery.sourceKey);
+        where.push(sourceKeySql() + ' = $' + params.length);
+      }
       const sql = 'select * from context_review_action_executions' +
         (where.length ? ' where ' + where.join(' and ') : '') +
         ' order by updated_at desc' +
@@ -190,6 +198,14 @@ function rowToExecution(row) {
     completedAt: toIso(row.completed_at),
     failedAt: toIso(row.failed_at)
   };
+}
+
+function sourceIdSql() {
+  return "coalesce(request->>'sourceId', request->'actionGate'->>'sourceId', request->'actionGate'->'actionPlan'->>'sourceId')";
+}
+
+function sourceKeySql() {
+  return "coalesce(request->>'sourceKey', request->'actionGate'->>'sourceKey', request->'actionGate'->'actionPlan'->>'sourceKey')";
 }
 
 module.exports = {

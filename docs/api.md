@@ -88,7 +88,7 @@ Summarizes file-audit executor records for dashboards and operational checks. Op
 
 ### `GET /api/context-review-results/action-executions`
 
-Lists review action execution ledger records used to prevent duplicate downstream mutations. Optional filters: `action` (`tasks.closure` or `context.merge`), `status` (`running`, `completed`, or `failed`), `taskId`, `limit`, `runningStaleAfterMs`, `now`, and `storeDir`. File-backed responses include the execution key, request hash, status, source-scoped request payload, result, attempt count, stale-running flag, running age, and ledger file path. Ledger identity includes `sourceId` / `sourceKey` when present, so equal task ids from different sources do not replay each other's downstream mutation. The stale-running window defaults to 10 minutes and affects read-side health signals only; it does not automatically mutate ledger records.
+Lists review action execution ledger records used to prevent duplicate downstream mutations. Optional filters: `action` (`tasks.closure` or `context.merge`), `status` (`running`, `completed`, or `failed`), `taskId`, `sourceId`, `sourceKey` / `forum`, `limit`, `runningStaleAfterMs`, `now`, and `storeDir`. File-backed responses include the execution key, request hash, status, source-scoped request payload, result, attempt count, stale-running flag, running age, and ledger file path. Ledger identity includes `sourceId` / `sourceKey` when present, so equal task ids from different sources do not replay each other's downstream mutation. The stale-running window defaults to 10 minutes and affects read-side health signals only; it does not automatically mutate ledger records.
 
 ### `GET /api/context-review-results/action-executor/diagnostics`
 

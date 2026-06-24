@@ -3,6 +3,10 @@
 const {
   assertContextReviewActionExecutionRepository
 } = require('../ports/contextReviewActionExecutionRepository');
+const {
+  executionSourceId,
+  executionSourceKey
+} = require('../../domain/review-actions/contextReviewActionExecutionScope');
 
 const DEFAULT_RUNNING_STALE_AFTER_MS = 10 * 60 * 1000;
 
@@ -15,6 +19,8 @@ async function listContextReviewActionExecutions(options) {
     action: safeOptions.action,
     status: safeOptions.status,
     taskId: safeOptions.taskId,
+    sourceId: safeOptions.sourceId,
+    sourceKey: safeOptions.sourceKey || safeOptions.forum,
     limit: safeOptions.limit || 50
   });
   const enrichedExecutions = executions.map(function (execution) {
@@ -28,6 +34,8 @@ async function listContextReviewActionExecutions(options) {
     generatedAt,
     status: 'ok',
     healthStatus: staleRunningExecutions.length > 0 ? 'warn' : 'ok',
+    sourceId: safeOptions.sourceId,
+    sourceKey: safeOptions.sourceKey || safeOptions.forum,
     count: enrichedExecutions.length,
     runningStaleAfterMs,
     staleRunningCount: staleRunningExecutions.length,
@@ -51,6 +59,8 @@ function enrichExecution(execution, now, staleAfterMs) {
     ? isStaleRunningExecution(runningAgeMs, staleAfterMs)
     : false;
   return Object.assign({}, execution, {
+    sourceId: executionSourceId(execution),
+    sourceKey: executionSourceKey(execution),
     runningAgeMs,
     staleRunning
   });
@@ -76,6 +86,8 @@ function summarizeExecution(execution) {
     action: execution.action,
     status: execution.status,
     taskId: execution.taskId,
+    sourceId: execution.sourceId,
+    sourceKey: execution.sourceKey,
     updatedAt: execution.updatedAt,
     createdAt: execution.createdAt,
     runningAgeMs: execution.runningAgeMs,

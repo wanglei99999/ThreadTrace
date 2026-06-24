@@ -5,6 +5,10 @@ const path = require('path');
 const {
   assertContextReviewActionExecutionRepository
 } = require('../../application/ports/contextReviewActionExecutionRepository');
+const {
+  executionSourceId,
+  executionSourceKey
+} = require('../../domain/review-actions/contextReviewActionExecutionScope');
 
 function createFileContextReviewActionExecutionRepository(options) {
   const baseDir = path.resolve((options && options.baseDir) || path.join(process.cwd(), 'data', 'store', 'review-action-executions'));
@@ -107,7 +111,11 @@ function createFileContextReviewActionExecutionRepository(options) {
         if (safeQuery.action && record.action !== safeQuery.action) continue;
         if (safeQuery.status && record.status !== safeQuery.status) continue;
         if (safeQuery.taskId && record.taskId !== safeQuery.taskId) continue;
+        if (safeQuery.sourceId && executionSourceId(record) !== safeQuery.sourceId) continue;
+        if (safeQuery.sourceKey && executionSourceKey(record) !== safeQuery.sourceKey) continue;
         records.push(Object.assign({}, record, {
+          sourceId: executionSourceId(record),
+          sourceKey: executionSourceKey(record),
           filePath
         }));
       }
