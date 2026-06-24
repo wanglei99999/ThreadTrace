@@ -10,6 +10,7 @@ CLI:
 node src/presentation/cli/threadtrace.js operations-overview
 node src/presentation/cli/threadtrace.js operations-overview --source-key nga
 node src/presentation/cli/threadtrace.js source-attention-report --source-key nga
+node src/presentation/cli/threadtrace.js source-attention-report --source-key nga --json true
 ```
 
 HTTP:
@@ -36,7 +37,7 @@ Web UI:
 
 The system view includes a source operations panel that combines `/api/sources/schedule`, `/api/sources/lifecycle`, and `/api/operations/runbook`. It highlights due sources, skipped/backoff reasons, disable guards, lifecycle attention items, source-scoped runbook actions, and review action audit totals. The `Source attention` section merges schedule, lifecycle, and runbook signals by source so operators can handle the highest-priority source first without mentally joining separate tables. Each lifecycle row includes an `Ops` drill-down action backed by `/api/operations/source-drilldown`, so operators can inspect one source's tasks, events, worker runs, worker leases, author queue items, review action ledger state, and next actions without opening raw JSON. Operators can run a source, run its insight pipeline, dry-run/execute enablement changes, reset failed sources, inspect review action audits, synthesize runbook notification events, filter notification events by acknowledgement, delivery status, source key, or event type, bulk-acknowledge the open events in the current filter window, and dry-run/execute handled-event archive retention from the same panel while preserving the dry-run and confirmation boundaries used by the CLI and HTTP APIs.
 
-CLI operators can use `source-attention-report` for the same source-prioritized view in scripts or terminals. It calls the same application report as `/api/operations/source-attention`, prints source-level signals and suggested commands, exits `1` for warning attention, and exits `2` when critical source attention is present.
+CLI operators can use `source-attention-report` for the same source-prioritized view in scripts or terminals. It calls the same application report as `/api/operations/source-attention`, prints source-level signals and suggested commands, supports machine-readable output with `--json true`, exits `1` for warning attention, and exits `2` when critical source attention is present.
 
 Runtime:
 

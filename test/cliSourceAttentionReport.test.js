@@ -31,3 +31,28 @@ test('CLI prints source attention report for an empty store', async function () 
   assert.match(result.stdout, /Signals: none/);
   assert.equal(result.stderr, '');
 });
+
+test('CLI can print source attention report as JSON', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-cli-source-attention-json-'));
+  const scriptPath = path.resolve(__dirname, '..', 'src', 'presentation', 'cli', 'threadtrace.js');
+
+  const result = await execFileAsync(process.execPath, [
+    scriptPath,
+    'source-attention-report',
+    '--store-dir',
+    tempDir,
+    '--now',
+    '2026-06-25T10:00:00.000Z',
+    '--json',
+    'true'
+  ], {
+    cwd: path.resolve(__dirname, '..'),
+    timeout: 20000
+  });
+  const report = JSON.parse(result.stdout);
+
+  assert.equal(report.status, 'ok');
+  assert.equal(report.summary.total, 0);
+  assert.deepEqual(report.sources, []);
+  assert.equal(result.stderr, '');
+});

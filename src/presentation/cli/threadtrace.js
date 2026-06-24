@@ -467,6 +467,15 @@ function main(argv) {
       now: options.now,
       storeDir
     }).then(function (report) {
+      if (isTruthyOption(options.json)) {
+        console.log(JSON.stringify(report, null, 2));
+        if (report.status === 'fail') {
+          process.exitCode = 2;
+        } else if (report.status === 'warn') {
+          process.exitCode = 1;
+        }
+        return;
+      }
       const summary = report.summary || {};
       console.log('Source attention: ' + report.status);
       console.log('Sources: total=' + (summary.total || 0) + ', critical=' + (summary.critical || 0) + ', warning=' + (summary.warning || 0) + ', info=' + (summary.info || 0) + ', runnable=' + (summary.runnable || 0));
@@ -2315,6 +2324,13 @@ function parseArgs(args) {
       } else {
         options.allowRemoteFetch = 'true';
       }
+    } else if (item === '--json') {
+      if (args[index + 1] && !String(args[index + 1]).startsWith('--')) {
+        options.json = args[index + 1];
+        index += 1;
+      } else {
+        options.json = 'true';
+      }
     } else if (item === '--dry-run-ingest') {
       if (args[index + 1] && !String(args[index + 1]).startsWith('--')) {
         options.dryRunIngest = args[index + 1];
@@ -2567,6 +2583,10 @@ function formatCountSummary(summary) {
   }).join(', ');
 }
 
+function isTruthyOption(value) {
+  return value === true || value === 'true' || value === '1' || value === 'yes';
+}
+
 function formatCheckValue(value) {
   if (value === undefined) return '';
   if (value === null) return 'null';
@@ -2631,7 +2651,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js operations-readiness [--forum nga] [--source-key key] [--source-id id] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-lifecycle-report [--forum nga] [--enabled true] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-schedule-report [--forum nga] [--enabled true] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
-  console.log('  node src/presentation/cli/threadtrace.js source-attention-report [--forum nga] [--source-key key] [--source-id id] [--source-failure-retry-backoff-ms ms] [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js source-attention-report [--forum nga] [--source-key key] [--source-id id] [--source-failure-retry-backoff-ms ms] [--running-stale-after-ms ms] [--json true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js trace-context [--request-id id | --trace-id id | --idempotency-key key] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-runbook [--forum nga] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--running-stale-after-ms ms] [--event-limit n] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js synthesize-runbook-events [--forum nga] [--source-id id] [--resolve-stale true|false] [--execute true] [--store-dir dir] [--limit n]');
