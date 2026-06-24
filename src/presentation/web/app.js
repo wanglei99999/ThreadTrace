@@ -3,7 +3,8 @@
 const state = {
   adapters: [],
   sourceTypes: [],
-  currentView: 'history'
+  currentView: 'history',
+  rolloutManifestDraft: undefined
 };
 
 const views = {
@@ -35,6 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshTasksButton').addEventListener('click', loadTasks);
   document.getElementById('refreshSourcesButton').addEventListener('click', loadSources);
   document.getElementById('refreshSourceOperationsButton').addEventListener('click', loadSourceOperations);
+  document.getElementById('onboardingResult').addEventListener('click', handleOnboardingAction);
   document.getElementById('refreshEventsButton').addEventListener('click', loadEvents);
   document.getElementById('refreshReviewResultsButton').addEventListener('click', loadContextReviewResults);
   document.getElementById('refreshReviewActionPlanButton').addEventListener('click', loadContextReviewResultActionPlan);
@@ -479,6 +481,28 @@ function buildSourceOnboardingRequest(form) {
     request.inputDir = locationValue || form.get('inputDir');
   }
   return request;
+}
+
+function handleOnboardingAction(event) {
+  const button = event.target.closest('button[data-action]');
+  if (!button) return;
+  if (button.dataset.action === 'load-rollout-manifest-draft') {
+    fillRolloutManifestForms(state.rolloutManifestDraft);
+  }
+}
+
+function fillRolloutManifestForms(manifest) {
+  if (!manifest) return;
+  const text = JSON.stringify(manifest, null, 2);
+  [
+    'rolloutManifestForm',
+    'resourceProvisioningForm',
+    'deploymentGateForm',
+    'rolloutApplyForm'
+  ].forEach(function (formId) {
+    const textarea = document.querySelector('#' + formId + ' textarea[name="manifestJson"]');
+    if (textarea) textarea.value = text;
+  });
 }
 
 function parseOptionalLocationJson(value) {
@@ -1645,6 +1669,7 @@ function renderSourceSaveResult(result) {
 }
 
 function renderSourceOnboardingPreflight(result) {
+  state.rolloutManifestDraft = result.rolloutManifestDraft;
   const steps = result.steps || [];
   const failedSteps = steps.filter(function (step) {
     return step.status === 'fail';
@@ -1676,6 +1701,17 @@ function renderSourceOnboardingPreflight(result) {
       metric('可保存', result.sourceValidation.valid ? 'yes' : 'no'),
       metric('诊断', result.sourceValidation.status)
     ].join('')));
+  }
+  if (result.rolloutManifestDraft) {
+    panels.push(panel('Rollout manifest draft', [
+      '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(result.rolloutManifestDraft.name || 'manifest') + '</strong>' +
+      '<small>' + escapeHtml((result.rolloutManifestDraft.source && result.rolloutManifestDraft.source.sourceKey || 'unknown') + ' | ' + (result.rolloutManifestDraft.source && result.rolloutManifestDraft.source.sourceType || 'unknown')) + '</small>' +
+      '</span><span class="button-group source-op-buttons">' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="load-rollout-manifest-draft">Use draft</button>' +
+      '</span></div>',
+      '<pre>' + escapeHtml(JSON.stringify(result.rolloutManifestDraft, null, 2)) + '</pre>'
+    ].join(''), 'wide'));
   }
   if (result.connectorModuleValidation) {
     rememberConnectorContractSourceTypes(result.connectorModuleValidation.contractSummary);

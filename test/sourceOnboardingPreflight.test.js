@@ -67,6 +67,22 @@ test('source onboarding preflight aggregates catalog, connector, and source vali
   }).status, 'ok');
   assert.equal(preflight.nextActions.length, 1);
   assert.equal(preflight.nextActions[0].key, 'connectors.readiness');
+  assert.deepEqual(preflight.rolloutManifestDraft, {
+    version: '1.0',
+    name: 'external-external-feed-rollout-2026-06-19',
+    source: {
+      id: 'source-1',
+      sourceKey: 'external',
+      sourceType: 'external-feed'
+    },
+    ingest: {
+      dryRun: true
+    },
+    workers: {
+      topology: 'operations-worker',
+      sourceTaskMode: 'ingest'
+    }
+  });
 });
 
 test('runtime source onboarding preflight validates normalized thread JSON input', async function () {
@@ -95,6 +111,9 @@ test('runtime source onboarding preflight validates normalized thread JSON input
   assert.equal(preflight.sourceKey, 'external');
   assert.equal(preflight.sourceType, 'normalized-thread-json');
   assert.equal(preflight.threadJsonValidation.valid, true);
+  assert.equal(preflight.rolloutManifestDraft.source.location.inputFile, inputFile);
+  assert.equal(preflight.rolloutManifestDraft.ingest.dryRun, true);
+  assert.equal(preflight.rolloutManifestDraft.workers.topology, 'operations-worker');
   assert.equal(preflight.steps.find(function (step) {
     return step.key === 'threadJson.contractValidation';
   }).status, 'ok');
@@ -134,6 +153,8 @@ test('runtime source onboarding preflight can simulate an external connector mod
 
   assert.equal(preflight.status, 'ok');
   assert.equal(preflight.connectorModuleValidation.valid, true);
+  assert.equal(preflight.rolloutManifestDraft.connector.modulePath, path.resolve(modulePath));
+  assert.equal(preflight.rolloutManifestDraft.source.location.feedUrl, 'https://example.test/feed');
   assert.equal(preflight.catalog.sourceType.sourceType, 'external-feed');
   assert.equal(preflight.sourceValidation.valid, true);
   assert.equal(preflight.steps.find(function (step) {

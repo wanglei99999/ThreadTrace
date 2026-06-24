@@ -88,6 +88,8 @@ Validation and onboarding reports include `nextActions` when a draft cannot be s
 
 The broader onboarding preflight carries those source validation actions inside the `source.registrationDraft` action `details`, so rollout plans and deployment gates can keep the root cause visible instead of only reporting a generic preflight failure.
 
+Onboarding preflight also returns `rolloutManifestDraft`. The draft preserves the normalized source input fields and optional connector module path, defaults `ingest.dryRun` to `true`, and selects the conservative `operations-worker` topology. Web operators can load the draft into the manifest plan, resource plan, deployment gate, and apply forms instead of copying source fields by hand.
+
 For connector bridges that already produce canonical ThreadTrace snapshots, use `normalized-thread-json`:
 
 ```json

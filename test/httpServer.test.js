@@ -125,6 +125,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(homeHtml, /ThreadTrace/);
     assert.match(homeHtml, /sourceOnboardingForm/);
     assert.match(homeHtml, /onboardingResult/);
+    assert.match(webAppJs, /rolloutManifestDraft/);
+    assert.match(webAppJs, /load-rollout-manifest-draft/);
     assert.match(homeHtml, /modulePath/);
     assert.match(homeHtml, /locationJson/);
     assert.match(homeHtml, /connectorModuleValidationForm/);
@@ -324,6 +326,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(rolloutApply.report.dryRun, true);
     assert.equal(rolloutApply.report.applied, false);
     assert.equal(sourceOnboardingPreflight.status, 'ok');
+    assert.equal(sourceOnboardingPreflight.rolloutManifestDraft.source.sourceKey, 'nga');
+    assert.equal(sourceOnboardingPreflight.rolloutManifestDraft.source.inputDir, path.resolve(__dirname, '..', 'example'));
+    assert.equal(sourceOnboardingPreflight.rolloutManifestDraft.ingest.dryRun, true);
     assert.equal(sourceOnboardingPreflight.sourceType, 'saved-html-directory');
     assert.ok(sourceOnboardingPreflight.steps.some(function (step) {
       return step.key === 'source.registrationDraft';
@@ -1058,6 +1063,8 @@ test('http server source onboarding preflight can simulate connector modules', a
     assert.equal(preflight.connectorModuleValidation.valid, true);
     assert.equal(preflight.sourceValidation.valid, true);
     assert.equal(preflight.catalog.sourceType.sourceType, 'http-onboarding-feed');
+    assert.equal(preflight.rolloutManifestDraft.source.location.feedUrl, 'https://example.test/feed');
+    assert.equal(preflight.rolloutManifestDraft.connector.modulePath, path.resolve(modulePath));
   } finally {
     await close(server);
   }

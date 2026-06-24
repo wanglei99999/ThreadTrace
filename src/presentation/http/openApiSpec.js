@@ -1746,7 +1746,7 @@ function createOpenApiSpec() {
       '/api/sources/onboarding/preflight': {
         post: {
           summary: 'Run source onboarding preflight across catalog, readiness, source draft, and optional ThreadSnapshot JSON',
-          description: 'Returns steps, composed subreports, and nextActions. Source registration failures carry detail actions with evidenceSummary for connector-specific missing location fields.',
+          description: 'Returns steps, composed subreports, nextActions, and rolloutManifestDraft. Source registration failures carry detail actions with evidenceSummary for connector-specific missing location fields.',
           requestBody: {
             required: true,
             content: {
@@ -1779,10 +1779,10 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Preflight is ok or warn'
+              description: 'Preflight is ok or warn, including rolloutManifestDraft for downstream manifest plan, deployment gate, and apply flows'
             },
             503: {
-              description: 'Preflight failed'
+              description: 'Preflight failed, including diagnostic steps and rolloutManifestDraft when the source draft is available'
             },
             400: {
               $ref: '#/components/responses/BadRequest'

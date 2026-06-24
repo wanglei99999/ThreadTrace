@@ -7,6 +7,13 @@ function getSourceOnboardingPreflight(options) {
   const sourceType = safeOptions.sourceType || (safeOptions.sourceValidation && safeOptions.sourceValidation.source && safeOptions.sourceValidation.source.sourceType);
   const sourceKey = safeOptions.sourceKey || safeOptions.forum ||
     (safeOptions.sourceValidation && safeOptions.sourceValidation.source && safeOptions.sourceValidation.source.sourceKey);
+  const rolloutManifestDraft = buildRolloutManifestDraft({
+    sourceDraft: safeOptions.sourceDraft || (safeOptions.sourceValidation && safeOptions.sourceValidation.source),
+    modulePath: safeOptions.modulePath,
+    sourceKey,
+    sourceType,
+    now: safeOptions.now
+  });
   const catalogSourceType = findCatalogSourceType(catalog, sourceType);
   const connector = findConnector(connectorReadiness, sourceType);
   const contractSummary = summarizeContract(safeOptions.threadSnapshotContract);
@@ -72,8 +79,94 @@ function getSourceOnboardingPreflight(options) {
     sourceValidation: safeOptions.sourceValidation,
     connectorModuleValidation: safeOptions.connectorModuleValidation,
     threadJsonValidation: safeOptions.threadJsonValidation,
-    threadSnapshotContract: contractSummary
+    threadSnapshotContract: contractSummary,
+    rolloutManifestDraft
   };
+}
+
+function buildRolloutManifestDraft(options) {
+  const safeOptions = options || {};
+  const sourceDraft = compactObject(copySourceDraft(safeOptions.sourceDraft || {}));
+  if (!sourceDraft.sourceKey && safeOptions.sourceKey) sourceDraft.sourceKey = safeOptions.sourceKey;
+  if (!sourceDraft.sourceType && safeOptions.sourceType) sourceDraft.sourceType = safeOptions.sourceType;
+  const manifest = {
+    version: '1.0',
+    name: manifestName(sourceDraft, safeOptions.now),
+    source: sourceDraft,
+    ingest: {
+      dryRun: true
+    },
+    workers: {
+      topology: 'operations-worker',
+      sourceTaskMode: 'ingest'
+    }
+  };
+  if (safeOptions.modulePath) {
+    manifest.connector = {
+      modulePath: safeOptions.modulePath
+    };
+  }
+  return manifest;
+}
+
+function copySourceDraft(source) {
+  const safeSource = source || {};
+  const draft = {
+    id: safeSource.id,
+    sourceKey: safeSource.sourceKey,
+    forum: safeSource.forum,
+    sourceType: safeSource.sourceType,
+    displayName: safeSource.displayName,
+    location: cloneObject(safeSource.location),
+    inputDir: safeSource.inputDir,
+    inputFile: safeSource.inputFile,
+    url: safeSource.url,
+    enabled: safeSource.enabled,
+    tags: cloneArray(safeSource.tags)
+  };
+  if (safeSource.schedule) {
+    draft.schedule = cloneObject(safeSource.schedule);
+  }
+  return draft;
+}
+
+function manifestName(sourceDraft, now) {
+  const sourceKey = safeSegment(sourceDraft.sourceKey || sourceDraft.forum || 'source');
+  const sourceType = safeSegment(sourceDraft.sourceType || 'unknown');
+  const date = String(now || new Date().toISOString()).slice(0, 10);
+  return sourceKey + '-' + sourceType + '-rollout-' + date;
+}
+
+function compactObject(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  return Object.keys(value).reduce(function (result, key) {
+    const item = value[key];
+    if (item === undefined || item === null || item === '') return result;
+    if (Array.isArray(item)) {
+      if (item.length > 0) result[key] = item;
+      return result;
+    }
+    if (typeof item === 'object') {
+      const compacted = compactObject(item);
+      if (compacted && Object.keys(compacted).length > 0) result[key] = compacted;
+      return result;
+    }
+    result[key] = item;
+    return result;
+  }, {});
+}
+
+function cloneObject(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  return Object.assign({}, value);
+}
+
+function cloneArray(value) {
+  return Array.isArray(value) ? value.slice() : undefined;
+}
+
+function safeSegment(value) {
+  return String(value || 'unknown').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'unknown';
 }
 
 function findCatalogSourceType(catalog, sourceType) {

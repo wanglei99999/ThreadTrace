@@ -526,7 +526,9 @@ function createThreadTraceRuntime(options) {
         sourceValidation,
         connectorModuleValidation,
         threadJsonValidation,
-        threadSnapshotContract: getThreadSnapshotJsonContract()
+        threadSnapshotContract: getThreadSnapshotJsonContract(),
+        sourceDraft: sourceInput,
+        modulePath: modulePath ? path.resolve(safeOptions.cwd || process.cwd(), modulePath) : undefined
       });
     },
 
