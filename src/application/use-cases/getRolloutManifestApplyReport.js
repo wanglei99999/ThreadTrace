@@ -132,6 +132,9 @@ function nextActions(steps, deploymentGate) {
       summary: 'Review deployment gate next actions before production rollout.',
       commands: (deploymentGate.nextActions || []).flatMap(function (action) {
         return action.commands || [];
+      }),
+      details: (deploymentGate.nextActions || []).flatMap(function (action) {
+        return action.details || [];
       })
     });
   }

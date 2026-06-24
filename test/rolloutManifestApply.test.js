@@ -48,7 +48,18 @@ test('rollout manifest apply report blocks failing gates', function () {
       gateCount: 4,
       nextActions: [
         {
-          commands: ['node src/presentation/cli/threadtrace.js runtime-diagnostics']
+          commands: ['node src/presentation/cli/threadtrace.js runtime-diagnostics'],
+          details: [
+            {
+              key: 'source.externalLocation',
+              severity: 'critical',
+              summary: 'Provision source-specific location settings for the connector handler.',
+              evidence: {
+                missingRequiredFields: ['inputFile']
+              },
+              evidenceSummary: 'missingRequiredFields=inputFile'
+            }
+          ]
         }
       ]
     }
@@ -56,9 +67,13 @@ test('rollout manifest apply report blocks failing gates', function () {
 
   assert.equal(report.status, 'fail');
   assert.equal(report.applied, false);
-  assert.equal(report.nextActions.some(function (action) {
+  const gateAction = report.nextActions.find(function (action) {
     return action.key === 'deployment.gate.actions';
-  }), true);
+  });
+  assert.ok(gateAction);
+  assert.equal(gateAction.details[0].key, 'source.externalLocation');
+  assert.equal(gateAction.details[0].evidenceSummary, 'missingRequiredFields=inputFile');
+  assert.deepEqual(gateAction.details[0].evidence.missingRequiredFields, ['inputFile']);
 });
 
 test('runtime rollout manifest apply dry-run does not register source', async function () {
