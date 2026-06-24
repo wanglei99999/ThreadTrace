@@ -994,7 +994,7 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Runbook notification event synthesis result; stale resolution is scoped by sourceId/sourceKey/forum when provided'
+              description: 'Runbook notification event synthesis result; event identity and stale resolution are scoped by sourceId/sourceKey/forum when provided'
             }
           }
         }

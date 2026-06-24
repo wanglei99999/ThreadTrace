@@ -3,6 +3,7 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 const { synthesizeRunbookNotificationEvents } = require('../src/application/use-cases/synthesizeRunbookNotificationEvents');
+const { buildRunbookActionEventId } = require('../src/domain/events/notificationEvent');
 
 test('runbook notification event synthesis defaults to dry-run', async function () {
   const saved = [];
@@ -46,6 +47,37 @@ test('runbook notification event synthesis executes stable outbox events', async
   assert.equal(saved[0].sourceId, 'source-1');
   assert.equal(saved[0].sourceKey, 'forum-a');
   assert.equal(saved[0].payload.action.key, 'sourceLifecycle.failureRetry.source-1');
+});
+
+test('runbook notification event synthesis separates event identity by source scope', async function () {
+  const saved = [];
+  const result = await synthesizeRunbookNotificationEvents({
+    notificationEventRepository: repository([], saved),
+    runbook: runbook([
+      action('sourceDiagnostics.source.handler', 'critical', {
+        sourceId: 'source-a',
+        sourceKey: 'forum-a'
+      }),
+      action('sourceDiagnostics.source.handler', 'critical', {
+        sourceId: 'source-b',
+        sourceKey: 'forum-b'
+      }),
+      action('checklist.workers.readiness', 'warning')
+    ]),
+    execute: true,
+    now: '2026-06-19T10:00:00.000Z'
+  });
+
+  assert.equal(result.createdCount, 3);
+  assert.equal(new Set(saved.map(function (event) { return event.id; })).size, 3);
+  assert.equal(saved[0].sourceId, 'source-a');
+  assert.equal(saved[1].sourceId, 'source-b');
+  assert.notEqual(saved[0].id, saved[1].id);
+  assert.equal(saved[2].sourceId, undefined);
+});
+
+test('runbook notification event id keeps unscoped action key compatibility', function () {
+  assert.equal(buildRunbookActionEventId(action('checklist.workers.readiness', 'warning')), 'runbook-action-afdda22a04d1');
 });
 
 test('runbook notification event synthesis skips acknowledged and delivered events', async function () {

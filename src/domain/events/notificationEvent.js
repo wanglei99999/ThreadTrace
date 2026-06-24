@@ -189,7 +189,15 @@ function normalizeDeliveryFailureOptions(options) {
 
 function buildRunbookActionEventId(action) {
   const key = action && action.key ? action.key : 'unknown';
-  const digest = crypto.createHash('sha1').update(String(key)).digest('hex').slice(0, 12);
+  const evidence = action && action.evidence || {};
+  const scopedKey = evidence.sourceId || evidence.sourceKey
+    ? JSON.stringify({
+      key,
+      sourceId: evidence.sourceId,
+      sourceKey: evidence.sourceKey
+    })
+    : String(key);
+  const digest = crypto.createHash('sha1').update(scopedKey).digest('hex').slice(0, 12);
   return 'runbook-action-' + digest;
 }
 
