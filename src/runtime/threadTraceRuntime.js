@@ -1842,6 +1842,8 @@ function createThreadTraceRuntime(options) {
         notificationChannel: createNotificationChannel(safeRequest, storeDir, runtimeConfig.notifications),
         limit: safeRequest.limit || 50,
         maxAttempts: safeRequest.maxAttempts || 3,
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
         includeFailed: safeRequest.includeFailed,
         now: safeRequest.now,
         retryBackoffMs: safeRequest.retryBackoffMs,

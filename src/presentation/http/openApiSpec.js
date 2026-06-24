@@ -1364,6 +1364,8 @@ function createOpenApiSpec() {
                     timeoutMs: { type: 'number', example: 10000 },
                     limit: { type: 'number', example: 50 },
                     maxAttempts: { type: 'number', example: 3 },
+                    sourceId: { type: 'string', example: 'tracked-source-nga-001' },
+                    sourceKey: { type: 'string', example: 'nga' },
                     retryBackoffMs: { type: 'number', example: 60000 },
                     maxRetryBackoffMs: { type: 'number', example: 3600000 },
                     includeFailed: { type: 'boolean' },

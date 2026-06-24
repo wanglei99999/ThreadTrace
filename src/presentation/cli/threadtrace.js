@@ -1022,6 +1022,8 @@ function main(argv) {
       timeoutMs: options.timeoutMs ? Number(options.timeoutMs) : undefined,
       limit: options.limit ? Number(options.limit) : 50,
       maxAttempts: options.maxAttempts ? Number(options.maxAttempts) : 3,
+      sourceId: options.sourceId,
+      sourceKey: options.sourceKey || options.forum,
       retryBackoffMs: options.retryBackoffMs ? Number(options.retryBackoffMs) : undefined,
       maxRetryBackoffMs: options.maxRetryBackoffMs ? Number(options.maxRetryBackoffMs) : undefined,
       includeFailed: options.includeFailed === undefined ? undefined : options.includeFailed !== 'false',
@@ -2581,7 +2583,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js fetch-thread-page [--forum nga] [--url url | --source-id id] [--source-thread-id id] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-raw-pages [--forum nga] [--source-thread-id id] [--limit n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js ingest-raw-page [--forum nga] --content-sha1 sha1 [--store-dir dir]');
-  console.log('  node src/presentation/cli/threadtrace.js dispatch-events [--channel file|webhook] [--webhook-url url] [--limit n] [--max-attempts n] [--retry-backoff-ms ms] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js dispatch-events [--channel file|webhook] [--webhook-url url] [--source-key key] [--source-id id] [--limit n] [--max-attempts n] [--retry-backoff-ms ms] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js ack-event --event-id id [--by user] [--note text] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js ack-events [--event-ids id1,id2] [--source-key key] [--type type] [--acknowledged true|false] [--delivery-status status] [--dry-run true] [--execute true] [--by user] [--note text] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js archive-events [--execute true] [--source-key key] [--delivery-statuses delivered,resolved] [--older-than-days n] [--by user] [--store-dir dir] [--limit n]');

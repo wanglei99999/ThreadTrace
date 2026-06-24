@@ -203,6 +203,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /renderContextReviewResultEventSynthesis/);
     assert.match(webAppJs, /renderAuthorReviewQueueEventSynthesis/);
     assert.match(webAppJs, /api\/context-review-results/);
+    assert.ok(openApi.paths['/api/events/dispatch'].post.requestBody.content['application/json'].schema.properties.sourceId);
+    assert.ok(openApi.paths['/api/events/dispatch'].post.requestBody.content['application/json'].schema.properties.sourceKey);
     assert.equal(adapters.adapters[0].sourceKey, 'nga');
     assert.equal(adapterDiagnostics.status, 'ok');
     assert.equal(adapterDiagnostics.adapterCount, 1);
@@ -1402,7 +1404,10 @@ test('http server can register sources and run source ingest tasks', async funct
     const skippedDueResult = await postJson(baseUrl + '/api/sources/tasks/ingest-due', {});
     const eventsResult = await getJson(baseUrl + '/api/events');
     const sourceKeyEventsResult = await getJson(baseUrl + '/api/events?sourceKey=nga');
-    const dispatchResult = await postJson(baseUrl + '/api/events/dispatch', {});
+    const dispatchResult = await postJson(baseUrl + '/api/events/dispatch', {
+      sourceId: registerResult.source.id,
+      sourceKey: 'nga'
+    });
     const deliveredEventsResult = await getJson(baseUrl + '/api/events?deliveryStatus=delivered');
     const batchAckPreview = await postJson(baseUrl + '/api/events/ack', {
       sourceKey: 'nga',

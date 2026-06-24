@@ -35,6 +35,7 @@
     "deployment:gate": "node src/presentation/cli/threadtrace.js deployment-gate",
     "operations:trace-context": "node src/presentation/cli/threadtrace.js trace-context",
     "operations:worker-topology-plan": "node src/presentation/cli/threadtrace.js worker-topology-plan",
+    "operations:readiness": "node src/presentation/cli/threadtrace.js operations-readiness",
     "operations:runbook": "node src/presentation/cli/threadtrace.js operations-runbook",
     "operations:synthesize-runbook-events": "node src/presentation/cli/threadtrace.js synthesize-runbook-events",
     "operations:list-events": "node src/presentation/cli/threadtrace.js list-events",

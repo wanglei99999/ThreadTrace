@@ -40,6 +40,8 @@ async function main(argv) {
     timeoutMs: options.timeoutMs ? Number(options.timeoutMs) : undefined,
     limit: options.limit ? Number(options.limit) : undefined,
     maxAttempts: options.maxAttempts ? Number(options.maxAttempts) : undefined,
+    sourceId: options.sourceId,
+    sourceKey: options.sourceKey || options.forum,
     retryBackoffMs: options.retryBackoffMs ? Number(options.retryBackoffMs) : undefined,
     maxRetryBackoffMs: options.maxRetryBackoffMs ? Number(options.maxRetryBackoffMs) : undefined,
     includeFailed: options.includeFailed === undefined ? undefined : options.includeFailed !== 'false',
@@ -82,6 +84,15 @@ function parseArgs(args) {
       index += 1;
     } else if (item === '--input') {
       options.input = args[index + 1];
+      index += 1;
+    } else if (item === '--forum') {
+      options.forum = args[index + 1];
+      index += 1;
+    } else if (item === '--source-key') {
+      options.sourceKey = args[index + 1];
+      index += 1;
+    } else if (item === '--source-id') {
+      options.sourceId = args[index + 1];
       index += 1;
     } else if (item === '--channel') {
       options.channel = args[index + 1];

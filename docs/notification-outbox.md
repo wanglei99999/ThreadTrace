@@ -55,6 +55,7 @@ node src/presentation/cli/threadtrace.js synthesize-author-review-queue-events
 node src/presentation/cli/threadtrace.js synthesize-author-review-queue-events --execute true --source-key nga
 node src/presentation/cli/threadtrace.js dispatch-events --channel file
 node src/presentation/cli/threadtrace.js dispatch-events --channel webhook --webhook-url http://127.0.0.1:9000/threadtrace-events
+node src/presentation/cli/threadtrace.js dispatch-events --source-key nga --channel file
 node src/presentation/cli/threadtrace.js ack-events --delivery-status delivered --dry-run true
 node src/presentation/cli/threadtrace.js ack-events --source-key nga --delivery-status delivered --dry-run true
 node src/presentation/cli/threadtrace.js ack-events --source-key nga --delivery-status delivered --execute true --by operator
@@ -67,6 +68,7 @@ Worker mode:
 ```powershell
 npm run worker:events-once
 npm run worker:events-loop
+npm run worker:events-loop -- --source-key nga
 npm run worker:operations-once -- --runbook-events true
 npm run worker:operations-loop -- --runbook-events-execute true
 npm run worker:operations-once -- --context-review-result-events true
@@ -84,12 +86,14 @@ POST /api/operations/runbook/events
 POST /api/context-review-results/events
 POST /api/intelligence/author-review-queue/events
 GET /api/events/overview
-POST /api/events/dispatch
+POST /api/events/dispatch {"sourceKey":"nga"}
 POST /api/events/ack
 POST /api/events/archive
 ```
 
 `synthesize-runbook-events`, `synthesize-context-review-result-events`, `synthesize-author-review-queue-events`, `POST /api/operations/runbook/events`, `POST /api/context-review-results/events`, and `POST /api/intelligence/author-review-queue/events` default to dry-run. Set `--execute true` or request body `{"execute": true}` to persist events into the outbox. Stable event IDs are derived from the runbook action key, source-scoped context review result record id, or durable author queue item id, so repeated synthesis updates pending/failed events without duplicating alerts or crossing sources. Context review result synthesis supports `sourceId` and `sourceKey` / `forum` filters and generated events carry that scope when the record, result payload, or trace contains it. Stale runbook and author queue events are marked `resolved` when the underlying action or queue item disappears, and system-resolved events reopen as `pending` if the same action returns. Operator-acknowledged or already delivered events are left untouched for audit safety.
+
+Use `dispatch-events`, `POST /api/events/dispatch`, `worker:events-*`, or the operations worker dispatch step with `sourceId` / `sourceKey` / `forum` when running source-scoped delivery. The dispatch use case applies that scope to both pending and failed retry queries, so a worker assigned to one source does not deliver another source's outbox events.
 
 Use `ack-events` or `POST /api/events/ack` to close handled events in bulk. Without explicit `eventIds`, bulk acknowledgement defaults to `acknowledged=false` and the requested filter window, including optional `sourceKey` / `forum`, which keeps historical acknowledged events immutable while giving operators a fast way to clear delivered or resolved alerts. The CLI and API support `dryRun=true` for acknowledgement previews; `npm run operations:ack-events` uses dry-run by default and requires `-- --execute true` to persist.
 

@@ -240,13 +240,15 @@ Summarizes notification outbox health for dashboards and workers. Optional filte
 ```json
 {
   "channel": "file",
+  "sourceId": "tracked-source-nga-001",
+  "sourceKey": "nga",
   "limit": 50,
   "maxAttempts": 3,
   "includeFailed": true
 }
 ```
 
-返回：投递通道、成功数量、失败数量和跳过数量。成功投递后事件的 `deliveryStatus` 会变为 `delivered`。
+可选 `sourceId`、`sourceKey` / `forum` 会同时过滤 pending 和 failed 重试事件，适合多来源 worker 拆分部署。返回：投递通道、成功数量、失败数量和跳过数量。成功投递后事件的 `deliveryStatus` 会变为 `delivered`。
 
 通知通道：
 - `file`: 默认通道，把事件写入 `data/store/deliveries`。

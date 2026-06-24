@@ -18,6 +18,8 @@ async function dispatchPendingNotificationEvents(options) {
   const maxRetryBackoffMs = safeOptions.maxRetryBackoffMs || 60 * 60 * 1000;
   const pendingEvents = await notificationEventRepository.listEvents({
     deliveryStatus: 'pending',
+    sourceId: safeOptions.sourceId,
+    sourceKey: safeOptions.sourceKey || safeOptions.forum,
     acknowledged: false,
     dueBefore: now,
     limit
@@ -26,6 +28,8 @@ async function dispatchPendingNotificationEvents(options) {
     ? []
     : await notificationEventRepository.listEvents({
       deliveryStatus: 'failed',
+      sourceId: safeOptions.sourceId,
+      sourceKey: safeOptions.sourceKey || safeOptions.forum,
       acknowledged: false,
       dueBefore: now,
       limit

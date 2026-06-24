@@ -122,7 +122,70 @@ test('dispatch skips acknowledged events even when they are delivery due', async
   assert.equal(saved[0].id, 'open-pending');
 });
 
-function createRepository(events, saved) {
+test('dispatch scopes pending and failed event queries by source', async function () {
+  const queries = [];
+  const saved = [];
+  const delivered = [];
+  const repository = createRepository([
+    {
+      id: 'source-a-pending',
+      sourceId: 'source-a',
+      sourceKey: 'forum-a',
+      deliveryStatus: 'pending',
+      deliveryAttempts: 0,
+      nextDeliveryAt: '2026-06-18T09:59:00.000Z'
+    },
+    {
+      id: 'source-a-failed',
+      sourceId: 'source-a',
+      sourceKey: 'forum-a',
+      deliveryStatus: 'failed',
+      deliveryAttempts: 1,
+      nextDeliveryAt: '2026-06-18T09:59:00.000Z'
+    },
+    {
+      id: 'source-b-pending',
+      sourceId: 'source-b',
+      sourceKey: 'forum-b',
+      deliveryStatus: 'pending',
+      deliveryAttempts: 0,
+      nextDeliveryAt: '2026-06-18T09:59:00.000Z'
+    }
+  ], saved, queries);
+
+  const result = await dispatchPendingNotificationEvents({
+    notificationEventRepository: repository,
+    notificationChannel: {
+      channelKey: 'memory',
+      async deliver(event) {
+        delivered.push(event.id);
+        return {
+          channelKey: 'memory'
+        };
+      }
+    },
+    sourceId: 'source-a',
+    sourceKey: 'forum-a',
+    now: '2026-06-18T10:00:00.000Z',
+    includeFailed: true
+  });
+
+  assert.deepEqual(delivered, ['source-a-pending', 'source-a-failed']);
+  assert.equal(result.dispatchedCount, 2);
+  assert.equal(saved.length, 2);
+  assert.deepEqual(queries.map(function (query) {
+    return {
+      deliveryStatus: query.deliveryStatus,
+      sourceId: query.sourceId,
+      sourceKey: query.sourceKey
+    };
+  }), [
+    { deliveryStatus: 'pending', sourceId: 'source-a', sourceKey: 'forum-a' },
+    { deliveryStatus: 'failed', sourceId: 'source-a', sourceKey: 'forum-a' }
+  ]);
+});
+
+function createRepository(events, saved, queries) {
   return {
     async saveEvent(event) {
       saved.push(event);
@@ -133,8 +196,11 @@ function createRepository(events, saved) {
       });
     },
     async listEvents(query) {
+      if (queries) queries.push(query || {});
       return events.filter(function (event) {
         if (query.deliveryStatus && event.deliveryStatus !== query.deliveryStatus) return false;
+        if (query.sourceId && event.sourceId !== query.sourceId) return false;
+        if (query.sourceKey && event.sourceKey !== query.sourceKey) return false;
         if (typeof query.acknowledged === 'boolean' && Boolean(event.acknowledgedAt) !== query.acknowledged) return false;
         return true;
       });

@@ -102,6 +102,8 @@ function buildRequest(options, storeDir, config) {
       timeoutMs: options.timeoutMs ? Number(options.timeoutMs) : undefined,
       limit: options.limit ? Number(options.limit) : undefined,
       maxAttempts: options.maxAttempts ? Number(options.maxAttempts) : undefined,
+      sourceId: options.sourceId,
+      sourceKey: options.sourceKey || options.forum,
       retryBackoffMs: options.retryBackoffMs ? Number(options.retryBackoffMs) : undefined,
       maxRetryBackoffMs: options.maxRetryBackoffMs ? Number(options.maxRetryBackoffMs) : undefined,
       includeFailed: options.includeFailed === undefined ? undefined : options.includeFailed !== 'false',
@@ -126,6 +128,7 @@ function buildRequest(options, storeDir, config) {
     runbookEvents: options.runbookEvents === 'true' || options.runbookEventsExecute === 'true'
       ? {
         forum: options.forum,
+        sourceId: options.sourceId,
         sourceKey: options.sourceKey,
         execute: options.runbookEventsExecute === 'true',
         limit: options.limit ? Number(options.limit) : undefined,
@@ -173,6 +176,9 @@ function buildRequest(options, storeDir, config) {
       }
       : undefined,
     overview: {
+      forum: options.forum,
+      sourceId: options.sourceId,
+      sourceKey: options.sourceKey,
       limit: options.limit ? Number(options.limit) : undefined,
       storeDir
     }
@@ -347,7 +353,14 @@ function parseOptionalBoolean(value) {
   return value !== 'false';
 }
 
-main(process.argv).catch(function (error) {
-  console.error(error && error.stack ? error.stack : error);
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  main(process.argv).catch(function (error) {
+    console.error(error && error.stack ? error.stack : error);
+    process.exitCode = 1;
+  });
+}
+
+module.exports = {
+  buildRequest,
+  parseArgs
+};

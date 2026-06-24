@@ -886,6 +886,8 @@ async function routeRequest(request, response, context) {
       timeoutMs: body.timeoutMs,
       limit: body.limit,
       maxAttempts: body.maxAttempts,
+      sourceId: body.sourceId,
+      sourceKey: body.sourceKey || body.forum,
       retryBackoffMs: body.retryBackoffMs,
       maxRetryBackoffMs: body.maxRetryBackoffMs,
       includeFailed: body.includeFailed,
