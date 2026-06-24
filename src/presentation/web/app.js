@@ -295,6 +295,12 @@ function bindForms() {
       await synthesizeRunbookEventsFromButton(button, execute);
       return;
     }
+    if (button.dataset.action === 'synthesize-source-attention-events') {
+      const execute = button.dataset.execute === 'true';
+      if (execute && !window.confirm('Create notification events from current source attention items?')) return;
+      await synthesizeSourceAttentionEventsFromButton(button, execute);
+      return;
+    }
     if (button.dataset.action === 'reset-source-failure') {
       const execute = button.dataset.execute === 'true';
       if (execute && !window.confirm('Reset this source failure state and retry now?')) return;
@@ -1106,6 +1112,20 @@ async function synthesizeRunbookEventsFromButton(button, execute) {
       limit: Number(button.dataset.limit) || 100
     });
   }, renderRunbookNotificationEventResult);
+  await loadSystemStatus();
+  await loadSourceOperations();
+  await loadEvents();
+}
+
+async function synthesizeSourceAttentionEventsFromButton(button, execute) {
+  await renderAsync('sourceOperationActionResult', function () {
+    return requestJson('/api/operations/source-attention/events', {
+      execute,
+      limit: Number(button.dataset.limit) || 100,
+      attentionLimit: Number(button.dataset.attentionLimit) || 100,
+      priorityScoreThreshold: Number(button.dataset.priorityScoreThreshold) || 70
+    });
+  }, renderSourceAttentionNotificationEventResult);
   await loadSystemStatus();
   await loadSourceOperations();
   await loadEvents();
@@ -2458,6 +2478,8 @@ function renderSourceOperations(result) {
     return action.area === 'sources';
   });
   const alertableCount = countAlertableRunbookActions(actions);
+  const attentionItems = attention.sources || buildSourceAttention(result);
+  const sourceAttentionAlertableCount = countAlertableSourceAttention(attentionItems);
   const panels = [
     panel('Source operations', [
       '<div class="summary-strip">',
@@ -2469,14 +2491,16 @@ function renderSourceOperations(result) {
       summaryTile('Retry wait', String(lifecycleSummary.failureRetryWaiting || 0), lifecycleSummary.failureRetryWaiting > 0 ? 'warn' : 'ok'),
       summaryTile('Disable blocked', String(lifecycleSummary.disableBlocked || 0), lifecycleSummary.disableBlocked > 0 ? 'warn' : 'ok'),
       summaryTile('Alertable', String(alertableCount), alertableCount > 0 ? 'warn' : 'ok'),
+      summaryTile('Source alerts', String(sourceAttentionAlertableCount), sourceAttentionAlertableCount > 0 ? 'warn' : 'ok'),
       summaryTile('Runbook', String(runbook.actionCount || actions.length || 0), statusVariant(runbook.status)),
       '</div>',
       '<div class="tag-list reason-tags">',
       renderReasonTags(scheduleSummary.byReason),
       '</div>',
-      renderRunbookEventControls(alertableCount)
+      renderRunbookEventControls(alertableCount),
+      renderSourceAttentionEventControls(sourceAttentionAlertableCount)
     ].join(''), 'wide'),
-    panel('Source attention', renderSourceAttentionRows(attention.sources || buildSourceAttention(result)), 'wide'),
+    panel('Source attention', renderSourceAttentionRows(attentionItems), 'wide'),
     panel('Due sources', renderScheduleDecisionRows(schedule.dueSources || [], 'No due sources.', true), 'wide'),
     panel('Skipped sources', renderScheduleDecisionRows((schedule.skippedSources || []).slice(0, 10), 'No skipped sources.', false), 'wide'),
     panel('Lifecycle attention', renderLifecycleAttentionRows(lifecycle.sources || []), 'wide')
@@ -2891,9 +2915,27 @@ function renderRunbookEventControls(alertableCount) {
     '</span></div>';
 }
 
+function renderSourceAttentionEventControls(alertableCount) {
+  const disabled = alertableCount > 0 ? '' : ' disabled';
+  return '<div class="action-row ops-row"><span>' +
+    '<strong>Source attention alerts</strong>' +
+    '<small>' + escapeHtml('alertable=' + alertableCount + ' | threshold=70') + '</small>' +
+    '</span>' +
+    '<span class="button-group source-op-buttons">' +
+    '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-source-attention-events" data-execute="false" data-limit="100" data-attention-limit="100" data-priority-score-threshold="70">Attention check</button>' +
+    '<button class="inline-button warning-inline-button" type="button" data-action="synthesize-source-attention-events" data-execute="true" data-limit="100" data-attention-limit="100" data-priority-score-threshold="70"' + disabled + '>Create alerts</button>' +
+    '</span></div>';
+}
+
 function countAlertableRunbookActions(actions) {
   return (actions || []).filter(function (action) {
     return action.severity === 'critical' || action.severity === 'warning';
+  }).length;
+}
+
+function countAlertableSourceAttention(items) {
+  return (items || []).filter(function (item) {
+    return item.severity === 'critical' || item.severity === 'warning' || item.severity === 'warn' || (item.priorityScore || 0) >= 70;
   }).length;
 }
 
@@ -3097,6 +3139,28 @@ function renderRunbookNotificationEventResult(result) {
       const event = item.event || {};
       const reason = item.reason ? ' / ' + item.reason : '';
       return item.status + ' | ' + (item.actionKey || 'unknown') + ' | ' + (event.id || 'no-event') + ' | ' + (event.severity || 'unknown') + reason;
+    }))
+  ].join(''), 'wide');
+}
+
+function renderSourceAttentionNotificationEventResult(result) {
+  const items = result.results || [];
+  return panel('Source attention notification events', [
+    metric('Status', result.status || 'unknown'),
+    metric('Mode', result.dryRun ? 'dry-run' : 'execute'),
+    metric('Sources', result.sourceCount || 0),
+    metric('Threshold', result.priorityScoreThreshold || 0),
+    metric('Events', result.eventCount || 0),
+    metric('Created', result.createdCount || 0),
+    metric('Updated', result.updatedCount || 0),
+    metric('Resolved', result.resolvedCount || 0),
+    metric('Reopened', result.reopenedCount || 0),
+    metric('Skipped', result.skippedCount || 0),
+    evidenceList(items.map(function (item) {
+      const event = item.event || {};
+      const source = event.payload && event.payload.source || {};
+      const reason = item.reason ? ' / ' + item.reason : '';
+      return item.status + ' | ' + (item.attentionKey || source.id || source.sourceKey || 'unknown-source') + ' | ' + (event.id || 'no-event') + ' | ' + (event.severity || 'unknown') + reason;
     }))
   ].join(''), 'wide');
 }

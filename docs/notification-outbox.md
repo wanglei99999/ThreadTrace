@@ -6,7 +6,8 @@ ThreadTrace uses a notification outbox to decouple forum/source ingestion from u
 
 1. Source ingestion detects a cursor change and writes a `source-changed` event.
 2. Operations runbook synthesis can turn critical or warning operator actions into stable `runbook-action` events.
-3. Review workflows can turn attention-worthy `context-review-result` records and open `author-review-queue` items into stable outbox events.
+3. Source attention synthesis can turn high-priority source health, schedule, lifecycle, and runbook signals into stable `source-attention` events.
+4. Review workflows can turn attention-worthy `context-review-result` records and open `author-review-queue` items into stable outbox events.
 4. New events start with:
    - `deliveryStatus: "pending"`
    - `deliveryAttempts: 0`
@@ -22,9 +23,9 @@ ThreadTrace uses a notification outbox to decouple forum/source ingestion from u
    - `lastDeliveryAttemptAt`
    - `lastDeliveryError`
    - `nextDeliveryAt`, unless max attempts have been exhausted.
-8. Runbook and author review queue synthesis can close stale system-owned events when the underlying action or queue item is no longer active:
+8. Runbook, source attention, and author review queue synthesis can close stale system-owned events when the underlying action, source attention item, or queue item is no longer active:
    - `deliveryStatus: "resolved"`
-   - `acknowledgedBy: "runbook-synthesizer"` or `"author-review-queue-synthesizer"`
+   - `acknowledgedBy: "runbook-synthesizer"`, `"source-attention-synthesizer"`, or `"author-review-queue-synthesizer"`
    - `nextDeliveryAt: undefined`
 
 Acknowledgement is separate from delivery. A delivered event can still be unacknowledged in the UI, and an acknowledged event remains queryable for audit/history. Dispatch workers do not deliver acknowledged events.
@@ -49,6 +50,8 @@ node src/presentation/cli/threadtrace.js notification-diagnostics --channel file
 node src/presentation/cli/threadtrace.js notification-diagnostics --channel webhook --webhook-url http://127.0.0.1:9000/threadtrace-events
 node src/presentation/cli/threadtrace.js synthesize-runbook-events
 node src/presentation/cli/threadtrace.js synthesize-runbook-events --execute true
+node src/presentation/cli/threadtrace.js synthesize-source-attention-events
+node src/presentation/cli/threadtrace.js synthesize-source-attention-events --execute true --source-key nga
 node src/presentation/cli/threadtrace.js synthesize-context-review-result-events
 node src/presentation/cli/threadtrace.js synthesize-context-review-result-events --execute true --source-key nga
 node src/presentation/cli/threadtrace.js synthesize-author-review-queue-events
@@ -71,6 +74,8 @@ npm run worker:events-loop
 npm run worker:events-loop -- --source-key nga
 npm run worker:operations-once -- --runbook-events true
 npm run worker:operations-loop -- --runbook-events-execute true
+npm run worker:operations-once -- --source-attention-events true
+npm run worker:operations-loop -- --source-attention-events-execute true --source-key nga
 npm run worker:operations-once -- --context-review-result-events true
 npm run worker:operations-loop -- --context-review-result-events-execute true --source-key nga
 npm run worker:operations-once -- --author-review-queue-events true
@@ -83,6 +88,7 @@ HTTP:
 
 ```text
 POST /api/operations/runbook/events
+POST /api/operations/source-attention/events
 POST /api/context-review-results/events
 POST /api/intelligence/author-review-queue/events
 GET /api/events/overview
@@ -91,7 +97,7 @@ POST /api/events/ack
 POST /api/events/archive
 ```
 
-`synthesize-runbook-events`, `synthesize-context-review-result-events`, `synthesize-author-review-queue-events`, `POST /api/operations/runbook/events`, `POST /api/context-review-results/events`, and `POST /api/intelligence/author-review-queue/events` default to dry-run. Set `--execute true` or request body `{"execute": true}` to persist events into the outbox. Stable event IDs are derived from the runbook action key, source-scoped context review result record id, or durable author queue item id, so repeated synthesis updates pending/failed events without duplicating alerts or crossing sources. Context review result synthesis supports `sourceId` and `sourceKey` / `forum` filters and generated events carry that scope when the record, result payload, or trace contains it. Stale runbook and author queue events are marked `resolved` when the underlying action or queue item disappears, and system-resolved events reopen as `pending` if the same action returns. Operator-acknowledged or already delivered events are left untouched for audit safety.
+`synthesize-runbook-events`, `synthesize-source-attention-events`, `synthesize-context-review-result-events`, `synthesize-author-review-queue-events`, `POST /api/operations/runbook/events`, `POST /api/operations/source-attention/events`, `POST /api/context-review-results/events`, and `POST /api/intelligence/author-review-queue/events` default to dry-run. Set `--execute true` or request body `{"execute": true}` to persist events into the outbox. Stable event IDs are derived from the runbook action key, source attention key plus source scope, source-scoped context review result record id, or durable author queue item id, so repeated synthesis updates pending/failed events without duplicating alerts or crossing sources. Source attention synthesis supports `sourceId`, `sourceKey` / `forum`, `attentionLimit`, and `priorityScoreThreshold`; it alerts on critical/warning attention and on lower-severity items whose priority score crosses the threshold. Context review result synthesis supports `sourceId` and `sourceKey` / `forum` filters and generated events carry that scope when the record, result payload, or trace contains it. Stale runbook, source attention, and author queue events are marked `resolved` when the underlying action, source attention item, or queue item disappears, and system-resolved events reopen as `pending` if the same signal returns. Operator-acknowledged or already delivered events are left untouched for audit safety.
 
 Use `dispatch-events`, `POST /api/events/dispatch`, `worker:events-*`, or the operations worker dispatch step with `sourceId` / `sourceKey` / `forum` when running source-scoped delivery. The dispatch use case applies that scope to both pending and failed retry queries, so a worker assigned to one source does not deliver another source's outbox events. PostgreSQL deployments should apply `docs/postgresql-schema.sql` after upgrading; the baseline includes partial dispatch indexes for active, unacknowledged due events, plus source-id and source-key variants for split worker fleets.
 
@@ -112,4 +118,4 @@ Useful environment variables:
 - PostgreSQL should store notification events as an outbox table with indexes on `delivery_status`, `next_delivery_at`, `created_at`, `source_key`, and `archived_at`. Production split-worker deployments should also keep the partial dispatch indexes from `docs/postgresql-schema.sql`: `idx_notification_events_dispatch_due`, `idx_notification_events_dispatch_source`, and `idx_notification_events_dispatch_source_key`.
 - A queue-backed implementation can keep the same event schema and use the outbox as the durable source of truth.
 - New channels should implement the `NotificationChannel` port and return a small `deliveryResult` object that is safe to persist.
-- Runbook action, context review result, and author review queue events use the same outbox contract as source-change events, so future alert channels do not need special-case delivery logic.
+- Runbook action, source attention, context review result, and author review queue events use the same outbox contract as source-change events, so future alert channels do not need special-case delivery logic.

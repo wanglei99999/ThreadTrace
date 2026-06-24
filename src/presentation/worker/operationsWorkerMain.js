@@ -74,6 +74,9 @@ async function main(argv) {
     if (result.authorReviewQueueEvents) {
       console.log('Author queue events: ' + result.authorReviewQueueEvents.eventCount + ', dryRun=' + result.authorReviewQueueEvents.dryRun);
     }
+    if (result.sourceAttentionEvents) {
+      console.log('Source attention events: ' + result.sourceAttentionEvents.eventCount + ', dryRun=' + result.sourceAttentionEvents.dryRun);
+    }
     console.log('Events delivered: ' + result.events.dispatchedCount);
     console.log('Events failed: ' + result.events.failedCount);
     if (result.archivedEvents) {
@@ -169,6 +172,22 @@ function buildRequest(options, storeDir, config) {
         execute: options.authorReviewQueueEventsExecute === 'true',
         resolveStale: parseOptionalBoolean(options.authorReviewQueueResolveStale),
         limit: options.limit ? Number(options.limit) : undefined,
+        storeDir
+      }
+      : undefined,
+    sourceAttentionEvents: options.sourceAttentionEvents === 'true' || options.sourceAttentionEventsExecute === 'true'
+      ? {
+        forum: options.forum,
+        sourceId: options.sourceId,
+        sourceKey: options.sourceKey || options.forum,
+        execute: options.sourceAttentionEventsExecute === 'true',
+        resolveStale: parseOptionalBoolean(options.sourceAttentionResolveStale),
+        priorityScoreThreshold: options.priorityScoreThreshold ? Number(options.priorityScoreThreshold) : undefined,
+        limit: options.limit ? Number(options.limit) : undefined,
+        attentionLimit: options.attentionLimit ? Number(options.attentionLimit) : undefined,
+        sourceRunStaleAfterMs: config.workers.sourceRunStaleAfterMs,
+        sourceFailureRetryBackoffMs: config.workers.sourceFailureRetryBackoffMs,
+        sourceFailureMaxRetryBackoffMs: config.workers.sourceFailureMaxRetryBackoffMs,
         storeDir
       }
       : undefined,
@@ -289,6 +308,21 @@ function parseArgs(args) {
       index += 1;
     } else if (item === '--author-review-queue-events-execute') {
       options.authorReviewQueueEventsExecute = args[index + 1];
+      index += 1;
+    } else if (item === '--source-attention-events') {
+      options.sourceAttentionEvents = args[index + 1];
+      index += 1;
+    } else if (item === '--source-attention-events-execute') {
+      options.sourceAttentionEventsExecute = args[index + 1];
+      index += 1;
+    } else if (item === '--source-attention-resolve-stale') {
+      options.sourceAttentionResolveStale = args[index + 1];
+      index += 1;
+    } else if (item === '--attention-limit') {
+      options.attentionLimit = args[index + 1];
+      index += 1;
+    } else if (item === '--priority-score-threshold') {
+      options.priorityScoreThreshold = args[index + 1];
       index += 1;
     } else if (item === '--author-review-queue-status') {
       options.authorReviewQueueStatus = args[index + 1];

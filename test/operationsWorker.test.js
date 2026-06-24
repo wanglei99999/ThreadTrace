@@ -255,6 +255,88 @@ test('operations worker can synthesize author review queue events before dispatc
   assert.equal(result.authorReviewQueueEvents.createdCount, 2);
 });
 
+test('operations worker can synthesize source attention events before dispatch', async function () {
+  const calls = [];
+  const workerRuns = [];
+  const worker = createOperationsWorker({
+    logger: silentLogger(),
+    workerRunRepository: {
+      async saveWorkerRun(run) {
+        workerRuns.push(Object.assign({}, run));
+      },
+      async findWorkerRun() {},
+      async listWorkerRuns() {
+        return workerRuns;
+      }
+    },
+    runtime: {
+      async runDueSourcesIngestTasks() {
+        calls.push(['sources']);
+        return {
+          dueCount: 0,
+          completedCount: 0,
+          failedCount: 0,
+          skippedCount: 0
+        };
+      },
+      async synthesizeSourceAttentionNotificationEvents(request) {
+        calls.push(['source-attention-events', request.execute, request.sourceKey, request.priorityScoreThreshold]);
+        return {
+          sourceCount: 2,
+          actionCount: 1,
+          eventCount: 1,
+          createdCount: 1,
+          updatedCount: 0,
+          resolvedCount: 0,
+          reopenedCount: 0,
+          skippedCount: 0,
+          priorityScoreThreshold: 80
+        };
+      },
+      async dispatchNotificationEvents() {
+        calls.push(['events']);
+        return {
+          dispatchedCount: 1,
+          failedCount: 0,
+          skippedCount: 0
+        };
+      },
+      async getOperationalOverview() {
+        calls.push(['overview']);
+        return {
+          events: {
+            unacknowledged: 1
+          },
+          workers: {
+            stale: 0
+          },
+          tasks: {
+            failed: 0
+          }
+        };
+      }
+    }
+  });
+
+  const result = await worker.runOnce({
+    sourceAttentionEvents: {
+      execute: true,
+      sourceKey: 'forum-a',
+      priorityScoreThreshold: 80
+    }
+  });
+
+  assert.deepEqual(calls, [
+    ['sources'],
+    ['source-attention-events', true, 'forum-a', 80],
+    ['events'],
+    ['overview']
+  ]);
+  assert.equal(result.sourceAttentionEvents.eventCount, 1);
+  assert.equal(workerRuns.at(-1).output.sourceAttentionEvents.eventCount, 1);
+  assert.equal(workerRuns.at(-1).output.sourceAttentionEvents.priorityScoreThreshold, 80);
+});
+
 test('operations worker can synthesize context review result events before dispatch', async function () {
   const calls = [];
   const worker = createOperationsWorker({

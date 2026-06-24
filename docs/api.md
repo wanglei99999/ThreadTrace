@@ -458,6 +458,27 @@ Request:
 
 The endpoint defaults to dry-run. Set `execute: true` or `dryRun: false` to persist `runbook-action` events. Event IDs are stable per runbook action key plus `sourceId` / `sourceKey` scope when present, so repeated synthesis updates pending or failed events without duplicating alerts while keeping different sources isolated. Review action execution ledger runbook actions infer `sourceId` / `sourceKey` from single-source ledger evidence before event synthesis, so stale or failed mutation-window alerts do not merge across sources. When `sourceId`, `sourceKey`, or `forum` is provided, stale runbook event resolution is scoped to that source filter so a partial source run does not resolve alerts owned by other sources. The response includes created, updated, resolved, reopened, and skipped counts. Operator-acknowledged and delivered events are skipped.
 
+### `POST /api/operations/source-attention/events`
+
+Dry-runs or executes synthesis of high-priority source attention rows into notification outbox events.
+
+Request:
+
+```json
+{
+  "execute": false,
+  "forum": "nga",
+  "sourceId": "source-1",
+  "limit": 100,
+  "attentionLimit": 100,
+  "priorityScoreThreshold": 70,
+  "resolveStale": true,
+  "includeSourceAttention": false
+}
+```
+
+The endpoint defaults to dry-run. Set `execute: true` or `dryRun: false` to persist `source-attention` events. Event IDs are stable per source attention key plus `sourceId` / `sourceKey` scope, so repeated synthesis updates pending or failed events without duplicating alerts while keeping different sources isolated. Critical and warning attention rows always alert; lower-severity rows alert when `priorityScore` is at or above `priorityScoreThreshold`. When `sourceId`, `sourceKey`, or `forum` is provided, stale source attention event resolution is scoped to that source filter so a partial source run does not resolve alerts owned by other sources. The response includes source, event, created, updated, resolved, reopened, and skipped counts. Operator-acknowledged and delivered events are skipped.
+
 ### `GET /api/notifications/diagnostics`
 
 诊断通知投递通道配置。`file` 通道会检查本地 deliveries 目录可写；`webhook` 通道会检查 URL 是否存在且使用 `http` 或 `https`，不会主动投递外部请求。

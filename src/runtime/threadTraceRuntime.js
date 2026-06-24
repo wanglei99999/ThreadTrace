@@ -33,6 +33,7 @@ const { dispatchPendingNotificationEvents } = require('../application/use-cases/
 const { synthesizeRunbookNotificationEvents } = require('../application/use-cases/synthesizeRunbookNotificationEvents');
 const { synthesizeContextReviewResultNotificationEvents } = require('../application/use-cases/synthesizeContextReviewResultNotificationEvents');
 const { synthesizeAuthorReviewQueueNotificationEvents } = require('../application/use-cases/synthesizeAuthorReviewQueueNotificationEvents');
+const { synthesizeSourceAttentionNotificationEvents } = require('../application/use-cases/synthesizeSourceAttentionNotificationEvents');
 const { fetchAndStoreThreadPage } = require('../application/use-cases/fetchAndStoreThreadPage');
 const { enrichAnalysisReportWithLlm } = require('../application/use-cases/enrichAnalysisReportWithLlm');
 const { runSemanticEnrichmentTask } = require('../application/use-cases/runSemanticEnrichmentTask');
@@ -1865,6 +1866,45 @@ function createThreadTraceRuntime(options) {
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
         now: safeRequest.now,
         includeRunbook: safeRequest.includeRunbook
+      });
+    },
+
+    async synthesizeSourceAttentionNotificationEvents(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      const runtime = this;
+      return synthesizeSourceAttentionNotificationEvents({
+        notificationEventRepository: repositories.notificationEventRepository,
+        getSourceAttentionReport(sourceAttentionRequest) {
+          return runtime.getSourceAttentionReport(Object.assign({}, sourceAttentionRequest, {
+            forum: safeRequest.forum,
+            sourceKey: safeRequest.sourceKey,
+            sourceId: safeRequest.sourceId,
+            enabled: safeRequest.enabled,
+            limit: safeRequest.limit || 100,
+            attentionLimit: safeRequest.attentionLimit,
+            taskLimit: safeRequest.taskLimit,
+            pipelineLimit: safeRequest.pipelineLimit,
+            eventLimit: safeRequest.eventLimit,
+            maxAttempts: safeRequest.maxAttempts,
+            sourceRunStaleAfterMs: safeRequest.sourceRunStaleAfterMs,
+            sourceFailureRetryBackoffMs: safeRequest.sourceFailureRetryBackoffMs,
+            sourceFailureMaxRetryBackoffMs: safeRequest.sourceFailureMaxRetryBackoffMs,
+            runningStaleAfterMs: safeRequest.runningStaleAfterMs,
+            workerStaleAfterMs: safeRequest.workerStaleAfterMs,
+            now: safeRequest.now,
+            storeDir: safeRequest.storeDir
+          }));
+        },
+        execute: safeRequest.execute,
+        limit: safeRequest.limit,
+        staleLimit: safeRequest.staleLimit,
+        resolveStale: safeRequest.resolveStale,
+        priorityScoreThreshold: safeRequest.priorityScoreThreshold,
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        now: safeRequest.now,
+        includeSourceAttention: safeRequest.includeSourceAttention
       });
     },
 

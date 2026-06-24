@@ -145,6 +145,47 @@ function createAuthorReviewQueueEvent(input) {
   };
 }
 
+function createSourceAttentionEvent(input) {
+  const safeInput = input || {};
+  const item = safeInput.item || {};
+  const source = item.source || {};
+  const now = safeInput.createdAt || new Date().toISOString();
+  return {
+    id: safeInput.id || buildSourceAttentionEventId(item),
+    type: 'source-attention',
+    severity: severityForSourceAttentionItem(item),
+    sourceId: source.id,
+    sourceKey: source.sourceKey,
+    taskId: undefined,
+    createdAt: now,
+    title: 'Source attention: ' + (source.displayName || source.id || source.sourceKey || item.key || 'unknown-source'),
+    summary: sourceAttentionSummary(item),
+    payload: {
+      attentionKey: item.key,
+      attentionRank: item.attentionRank,
+      priorityScore: item.priorityScore,
+      severity: item.severity,
+      signalCount: item.signalCount,
+      runnable: item.runnable,
+      source,
+      signals: item.signals || [],
+      commands: item.commands || [],
+      recommendedNextAction: item.recommendedNextAction || item.nextAction,
+      recommendedCommand: item.recommendedCommand,
+      reportGeneratedAt: safeInput.reportGeneratedAt,
+      reportStatus: safeInput.reportStatus
+    },
+    deliveryStatus: safeInput.deliveryStatus || 'pending',
+    deliveryAttempts: safeInput.deliveryAttempts || 0,
+    nextDeliveryAt: safeInput.nextDeliveryAt || now,
+    lastDeliveryError: safeInput.lastDeliveryError,
+    lastDeliveredAt: safeInput.lastDeliveredAt,
+    acknowledgedAt: safeInput.acknowledgedAt,
+    acknowledgedBy: safeInput.acknowledgedBy,
+    acknowledgementNote: safeInput.acknowledgementNote
+  };
+}
+
 function acknowledgeNotificationEvent(event, input) {
   const safeInput = input || {};
   const now = safeInput.acknowledgedAt || new Date().toISOString();
@@ -244,6 +285,17 @@ function buildAuthorReviewQueueEventId(item) {
   return 'author-review-queue-' + digest;
 }
 
+function buildSourceAttentionEventId(item) {
+  const source = item && item.source || {};
+  const key = JSON.stringify({
+    attentionKey: item && item.key,
+    sourceId: source.id,
+    sourceKey: source.sourceKey
+  });
+  const digest = crypto.createHash('sha1').update(key).digest('hex').slice(0, 12);
+  return 'source-attention-' + digest;
+}
+
 function severityForRunbookAction(action) {
   if (action && action.severity === 'critical') return 'critical';
   if (action && action.severity === 'warning') return 'warning';
@@ -253,6 +305,20 @@ function severityForRunbookAction(action) {
 function severityForAuthorReviewQueueItem(item) {
   if (item && item.priority === 'high') return 'warning';
   return 'info';
+}
+
+function severityForSourceAttentionItem(item) {
+  if (item && item.severity === 'critical') return 'critical';
+  if (item && (item.severity === 'warning' || item.severity === 'warn')) return 'warning';
+  return 'info';
+}
+
+function sourceAttentionSummary(item) {
+  const signals = item.signals || [];
+  const firstSignal = signals[0] || {};
+  const action = item.recommendedNextAction || item.nextAction || item.recommendedCommand || firstSignal.action;
+  const score = item.priorityScore === undefined ? 'unknown' : item.priorityScore;
+  return 'Priority ' + score + ', rank #' + (item.attentionRank || '?') + ': ' + (action || firstSignal.summary || 'Review source attention.');
 }
 
 function buildSummary(source, cursorDiff, cursor) {
@@ -271,9 +337,11 @@ module.exports = {
   createRunbookActionEvent,
   createContextReviewResultEvent,
   createAuthorReviewQueueEvent,
+  createSourceAttentionEvent,
   buildRunbookActionEventId,
   buildContextReviewResultEventId,
   buildAuthorReviewQueueEventId,
+  buildSourceAttentionEventId,
   acknowledgeNotificationEvent,
   markNotificationEventDelivered,
   markNotificationEventDeliveryFailed

@@ -246,6 +246,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     }));
     assert.equal(openApi.paths['/api/operations/source-attention'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceAttentionReport');
     assert.equal(openApi.paths['/api/operations/source-attention'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/SourceAttentionReport');
+    assert.equal(openApi.paths['/api/operations/source-attention/events'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceAttentionNotificationEventSynthesisResult');
     assert.equal(openApi.components.schemas.SourceAttentionReport.properties.sources.items.$ref, '#/components/schemas/SourceAttentionItem');
     assert.equal(openApi.components.schemas.SourceAttentionItem.properties.signals.items.$ref, '#/components/schemas/SourceAttentionSignal');
     assert.equal(openApi.components.schemas.SourceAttentionItem.properties.attentionRank.type, 'number');
@@ -254,6 +255,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.components.schemas.SourceAttentionSummary.properties.actionable.type, 'number');
     assert.equal(openApi.components.schemas.SourceAttentionSummary.properties.highestPriorityScore.type, 'number');
     assert.equal(openApi.components.schemas.SourceAttentionSummary.properties.bySignal.additionalProperties.type, 'number');
+    assert.equal(openApi.components.schemas.SourceAttentionNotificationEventSynthesisResult.properties.results.items.$ref, '#/components/schemas/SourceAttentionNotificationEventSynthesisItem');
+    assert.equal(openApi.components.schemas.SourceAttentionNotificationEventSynthesisItem.properties.event.$ref, '#/components/schemas/NotificationEvent');
+    assert.ok(openApi.components.schemas.NotificationEvent.properties.type.enum.includes('source-attention'));
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.scope.$ref, '#/components/schemas/SourceScope');
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.attention.properties.signals.items.$ref, '#/components/schemas/SourceAttentionSignal');
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.attention.properties.reportSummary.$ref, '#/components/schemas/SourceAttentionSummary');
@@ -974,6 +978,76 @@ test('http server exposes source attention API', async function () {
     assert.equal(calls[0].limit, 10);
     assert.equal(calls[0].attentionLimit, 5);
     assert.equal(calls[0].sourceFailureRetryBackoffMs, 60000);
+  } finally {
+    await close(server);
+  }
+});
+
+test('http server synthesizes source attention notification events', async function () {
+  const calls = [];
+  const server = createThreadTraceServer({
+    runtime: {
+      listAdapters() {
+        return [{ sourceKey: 'nga', displayName: 'NGA' }];
+      },
+      async synthesizeSourceAttentionNotificationEvents(request) {
+        calls.push(request);
+        return {
+          generatedAt: request.now || '2026-06-25T10:00:00.000Z',
+          status: 'ok',
+          dryRun: request.execute !== true,
+          executed: request.execute === true,
+          sourceCount: 1,
+          actionCount: 1,
+          eventCount: 1,
+          createdCount: request.execute === true ? 1 : 0,
+          updatedCount: 0,
+          resolvedCount: 0,
+          reopenedCount: 0,
+          skippedCount: 0,
+          priorityScoreThreshold: request.priorityScoreThreshold,
+          results: [
+            {
+              status: 'created',
+              attentionKey: 'sourceId:source-1',
+              event: {
+                id: 'source-attention-1',
+                type: 'source-attention',
+                severity: 'warning',
+                sourceId: request.sourceId,
+                sourceKey: request.sourceKey
+              }
+            }
+          ]
+        };
+      }
+    }
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const result = await postJson(baseUrl + '/api/operations/source-attention/events', {
+      sourceKey: 'nga',
+      sourceId: 'source-1',
+      execute: true,
+      priorityScoreThreshold: 80,
+      attentionLimit: 5,
+      limit: 10,
+      resolveStale: true,
+      now: '2026-06-25T10:00:00.000Z'
+    });
+
+    assert.equal(result.executed, true);
+    assert.equal(result.results[0].event.type, 'source-attention');
+    assert.equal(calls[0].sourceKey, 'nga');
+    assert.equal(calls[0].sourceId, 'source-1');
+    assert.equal(calls[0].execute, true);
+    assert.equal(calls[0].priorityScoreThreshold, 80);
+    assert.equal(calls[0].attentionLimit, 5);
+    assert.equal(calls[0].limit, 10);
+    assert.equal(calls[0].resolveStale, true);
   } finally {
     await close(server);
   }
