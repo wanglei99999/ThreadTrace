@@ -34,6 +34,7 @@ async function getSourceOperationsDrilldown(options) {
     : [];
   const authorReviewQueue = safeOptions.authorReviewQueue || {};
   const reviewActions = summarizeReviewActions(safeOptions.reviewActionAuditOverview, safeOptions.reviewActionExecutions);
+  const attention = summarizeSourceAttention(safeOptions.sourceAttentionReport, scope);
   const summaries = {
     source: summarizeSource(sourceResolution.source, now),
     tasks: summarizeTasks(tasks),
@@ -52,7 +53,8 @@ async function getSourceOperationsDrilldown(options) {
     sourceCandidates: sourceResolution.candidates,
     sourceFound: Boolean(sourceResolution.source),
     health: summaries,
-    nextActions: buildNextActions(sourceResolution, summaries),
+    attention,
+    nextActions: buildNextActions(sourceResolution, summaries, attention),
     recent: {
       tasks: tasks.slice(0, 10).map(summarizeTask),
       events: events.all.slice(0, 10),
@@ -298,6 +300,55 @@ function summarizeReviewActions(auditOverview, executionsResult) {
   };
 }
 
+function summarizeSourceAttention(sourceAttentionReport, scope) {
+  if (!sourceAttentionReport) return undefined;
+  const item = findSourceAttentionItem(sourceAttentionReport.sources || [], scope);
+  if (!item) {
+    return {
+      status: sourceAttentionReport.status,
+      found: false,
+      reportSummary: summarizeAttentionReport(sourceAttentionReport)
+    };
+  }
+  return {
+    status: sourceAttentionReport.status,
+    found: true,
+    key: item.key,
+    attentionRank: item.attentionRank,
+    priorityScore: item.priorityScore,
+    severity: item.severity,
+    signalCount: item.signalCount,
+    runnable: item.runnable,
+    recommendedNextAction: item.recommendedNextAction || item.nextAction,
+    recommendedCommand: item.recommendedCommand || firstText(item.commands),
+    signals: (item.signals || []).slice(0, 5),
+    commands: (item.commands || []).slice(0, 5),
+    reportSummary: summarizeAttentionReport(sourceAttentionReport)
+  };
+}
+
+function findSourceAttentionItem(items, scope) {
+  if (!scope || (!scope.sourceId && !scope.sourceKey)) return undefined;
+  return (items || []).find(function (item) {
+    const source = item.source || {};
+    return scope.sourceId && source.id === scope.sourceId;
+  }) || (items || []).find(function (item) {
+    const source = item.source || {};
+    return scope.sourceKey && source.sourceKey === scope.sourceKey;
+  });
+}
+
+function summarizeAttentionReport(sourceAttentionReport) {
+  const summary = sourceAttentionReport.summary || {};
+  return {
+    total: summary.total || 0,
+    critical: summary.critical || 0,
+    warning: summary.warning || 0,
+    actionable: summary.actionable || 0,
+    highestPriorityScore: summary.highestPriorityScore || 0
+  };
+}
+
 function resolveStatus(sourceResolution, summaries) {
   if (!sourceResolution.source) return 'warn';
   if (summaries.workers.runs.stale > 0 || summaries.reviewActions.executions.staleRunning > 0) return 'fail';
@@ -306,12 +357,20 @@ function resolveStatus(sourceResolution, summaries) {
   return 'ok';
 }
 
-function buildNextActions(sourceResolution, summaries) {
+function buildNextActions(sourceResolution, summaries, attention) {
   const scope = sourceResolution.scope;
   const commands = scopedCommands(scope);
   const actions = [];
   if (!sourceResolution.source) {
     actions.push(action('source.resolve', 'warning', 'Resolve the source registration before running source-scoped operations.', commands.sourceDiagnostics));
+  }
+  if (attention && attention.found && (attention.recommendedCommand || attention.recommendedNextAction)) {
+    actions.push(action(
+      'sourceAttention.priority',
+      normalizeActionSeverity(attention.severity),
+      'Handle source attention #' + (attention.attentionRank || '?') + ' with priority ' + (attention.priorityScore || 0) + ': ' + (attention.recommendedNextAction || 'review-source-attention') + '.',
+      attention.recommendedCommand || commands.operationsOverview
+    ));
   }
   if (summaries.workers.runs.stale > 0) {
     actions.push(action('workers.stale', 'critical', 'Inspect stale source-scoped worker runs and restart the owning worker if needed.', commands.workerTopology));
@@ -332,6 +391,12 @@ function buildNextActions(sourceResolution, summaries) {
     actions.push(action('authorReviewQueue.highPriority', 'warning', 'Review high-priority author intelligence queue items for this source.', commands.authorQueue));
   }
   return actions;
+}
+
+function normalizeActionSeverity(severity) {
+  if (severity === 'critical') return 'critical';
+  if (severity === 'warning' || severity === 'warn') return 'warning';
+  return 'info';
 }
 
 function scopedCommands(scope) {
@@ -358,6 +423,12 @@ function action(key, severity, summary, recommendedCommand) {
     summary,
     recommendedCommand
   };
+}
+
+function firstText(items) {
+  return (items || []).find(function (item) {
+    return typeof item === 'string' && item.length > 0;
+  });
 }
 
 function taskScope(task) {

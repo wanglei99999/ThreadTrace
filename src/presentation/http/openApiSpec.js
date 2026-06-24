@@ -984,8 +984,12 @@ function createOpenApiSpec() {
             { name: 'sourceId', in: 'query', required: false, schema: { type: 'string', example: 'tracked-source-nga-001' } },
             { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
             { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'attentionLimit', in: 'query', required: false, schema: { type: 'number' } },
             { name: 'taskScanLimit', in: 'query', required: false, schema: { type: 'number' } },
             { name: 'leaseScanLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'sourceRunStaleAfterMs', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'sourceFailureRetryBackoffMs', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'sourceFailureMaxRetryBackoffMs', in: 'query', required: false, schema: { type: 'number' } },
             { name: 'workerStaleAfterMs', in: 'query', required: false, schema: { type: 'number' } },
             { name: 'runningStaleAfterMs', in: 'query', required: false, schema: { type: 'number' } },
             { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
@@ -4710,6 +4714,31 @@ function createOpenApiSpec() {
                 },
                 authorReviewQueue: { $ref: '#/components/schemas/AuthorReviewQueueSummary' },
                 reviewActions: { type: 'object', additionalProperties: true }
+              },
+              additionalProperties: true
+            },
+            attention: {
+              type: 'object',
+              properties: {
+                status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+                found: { type: 'boolean' },
+                key: { type: 'string' },
+                attentionRank: { type: 'number' },
+                priorityScore: { type: 'number' },
+                severity: { type: 'string', enum: ['critical', 'warning', 'warn', 'info', 'ok', 'muted'] },
+                signalCount: { type: 'number' },
+                runnable: { type: 'boolean' },
+                recommendedNextAction: { type: 'string' },
+                recommendedCommand: { type: 'string' },
+                signals: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/SourceAttentionSignal' }
+                },
+                commands: {
+                  type: 'array',
+                  items: { type: 'string' }
+                },
+                reportSummary: { $ref: '#/components/schemas/SourceAttentionSummary' }
               },
               additionalProperties: true
             },

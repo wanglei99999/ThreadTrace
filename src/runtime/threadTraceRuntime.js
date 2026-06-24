@@ -1108,6 +1108,19 @@ function createThreadTraceRuntime(options) {
         limit: safeRequest.limit || 50,
         now: safeRequest.now
       });
+      const sourceAttentionReport = await this.getSourceAttentionReport({
+        sourceId: safeRequest.sourceId,
+        sourceKey,
+        limit: safeRequest.limit || 50,
+        attentionLimit: safeRequest.attentionLimit || safeRequest.limit || 50,
+        sourceRunStaleAfterMs: safeRequest.sourceRunStaleAfterMs,
+        sourceFailureRetryBackoffMs: safeRequest.sourceFailureRetryBackoffMs,
+        sourceFailureMaxRetryBackoffMs: safeRequest.sourceFailureMaxRetryBackoffMs,
+        workerStaleAfterMs: safeRequest.workerStaleAfterMs,
+        runningStaleAfterMs: safeRequest.runningStaleAfterMs,
+        now: safeRequest.now,
+        storeDir
+      });
       return Object.assign({
         storageMode: defaults.storageMode
       }, await getSourceOperationsDrilldown({
@@ -1125,6 +1138,7 @@ function createThreadTraceRuntime(options) {
         reviewActionAuditOverview,
         reviewActionExecutions,
         authorReviewQueue,
+        sourceAttentionReport,
         now: safeRequest.now
       }));
     },
@@ -1165,6 +1179,7 @@ function createThreadTraceRuntime(options) {
       const safeRequest = request || {};
       const commonRequest = {
         forum: safeRequest.forum,
+        sourceId: safeRequest.sourceId,
         sourceKey: safeRequest.sourceKey,
         enabled: safeRequest.enabled,
         limit: safeRequest.limit || 100,

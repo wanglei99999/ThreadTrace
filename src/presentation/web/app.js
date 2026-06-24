@@ -2792,6 +2792,7 @@ function renderSourceOperationsDrilldown(report) {
   const authorQueue = health.authorReviewQueue || {};
   const reviewActions = health.reviewActions || {};
   const reviewExecutions = reviewActions.executions || {};
+  const attention = report.attention || {};
   const recent = report.recent || {};
   const scope = report.scope || {};
   return [
@@ -2805,9 +2806,12 @@ function renderSourceOperationsDrilldown(report) {
       summaryTile('Expired leases', String(workerLeases.expired || 0), (workerLeases.expired || 0) > 0 ? 'warn' : 'ok'),
       summaryTile('Review stale', String(reviewExecutions.staleRunning || 0), (reviewExecutions.staleRunning || 0) > 0 ? 'warn' : 'ok'),
       summaryTile('Queue high', String(authorQueue.highPriorityOpenCount || 0), (authorQueue.highPriorityOpenCount || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('Attention', attention.found ? ('#' + (attention.attentionRank || '?') + ' · ' + (attention.priorityScore || 0)) : 'none', attentionStatusVariant(attention.severity)),
       '</div>',
       metric('Scope', formatEventSourceScope(scope)),
       metric('Source', [source.displayName, source.id, source.sourceKey, source.sourceType].filter(Boolean).join(' | ') || 'not found'),
+      metric('Attention', attention.found ? [(attention.severity || 'info'), 'score ' + (attention.priorityScore || 0), 'signals ' + (attention.signalCount || 0), attention.recommendedNextAction || attention.recommendedCommand].filter(Boolean).join(' | ') : 'none'),
+      attention.recommendedCommand ? metric('Attention command', attention.recommendedCommand) : '',
       metric('Schedule', sourceHealth.schedule ? ((sourceHealth.schedule.due ? 'due' : 'skip') + ' | ' + (sourceHealth.schedule.reason || 'unknown')) : 'unknown'),
       metric('Worker types', compactCountMap(workerRuns.byWorkerType)),
       metric('Lease types', compactCountMap(workerLeases.byWorkerType)),
@@ -2816,11 +2820,30 @@ function renderSourceOperationsDrilldown(report) {
       metric('Review actions', 'audits ' + (reviewActions.auditCount || 0) + ' | executions ' + (reviewExecutions.count || 0) + ' | failed ' + (reviewExecutions.failed || 0)),
       metric('Author queue', 'open ' + (authorQueue.openCount || 0) + ' | high ' + (authorQueue.highPriorityOpenCount || 0))
     ].join(''), 'wide'),
+    panel('Source attention details', renderSourceDrilldownAttention(attention), 'wide'),
     panel('Source next actions', renderSourceDrilldownActions(report.nextActions || []), 'wide'),
     panel('Recent source tasks', evidenceList((recent.tasks || []).map(formatSourceDrilldownTaskRow)), 'wide'),
     panel('Recent source events', evidenceList((recent.events || []).map(formatSourceDrilldownEventRow)), 'wide'),
     panel('Recent source workers', evidenceList((recent.workerRuns || []).map(formatWorkerRunRow).concat((recent.workerLeases || []).map(formatWorkerLeaseRow))), 'wide')
   ].join('');
+}
+
+function renderSourceDrilldownAttention(attention) {
+  if (!attention || !attention.found) return '<div class="muted">No source attention item for this scope.</div>';
+  const lines = [
+    'rank #' + (attention.attentionRank || '?') + ' | priority=' + (attention.priorityScore || 0) + ' | severity=' + (attention.severity || 'info'),
+    attention.recommendedNextAction ? 'next=' + attention.recommendedNextAction : undefined,
+    attention.recommendedCommand ? 'command=' + attention.recommendedCommand : undefined
+  ].filter(Boolean);
+  return '<div class="action-row ops-row"><span>' +
+    '<strong>' + escapeHtml((attention.severity || 'info') + ' | source attention') + '</strong>' +
+    lines.map(function (line) {
+      return '<small>' + escapeHtml(line) + '</small>';
+    }).join('') +
+    renderSourceAttentionSignalRows(attention.signals || []) +
+    '</span>' +
+    statusBadge('#' + (attention.attentionRank || '?'), attentionStatusVariant(attention.severity)) +
+    '</div>';
 }
 
 function renderSourceDrilldownActions(actions) {

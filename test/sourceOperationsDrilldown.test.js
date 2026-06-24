@@ -140,6 +140,39 @@ test('source operations drilldown aggregates source-scoped health and recent rec
       executions: [
         { id: 'execution-1', status: 'completed', sourceId: 'source-1', sourceKey: 'nga' }
       ]
+    },
+    sourceAttentionReport: {
+      status: 'warn',
+      summary: {
+        total: 2,
+        critical: 0,
+        warning: 1,
+        actionable: 1,
+        highestPriorityScore: 92
+      },
+      sources: [
+        {
+          key: 'sourceId:source-1',
+          attentionRank: 1,
+          priorityScore: 92,
+          severity: 'warning',
+          signalCount: 2,
+          runnable: true,
+          source: {
+            id: 'source-1',
+            sourceKey: 'nga'
+          },
+          recommendedNextAction: 'run-source-insight-pipeline',
+          recommendedCommand: 'node src/presentation/cli/threadtrace.js run-source-insight-pipeline --source-id source-1',
+          signals: [
+            { severity: 'info', label: 'due' },
+            { severity: 'warning', label: 'runbook' }
+          ],
+          commands: [
+            'node src/presentation/cli/threadtrace.js run-source-insight-pipeline --source-id source-1'
+          ]
+        }
+      ]
     }
   });
 
@@ -156,6 +189,14 @@ test('source operations drilldown aggregates source-scoped health and recent rec
   assert.equal(report.health.workers.leases.expired, 1);
   assert.equal(report.health.authorReviewQueue.highPriorityOpenCount, 1);
   assert.equal(report.health.reviewActions.auditCount, 2);
+  assert.equal(report.attention.found, true);
+  assert.equal(report.attention.attentionRank, 1);
+  assert.equal(report.attention.priorityScore, 92);
+  assert.equal(report.attention.recommendedNextAction, 'run-source-insight-pipeline');
+  assert.equal(report.attention.reportSummary.highestPriorityScore, 92);
+  assert.ok(report.nextActions.some(function (action) {
+    return action.key === 'sourceAttention.priority' && action.severity === 'warning' && /priority 92/.test(action.summary);
+  }));
   assert.ok(report.nextActions.some(function (action) {
     return action.key === 'workers.stale' && action.severity === 'critical';
   }));
@@ -195,4 +236,5 @@ test('source operations drilldown warns for unresolved source scope', async func
   assert.equal(report.sourceFound, false);
   assert.equal(report.scope.sourceKey, 'missing');
   assert.equal(report.nextActions[0].key, 'source.resolve');
+  assert.equal(report.attention, undefined);
 });

@@ -590,7 +590,7 @@ Set `execute: true` or `dryRun: false` to persist the reset. `retryNow: true` se
 
 ### `GET /api/operations/source-drilldown`
 
-Returns a source-scoped operations drill-down for one source id or source key. It correlates the tracked source state, schedule decision, recent source tasks, notification events, worker runs, worker leases, author review queue items, review action audits, review action execution ledger records, and source-specific next actions.
+Returns a source-scoped operations drill-down for one source id or source key. It correlates the tracked source state, schedule decision, source attention priority, recent source tasks, notification events, worker runs, worker leases, author review queue items, review action audits, review action execution ledger records, and source-specific next actions.
 
 Query parameters:
 
@@ -598,14 +598,18 @@ Query parameters:
 sourceId=tracked-source-nga-001
 sourceKey=nga
 limit=50
+attentionLimit=50
 taskScanLimit=250
 leaseScanLimit=250
+sourceRunStaleAfterMs=600000
+sourceFailureRetryBackoffMs=60000
+sourceFailureMaxRetryBackoffMs=3600000
 workerStaleAfterMs=300000
 runningStaleAfterMs=600000
 now=2026-06-18T10:00:00.000Z
 ```
 
-The response is exposed in OpenAPI as `SourceOperationsDrilldown` and reuses `SourceScope`, `WorkerRun`, and `WorkerLease`. HTTP `503` means the source drill-down found a failing signal, such as stale worker runs or stale review action executions. Warnings return `200`.
+The response is exposed in OpenAPI as `SourceOperationsDrilldown` and reuses `SourceScope`, `WorkerRun`, `WorkerLease`, `SourceAttentionSignal`, and `SourceAttentionSummary`. The `attention` field contains the matching source attention item when available, including `attentionRank`, `priorityScore`, `severity`, `recommendedNextAction`, and `recommendedCommand`; the first drill-down next action mirrors that recommendation so operators can move from source list to single-source remediation without rejoining reports. HTTP `503` means the source drill-down found a failing signal, such as stale worker runs or stale review action executions. Warnings return `200`.
 
 ### `GET /api/operations/worker-topology-plan`
 
