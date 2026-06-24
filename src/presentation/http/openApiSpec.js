@@ -952,10 +952,10 @@ function createOpenApiSpec() {
           ],
           responses: {
             200: {
-              description: 'Runbook has no critical actions; source diagnostics repair actions are expanded into source-scoped actions with evidenceSummary when present'
+              description: 'Runbook has no critical actions; source diagnostics repair actions and filtered source readiness actions carry source scope when present'
             },
             503: {
-              description: 'Runbook contains critical actions, including source-scoped diagnostics repair actions when stored sources are broken'
+              description: 'Runbook contains critical actions, including source-scoped diagnostics and source readiness actions when stored sources are broken'
             }
           }
         }

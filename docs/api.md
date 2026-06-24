@@ -420,7 +420,7 @@ Runs a read-only onboarding preflight across connector catalog support, connecto
 
 查询可执行运维 Runbook。它把 deployment checklist、来源诊断修复动作、来源生命周期信号和最近来源洞察流水线运行转换成行动项，包括严重级别、区域、建议命令和证据。
 
-When source diagnostics report stored-source repair actions, the runbook includes source-scoped `sourceDiagnostics.*.<sourceId>` actions. These preserve the diagnostics command list, `sourceId`, structured evidence, and compact `evidenceSummary`, so HTTP clients and notification synthesis can alert on the exact broken source instead of only showing the generic source readiness checklist failure.
+When source diagnostics report stored-source repair actions, the runbook includes source-scoped `sourceDiagnostics.*.<sourceId>` actions. These preserve the diagnostics command list, `sourceId`, structured evidence, and compact `evidenceSummary`, so HTTP clients and notification synthesis can alert on the exact broken source. If the runbook is filtered by `forum` or `sourceKey`, the generic source readiness checklist action also carries that source scope, keeping notification identity and stale resolution isolated by source.
 
 查询参数：
 

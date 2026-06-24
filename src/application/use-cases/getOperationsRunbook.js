@@ -21,7 +21,10 @@ function getOperationsRunbook(options) {
   const recentTasks = safeOptions.recentTasks ||
     (checklist.readiness && checklist.readiness.overview && checklist.readiness.overview.recent && checklist.readiness.overview.recent.tasks) ||
     [];
-  const actions = checklistActions(checklist)
+  const scope = {
+    sourceKey: safeOptions.sourceKey || safeOptions.forum
+  };
+  const actions = checklistActions(checklist, scope)
     .concat(sourceDiagnosticsActions(checklist))
     .concat(connectorModuleActions(checklist))
     .concat(sourceLifecycleActions(safeOptions.sourceLifecycleReport))
@@ -149,7 +152,7 @@ function checklistNotificationEventOverview(checklist) {
   return checklist && checklist.readiness && checklist.readiness.notificationEventOverview;
 }
 
-function checklistActions(checklist) {
+function checklistActions(checklist, scope) {
   return (checklist.items || []).filter(function (item) {
     return item.status !== 'ok';
   }).map(function (item) {
@@ -161,9 +164,18 @@ function checklistActions(checklist) {
       summary: item.summary,
       recommendedCommand: recommendedCommandForChecklistItem(item),
       relatedCommands: relatedCommandsForChecklistItem(item),
-      evidence: item.evidence
+      evidence: checklistActionEvidence(item, scope)
     });
   });
+}
+
+function checklistActionEvidence(item, scope) {
+  const evidence = Object.assign({}, item.evidence || {});
+  const sourceKey = evidence.sourceKey || scope && scope.sourceKey;
+  if (item.area === 'sources' && sourceKey) {
+    evidence.sourceKey = sourceKey;
+  }
+  return evidence;
 }
 
 function sourceDiagnosticsActions(checklist) {
@@ -246,6 +258,7 @@ function pipelineRunActions(runs) {
       evidence: {
         taskId: run.taskId,
         sourceId: run.sourceId,
+        sourceKey: run.sourceKey || run.source && run.source.sourceKey,
         status: run.status,
         semanticStatus: run.semantic && run.semantic.status,
         finishedAt: run.finishedAt

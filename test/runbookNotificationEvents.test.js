@@ -80,6 +80,19 @@ test('runbook notification event id keeps unscoped action key compatibility', fu
   assert.equal(buildRunbookActionEventId(action('checklist.workers.readiness', 'warning')), 'runbook-action-afdda22a04d1');
 });
 
+test('runbook notification event id scopes source checklist actions by source key', function () {
+  const forumA = buildRunbookActionEventId(action('checklist.sources.ingestConfiguration', 'critical', {
+    sourceKey: 'forum-a'
+  }));
+  const forumB = buildRunbookActionEventId(action('checklist.sources.ingestConfiguration', 'critical', {
+    sourceKey: 'forum-b'
+  }));
+  const unscoped = buildRunbookActionEventId(action('checklist.sources.ingestConfiguration', 'critical'));
+
+  assert.notEqual(forumA, forumB);
+  assert.notEqual(forumA, unscoped);
+});
+
 test('runbook notification event synthesis skips acknowledged and delivered events', async function () {
   const saved = [];
   const firstAction = action('source.acked', 'warning');

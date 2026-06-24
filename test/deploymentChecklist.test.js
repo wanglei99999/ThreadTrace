@@ -7,6 +7,7 @@ const { getDeploymentChecklist } = require('../src/application/use-cases/getDepl
 test('deployment checklist aggregates runtime, source, readiness, notification, and llm checks', function () {
   const checklist = getDeploymentChecklist({
     now: '2026-06-19T10:00:00.000Z',
+    sourceKey: 'missing',
     diagnostics: {
       status: 'warn',
       generatedAt: '2026-06-19T10:00:00.000Z',
@@ -148,6 +149,7 @@ test('deployment checklist aggregates runtime, source, readiness, notification, 
     return item.key === 'sources.ingestConfiguration';
   });
   assert.equal(sourceItem.status, 'fail');
+  assert.equal(sourceItem.evidence.sourceKey, 'missing');
   assert.equal(sourceItem.evidence.summary.sourceCount, 2);
   assert.equal(sourceItem.evidence.summary.fail, 1);
   assert.equal(sourceItem.evidence.summary.nextActionCount, 1);

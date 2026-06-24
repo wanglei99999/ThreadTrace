@@ -1175,6 +1175,8 @@ function createThreadTraceRuntime(options) {
         storeDir: safeRequest.storeDir
       });
       return getDeploymentChecklist({
+        forum: safeRequest.forum,
+        sourceKey: safeRequest.sourceKey,
         diagnostics,
         adapterDiagnostics,
         connectorReadiness,
@@ -1247,6 +1249,9 @@ function createThreadTraceRuntime(options) {
         reviewActionGate,
         notificationEventOverview,
         pipelineRuns,
+        forum: safeRequest.forum,
+        sourceKey: safeRequest.sourceKey,
+        sourceId: safeRequest.sourceId,
         now: safeRequest.now
       });
     },

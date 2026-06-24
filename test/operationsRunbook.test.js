@@ -7,6 +7,7 @@ const { getOperationsRunbook } = require('../src/application/use-cases/getOperat
 test('operations runbook turns diagnostics and pipeline failures into actions', function () {
   const runbook = getOperationsRunbook({
     now: '2026-06-19T10:00:00.000Z',
+    sourceKey: 'nga',
     checklist: {
       generatedAt: '2026-06-19T10:00:00.000Z',
       items: [
@@ -52,6 +53,7 @@ test('operations runbook turns diagnostics and pipeline failures into actions', 
   assert.equal(runbook.actionCount, 3);
   assert.equal(runbook.actions[0].key, 'checklist.sources.ingestConfiguration');
   assert.equal(runbook.actions[0].severity, 'critical');
+  assert.equal(runbook.actions[0].evidence.sourceKey, 'nga');
   assert.match(runbook.actions[0].recommendedCommand, /source-ingest-dry-run/);
   assert.match(runbook.actions[0].relatedCommands[0], /source-diagnostics/);
   assert.equal(runbook.actions[1].severity, 'warning');
