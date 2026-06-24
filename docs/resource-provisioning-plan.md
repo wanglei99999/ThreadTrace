@@ -27,7 +27,7 @@ POST /api/operations/resource-provisioning-plan
 
 The body can be a rollout manifest directly, or an object with a `manifest` property and overrides such as `storeDir`, `limit`, `now`, and `workerStaleAfterMs`.
 
-Each resource keeps structured `evidence` for automation and also includes a compact `evidenceSummary` for CLI and web operators. For custom connector manifests this makes source input recognition visible, for example `providedFields=inputFile` or `manifestModulePath=docs/examples/external-connector-package/index.cjs`.
+Each resource keeps structured `evidence` for automation and also includes a compact `evidenceSummary` for CLI and web operators. For custom connector manifests this makes source input recognition visible, for example `providedFields=inputFile`, `requiredFields=inputFile`, or `manifestModulePath=docs/examples/external-connector-package/index.cjs`. When connector validation exposes a handler `requiredLocationFields` contract, missing required source inputs are reported as required resource failures.
 
 ## Planned Resources
 

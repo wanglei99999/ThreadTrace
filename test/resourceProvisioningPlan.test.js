@@ -287,6 +287,112 @@ test('resource provisioning plan includes source and connector requirements from
   assert.equal(reviewActions.evidence.diagnostics.mode, 'file-audit');
 });
 
+
+test('resource provisioning plan fails external source inputs missing handler-required fields', function () {
+  const plan = getResourceProvisioningPlan({
+    config: {
+      storageMode: 'file',
+      http: {
+        host: '127.0.0.1',
+        port: 3017
+      },
+      workers: {
+        sourceTaskMode: 'ingest'
+      },
+      llm: {
+        provider: 'mock'
+      },
+      notifications: {},
+      reviewActions: {
+        executor: 'file-audit'
+      },
+      connectors: {
+        modules: []
+      }
+    },
+    runtimeDiagnostics: {
+      checks: [
+        {
+          key: 'resources.storeDir',
+          status: 'ok',
+          value: 'data/store',
+          summary: 'Store directory is writable.'
+        }
+      ],
+      configuration: {
+        connectors: {
+          errorCount: 0
+        }
+      }
+    },
+    manifest: {
+      source: {
+        sourceKey: 'external-feed',
+        sourceType: 'external-feed',
+        location: {
+          feedUrl: 'https://example.test/feed.json'
+        }
+      }
+    },
+    rolloutManifestPlan: {
+      modulePath: 'D:/connectors/external-feed.cjs',
+      connectorRolloutPlan: {
+        connectorModuleValidation: {
+          contractSummary: {
+            sourceIngestHandlers: [
+              {
+                sourceType: 'external-feed',
+                requiredLocationFields: ['feedUrl', 'tenantId']
+              }
+            ]
+          }
+        }
+      },
+      workerTopologyPlan: {
+        status: 'ok',
+        topology: 'operations-worker',
+        workers: [
+          {
+            command: 'node src/presentation/worker/operationsWorkerMain.js --loop'
+          }
+        ]
+      }
+    },
+    deploymentChecklist: {
+      items: [
+        {
+          key: 'notifications.channel',
+          status: 'ok'
+        },
+        {
+          key: 'llm.configuration',
+          status: 'ok'
+        },
+        {
+          key: 'reviewActions.executor',
+          status: 'ok',
+          evidence: {
+            mode: 'file-audit',
+            ready: true,
+            dryRunOnly: false
+          }
+        }
+      ]
+    }
+  });
+
+  const sourceInput = plan.resources.find(function (item) {
+    return item.key === 'source.externalLocation';
+  });
+
+  assert.equal(plan.status, 'fail');
+  assert.equal(sourceInput.status, 'fail');
+  assert.deepEqual(sourceInput.evidence.requiredFields, ['feedUrl', 'tenantId']);
+  assert.deepEqual(sourceInput.evidence.missingRequiredFields, ['tenantId']);
+  assert.equal(sourceInput.evidence.sourceTypeKnown, true);
+  assert.match(sourceInput.evidenceSummary, /missingRequiredFields=tenantId/);
+  assert.equal(plan.nextActions[0].key, 'source.externalLocation');
+});
 test('runtime resource provisioning plan composes diagnostics and manifest planning', async function () {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-resource-plan-'));
   const runtime = createThreadTraceRuntime({
@@ -352,7 +458,10 @@ test('runtime resource provisioning plan recognizes package connector manifest i
   assert.equal(plan.environment.sourceType, 'package-normalized-feed');
   assert.equal(sourceInput.status, 'ok');
   assert.deepEqual(sourceInput.evidence.providedFields, ['inputFile']);
-  assert.equal(sourceInput.evidenceSummary, 'hasLocation=true, hasUrl=false, providedFields=inputFile');
+  assert.deepEqual(sourceInput.evidence.requiredFields, ['inputFile']);
+  assert.deepEqual(sourceInput.evidence.missingRequiredFields, []);
+  assert.equal(sourceInput.evidence.sourceTypeKnown, true);
+  assert.equal(sourceInput.evidenceSummary, 'hasLocation=true, hasUrl=false, providedFields=inputFile, requiredFields=inputFile, sourceTypeKnown=true');
   assert.equal(connector.required, true);
   assert.equal(connector.status, 'ok');
   assert.match(connector.evidenceSummary, /manifestModulePath=.*external-connector-package/);

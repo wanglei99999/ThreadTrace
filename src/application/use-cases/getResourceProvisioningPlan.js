@@ -9,7 +9,7 @@ function getResourceProvisioningPlan(options) {
   const manifest = safeOptions.manifest || (manifestPlan && manifestPlan.manifest) || {};
   const resources = [
     storageResource(config, diagnostics),
-    sourceInputResource(manifest),
+    sourceInputResource(manifest, manifestPlan),
     connectorModuleResource(config, diagnostics, manifestPlan),
     workerResource(config, checklist, manifestPlan),
     reviewActionExecutorResource(config, checklist),
@@ -82,7 +82,7 @@ function storageResource(config, diagnostics) {
   });
 }
 
-function sourceInputResource(manifest) {
+function sourceInputResource(manifest, manifestPlan) {
   if (!manifest.source) {
     return resource({
       key: 'source.input',
@@ -137,12 +137,14 @@ function sourceInputResource(manifest) {
       provisioning: ['Generate or export JSON that satisfies the ThreadSnapshot JSON contract.']
     });
   }
-  const externalLocationEvidence = externalSourceLocationEvidence(source);
+  const externalLocationEvidence = externalSourceLocationEvidence(source, manifestPlan);
   return resource({
     key: 'source.externalLocation',
     area: 'sources',
     required: true,
-    status: externalLocationEvidence.hasLocation ? 'ok' : 'warn',
+    status: externalLocationEvidence.missingRequiredFields.length > 0
+      ? 'fail'
+      : (externalLocationEvidence.hasLocation ? 'ok' : 'warn'),
     summary: 'Provision source-specific location settings for the connector handler.',
     evidence: externalLocationEvidence,
     env: [],
@@ -151,17 +153,54 @@ function sourceInputResource(manifest) {
   });
 }
 
-function externalSourceLocationEvidence(source) {
+function externalSourceLocationEvidence(source, manifestPlan) {
   const location = source.location || {};
   const fields = ['inputFile', 'inputDir', 'url', 'feedUrl'];
   const providedFields = fields.filter(function (field) {
-    return source[field] || location[field];
+    return hasLocationField(source, location, field);
+  });
+  const handlerSchema = findHandlerLocationSchema(manifestPlan, source.sourceType);
+  const requiredFields = handlerSchema.requiredLocationFields;
+  const missingRequiredFields = requiredFields.filter(function (field) {
+    return !hasLocationField(source, location, field);
   });
   return {
     hasLocation: Boolean(source.location) || providedFields.length > 0,
     hasUrl: Boolean(source.url || location.url),
     providedFields,
-    locationKeys: Object.keys(location)
+    requiredFields,
+    missingRequiredFields,
+    locationKeys: Object.keys(location),
+    sourceTypeKnown: handlerSchema.known
+  };
+}
+
+function hasLocationField(source, location, field) {
+  return source[field] !== undefined && source[field] !== null && source[field] !== '' ||
+    location[field] !== undefined && location[field] !== null && location[field] !== '';
+}
+
+function findHandlerLocationSchema(manifestPlan, sourceType) {
+  const connectorPlan = manifestPlan && manifestPlan.connectorRolloutPlan;
+  const validation = connectorPlan && connectorPlan.connectorModuleValidation;
+  const summary = validation && validation.contractSummary;
+  const handlers = summary && Array.isArray(summary.sourceIngestHandlers)
+    ? summary.sourceIngestHandlers
+    : [];
+  const handler = handlers.find(function (item) {
+    return item.sourceType === sourceType;
+  });
+  if (!handler) {
+    return {
+      known: false,
+      requiredLocationFields: []
+    };
+  }
+  return {
+    known: true,
+    requiredLocationFields: Array.isArray(handler.requiredLocationFields)
+      ? handler.requiredLocationFields
+      : []
   };
 }
 
