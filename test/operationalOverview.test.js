@@ -136,6 +136,14 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
       },
       byAdapter: {
         'file-audit': 2
+      },
+      bySourceKey: {
+        nga: 1,
+        external: 1
+      },
+      bySourceId: {
+        'source-nga': 1,
+        'source-external': 1
       }
     },
     reviewActionExecutions: {
@@ -148,6 +156,8 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
           key: 'context-review-action:v1:context.merge:1',
           action: 'context.merge',
           status: 'running',
+          sourceId: 'source-external',
+          sourceKey: 'external',
           taskId: 'review-action-task-2',
           updatedAt: '2026-06-18T09:40:00.000Z',
           runningAgeMs: 1200000
@@ -158,6 +168,8 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
           key: 'context-review-action:v1:tasks.closure:1',
           action: 'tasks.closure',
           status: 'completed',
+          sourceId: 'source-nga',
+          sourceKey: 'nga',
           taskId: 'review-action-task-1',
           updatedAt: '2026-06-18T09:59:00.000Z'
         },
@@ -165,6 +177,8 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
           key: 'context-review-action:v1:context.merge:1',
           action: 'context.merge',
           status: 'running',
+          sourceId: 'source-external',
+          sourceKey: 'external',
           taskId: 'review-action-task-2',
           updatedAt: '2026-06-18T09:40:00.000Z',
           runningAgeMs: 1200000,
@@ -231,6 +245,8 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
   assert.equal(overview.reviewActions.plannedClosureCount, 1);
   assert.equal(overview.reviewActions.plannedMergeCandidateCount, 1);
   assert.equal(overview.reviewActions.latestGeneratedAt, '2026-06-18T09:58:00.000Z');
+  assert.equal(overview.reviewActions.bySourceKey.nga, 1);
+  assert.equal(overview.reviewActions.bySourceKey.external, 1);
   assert.equal(overview.reviewActions.executions.count, 2);
   assert.equal(overview.reviewActions.executions.completed, 1);
   assert.equal(overview.reviewActions.executions.running, 1);
@@ -238,5 +254,8 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
   assert.equal(overview.reviewActions.executions.failed, 0);
   assert.equal(overview.reviewActions.executions.latestUpdatedAt, '2026-06-18T09:59:00.000Z');
   assert.equal(overview.reviewActions.executions.runningStaleAfterMs, 600000);
+  assert.equal(overview.reviewActions.executions.bySourceKey.nga, 1);
+  assert.equal(overview.reviewActions.executions.bySourceKey.external, 1);
+  assert.equal(overview.reviewActions.executions.staleRunningBySourceKey.external, 1);
   assert.equal(overview.reviewActions.executions.staleRunningExecutions[0].taskId, 'review-action-task-2');
 });

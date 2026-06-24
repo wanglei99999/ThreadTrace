@@ -899,9 +899,11 @@ function createOpenApiSpec() {
       },
       '/api/operations/overview': {
         get: {
-          summary: 'Get operational overview across sources, tasks, events, and raw pages',
-          parameters: [
-            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            summary: 'Get operational overview across sources, tasks, events, and raw pages',
+            parameters: [
+              { name: 'sourceId', in: 'query', required: false, schema: { type: 'string' } },
+              { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+              { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
             { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
             { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
           ],

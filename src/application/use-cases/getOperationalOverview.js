@@ -87,17 +87,25 @@ function summarizeReviewActions(options) {
   const executionOverview = summarizeReviewActionExecutions(safeOptions.executions);
   if (!overview) {
     return {
+      sourceId: undefined,
+      sourceKey: undefined,
       auditCount: 0,
       taskCount: 0,
       plannedClosureCount: 0,
       plannedMergeCandidateCount: 0,
       latestGeneratedAt: undefined,
       status: 'unknown',
+      byAction: {},
+      byAdapter: {},
+      bySourceKey: {},
+      bySourceId: {},
       executions: executionOverview
     };
   }
   return {
     status: overview.status,
+    sourceId: overview.sourceId,
+    sourceKey: overview.sourceKey,
     auditCount: overview.count || 0,
     taskCount: overview.taskCount || 0,
     plannedClosureCount: overview.plannedClosureCount || 0,
@@ -105,6 +113,8 @@ function summarizeReviewActions(options) {
     latestGeneratedAt: overview.latestGeneratedAt,
     byAction: overview.byAction || {},
     byAdapter: overview.byAdapter || {},
+    bySourceKey: overview.bySourceKey || {},
+    bySourceId: overview.bySourceId || {},
     recommendedNextAction: overview.recommendedNextAction,
     executions: executionOverview
   };
@@ -129,6 +139,11 @@ function summarizeReviewActionExecutions(result) {
       return execution.updatedAt || execution.completedAt || execution.failedAt || execution.createdAt;
     })),
     latestTaskId: executions[0] && executions[0].taskId,
+    sourceId: result && result.sourceId,
+    sourceKey: result && result.sourceKey,
+    bySourceKey: countBy(executions, function (execution) { return execution.sourceKey || 'unknown'; }),
+    bySourceId: countBy(executions, function (execution) { return execution.sourceId || 'unknown'; }),
+    staleRunningBySourceKey: countBy(staleRunningExecutions, function (execution) { return execution.sourceKey || 'unknown'; }),
     runningStaleAfterMs: result && result.runningStaleAfterMs,
     staleRunningExecutions,
     message: result && result.message

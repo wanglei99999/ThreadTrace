@@ -1039,10 +1039,14 @@ function createThreadTraceRuntime(options) {
         contextReviewActionAuditRepository: createFileContextReviewActionAuditRepository({
           baseDir: path.join(storeDir, 'review-action-audits')
         }),
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
         limit: safeRequest.limit || 100,
         now: safeRequest.now
       });
       const reviewActionExecutions = await listReviewActionExecutionsFor({
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
         limit: safeRequest.limit || 100,
         now: safeRequest.now,
         runningStaleAfterMs: safeRequest.runningStaleAfterMs,

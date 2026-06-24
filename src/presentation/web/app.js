@@ -2499,6 +2499,7 @@ function renderContextReviewActionAuditPanel(result) {
     tiles,
     metric('Generated', overview.generatedAt || 'unknown'),
     metric('Latest audit', overview.latestGeneratedAt || 'none'),
+    metric('Sources', compactCountMap(overview.bySourceKey)),
     metric('Next action', overview.recommendedNextAction || 'none'),
     renderContextReviewActionAuditRows(audits)
   ].join(''), 'wide');
@@ -2524,6 +2525,8 @@ function renderContextReviewActionExecutionPanel(result) {
     tiles,
     metric('Generated', result.generatedAt || 'unknown'),
     metric('Stale window', result.runningStaleAfterMs === undefined ? 'unknown' : result.runningStaleAfterMs + ' ms'),
+    metric('Sources', compactCountMap(result.bySourceKey)),
+    metric('Stale sources', compactCountMap(result.staleRunningBySourceKey)),
     result.message ? '<div class="muted">' + escapeHtml(result.message) + '</div>' : '',
     renderContextReviewActionExecutionRows(executions)
   ].join(''), 'wide');
@@ -2695,6 +2698,8 @@ function renderContextReviewActionAuditRows(audits) {
     const request = audit.request || {};
     const details = [
       audit.generatedAt,
+      audit.sourceKey ? 'source=' + audit.sourceKey : undefined,
+      audit.sourceId ? 'sourceId=' + audit.sourceId : undefined,
       request.taskId ? 'task=' + request.taskId : undefined,
       request.closeTaskIds ? 'close=' + request.closeTaskIds.length : undefined,
       request.mergeCandidates ? 'merge=' + request.mergeCandidates.length : undefined
@@ -2714,6 +2719,8 @@ function renderContextReviewActionExecutionRows(executions) {
   return executions.map(function (execution) {
     const details = [
       execution.updatedAt || execution.createdAt,
+      execution.sourceKey ? 'source=' + execution.sourceKey : undefined,
+      execution.sourceId ? 'sourceId=' + execution.sourceId : undefined,
       execution.taskId ? 'task=' + execution.taskId : undefined,
       execution.requestHash ? 'hash=' + String(execution.requestHash).slice(0, 12) : undefined,
       execution.attemptCount ? 'attempts=' + execution.attemptCount : undefined,
@@ -3040,6 +3047,7 @@ function reviewActionStatusSummary(reviewActions) {
     'executions ' + (executions.count || 0),
     'running ' + (executions.running || 0),
     'failed ' + (executions.failed || 0),
+    'sources ' + compactCountMap(summary.bySourceKey || executions.bySourceKey),
     'latest ' + (summary.latestGeneratedAt || executions.latestUpdatedAt || 'none')
   ].join(' · ');
 }
@@ -3051,6 +3059,16 @@ function authorReviewQueueStatusSummary(queue) {
     'high ' + (summary.highPriorityOpenCount || 0),
     'latest ' + (summary.latestUpdatedAt || 'none')
   ].join(' · ');
+}
+
+function compactCountMap(counts) {
+  const entries = Object.entries(counts || {}).filter(function (entry) {
+    return entry[1] > 0;
+  });
+  if (entries.length === 0) return 'none';
+  return entries.slice(0, 4).map(function (entry) {
+    return entry[0] + ':' + entry[1];
+  }).join(', ') + (entries.length > 4 ? ', +' + String(entries.length - 4) : '');
 }
 
 async function requestJson(url, body, options) {

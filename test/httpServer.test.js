@@ -589,12 +589,14 @@ test('http server runs and lists persisted semantic enrichment reports', async f
 });
 
 test('http server exposes operational overview API', async function () {
+  const calls = [];
   const server = createThreadTraceServer({
     runtime: {
       listAdapters() {
         return [{ sourceKey: 'nga', displayName: 'NGA' }];
       },
       async getOperationalOverview(request) {
+        calls.push(request);
         return {
           generatedAt: request.now || '2026-06-18T10:00:00.000Z',
           storageMode: 'file',
@@ -612,9 +614,12 @@ test('http server exposes operational overview API', async function () {
   const baseUrl = 'http://127.0.0.1:' + address.port;
 
   try {
-    const overview = await getJson(baseUrl + '/api/operations/overview?limit=10');
+    const overview = await getJson(baseUrl + '/api/operations/overview?sourceKey=nga&sourceId=source-1&limit=10');
 
     assert.equal(overview.storageMode, 'file');
+    assert.equal(calls[0].sourceKey, 'nga');
+    assert.equal(calls[0].sourceId, 'source-1');
+    assert.equal(calls[0].limit, 10);
     assert.equal(overview.sources.due, 1);
     assert.equal(overview.tasks.failed, 1);
     assert.equal(overview.events.dueForDelivery, 1);

@@ -330,6 +330,9 @@ function main(argv) {
   if (command === 'operations-overview') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.getOperationalOverview({
+      forum: options.forum,
+      sourceKey: options.sourceKey,
+      sourceId: options.sourceId,
       limit: options.limit ? Number(options.limit) : 100,
       now: options.now,
       storeDir,
@@ -342,9 +345,11 @@ function main(argv) {
       console.log('Workers: running=' + overview.workers.running + ', stale=' + overview.workers.stale + ', failed=' + overview.workers.failed + ', latestHeartbeat=' + (overview.workers.latestHeartbeatAt || 'none'));
       console.log('Worker leases: active=' + overview.workers.leases.active + ', expired=' + overview.workers.leases.expired);
       console.log('Raw pages: total=' + overview.rawPages.total + ', latest=' + (overview.rawPages.latestFetchedAt || 'none'));
-      console.log('Author review queue: open=' + (overview.authorReviewQueue.openCount || 0) + ', high=' + (overview.authorReviewQueue.highPriorityOpenCount || 0) + ', latest=' + (overview.authorReviewQueue.latestUpdatedAt || 'none'));
-      console.log('Review action executions: total=' + overview.reviewActions.executions.count + ', running=' + overview.reviewActions.executions.running + ', staleRunning=' + overview.reviewActions.executions.staleRunning + ', failed=' + overview.reviewActions.executions.failed);
-    }).catch(function (error) {
+        console.log('Author review queue: open=' + (overview.authorReviewQueue.openCount || 0) + ', high=' + (overview.authorReviewQueue.highPriorityOpenCount || 0) + ', latest=' + (overview.authorReviewQueue.latestUpdatedAt || 'none'));
+        console.log('Review action audits: total=' + overview.reviewActions.auditCount + ', sources=' + JSON.stringify(overview.reviewActions.bySourceKey || {}));
+        console.log('Review action executions: total=' + overview.reviewActions.executions.count + ', running=' + overview.reviewActions.executions.running + ', staleRunning=' + overview.reviewActions.executions.staleRunning + ', failed=' + overview.reviewActions.executions.failed);
+        console.log('Review action execution sources: ' + JSON.stringify(overview.reviewActions.executions.bySourceKey || {}));
+      }).catch(function (error) {
       console.error(error && error.stack ? error.stack : error);
       process.exitCode = 1;
     });
@@ -2548,7 +2553,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js list-author-review-queue [--status open|confirmed|ignored] [--source-key key] [--type type] [--priority high|medium|low] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js set-author-review-queue-status --item-id id --status open|confirmed|ignored [--reviewed-by id] [--note text] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-semantic-enrichment-task --source-thread-id id [--source-key nga] [--provider mock] [--store-dir dir]');
-  console.log('  node src/presentation/cli/threadtrace.js operations-overview [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js operations-overview [--forum nga] [--source-key key] [--source-id id] [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-readiness [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-lifecycle-report [--forum nga] [--enabled true] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-schedule-report [--forum nga] [--enabled true] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
