@@ -625,6 +625,30 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/operations/source-attention') {
+    const enabledParam = url.searchParams.get('enabled');
+    const report = await context.runtime.getSourceAttentionReport({
+      forum: url.searchParams.get('forum') || undefined,
+      sourceKey: url.searchParams.get('sourceKey') || undefined,
+      sourceId: url.searchParams.get('sourceId') || undefined,
+      enabled: enabledParam === null ? undefined : enabledParam === 'true',
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,
+      attentionLimit: url.searchParams.get('attentionLimit') ? Number(url.searchParams.get('attentionLimit')) : undefined,
+      pipelineLimit: url.searchParams.get('pipelineLimit') ? Number(url.searchParams.get('pipelineLimit')) : 20,
+      eventLimit: url.searchParams.get('eventLimit') ? Number(url.searchParams.get('eventLimit')) : undefined,
+      maxAttempts: url.searchParams.get('maxAttempts') ? Number(url.searchParams.get('maxAttempts')) : undefined,
+      taskLimit: url.searchParams.get('taskLimit') ? Number(url.searchParams.get('taskLimit')) : undefined,
+      sourceRunStaleAfterMs: url.searchParams.get('sourceRunStaleAfterMs') ? Number(url.searchParams.get('sourceRunStaleAfterMs')) : undefined,
+      sourceFailureRetryBackoffMs: url.searchParams.get('sourceFailureRetryBackoffMs') ? Number(url.searchParams.get('sourceFailureRetryBackoffMs')) : undefined,
+      sourceFailureMaxRetryBackoffMs: url.searchParams.get('sourceFailureMaxRetryBackoffMs') ? Number(url.searchParams.get('sourceFailureMaxRetryBackoffMs')) : undefined,
+      runningStaleAfterMs: url.searchParams.get('runningStaleAfterMs') ? Number(url.searchParams.get('runningStaleAfterMs')) : undefined,
+      now: url.searchParams.get('now') || undefined,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, report.status === 'fail' ? 503 : 200, report);
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/operations/runbook/events') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     const result = await context.runtime.synthesizeRunbookNotificationEvents({

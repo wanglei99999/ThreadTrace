@@ -45,6 +45,7 @@ const { resetTrackedSourceFailure } = require('../application/use-cases/resetTra
 const { runResetTrackedSourceFailureTask } = require('../application/use-cases/runResetTrackedSourceFailureTask');
 const { getSourceLifecycleReport } = require('../application/use-cases/getSourceLifecycleReport');
 const { getSourceScheduleReport } = require('../application/use-cases/getSourceScheduleReport');
+const { getSourceAttentionReport } = require('../application/use-cases/getSourceAttentionReport');
 const { getOperationalOverview } = require('../application/use-cases/getOperationalOverview');
 const { getSourceOperationsDrilldown } = require('../application/use-cases/getSourceOperationsDrilldown');
 const { getNotificationEventOverview } = require('../application/use-cases/getNotificationEventOverview');
@@ -1156,6 +1157,41 @@ function createThreadTraceRuntime(options) {
         sourceRunStaleAfterMs: resolveSourceRunStaleAfterMs(safeRequest, runtimeConfig),
         sourceFailureRetryBackoffMs: resolveSourceFailureRetryBackoffMs(safeRequest, runtimeConfig),
         sourceFailureMaxRetryBackoffMs: resolveSourceFailureMaxRetryBackoffMs(safeRequest, runtimeConfig),
+        now: safeRequest.now
+      });
+    },
+
+    async getSourceAttentionReport(request) {
+      const safeRequest = request || {};
+      const commonRequest = {
+        forum: safeRequest.forum,
+        sourceKey: safeRequest.sourceKey,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 100,
+        sourceRunStaleAfterMs: safeRequest.sourceRunStaleAfterMs,
+        sourceFailureRetryBackoffMs: safeRequest.sourceFailureRetryBackoffMs,
+        sourceFailureMaxRetryBackoffMs: safeRequest.sourceFailureMaxRetryBackoffMs,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir
+      };
+      const lifecycleReport = await this.getSourceLifecycleReport(Object.assign({}, commonRequest, {
+        taskLimit: safeRequest.taskLimit || safeRequest.limit || 100
+      }));
+      const scheduleReport = await this.getSourceScheduleReport(commonRequest);
+      const operationsRunbook = await this.getOperationsRunbook(Object.assign({}, commonRequest, {
+        sourceId: safeRequest.sourceId,
+        pipelineLimit: safeRequest.pipelineLimit || 20,
+        eventLimit: safeRequest.eventLimit,
+        maxAttempts: safeRequest.maxAttempts,
+        taskLimit: safeRequest.taskLimit || safeRequest.limit || 100,
+        runningStaleAfterMs: safeRequest.runningStaleAfterMs,
+        workerStaleAfterMs: safeRequest.workerStaleAfterMs
+      }));
+      return getSourceAttentionReport({
+        scheduleReport,
+        lifecycleReport,
+        operationsRunbook,
+        limit: safeRequest.attentionLimit || safeRequest.limit || 100,
         now: safeRequest.now
       });
     },

@@ -790,12 +790,16 @@ async function loadSourceOperations() {
       }),
       fetchJson('/api/operations/runbook?limit=100', {
         acceptErrorStatus: true
+      }),
+      fetchJson('/api/operations/source-attention?limit=100', {
+        acceptErrorStatus: true
       })
     ]).then(function (results) {
       return {
         lifecycle: results[0],
         schedule: results[1],
-        runbook: results[2]
+        runbook: results[2],
+        attention: results[3]
       };
     });
   }, renderSourceOperations);
@@ -2446,6 +2450,7 @@ function renderSourceOperations(result) {
   const lifecycle = result.lifecycle || {};
   const schedule = result.schedule || {};
   const runbook = result.runbook || {};
+  const attention = result.attention || {};
   const lifecycleSummary = lifecycle.summary || {};
   const scheduleSummary = schedule.summary || {};
   const actions = runbook.actions || [];
@@ -2471,7 +2476,7 @@ function renderSourceOperations(result) {
       '</div>',
       renderRunbookEventControls(alertableCount)
     ].join(''), 'wide'),
-    panel('Source attention', renderSourceAttentionRows(buildSourceAttention(result)), 'wide'),
+    panel('Source attention', renderSourceAttentionRows(attention.sources || buildSourceAttention(result)), 'wide'),
     panel('Due sources', renderScheduleDecisionRows(schedule.dueSources || [], 'No due sources.', true), 'wide'),
     panel('Skipped sources', renderScheduleDecisionRows((schedule.skippedSources || []).slice(0, 10), 'No skipped sources.', false), 'wide'),
     panel('Lifecycle attention', renderLifecycleAttentionRows(lifecycle.sources || []), 'wide')

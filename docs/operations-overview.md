@@ -17,6 +17,7 @@ HTTP:
 GET /api/operations/overview
 GET /api/operations/overview?sourceKey=nga
 GET /api/operations/source-drilldown?sourceId=tracked-source-nga-001
+GET /api/operations/source-attention
 GET /api/operations/readiness
 GET /api/operations/trace-context
 GET /api/operations/runbook
@@ -39,6 +40,7 @@ Runtime:
 ```js
 runtime.getOperationalOverview({ limit: 100 })
 runtime.getSourceOperationsDrilldown({ sourceId: 'tracked-source-nga-001' })
+runtime.getSourceAttentionReport({ limit: 100 })
 runtime.getOperationalReadiness({ limit: 100 })
 runtime.getOperationsRunbook({ limit: 100 })
 runtime.synthesizeRunbookNotificationEvents({ execute: false })

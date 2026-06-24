@@ -175,6 +175,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /Source attention/);
     assert.match(webAppJs, /buildSourceAttention/);
     assert.match(webAppJs, /renderSourceAttentionRows/);
+    assert.match(webAppJs, /operations\/source-attention/);
     assert.match(webAppJs, /synthesize-runbook-events/);
     assert.match(webAppJs, /synthesize-author-review-queue-events/);
     assert.match(webAppJs, /operations\/runbook\/events/);
@@ -240,6 +241,11 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.components.schemas.WorkerRun.properties.scoped.type, 'boolean');
     assert.equal(openApi.paths['/api/operations/source-drilldown'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceOperationsDrilldown');
     assert.equal(openApi.paths['/api/operations/source-drilldown'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/SourceOperationsDrilldown');
+    assert.equal(openApi.paths['/api/operations/source-attention'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceAttentionReport');
+    assert.equal(openApi.paths['/api/operations/source-attention'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/SourceAttentionReport');
+    assert.equal(openApi.components.schemas.SourceAttentionReport.properties.sources.items.$ref, '#/components/schemas/SourceAttentionItem');
+    assert.equal(openApi.components.schemas.SourceAttentionItem.properties.signals.items.$ref, '#/components/schemas/SourceAttentionSignal');
+    assert.equal(openApi.components.schemas.SourceAttentionSummary.properties.bySignal.additionalProperties.type, 'number');
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.scope.$ref, '#/components/schemas/SourceScope');
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.recent.properties.workerRuns.items.$ref, '#/components/schemas/WorkerRun');
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.health.properties.authorReviewQueue.$ref, '#/components/schemas/AuthorReviewQueueSummary');
@@ -861,6 +867,74 @@ test('http server exposes source operations drilldown API', async function () {
     assert.equal(calls[0].limit, 10);
     assert.equal(calls[0].taskScanLimit, 20);
     assert.equal(calls[0].leaseScanLimit, 30);
+  } finally {
+    await close(server);
+  }
+});
+
+test('http server exposes source attention API', async function () {
+  const calls = [];
+  const server = createThreadTraceServer({
+    runtime: {
+      listAdapters() {
+        return [{ sourceKey: 'nga', displayName: 'NGA' }];
+      },
+      async getSourceAttentionReport(request) {
+        calls.push(request);
+        return {
+          generatedAt: request.now || '2026-06-25T10:00:00.000Z',
+          status: 'warn',
+          windowLimit: request.attentionLimit || request.limit,
+          summary: {
+            total: 1,
+            critical: 0,
+            warning: 1,
+            info: 0,
+            muted: 0,
+            runnable: 0,
+            bySignal: {
+              'retry wait': 1
+            },
+            bySourceKey: {
+              nga: 1
+            }
+          },
+          sources: [
+            {
+              key: 'sourceId:source-1',
+              source: {
+                id: request.sourceId,
+                sourceKey: request.sourceKey,
+                displayName: 'NGA sample'
+              },
+              severity: 'warning',
+              signalCount: 1,
+              runnable: false,
+              signals: [
+                { severity: 'warning', label: 'retry wait' }
+              ],
+              commands: []
+            }
+          ]
+        };
+      }
+    }
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const report = await getJson(baseUrl + '/api/operations/source-attention?sourceKey=nga&sourceId=source-1&limit=10&attentionLimit=5&sourceFailureRetryBackoffMs=60000');
+
+    assert.equal(report.status, 'warn');
+    assert.equal(report.summary.bySignal['retry wait'], 1);
+    assert.equal(report.sources[0].source.id, 'source-1');
+    assert.equal(calls[0].sourceKey, 'nga');
+    assert.equal(calls[0].sourceId, 'source-1');
+    assert.equal(calls[0].limit, 10);
+    assert.equal(calls[0].attentionLimit, 5);
+    assert.equal(calls[0].sourceFailureRetryBackoffMs, 60000);
   } finally {
     await close(server);
   }

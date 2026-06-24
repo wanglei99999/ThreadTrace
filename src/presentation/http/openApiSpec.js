@@ -1101,6 +1101,51 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/operations/source-attention': {
+        get: {
+          summary: 'Get source-level attention rows merged from schedule, lifecycle, and runbook signals',
+          parameters: [
+            { name: 'forum', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'enabled', in: 'query', required: false, schema: { type: 'boolean' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'attentionLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'pipelineLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'eventLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'maxAttempts', in: 'query', required: false, schema: { type: 'number', example: 3 } },
+            { name: 'taskLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'sourceRunStaleAfterMs', in: 'query', required: false, schema: { type: 'number', example: 600000 } },
+            { name: 'sourceFailureRetryBackoffMs', in: 'query', required: false, schema: { type: 'number', example: 60000 } },
+            { name: 'sourceFailureMaxRetryBackoffMs', in: 'query', required: false, schema: { type: 'number', example: 3600000 } },
+            { name: 'runningStaleAfterMs', in: 'query', required: false, schema: { type: 'number', example: 600000 } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Source attention report has no critical source signals',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceAttentionReport'
+                  }
+                }
+              }
+            },
+            503: {
+              description: 'Source attention report contains at least one critical source signal',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceAttentionReport'
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       '/api/operations/runbook/events': {
         post: {
           summary: 'Dry-run or execute synthesis of operations runbook actions into notification outbox events',
@@ -3472,6 +3517,102 @@ function createOpenApiSpec() {
             sources: {
               type: 'array',
               items: { $ref: '#/components/schemas/SourceScheduleItem' }
+            }
+          }
+        },
+        SourceAttentionSignal: {
+          type: 'object',
+          properties: {
+            severity: { type: 'string', enum: ['critical', 'warning', 'warn', 'info', 'ok', 'muted'] },
+            label: { type: 'string', example: 'retry wait' },
+            summary: { type: 'string' },
+            reason: { type: 'string', example: 'waiting-failure-backoff' },
+            action: { type: 'string', example: 'wait-for-failure-backoff' },
+            actionKey: { type: 'string' },
+            retryAt: { type: 'string', example: '2026-06-18T10:01:00.000Z' },
+            backoffMs: { type: 'number', example: 120000 }
+          }
+        },
+        SourceAttentionSource: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            sourceKey: { type: 'string', example: 'nga' },
+            sourceType: { type: 'string', example: 'saved-html-directory' },
+            displayName: { type: 'string' },
+            enabled: { type: 'boolean' },
+            runState: { $ref: '#/components/schemas/SourceRunState' },
+            disableGuard: {
+              type: 'object',
+              additionalProperties: true
+            },
+            failureRetry: {
+              type: 'object',
+              additionalProperties: true
+            },
+            nextAction: { type: 'string' },
+            recommendedCommands: {
+              type: 'array',
+              items: { type: 'string' }
+            }
+          }
+        },
+        SourceAttentionItem: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', example: 'sourceId:tracked-source-nga-001' },
+            source: { $ref: '#/components/schemas/SourceAttentionSource' },
+            severity: { type: 'string', enum: ['critical', 'warning', 'warn', 'info', 'ok', 'muted'] },
+            signalCount: { type: 'number', example: 2 },
+            runnable: { type: 'boolean' },
+            signals: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceAttentionSignal' }
+            },
+            commands: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            nextAction: { type: 'string' }
+          }
+        },
+        SourceAttentionSummary: {
+          type: 'object',
+          properties: {
+            total: { type: 'number', example: 2 },
+            critical: { type: 'number', example: 0 },
+            warning: { type: 'number', example: 1 },
+            info: { type: 'number', example: 1 },
+            muted: { type: 'number', example: 0 },
+            runnable: { type: 'number', example: 1 },
+            bySignal: {
+              type: 'object',
+              additionalProperties: { type: 'number' }
+            },
+            bySourceKey: {
+              type: 'object',
+              additionalProperties: { type: 'number' }
+            }
+          }
+        },
+        SourceAttentionReport: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            windowLimit: { type: 'number', example: 100 },
+            summary: { $ref: '#/components/schemas/SourceAttentionSummary' },
+            sources: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceAttentionItem' }
+            },
+            inputs: {
+              type: 'object',
+              properties: {
+                scheduleGeneratedAt: { type: 'string' },
+                lifecycleGeneratedAt: { type: 'string' },
+                runbookGeneratedAt: { type: 'string' }
+              }
             }
           }
         },
