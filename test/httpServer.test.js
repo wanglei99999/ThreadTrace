@@ -164,6 +164,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(homeHtml, /sourceOperationsResult/);
     assert.match(homeHtml, /sourceOperationActionResult/);
     assert.match(homeHtml, /author-review-queue/);
+    assert.match(homeHtml, /source-attention/);
     assert.match(webAppJs, /set-source-enabled/);
     assert.match(webAppJs, /Disable check/);
     assert.match(webAppJs, /run-source-pipeline/);
