@@ -170,6 +170,9 @@ create index if not exists idx_notification_events_ack on notification_events(ac
 create index if not exists idx_notification_events_source on notification_events(source_id);
 create index if not exists idx_notification_events_source_key on notification_events(source_key);
 create index if not exists idx_notification_events_archive on notification_events(archived_at);
+create index if not exists idx_notification_events_dispatch_due on notification_events(delivery_status, next_delivery_at, created_at desc) where archived_at is null and acknowledged_at is null;
+create index if not exists idx_notification_events_dispatch_source on notification_events(source_id, delivery_status, next_delivery_at, created_at desc) where archived_at is null and acknowledged_at is null;
+create index if not exists idx_notification_events_dispatch_source_key on notification_events(source_key, delivery_status, next_delivery_at, created_at desc) where archived_at is null and acknowledged_at is null;
 
 create table if not exists retrieval_documents (
   id text primary key,

@@ -37,6 +37,24 @@ test('postgres baseline schema can remediate diagnostic-required resources', asy
   });
 });
 
+test('postgres baseline schema includes source-scoped notification dispatch indexes', async function () {
+  const schemaSql = await fs.readFile(path.resolve(__dirname, '..', 'docs', 'postgresql-schema.sql'), 'utf8');
+  const normalized = schemaSql.replace(/\s+/g, ' ').toLowerCase();
+
+  assert.match(
+    normalized,
+    /create index if not exists idx_notification_events_dispatch_due on notification_events\(delivery_status, next_delivery_at, created_at desc\) where archived_at is null and acknowledged_at is null/
+  );
+  assert.match(
+    normalized,
+    /create index if not exists idx_notification_events_dispatch_source on notification_events\(source_id, delivery_status, next_delivery_at, created_at desc\) where archived_at is null and acknowledged_at is null/
+  );
+  assert.match(
+    normalized,
+    /create index if not exists idx_notification_events_dispatch_source_key on notification_events\(source_key, delivery_status, next_delivery_at, created_at desc\) where archived_at is null and acknowledged_at is null/
+  );
+});
+
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
