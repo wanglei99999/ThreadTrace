@@ -2442,6 +2442,10 @@ function printAuthorIntelligenceDashboard(dashboard) {
   console.log('Review queue: ' + ((dashboard.reviewQueue || []).length));
   console.log('Review priority: ' + formatCountSummary(summary.reviewQueuePriorityCounts));
   console.log('Review types: ' + formatCountSummary(summary.reviewQueueTypeCounts));
+  console.log('Review sources: ' + formatCountSummary(summary.reviewQueueBySourceKey));
+  (dashboard.sourceReviewPressure || []).slice(0, 5).forEach(function (item) {
+    console.log('  source ' + (item.sourceKey || 'unknown-source') + '\tqueue=' + (item.reviewQueueCount || 0) + '\thigh=' + (item.highPriorityReviewQueueCount || 0) + '\tthreads=' + (item.threadCount || 0) + '\tgaps=' + (item.evidenceGapCount || 0));
+  });
   (dashboard.reviewQueue || []).slice(0, 10).forEach(function (item) {
     const ref = (item.refs || [])[0] || {};
     const location = [ref.sourceThreadId ? 'thread=' + ref.sourceThreadId : undefined, ref.floor === undefined ? undefined : '#' + ref.floor].filter(Boolean).join(' ');
@@ -2474,11 +2478,16 @@ function printAuthorIntelligenceDashboard(dashboard) {
 
 function printAuthorReviewQueueResult(result) {
   const summary = result.summary || {};
+  const sourceCounts = Object.keys(summary.openBySourceKey || {}).length > 0 ? summary.openBySourceKey : summary.bySourceKey;
   console.log('Author review queue: ' + (result.status || 'ok'));
   console.log('Items: ' + (result.itemCount || 0) + '\topen=' + (summary.openCount || 0));
   console.log('Status: ' + formatCountSummary(summary.byStatus));
   console.log('Priority: ' + formatCountSummary(summary.byPriority));
   console.log('Types: ' + formatCountSummary(summary.byType));
+  console.log('Sources: ' + formatCountSummary(sourceCounts));
+  (summary.sourceHotspots || []).slice(0, 5).forEach(function (item) {
+    console.log('  source ' + (item.sourceKey || 'unknown-source') + '\topen=' + (item.openCount || 0) + '\thigh=' + (item.highPriorityOpenCount || 0) + '\titems=' + (item.itemCount || 0));
+  });
   if (result.createdCount !== undefined || result.updatedCount !== undefined) {
     console.log('Sync: created=' + (result.createdCount || 0) + '\tupdated=' + (result.updatedCount || 0));
   }

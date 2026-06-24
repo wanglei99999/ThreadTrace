@@ -75,6 +75,11 @@ async function getAuthorIntelligenceDashboard(options) {
   const reviewQueueTypeCounts = countBy(reviewQueue, function (item) {
     return item.type || 'unknown';
   });
+  const sourceReviewPressure = summarizeSourceReviewPressure({
+    threads,
+    authors,
+    reviewQueue
+  });
 
   return {
     generatedAt: now,
@@ -97,8 +102,14 @@ async function getAuthorIntelligenceDashboard(options) {
       highSignalEvidenceCount: evidenceRows.length,
       reviewQueueCount: reviewQueue.length,
       reviewQueuePriorityCounts,
-      reviewQueueTypeCounts
+      reviewQueueTypeCounts,
+      reviewQueueBySourceKey: countBy(reviewQueue, reviewItemSourceKey),
+      highPriorityReviewQueueBySourceKey: countBy(reviewQueue.filter(function (item) {
+        return item.priority === 'high';
+      }), reviewItemSourceKey),
+      sourceCount: sourceReviewPressure.length
     },
+    sourceReviewPressure,
     authors,
     focusEntities,
     opinionTimeline: timeline,
@@ -138,8 +149,12 @@ function emptyDashboard(options) {
       highSignalEvidenceCount: 0,
       reviewQueueCount: 0,
       reviewQueuePriorityCounts: {},
-      reviewQueueTypeCounts: {}
+      reviewQueueTypeCounts: {},
+      reviewQueueBySourceKey: {},
+      highPriorityReviewQueueBySourceKey: {},
+      sourceCount: 0
     },
+    sourceReviewPressure: [],
     authors: [],
     focusEntities: [],
     opinionTimeline: [],
@@ -523,6 +538,99 @@ function finalizeEntitySummary(summary) {
   };
 }
 
+function summarizeSourceReviewPressure(input) {
+  const bySource = new Map();
+
+  (input.threads || []).forEach(function (thread) {
+    const summary = sourcePressureSummaryFor(bySource, thread.sourceKey);
+    summary.threadKeys.add(thread.key);
+    if (thread.sourceThreadId) summary.sourceThreadIds.add(thread.sourceThreadId);
+    summary.latestGeneratedAt = latestTimestamp([summary.latestGeneratedAt, thread.generatedAt]);
+  });
+
+  (input.authors || []).forEach(function (author) {
+    const summary = sourcePressureSummaryFor(bySource, author.sourceKey || author.author && author.author.sourceKey);
+    summary.authorKeys.add(author.key);
+    summary.opinionCount += numeric(author.opinionCount);
+    summary.evidenceGapCount += numeric(author.evidenceGapCount);
+    (author.threads || []).forEach(function (thread) {
+      if (thread && thread.key) summary.threadKeys.add(thread.key);
+      if (thread && thread.sourceThreadId) summary.sourceThreadIds.add(thread.sourceThreadId);
+      summary.latestGeneratedAt = latestTimestamp([summary.latestGeneratedAt, thread && thread.generatedAt]);
+    });
+  });
+
+  (input.reviewQueue || []).forEach(function (item) {
+    const ref = firstReviewRef(item);
+    const summary = sourcePressureSummaryFor(bySource, reviewItemSourceKey(item));
+    summary.reviewQueueCount += 1;
+    if (item.priority === 'high') summary.highPriorityReviewQueueCount += 1;
+    summary.reviewQueuePriorityCounts[item.priority || 'unknown'] = numeric(summary.reviewQueuePriorityCounts[item.priority || 'unknown']) + 1;
+    summary.reviewQueueTypeCounts[item.type || 'unknown'] = numeric(summary.reviewQueueTypeCounts[item.type || 'unknown']) + 1;
+    if (ref.sourceThreadId || item.thread && item.thread.sourceThreadId) {
+      summary.sourceThreadIds.add(ref.sourceThreadId || item.thread.sourceThreadId);
+    }
+  });
+
+  return Array.from(bySource.values()).map(function (summary) {
+    return {
+      sourceKey: summary.sourceKey,
+      threadCount: summary.threadKeys.size,
+      sourceThreadIds: Array.from(summary.sourceThreadIds).slice(0, 8),
+      authorCount: summary.authorKeys.size,
+      opinionCount: summary.opinionCount,
+      evidenceGapCount: summary.evidenceGapCount,
+      reviewQueueCount: summary.reviewQueueCount,
+      highPriorityReviewQueueCount: summary.highPriorityReviewQueueCount,
+      reviewQueuePriorityCounts: summary.reviewQueuePriorityCounts,
+      reviewQueueTypeCounts: summary.reviewQueueTypeCounts,
+      latestGeneratedAt: summary.latestGeneratedAt,
+      recommendedNextAction: sourcePressureNextAction(summary)
+    };
+  }).sort(compareSourceReviewPressure);
+}
+
+function sourcePressureSummaryFor(map, sourceKey) {
+  const key = sourceKey || 'unknown-source';
+  if (!map.has(key)) {
+    map.set(key, {
+      sourceKey: key,
+      threadKeys: new Set(),
+      sourceThreadIds: new Set(),
+      authorKeys: new Set(),
+      opinionCount: 0,
+      evidenceGapCount: 0,
+      reviewQueueCount: 0,
+      highPriorityReviewQueueCount: 0,
+      reviewQueuePriorityCounts: {},
+      reviewQueueTypeCounts: {},
+      latestGeneratedAt: undefined
+    });
+  }
+  return map.get(key);
+}
+
+function compareSourceReviewPressure(a, b) {
+  return numeric(b.highPriorityReviewQueueCount) - numeric(a.highPriorityReviewQueueCount)
+    || numeric(b.reviewQueueCount) - numeric(a.reviewQueueCount)
+    || numeric(b.evidenceGapCount) - numeric(a.evidenceGapCount)
+    || numeric(b.opinionCount) - numeric(a.opinionCount)
+    || String(a.sourceKey || '').localeCompare(String(b.sourceKey || ''));
+}
+
+function sourcePressureNextAction(summary) {
+  if (summary.highPriorityReviewQueueCount > 0) {
+    return 'Open source operations and clear high-priority author review queue items first.';
+  }
+  if (summary.reviewQueueCount > 0) {
+    return 'Work the source-scoped author review queue before downstream automation.';
+  }
+  if (summary.evidenceGapCount > 0) {
+    return 'Review evidence gaps for this source before promoting author intelligence.';
+  }
+  return 'Source intelligence has no open review pressure in the current window.';
+}
+
 function buildReviewQueue(input) {
   const items = [];
   (input.evidenceGaps || []).forEach(function (gap) {
@@ -683,6 +791,16 @@ function refForThread(thread) {
     title: safeThread.title,
     url: safeThread.url
   };
+}
+
+function firstReviewRef(item) {
+  const refs = item && item.refs || [];
+  return refs[0] || {};
+}
+
+function reviewItemSourceKey(item) {
+  const ref = firstReviewRef(item);
+  return ref.sourceKey || item && item.thread && item.thread.sourceKey || 'unknown-source';
 }
 
 function addThreadSummary(threads, thread) {

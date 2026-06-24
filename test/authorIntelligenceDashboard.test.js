@@ -37,6 +37,12 @@ test('author intelligence dashboard aggregates stored basic-history reports', as
   assert.equal(dashboard.summary.reviewQueueTypeCounts['evidence-gap'], 2);
   assert.equal(dashboard.summary.reviewQueueTypeCounts['author-evidence-review'], 1);
   assert.equal(dashboard.summary.reviewQueueTypeCounts['high-confidence-opinion'], 2);
+  assert.equal(dashboard.summary.reviewQueueBySourceKey['forum-a'], 5);
+  assert.equal(dashboard.summary.highPriorityReviewQueueBySourceKey['forum-a'], 3);
+  assert.equal(dashboard.summary.sourceCount, 1);
+  assert.equal(dashboard.sourceReviewPressure[0].sourceKey, 'forum-a');
+  assert.equal(dashboard.sourceReviewPressure[0].reviewQueueCount, 5);
+  assert.equal(dashboard.sourceReviewPressure[0].highPriorityReviewQueueCount, 3);
   assert.equal(dashboard.authors[0].author.sourceAuthorId, 'author-1');
   assert.equal(dashboard.authors[0].postCount, 4);
   assert.equal(dashboard.authors[0].opinionCount, 2);
@@ -67,6 +73,42 @@ test('author intelligence dashboard aggregates stored basic-history reports', as
     return item.type === 'high-confidence-opinion' && item.author.sourceAuthorId === 'author-1';
   }), true);
   assert.match(dashboard.recommendedNextAction, /evidence gaps/);
+});
+
+test('author intelligence dashboard groups review pressure by source', async function () {
+  const dashboard = await getAuthorIntelligenceDashboard({
+    now: '2026-06-22T10:00:00.000Z',
+    reportRepository: {
+      async saveReport() {},
+      async findReports() { return []; },
+      async listReports() {
+        return [
+          sampleReport('thread-a', '2026-06-22T08:00:00.000Z', 'forum-a'),
+          sampleReport('thread-b', '2026-06-22T09:00:00.000Z', 'forum-b')
+        ];
+      }
+    }
+  });
+  const forumA = dashboard.sourceReviewPressure.find(function (item) {
+    return item.sourceKey === 'forum-a';
+  });
+  const forumB = dashboard.sourceReviewPressure.find(function (item) {
+    return item.sourceKey === 'forum-b';
+  });
+
+  assert.equal(dashboard.summary.sourceCount, 2);
+  assert.equal(dashboard.summary.reviewQueueBySourceKey['forum-a'], 3);
+  assert.equal(dashboard.summary.reviewQueueBySourceKey['forum-b'], 3);
+  assert.equal(dashboard.summary.highPriorityReviewQueueBySourceKey['forum-a'], 2);
+  assert.equal(dashboard.summary.highPriorityReviewQueueBySourceKey['forum-b'], 2);
+  assert.equal(forumA.threadCount, 1);
+  assert.equal(forumA.authorCount, 2);
+  assert.equal(forumA.reviewQueueCount, 3);
+  assert.equal(forumA.highPriorityReviewQueueCount, 2);
+  assert.equal(forumB.threadCount, 1);
+  assert.equal(forumB.authorCount, 2);
+  assert.equal(forumB.reviewQueueTypeCounts['evidence-gap'], 1);
+  assert.match(forumB.recommendedNextAction, /high-priority/);
 });
 
 test('author intelligence dashboard uses the latest report per thread by default', async function () {
@@ -165,26 +207,27 @@ test('author intelligence dashboard filters by author and returns warn for empty
   assert.match(empty.message, /No basic-history reports/);
 });
 
-function sampleReport(sourceThreadId, generatedAt) {
+function sampleReport(sourceThreadId, generatedAt, sourceKey) {
+  const safeSourceKey = sourceKey || 'forum-a';
   return {
     reportType: 'basic-history',
     generatedAt,
     thread: {
-      sourceKey: 'forum-a',
+      sourceKey: safeSourceKey,
       sourceThreadId,
       title: 'Sample ' + sourceThreadId,
       parsedPostCount: 10
     },
     authorStats: [
       {
-        author: { sourceKey: 'forum-a', sourceAuthorId: 'author-1', displayName: 'Alice' },
+        author: { sourceKey: safeSourceKey, sourceAuthorId: 'author-1', displayName: 'Alice' },
         postCount: 2,
         floors: [0, 3],
         firstFloor: 0,
         lastFloor: 3
       },
       {
-        author: { sourceKey: 'forum-a', sourceAuthorId: 'author-2', displayName: 'Bob' },
+        author: { sourceKey: safeSourceKey, sourceAuthorId: 'author-2', displayName: 'Bob' },
         postCount: 1,
         floors: [4],
         firstFloor: 4,
@@ -192,7 +235,7 @@ function sampleReport(sourceThreadId, generatedAt) {
       }
     ],
     primaryAuthorProfile: {
-      author: { sourceKey: 'forum-a', sourceAuthorId: 'author-1', displayName: 'Alice' },
+      author: { sourceKey: safeSourceKey, sourceAuthorId: 'author-1', displayName: 'Alice' },
       opinionCount: 1,
       stanceSummary: { bullish: 1 },
       focusEntities: [

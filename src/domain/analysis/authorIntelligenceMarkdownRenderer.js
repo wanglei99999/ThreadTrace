@@ -18,7 +18,13 @@ function renderAuthorIntelligenceMarkdown(dashboard) {
   lines.push('- Evidence gaps: ' + numeric(summary.evidenceGapCount) + ', review queue: ' + numeric(summary.reviewQueueCount));
   lines.push('- Review priority: ' + countSummary(summary.reviewQueuePriorityCounts));
   lines.push('- Review types: ' + countSummary(summary.reviewQueueTypeCounts));
+  lines.push('- Review by source: ' + countSummary(summary.reviewQueueBySourceKey));
   lines.push('- Recommended next action: ' + safeInline(safeDashboard.recommendedNextAction || safeDashboard.message || 'none'));
+
+  lines.push('');
+  lines.push('## Source Review Pressure');
+  lines.push('');
+  appendSourceReviewPressure(lines, safeDashboard.sourceReviewPressure || []);
 
   lines.push('');
   lines.push('## Review Queue');
@@ -50,6 +56,25 @@ function renderAuthorIntelligenceMarkdown(dashboard) {
   lines.push('');
 
   return lines.join('\n');
+}
+
+function appendSourceReviewPressure(lines, items) {
+  if (items.length === 0) {
+    lines.push('No source review pressure.');
+    return;
+  }
+  items.slice(0, 20).forEach(function (item) {
+    lines.push('- ' + safeInline(item.sourceKey || 'unknown-source') +
+      ': threads=' + numeric(item.threadCount) +
+      ', authors=' + numeric(item.authorCount) +
+      ', opinions=' + numeric(item.opinionCount) +
+      ', gaps=' + numeric(item.evidenceGapCount) +
+      ', queue=' + numeric(item.reviewQueueCount) +
+      ', high=' + numeric(item.highPriorityReviewQueueCount));
+    if (item.recommendedNextAction) {
+      lines.push('  - Next action: ' + safeInline(item.recommendedNextAction));
+    }
+  });
 }
 
 function appendReviewQueue(lines, items) {

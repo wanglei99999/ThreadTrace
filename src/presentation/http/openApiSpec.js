@@ -646,7 +646,7 @@ function createOpenApiSpec() {
           ],
           responses: {
             200: {
-              description: 'Author summaries, focus entities, opinion timeline, evidence gaps, and supporting evidence'
+              description: 'Author summaries, source review pressure, focus entities, opinion timeline, evidence gaps, and supporting evidence'
             }
           }
         }
@@ -688,7 +688,7 @@ function createOpenApiSpec() {
           ],
           responses: {
             200: {
-              description: 'Durable author review queue items and aggregate counts'
+              description: 'Durable author review queue items, aggregate counts, and source hotspots'
             }
           }
         }

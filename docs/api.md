@@ -130,7 +130,7 @@ Query parameters:
 - `now`: optional fixed generation time.
 - `storeDir`: optional file store override.
 
-Returns `revisionMode`, `reportRevisionCount`, `summary`, top `authors`, `focusEntities`, `opinionTimeline`, `evidenceGaps`, high-signal `evidence`, generated `reviewQueue`, compact `threads`, and `recommendedNextAction`. `summary` includes `reviewQueuePriorityCounts` and `reviewQueueTypeCounts`. Author rows include aggregated stance fields such as `dominantStance`, `latestAttitude`, `averageOpinionConfidence`, `opinionThreadCount`, de-duplicated `topFocusEntities`, and an `intelligence.summary` string for review queues. Review queue items include stable `type`, `priority`, `score`, `reason`, `nextAction`, and source `refs`.
+Returns `revisionMode`, `reportRevisionCount`, `summary`, top `authors`, `focusEntities`, `opinionTimeline`, `evidenceGaps`, high-signal `evidence`, generated `reviewQueue`, source-scoped `sourceReviewPressure`, compact `threads`, and `recommendedNextAction`. `summary` includes `reviewQueuePriorityCounts`, `reviewQueueTypeCounts`, `reviewQueueBySourceKey`, `highPriorityReviewQueueBySourceKey`, and `sourceCount`. Author rows include aggregated stance fields such as `dominantStance`, `latestAttitude`, `averageOpinionConfidence`, `opinionThreadCount`, de-duplicated `topFocusEntities`, and an `intelligence.summary` string for review queues. Review queue items include stable `type`, `priority`, `score`, `reason`, `nextAction`, and source `refs`.
 
 CLI can export the same dashboard as a handoff package with `node src/presentation/cli/threadtrace.js author-intelligence --source-key nga --markdown-output data/reports/author-intelligence.md`.
 
@@ -144,7 +144,7 @@ Persists the current generated author intelligence `reviewQueue` into durable re
 
 ### `GET /api/intelligence/author-review-queue`
 
-Lists durable author review queue records. Optional filters: `status` (`open`, `confirmed`, `ignored`), `sourceKey`, `sourceThreadId`, `type`, `priority`, `limit`, and `storeDir`. The response includes `summary.byStatus`, `summary.byPriority`, `summary.byType`, and `summary.openCount`.
+Lists durable author review queue records. Optional filters: `status` (`open`, `confirmed`, `ignored`), `sourceKey`, `sourceThreadId`, `type`, `priority`, `limit`, and `storeDir`. The response includes `summary.byStatus`, `summary.byPriority`, `summary.byType`, `summary.bySourceKey`, `summary.openBySourceKey`, `summary.highPriorityOpenBySourceKey`, `summary.sourceHotspots`, and `summary.openCount`.
 
 ### `POST /api/intelligence/author-review-queue/{itemId}/status`
 

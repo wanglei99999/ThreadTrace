@@ -52,6 +52,12 @@ test('author review queue sync persists durable records and status updates', asy
   assert.equal(secondSync.updatedCount, 2);
   assert.equal(listed.itemCount, 2);
   assert.equal(listed.summary.byStatus.open, 2);
+  assert.equal(listed.summary.bySourceKey['forum-a'], 2);
+  assert.equal(listed.summary.openBySourceKey['forum-a'], 2);
+  assert.equal(listed.summary.highPriorityOpenBySourceKey['forum-a'], 1);
+  assert.equal(listed.summary.sourceHotspots[0].sourceKey, 'forum-a');
+  assert.equal(listed.summary.sourceHotspots[0].openCount, 2);
+  assert.equal(listed.summary.sourceHotspots[0].highPriorityOpenCount, 1);
   assert.equal(listed.items[0].seenCount, 2);
   assert.equal(listed.items[0].sourceKey, 'forum-a');
   assert.equal(listed.items[0].sourceThreadId, 'thread-1');
