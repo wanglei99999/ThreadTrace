@@ -485,6 +485,9 @@ function main(argv) {
         if (action.recommendedCommand) {
           console.log('  command: ' + action.recommendedCommand);
         }
+        if (action.evidenceSummary) {
+          console.log('  evidence: ' + action.evidenceSummary);
+        }
         (action.relatedCommands || []).forEach(function (command) {
           console.log('  related: ' + command);
         });

@@ -2316,9 +2316,12 @@ function renderRunbookNotificationEventResult(result) {
 function renderRunbookActionRows(actions) {
   return actions.slice(0, 10).map(function (action) {
     const command = action.recommendedCommand ? '<small>' + escapeHtml(action.recommendedCommand) + '</small>' : '';
+    const evidence = action.evidenceSummary || action.evidence && action.evidence.evidenceSummary;
+    const evidenceRow = evidence ? '<small>' + escapeHtml('evidence=' + evidence) + '</small>' : '';
     return '<div class="action-row ops-row"><span>' +
       '<strong>' + escapeHtml(action.title || action.key) + '</strong>' +
       '<small>' + escapeHtml(action.summary || '') + '</small>' +
+      evidenceRow +
       command +
       '</span>' +
       statusBadge(action.severity || 'info', action.severity === 'critical' ? 'fail' : 'warn') +

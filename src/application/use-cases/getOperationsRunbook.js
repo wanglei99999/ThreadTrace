@@ -22,6 +22,7 @@ function getOperationsRunbook(options) {
     (checklist.readiness && checklist.readiness.overview && checklist.readiness.overview.recent && checklist.readiness.overview.recent.tasks) ||
     [];
   const actions = checklistActions(checklist)
+    .concat(sourceDiagnosticsActions(checklist))
     .concat(connectorModuleActions(checklist))
     .concat(sourceLifecycleActions(safeOptions.sourceLifecycleReport))
     .concat(reviewActionGateActions(safeOptions.reviewActionGate))
@@ -163,6 +164,43 @@ function checklistActions(checklist) {
       evidence: item.evidence
     });
   });
+}
+
+function sourceDiagnosticsActions(checklist) {
+  const sourceDiagnostics = checklist && checklist.sourceDiagnostics || {};
+  const nextActions = Array.isArray(sourceDiagnostics.nextActions)
+    ? sourceDiagnostics.nextActions
+    : [];
+  return nextActions.slice(0, 10).map(function (item) {
+    const commands = uniqueCommands((item.commands || []).concat([
+      'node src/presentation/cli/threadtrace.js source-diagnostics'
+    ]));
+    return action({
+      key: 'sourceDiagnostics.' + safeActionKey(item.key) + '.' + safeActionKey(item.sourceId),
+      severity: item.severity === 'critical' ? 'critical' : 'warning',
+      area: 'sources',
+      title: titleForSourceDiagnosticAction(item),
+      summary: item.summary || 'Resolve tracked source diagnostic action.',
+      recommendedCommand: commands[0],
+      relatedCommands: commands.slice(1),
+      evidence: Object.assign({}, item.evidence || {}, {
+        sourceId: item.sourceId || item.evidence && item.evidence.sourceId,
+        diagnosticKey: item.key,
+        evidenceSummary: item.evidenceSummary
+      }),
+      evidenceSummary: item.evidenceSummary
+    });
+  });
+}
+
+function titleForSourceDiagnosticAction(item) {
+  const titles = {
+    'source.handler': 'Fix tracked source ingest handler.',
+    'source.adapter': 'Fix tracked source adapter coverage.',
+    'source.location': 'Fix tracked source location.',
+    'source.enabled': 'Review disabled tracked source.'
+  };
+  return titles[item.key] || 'Resolve tracked source diagnostic.';
 }
 
 function connectorModuleActions(checklist) {
@@ -432,7 +470,7 @@ function recommendedCommandForChecklistItem(item) {
 }
 
 function action(input) {
-  return {
+  const result = {
     key: input.key,
     severity: input.severity,
     area: input.area,
@@ -442,6 +480,10 @@ function action(input) {
     relatedCommands: input.relatedCommands || [],
     evidence: input.evidence || {}
   };
+  if (input.evidenceSummary) {
+    result.evidenceSummary = input.evidenceSummary;
+  }
+  return result;
 }
 
 function titleForChecklistItem(item) {

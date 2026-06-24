@@ -60,6 +60,66 @@ test('operations runbook turns diagnostics and pipeline failures into actions', 
   assert.match(runbook.actions[2].relatedCommands[0], /source-ingest-dry-run/);
 });
 
+test('operations runbook promotes source diagnostics repair actions', function () {
+  const runbook = getOperationsRunbook({
+    now: '2026-06-24T10:00:00.000Z',
+    checklist: {
+      generatedAt: '2026-06-24T10:00:00.000Z',
+      items: [
+        {
+          key: 'sources.ingestConfiguration',
+          area: 'sources',
+          status: 'fail',
+          summary: 'Tracked sources have usable locations, handlers, and adapters.',
+          evidence: { sourceCount: 1 }
+        }
+      ],
+      sourceDiagnostics: {
+        status: 'fail',
+        sourceCount: 1,
+        nextActions: [
+          {
+            key: 'source.handler',
+            sourceId: 'source-broken',
+            severity: 'critical',
+            summary: 'Register a source ingest handler for Broken feed through the connector catalog or a connector module.',
+            commands: [
+              'node src/presentation/cli/threadtrace.js connector-catalog',
+              'node src/presentation/cli/threadtrace.js validate-connector-module --module-path <file>'
+            ],
+            evidence: {
+              sourceId: 'source-broken',
+              sourceType: 'external-feed',
+              registeredHandler: false
+            },
+            evidenceSummary: 'sourceId=source-broken sourceType=external-feed registeredHandler=false'
+          }
+        ]
+      }
+    },
+    pipelineRuns: {
+      runs: []
+    }
+  });
+
+  const sourceAction = runbook.actions.find(function (action) {
+    return action.key === 'sourceDiagnostics.source.handler.source-broken';
+  });
+  assert.equal(runbook.status, 'fail');
+  assert.equal(runbook.actionCount, 2);
+  assert.ok(sourceAction);
+  assert.equal(sourceAction.severity, 'critical');
+  assert.equal(sourceAction.area, 'sources');
+  assert.match(sourceAction.title, /handler/);
+  assert.match(sourceAction.recommendedCommand, /connector-catalog/);
+  assert.match(sourceAction.relatedCommands[0], /validate-connector-module/);
+  assert.match(sourceAction.relatedCommands[1], /source-diagnostics/);
+  assert.equal(sourceAction.evidence.sourceId, 'source-broken');
+  assert.equal(sourceAction.evidence.diagnosticKey, 'source.handler');
+  assert.equal(sourceAction.evidence.evidenceSummary, 'sourceId=source-broken sourceType=external-feed registeredHandler=false');
+  assert.equal(sourceAction.evidenceSummary, 'sourceId=source-broken sourceType=external-feed registeredHandler=false');
+});
+
 test('operations runbook points notification outbox warnings to overview and dispatch tools', function () {
   const runbook = getOperationsRunbook({
     now: '2026-06-19T10:00:00.000Z',
