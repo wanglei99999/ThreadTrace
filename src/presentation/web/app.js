@@ -859,18 +859,24 @@ async function runContextReviewActionApply() {
 
 function buildEventQuery() {
   const query = new URLSearchParams();
-  const formElement = document.getElementById('eventFilterForm');
-  const form = formElement ? new FormData(formElement) : undefined;
+  const form = eventFilterFormData();
   const acknowledged = form ? String(form.get('acknowledged') || '') : 'false';
   const deliveryStatus = form ? String(form.get('deliveryStatus') || '').trim() : '';
   const type = form ? String(form.get('type') || '').trim() : '';
   const sourceKey = form ? String(form.get('sourceKey') || '').trim() : '';
+  const sourceId = form ? String(form.get('sourceId') || '').trim() : '';
   query.set('limit', String(normalizeEventLimit(form ? form.get('limit') : 10)));
   if (acknowledged === 'true' || acknowledged === 'false') query.set('acknowledged', acknowledged);
   if (deliveryStatus) query.set('deliveryStatus', deliveryStatus);
   if (type) query.set('type', type);
   if (sourceKey) query.set('sourceKey', sourceKey);
+  if (sourceId) query.set('sourceId', sourceId);
   return query;
+}
+
+function eventFilterFormData() {
+  const formElement = document.getElementById('eventFilterForm');
+  return formElement ? new FormData(formElement) : undefined;
 }
 
 function normalizeEventLimit(value) {
@@ -879,43 +885,55 @@ function normalizeEventLimit(value) {
   return Math.min(Math.floor(limit), 100);
 }
 
+function buildEventSourceScopeRequest() {
+  const form = eventFilterFormData();
+  const sourceKey = form ? String(form.get('sourceKey') || '').trim() : '';
+  const sourceId = form ? String(form.get('sourceId') || '').trim() : '';
+  const request = {
+    limit: normalizeEventLimit(form ? form.get('limit') : 10)
+  };
+  if (sourceKey) request.sourceKey = sourceKey;
+  if (sourceId) request.sourceId = sourceId;
+  return request;
+}
+
+function buildEventDispatchRequest() {
+  return buildEventSourceScopeRequest();
+}
+
 function buildVisibleEventAckRequest(execute) {
-  const formElement = document.getElementById('eventFilterForm');
-  const form = formElement ? new FormData(formElement) : undefined;
+  const form = eventFilterFormData();
   const deliveryStatus = form ? String(form.get('deliveryStatus') || '').trim() : '';
   const type = form ? String(form.get('type') || '').trim() : '';
-  const sourceKey = form ? String(form.get('sourceKey') || '').trim() : '';
-  const request = {
+  const request = Object.assign(buildEventSourceScopeRequest(), {
     acknowledged: false,
     acknowledgedBy: 'web',
     note: 'Acknowledged from the web event filter.',
-    limit: normalizeEventLimit(form ? form.get('limit') : 10),
     dryRun: execute !== true,
     execute: execute === true
-  };
+  });
   if (deliveryStatus) request.deliveryStatus = deliveryStatus;
   if (type) request.type = type;
-  if (sourceKey) request.sourceKey = sourceKey;
   return request;
 }
 
 function buildEventArchiveRequest(execute) {
-  const formElement = document.getElementById('eventFilterForm');
-  const form = formElement ? new FormData(formElement) : undefined;
+  const form = eventFilterFormData();
   const type = form ? String(form.get('type') || '').trim() : '';
-  const sourceKey = form ? String(form.get('sourceKey') || '').trim() : '';
+  const scope = buildEventSourceScopeRequest();
   const request = {
     execute: execute === true,
     deliveryStatuses: ['delivered', 'resolved'],
     requireAcknowledged: true,
     olderThanDays: 30,
-    archiveLimit: normalizeEventLimit(form ? form.get('limit') : 10),
+    archiveLimit: scope.limit,
     scanLimit: 500,
     archivedBy: 'web',
     reason: 'Archived from the web event filter.'
   };
   if (type) request.type = type;
-  if (sourceKey) request.sourceKey = sourceKey;
+  if (scope.sourceKey) request.sourceKey = scope.sourceKey;
+  if (scope.sourceId) request.sourceId = scope.sourceId;
   return request;
 }
 
@@ -1047,11 +1065,18 @@ async function synthesizeReviewResultEvents(execute) {
 }
 
 async function dispatchEvents() {
-  await renderAsync('eventResult', function () {
-    return requestJson('/api/events/dispatch', {});
-  }, renderEventDispatchResult);
-  await loadSystemStatus();
-  await loadEvents();
+  const dispatchRequest = buildEventDispatchRequest();
+  const target = document.getElementById('eventResult');
+  target.innerHTML = '<div class="empty">Dispatching notification events...</div>';
+  try {
+    const result = await requestJson('/api/events/dispatch', dispatchRequest);
+    await loadSystemStatus();
+    await loadEvents();
+    const refreshedTarget = document.getElementById('eventResult');
+    refreshedTarget.innerHTML = renderEventDispatchResult(Object.assign({ filters: dispatchRequest }, result)) + refreshedTarget.innerHTML;
+  } catch (error) {
+    renderError('eventResult', error);
+  }
 }
 
 async function acknowledgeVisibleEvents(execute) {
@@ -2876,22 +2901,35 @@ function currentEventFilterSummary() {
   const deliveryStatus = String(form.get('deliveryStatus') || '');
   const type = String(form.get('type') || '');
   const sourceKey = String(form.get('sourceKey') || '').trim();
+  const sourceId = String(form.get('sourceId') || '').trim();
   const scope = acknowledged === 'true' ? '已确认' : (acknowledged === 'false' ? '未确认' : '全部');
   return [
     scope,
     deliveryStatus || '全部状态',
     type || '全部类型',
-    sourceKey || '全部来源'
+    sourceKey || '全部来源',
+    sourceId || 'all source ids'
   ].join(' · ');
 }
 
 function renderEventDispatchResult(result) {
+  const filters = result.filters || {};
   return panel('事件投递完成', [
     metric('通道', result.channelKey),
+    metric('Scope', formatEventSourceScope(filters)),
+    metric('Limit', filters.limit || 'default'),
     metric('已投递', result.dispatchedCount),
     metric('失败', result.failedCount),
     metric('跳过', result.skippedCount)
   ].join(''), 'wide');
+}
+
+function formatEventSourceScope(filters) {
+  const parts = [
+    filters.sourceKey ? 'sourceKey=' + filters.sourceKey : undefined,
+    filters.sourceId ? 'sourceId=' + filters.sourceId : undefined
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(' | ') : 'all sources';
 }
 
 function renderEventAckResult(result) {

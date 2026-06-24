@@ -145,6 +145,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(homeHtml, /rolloutApplyResult/);
     assert.match(homeHtml, /runbookResult/);
     assert.match(homeHtml, /eventFilterForm/);
+    assert.match(homeHtml, /name="sourceId"/);
     assert.match(homeHtml, /contextReviewResultForm/);
     assert.match(homeHtml, /contextReviewResultOverview/);
     assert.match(homeHtml, /contextReviewResultResult/);
@@ -172,6 +173,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /intelligence\/author-review-queue\/events/);
     assert.match(webAppJs, /Create alerts/);
     assert.match(webAppJs, /buildEventQuery/);
+    assert.match(webAppJs, /buildEventDispatchRequest/);
+    assert.match(webAppJs, /formatEventSourceScope/);
+    assert.match(webAppJs, /sourceId/);
     assert.match(webAppJs, /api\/events\/overview/);
     assert.match(webAppJs, /renderNotificationEventOverview/);
     assert.match(webAppJs, /event-summary-strip/);
