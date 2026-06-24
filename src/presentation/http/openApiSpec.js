@@ -1819,7 +1819,14 @@ function createOpenApiSpec() {
           ],
           responses: {
             200: {
-              description: 'Tracked sources'
+              description: 'Tracked sources',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/TrackedSourceListResult'
+                  }
+                }
+              }
             }
           }
         },
@@ -1852,10 +1859,24 @@ function createOpenApiSpec() {
           },
           responses: {
             201: {
-              description: 'Created source'
+              description: 'Created source',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/TrackedSourceRegistrationResult'
+                  }
+                }
+              }
             },
             200: {
-              description: 'Updated source'
+              description: 'Updated source',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/TrackedSourceRegistrationResult'
+                  }
+                }
+              }
             },
             400: {
               $ref: '#/components/responses/BadRequest'
@@ -1896,7 +1917,14 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Validation report with source draft and readiness checks'
+              description: 'Validation report with source draft and readiness checks',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/TrackedSourceValidationResult'
+                  }
+                }
+              }
             },
             400: {
               $ref: '#/components/responses/BadRequest'
@@ -3009,6 +3037,77 @@ function createOpenApiSpec() {
               type: 'array',
               items: { $ref: '#/components/schemas/SourceDiagnosticItem' }
             },
+            nextActions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceDiagnosticAction' }
+            }
+          }
+        },
+        TrackedSource: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', example: 'nga-saved-html-directory-3e2b38c64f' },
+            sourceKey: { type: 'string', example: 'nga' },
+            sourceType: { type: 'string', example: 'saved-html-directory' },
+            displayName: { type: 'string', example: 'NGA sample archive' },
+            location: {
+              type: 'object',
+              additionalProperties: true
+            },
+            enabled: { type: 'boolean', example: true },
+            tags: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            schedule: { $ref: '#/components/schemas/SourceScheduleConfig' },
+            cursor: {
+              type: 'object',
+              additionalProperties: true
+            },
+            runState: { $ref: '#/components/schemas/SourceRunState' },
+            createdAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            updatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' }
+          }
+        },
+        TrackedSourceListResult: {
+          type: 'object',
+          properties: {
+            sources: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/TrackedSource' }
+            }
+          }
+        },
+        TrackedSourceRegistrationResult: {
+          type: 'object',
+          properties: {
+            source: { $ref: '#/components/schemas/TrackedSource' },
+            created: { type: 'boolean', example: true }
+          }
+        },
+        TrackedSourceValidationError: {
+          type: 'object',
+          properties: {
+            message: { type: 'string' },
+            code: { type: 'string', example: 'source_location_invalid' },
+            details: {
+              type: 'object',
+              additionalProperties: true
+            }
+          }
+        },
+        TrackedSourceValidationResult: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            valid: { type: 'boolean', example: true },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            source: { $ref: '#/components/schemas/TrackedSource' },
+            checks: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceDiagnosticCheck' }
+            },
+            error: { $ref: '#/components/schemas/TrackedSourceValidationError' },
             nextActions: {
               type: 'array',
               items: { $ref: '#/components/schemas/SourceDiagnosticAction' }

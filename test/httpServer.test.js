@@ -508,6 +508,18 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.components.schemas.SourceScheduleItem.properties.schedule.$ref, '#/components/schemas/SourceScheduleConfig');
     assert.equal(openApi.components.schemas.SourceScheduleItem.properties.runState.$ref, '#/components/schemas/SourceRunState');
     assert.equal(openApi.components.schemas.SourceScheduleItem.properties.decision.$ref, '#/components/schemas/SourceScheduleDecision');
+    assert.equal(openApi.paths['/api/sources'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/TrackedSourceListResult');
+    assert.equal(openApi.paths['/api/sources'].post.responses[201].content['application/json'].schema.$ref, '#/components/schemas/TrackedSourceRegistrationResult');
+    assert.equal(openApi.paths['/api/sources'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/TrackedSourceRegistrationResult');
+    assert.equal(openApi.paths['/api/sources/validate'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/TrackedSourceValidationResult');
+    assert.equal(openApi.components.schemas.TrackedSourceListResult.properties.sources.items.$ref, '#/components/schemas/TrackedSource');
+    assert.equal(openApi.components.schemas.TrackedSourceRegistrationResult.properties.source.$ref, '#/components/schemas/TrackedSource');
+    assert.equal(openApi.components.schemas.TrackedSource.properties.runState.$ref, '#/components/schemas/SourceRunState');
+    assert.equal(openApi.components.schemas.TrackedSource.properties.schedule.$ref, '#/components/schemas/SourceScheduleConfig');
+    assert.equal(openApi.components.schemas.TrackedSourceValidationResult.properties.source.$ref, '#/components/schemas/TrackedSource');
+    assert.equal(openApi.components.schemas.TrackedSourceValidationResult.properties.checks.items.$ref, '#/components/schemas/SourceDiagnosticCheck');
+    assert.equal(openApi.components.schemas.TrackedSourceValidationResult.properties.nextActions.items.$ref, '#/components/schemas/SourceDiagnosticAction');
+    assert.equal(openApi.components.schemas.TrackedSourceValidationResult.properties.error.$ref, '#/components/schemas/TrackedSourceValidationError');
     assert.ok(openApi.paths['/api/sources/onboarding/preflight']);
     assert.equal(openApi.paths['/api/sources/onboarding/preflight'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceOnboardingPreflight');
     assert.equal(openApi.paths['/api/sources/onboarding/preflight'].post.responses[503].content['application/json'].schema.$ref, '#/components/schemas/SourceOnboardingPreflight');
