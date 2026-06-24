@@ -3,6 +3,12 @@
 const { createContextReviewResultEvent } = require('../../domain/events/notificationEvent');
 const { assertContextReviewResultRepository } = require('../ports/contextReviewResultRepository');
 const { assertNotificationEventRepository } = require('../ports/notificationEventRepository');
+const {
+  createSynthesisResultCounts,
+  existingEventSkipReason,
+  isAlertSeverity,
+  mergeExistingNotificationDeliveryState
+} = require('./notificationSynthesisPolicy');
 
 async function synthesizeContextReviewResultNotificationEvents(options) {
   const safeOptions = options || {};
@@ -39,6 +45,7 @@ async function synthesizeContextReviewResultNotificationEvents(options) {
       reason: result.reason
     });
   }
+  const counts = createSynthesisResultCounts(results);
 
   return {
     generatedAt: now,
@@ -47,18 +54,10 @@ async function synthesizeContextReviewResultNotificationEvents(options) {
     executed: execute,
     reviewResultCount: records.length,
     actionCount: notifyRecords.length,
-    eventCount: results.filter(function (result) {
-      return result.status === 'created' || result.status === 'updated';
-    }).length,
-    createdCount: results.filter(function (result) {
-      return result.status === 'created';
-    }).length,
-    updatedCount: results.filter(function (result) {
-      return result.status === 'updated';
-    }).length,
-    skippedCount: results.filter(function (result) {
-      return result.status === 'skipped';
-    }).length,
+    eventCount: counts.eventCount,
+    createdCount: counts.createdCount,
+    updatedCount: counts.updatedCount,
+    skippedCount: counts.skippedCount,
     results
   };
 }
@@ -76,26 +75,19 @@ async function buildContextReviewResultEventResult(record, options) {
       event: draft
     };
   }
-  if (existing.acknowledgedAt) {
+  const skipReason = existingEventSkipReason(existing);
+  if (skipReason) {
     return {
       status: 'skipped',
       shouldSave: false,
-      reason: 'already-acknowledged',
-      event: existing
-    };
-  }
-  if (existing.deliveryStatus === 'delivered') {
-    return {
-      status: 'skipped',
-      shouldSave: false,
-      reason: 'already-delivered',
+      reason: skipReason,
       event: existing
     };
   }
   return {
     status: 'updated',
     shouldSave: true,
-    event: mergeExistingDeliveryState(existing, draft)
+    event: mergeExistingNotificationDeliveryState(existing, draft)
   };
 }
 
@@ -103,23 +95,7 @@ function shouldNotifyRecord(record) {
   const severity = record && record.summary && record.summary.notification
     ? record.summary.notification.severity
     : undefined;
-  return severity === 'critical' || severity === 'warning';
-}
-
-function mergeExistingDeliveryState(existing, draft) {
-  return Object.assign({}, draft, {
-    createdAt: existing.createdAt || draft.createdAt,
-    deliveryStatus: existing.deliveryStatus || draft.deliveryStatus,
-    deliveryAttempts: existing.deliveryAttempts || 0,
-    deliveryResult: existing.deliveryResult,
-    lastDeliveryError: existing.lastDeliveryError,
-    lastDeliveryAttemptAt: existing.lastDeliveryAttemptAt,
-    lastDeliveredAt: existing.lastDeliveredAt,
-    nextDeliveryAt: existing.nextDeliveryAt || draft.nextDeliveryAt,
-    acknowledgedAt: existing.acknowledgedAt,
-    acknowledgedBy: existing.acknowledgedBy,
-    acknowledgementNote: existing.acknowledgementNote
-  });
+  return isAlertSeverity(severity);
 }
 
 module.exports = {

@@ -2,6 +2,13 @@
 
 const { createRunbookActionEvent } = require('../../domain/events/notificationEvent');
 const { assertNotificationEventRepository } = require('../ports/notificationEventRepository');
+const {
+  createSynthesisResultCounts,
+  eventMatchesSourceScope,
+  existingEventSkipReason,
+  isAlertSeverity,
+  mergeExistingNotificationDeliveryState
+} = require('./notificationSynthesisPolicy');
 
 async function synthesizeRunbookNotificationEvents(options) {
   const safeOptions = options || {};
@@ -45,6 +52,7 @@ async function synthesizeRunbookNotificationEvents(options) {
       limit: safeOptions.staleLimit || safeOptions.limit || 100
     });
   results.push.apply(results, staleResults);
+  const counts = createSynthesisResultCounts(results);
 
   return {
     generatedAt: now,
@@ -52,24 +60,12 @@ async function synthesizeRunbookNotificationEvents(options) {
     dryRun: !execute,
     executed: execute,
     actionCount: actions.length,
-    eventCount: results.filter(function (result) {
-      return result.status === 'created' || result.status === 'updated' || result.status === 'resolved' || result.status === 'reopened';
-    }).length,
-    createdCount: results.filter(function (result) {
-      return result.status === 'created';
-    }).length,
-    updatedCount: results.filter(function (result) {
-      return result.status === 'updated';
-    }).length,
-    resolvedCount: results.filter(function (result) {
-      return result.status === 'resolved';
-    }).length,
-    reopenedCount: results.filter(function (result) {
-      return result.status === 'reopened';
-    }).length,
-    skippedCount: results.filter(function (result) {
-      return result.status === 'skipped';
-    }).length,
+    eventCount: counts.eventCount,
+    createdCount: counts.createdCount,
+    updatedCount: counts.updatedCount,
+    resolvedCount: counts.resolvedCount,
+    reopenedCount: counts.reopenedCount,
+    skippedCount: counts.skippedCount,
     results,
     runbook: safeOptions.includeRunbook === true ? runbook : undefined
   };
@@ -84,7 +80,7 @@ async function resolveRunbook(options) {
 }
 
 function shouldNotifyAction(action) {
-  return action && (action.severity === 'critical' || action.severity === 'warning');
+  return action && isAlertSeverity(action.severity);
 }
 
 async function buildRunbookEventResult(action, options) {
@@ -109,26 +105,19 @@ async function buildRunbookEventResult(action, options) {
       event: reopenAutoResolvedRunbookEvent(existing, draft)
     };
   }
-  if (existing.acknowledgedAt) {
+  const skipReason = existingEventSkipReason(existing);
+  if (skipReason) {
     return {
       status: 'skipped',
       shouldSave: false,
-      reason: 'already-acknowledged',
-      event: existing
-    };
-  }
-  if (existing.deliveryStatus === 'delivered') {
-    return {
-      status: 'skipped',
-      shouldSave: false,
-      reason: 'already-delivered',
+      reason: skipReason,
       event: existing
     };
   }
   return {
     status: 'updated',
     shouldSave: true,
-    event: mergeExistingDeliveryState(existing, draft)
+    event: mergeExistingNotificationDeliveryState(existing, draft)
   };
 }
 
@@ -141,7 +130,7 @@ async function resolveStaleRunbookEvents(options) {
     limit: options.limit
   });
   const staleEvents = events.filter(function (event) {
-    return eventMatchesScope(event, options) &&
+    return eventMatchesSourceScope(event, options) &&
       !options.activeEventIds.has(event.id) &&
       event.deliveryStatus !== 'resolved' &&
       event.deliveryStatus !== 'delivered';
@@ -162,12 +151,6 @@ async function resolveStaleRunbookEvents(options) {
   }
 
   return results;
-}
-
-function eventMatchesScope(event, scope) {
-  if (scope.sourceId && event.sourceId !== scope.sourceId) return false;
-  if (scope.sourceKey && event.sourceKey !== scope.sourceKey) return false;
-  return true;
 }
 
 function markRunbookEventResolved(event, now) {
@@ -197,22 +180,6 @@ function reopenAutoResolvedRunbookEvent(existing, draft) {
     payload: Object.assign({}, draft.payload || {}, {
       previousResolution: existing.payload && existing.payload.resolution
     })
-  });
-}
-
-function mergeExistingDeliveryState(existing, draft) {
-  return Object.assign({}, draft, {
-    createdAt: existing.createdAt || draft.createdAt,
-    deliveryStatus: existing.deliveryStatus || draft.deliveryStatus,
-    deliveryAttempts: existing.deliveryAttempts || 0,
-    deliveryResult: existing.deliveryResult,
-    lastDeliveryError: existing.lastDeliveryError,
-    lastDeliveryAttemptAt: existing.lastDeliveryAttemptAt,
-    lastDeliveredAt: existing.lastDeliveredAt,
-    nextDeliveryAt: existing.nextDeliveryAt || draft.nextDeliveryAt,
-    acknowledgedAt: existing.acknowledgedAt,
-    acknowledgedBy: existing.acknowledgedBy,
-    acknowledgementNote: existing.acknowledgementNote
   });
 }
 

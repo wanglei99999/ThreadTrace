@@ -3,6 +3,11 @@
 const { createAuthorReviewQueueEvent } = require('../../domain/events/notificationEvent');
 const { assertAuthorReviewQueueRepository } = require('../ports/authorReviewQueueRepository');
 const { assertNotificationEventRepository } = require('../ports/notificationEventRepository');
+const {
+  createSynthesisResultCounts,
+  existingEventSkipReason,
+  mergeExistingNotificationDeliveryState
+} = require('./notificationSynthesisPolicy');
 
 async function synthesizeAuthorReviewQueueNotificationEvents(options) {
   const safeOptions = options || {};
@@ -56,6 +61,7 @@ async function synthesizeAuthorReviewQueueNotificationEvents(options) {
       limit: safeOptions.staleLimit || safeOptions.limit || 100
     });
   results.push.apply(results, staleResults);
+  const counts = createSynthesisResultCounts(results);
 
   return {
     generatedAt: now,
@@ -64,12 +70,12 @@ async function synthesizeAuthorReviewQueueNotificationEvents(options) {
     executed: execute,
     itemCount: items.length,
     actionCount: notifyItems.length,
-    eventCount: results.filter(isEventMutation).length,
-    createdCount: countByStatus(results, 'created'),
-    updatedCount: countByStatus(results, 'updated'),
-    resolvedCount: countByStatus(results, 'resolved'),
-    reopenedCount: countByStatus(results, 'reopened'),
-    skippedCount: countByStatus(results, 'skipped'),
+    eventCount: counts.eventCount,
+    createdCount: counts.createdCount,
+    updatedCount: counts.updatedCount,
+    resolvedCount: counts.resolvedCount,
+    reopenedCount: counts.reopenedCount,
+    skippedCount: counts.skippedCount,
     results,
     recommendedNextAction: execute
       ? 'Dispatch pending notification events or continue reviewing author queue items.'
@@ -97,26 +103,19 @@ async function buildAuthorReviewQueueEventResult(item, options) {
       event: reopenAutoResolvedAuthorReviewQueueEvent(existing, draft)
     };
   }
-  if (existing.acknowledgedAt) {
+  const skipReason = existingEventSkipReason(existing);
+  if (skipReason) {
     return {
       status: 'skipped',
       shouldSave: false,
-      reason: 'already-acknowledged',
-      event: existing
-    };
-  }
-  if (existing.deliveryStatus === 'delivered') {
-    return {
-      status: 'skipped',
-      shouldSave: false,
-      reason: 'already-delivered',
+      reason: skipReason,
       event: existing
     };
   }
   return {
     status: 'updated',
     shouldSave: true,
-    event: mergeExistingDeliveryState(existing, draft)
+    event: mergeExistingNotificationDeliveryState(existing, draft)
   };
 }
 
@@ -193,32 +192,6 @@ function reopenAutoResolvedAuthorReviewQueueEvent(existing, draft) {
       previousResolution: existing.payload && existing.payload.resolution
     })
   });
-}
-
-function mergeExistingDeliveryState(existing, draft) {
-  return Object.assign({}, draft, {
-    createdAt: existing.createdAt || draft.createdAt,
-    deliveryStatus: existing.deliveryStatus || draft.deliveryStatus,
-    deliveryAttempts: existing.deliveryAttempts || 0,
-    deliveryResult: existing.deliveryResult,
-    lastDeliveryError: existing.lastDeliveryError,
-    lastDeliveryAttemptAt: existing.lastDeliveryAttemptAt,
-    lastDeliveredAt: existing.lastDeliveredAt,
-    nextDeliveryAt: existing.nextDeliveryAt || draft.nextDeliveryAt,
-    acknowledgedAt: existing.acknowledgedAt,
-    acknowledgedBy: existing.acknowledgedBy,
-    acknowledgementNote: existing.acknowledgementNote
-  });
-}
-
-function countByStatus(results, status) {
-  return results.filter(function (result) {
-    return result.status === status;
-  }).length;
-}
-
-function isEventMutation(result) {
-  return result.status === 'created' || result.status === 'updated' || result.status === 'resolved' || result.status === 'reopened';
 }
 
 module.exports = {

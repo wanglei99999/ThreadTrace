@@ -2,6 +2,13 @@
 
 const { createSourceAttentionEvent } = require('../../domain/events/notificationEvent');
 const { assertNotificationEventRepository } = require('../ports/notificationEventRepository');
+const {
+  createSynthesisResultCounts,
+  eventMatchesSourceScope,
+  existingEventSkipReason,
+  mergeExistingNotificationDeliveryState,
+  shouldAlertForSourceAttention
+} = require('./notificationSynthesisPolicy');
 
 async function synthesizeSourceAttentionNotificationEvents(options) {
   const safeOptions = options || {};
@@ -12,7 +19,9 @@ async function synthesizeSourceAttentionNotificationEvents(options) {
   const threshold = safeOptions.priorityScoreThreshold === undefined ? 70 : Number(safeOptions.priorityScoreThreshold);
   const items = (report.sources || [])
     .filter(function (item) {
-      return shouldNotifySourceAttention(item, threshold);
+      return shouldAlertForSourceAttention(item, {
+        priorityScoreThreshold: threshold
+      });
     })
     .slice(0, safeOptions.limit || 50);
   const activeEventIds = new Set();
@@ -48,6 +57,7 @@ async function synthesizeSourceAttentionNotificationEvents(options) {
       limit: safeOptions.staleLimit || safeOptions.limit || 100
     });
   results.push.apply(results, staleResults);
+  const counts = createSynthesisResultCounts(results);
 
   return {
     generatedAt: now,
@@ -56,12 +66,12 @@ async function synthesizeSourceAttentionNotificationEvents(options) {
     executed: execute,
     sourceCount: report.sources ? report.sources.length : 0,
     actionCount: items.length,
-    eventCount: results.filter(isEventMutation).length,
-    createdCount: countByStatus(results, 'created'),
-    updatedCount: countByStatus(results, 'updated'),
-    resolvedCount: countByStatus(results, 'resolved'),
-    reopenedCount: countByStatus(results, 'reopened'),
-    skippedCount: countByStatus(results, 'skipped'),
+    eventCount: counts.eventCount,
+    createdCount: counts.createdCount,
+    updatedCount: counts.updatedCount,
+    resolvedCount: counts.resolvedCount,
+    reopenedCount: counts.reopenedCount,
+    skippedCount: counts.skippedCount,
     priorityScoreThreshold: threshold,
     results,
     sourceAttention: safeOptions.includeSourceAttention === true ? report : undefined,
@@ -77,12 +87,6 @@ async function resolveSourceAttentionReport(options) {
     return options.getSourceAttentionReport(options.sourceAttentionRequest || {});
   }
   throw new Error('synthesizeSourceAttentionNotificationEvents requires sourceAttentionReport or getSourceAttentionReport(request).');
-}
-
-function shouldNotifySourceAttention(item, threshold) {
-  if (!item) return false;
-  if (item.severity === 'critical' || item.severity === 'warning' || item.severity === 'warn') return true;
-  return (item.priorityScore || 0) >= threshold;
 }
 
 async function buildSourceAttentionEventResult(item, options) {
@@ -107,26 +111,19 @@ async function buildSourceAttentionEventResult(item, options) {
       event: reopenAutoResolvedSourceAttentionEvent(existing, draft)
     };
   }
-  if (existing.acknowledgedAt) {
+  const skipReason = existingEventSkipReason(existing);
+  if (skipReason) {
     return {
       status: 'skipped',
       shouldSave: false,
-      reason: 'already-acknowledged',
-      event: existing
-    };
-  }
-  if (existing.deliveryStatus === 'delivered') {
-    return {
-      status: 'skipped',
-      shouldSave: false,
-      reason: 'already-delivered',
+      reason: skipReason,
       event: existing
     };
   }
   return {
     status: 'updated',
     shouldSave: true,
-    event: mergeExistingDeliveryState(existing, draft)
+    event: mergeExistingNotificationDeliveryState(existing, draft)
   };
 }
 
@@ -139,7 +136,7 @@ async function resolveStaleSourceAttentionEvents(options) {
     limit: options.limit
   });
   const staleEvents = events.filter(function (event) {
-    return eventMatchesScope(event, options) &&
+    return eventMatchesSourceScope(event, options) &&
       !options.activeEventIds.has(event.id) &&
       event.deliveryStatus !== 'resolved' &&
       event.deliveryStatus !== 'delivered';
@@ -160,12 +157,6 @@ async function resolveStaleSourceAttentionEvents(options) {
   }
 
   return results;
-}
-
-function eventMatchesScope(event, scope) {
-  if (scope.sourceId && event.sourceId !== scope.sourceId) return false;
-  if (scope.sourceKey && event.sourceKey !== scope.sourceKey) return false;
-  return true;
 }
 
 function markSourceAttentionEventResolved(event, now) {
@@ -196,32 +187,6 @@ function reopenAutoResolvedSourceAttentionEvent(existing, draft) {
       previousResolution: existing.payload && existing.payload.resolution
     })
   });
-}
-
-function mergeExistingDeliveryState(existing, draft) {
-  return Object.assign({}, draft, {
-    createdAt: existing.createdAt || draft.createdAt,
-    deliveryStatus: existing.deliveryStatus || draft.deliveryStatus,
-    deliveryAttempts: existing.deliveryAttempts || 0,
-    deliveryResult: existing.deliveryResult,
-    lastDeliveryError: existing.lastDeliveryError,
-    lastDeliveryAttemptAt: existing.lastDeliveryAttemptAt,
-    lastDeliveredAt: existing.lastDeliveredAt,
-    nextDeliveryAt: existing.nextDeliveryAt || draft.nextDeliveryAt,
-    acknowledgedAt: existing.acknowledgedAt,
-    acknowledgedBy: existing.acknowledgedBy,
-    acknowledgementNote: existing.acknowledgementNote
-  });
-}
-
-function countByStatus(results, status) {
-  return results.filter(function (result) {
-    return result.status === status;
-  }).length;
-}
-
-function isEventMutation(result) {
-  return result.status === 'created' || result.status === 'updated' || result.status === 'resolved' || result.status === 'reopened';
 }
 
 module.exports = {
