@@ -328,8 +328,13 @@ function bindForms() {
   });
 
   document.getElementById('eventResult').addEventListener('click', async function (event) {
-    const button = event.target.closest('button[data-action="ack-event"]');
+    const button = event.target.closest('button[data-action]');
     if (!button) return;
+    if (button.dataset.action === 'load-source-drilldown') {
+      await loadSourceOperationsDrilldownFromButton(button);
+      return;
+    }
+    if (button.dataset.action !== 'ack-event') return;
     await renderAsync('eventResult', function () {
       return requestJson('/api/events/' + encodeURIComponent(button.dataset.eventId) + '/ack', {
         acknowledgedBy: 'web'
@@ -3103,9 +3108,12 @@ function renderNotificationEventOverview(overview) {
     metric('Open delivery status', formatStanceSummary(overview.byOpenDeliveryStatus)),
     metric('Event types', formatStanceSummary(overview.byType)),
     metric('Severity', formatStanceSummary(overview.bySeverity)),
+    metric('Sources', compactCountMap(overview.bySourceKey)),
+    metric('Open sources', compactCountMap(overview.byOpenSourceKey)),
     metric('Next delivery', overview.nextDeliveryAt || 'none'),
     metric('Oldest open', overview.oldestUnacknowledgedAt || 'none'),
     metric('Next', overview.recommendedNextAction || 'none'),
+    renderNotificationSourceHotspots(overview.sourceHotspots || []),
     evidenceList((attention.failedEvents || []).slice(0, 5).map(function (event) {
       return (event.deliveryStatus || 'failed') + ' | ' + event.type + ' | ' + event.id + ' | attempts=' + (event.deliveryAttempts || 0);
     }).concat((attention.reviewableEvents || []).slice(0, 5).map(function (event) {
@@ -3134,7 +3142,35 @@ function renderNotificationEventRow(event) {
   const title = event.title || event.summary || event.id || 'untitled-event';
   const summary = event.summary && event.summary !== title ? '<small>' + escapeHtml(event.summary) + '</small>' : '';
   const meta = eventMetadata(event).join(' · ');
-  return '<div class="action-row event-row"><span><strong>' + escapeHtml(title) + '</strong>' + summary + '<small>' + escapeHtml(meta) + '</small></span><button class="inline-button" type="button" data-action="ack-event" data-event-id="' + escapeHtml(event.id) + '"' + disabled + '>' + ackLabel + '</button></div>';
+  const controls = '<span class="button-group source-op-buttons">' +
+    renderEventSourceDrilldownButton(event) +
+    '<button class="inline-button" type="button" data-action="ack-event" data-event-id="' + escapeHtml(event.id) + '"' + disabled + '>' + ackLabel + '</button>' +
+    '</span>';
+  return '<div class="action-row event-row"><span><strong>' + escapeHtml(title) + '</strong>' + summary + '<small>' + escapeHtml(meta) + '</small></span>' + controls + '</div>';
+}
+
+function renderNotificationSourceHotspots(hotspots) {
+  if (!hotspots.length) return '';
+  return '<div class="source-hotspot-list">' + hotspots.slice(0, 5).map(function (hotspot) {
+    const details = [
+      'open=' + (hotspot.openCount || 0),
+      'failed=' + (hotspot.failedCount || 0),
+      'due=' + (hotspot.dueForDeliveryCount || 0),
+      'exhausted=' + (hotspot.retryExhaustedCount || 0),
+      hotspot.oldestUnacknowledgedAt ? 'oldest=' + hotspot.oldestUnacknowledgedAt : undefined
+    ].filter(Boolean).join(' | ');
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(hotspot.sourceKey || hotspot.sourceId || 'unknown-source') + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '</span><span class="button-group source-op-buttons">' +
+      renderEventSourceDrilldownButton(hotspot) +
+      '</span></div>';
+  }).join('') + '</div>';
+}
+
+function renderEventSourceDrilldownButton(source) {
+  if (!source || (!source.sourceId && !source.sourceKey)) return '';
+  return '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-drilldown" data-source-id="' + escapeHtml(source.sourceId || '') + '" data-source-key="' + escapeHtml(source.sourceKey || '') + '" data-limit="50">Ops</button>';
 }
 
 function eventMetadata(event) {

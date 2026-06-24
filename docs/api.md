@@ -229,7 +229,7 @@ Optional filters include `type`, `sourceId`, `sourceKey` / `forum`, `acknowledge
 
 ### `GET /api/events/overview`
 
-Summarizes notification outbox health for dashboards and workers. Optional filters mirror `GET /api/events` and add `maxAttempts`, `now`, and `storeDir`. The response includes status, window size, pending/failed/unacknowledged/due counts, retry-exhausted count, next delivery time, oldest open event, counts by type/severity/delivery status/source, attention samples, and a recommended next action.
+Summarizes notification outbox health for dashboards and workers. Optional filters mirror `GET /api/events` and add `maxAttempts`, `now`, and `storeDir`. The response includes status, window size, pending/failed/unacknowledged/due counts, retry-exhausted count, next delivery time, oldest open event, counts by type/severity/delivery status/source, `byOpenSourceKey`, `sourceHotspots`, attention samples, and a recommended next action.
 
 ### `POST /api/events/dispatch`
 

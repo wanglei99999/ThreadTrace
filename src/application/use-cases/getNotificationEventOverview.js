@@ -67,6 +67,14 @@ async function getNotificationEventOverview(options) {
       unacknowledged: unacknowledgedEvents.length
     },
     bySourceKey: countBy(events, function (event) { return event.sourceKey || 'unknown'; }),
+    byOpenSourceKey: countBy(unacknowledgedEvents, function (event) { return event.sourceKey || 'unknown'; }),
+    sourceHotspots: sourceHotspots({
+      events,
+      unacknowledgedEvents,
+      failedEvents,
+      dueEvents,
+      exhaustedEvents
+    }),
     attention: {
       failedEvents: failedEvents.slice(0, 10).map(summarizeEvent),
       dueEvents: dueEvents.slice(0, 10).map(summarizeEvent),
@@ -103,6 +111,61 @@ function summarizeEvent(event) {
     nextDeliveryAt: event.nextDeliveryAt,
     lastDeliveryError: event.lastDeliveryError
   };
+}
+
+function sourceHotspots(input) {
+  const safeInput = input || {};
+  const groups = new Map();
+  (safeInput.events || []).forEach(function (event) {
+    const group = ensureSourceGroup(groups, event);
+    group.eventCount += 1;
+    group.latestCreatedAt = latestTimestamp([group.latestCreatedAt, event.createdAt]);
+  });
+  (safeInput.unacknowledgedEvents || []).forEach(function (event) {
+    const group = ensureSourceGroup(groups, event);
+    group.openCount += 1;
+    group.oldestUnacknowledgedAt = oldestTimestamp([group.oldestUnacknowledgedAt, event.createdAt]);
+  });
+  (safeInput.failedEvents || []).forEach(function (event) {
+    ensureSourceGroup(groups, event).failedCount += 1;
+  });
+  (safeInput.dueEvents || []).forEach(function (event) {
+    ensureSourceGroup(groups, event).dueForDeliveryCount += 1;
+  });
+  (safeInput.exhaustedEvents || []).forEach(function (event) {
+    ensureSourceGroup(groups, event).retryExhaustedCount += 1;
+  });
+  return Array.from(groups.values())
+    .filter(function (group) {
+      return group.openCount > 0 || group.failedCount > 0 || group.dueForDeliveryCount > 0 || group.retryExhaustedCount > 0;
+    })
+    .sort(function (left, right) {
+      return right.retryExhaustedCount - left.retryExhaustedCount ||
+        right.failedCount - left.failedCount ||
+        right.dueForDeliveryCount - left.dueForDeliveryCount ||
+        right.openCount - left.openCount ||
+        right.eventCount - left.eventCount ||
+        String(left.sourceKey || left.sourceId || 'unknown').localeCompare(String(right.sourceKey || right.sourceId || 'unknown'));
+    })
+    .slice(0, 10);
+}
+
+function ensureSourceGroup(groups, event) {
+  const key = event && event.sourceId ? 'id:' + event.sourceId : 'key:' + (event && event.sourceKey || 'unknown');
+  if (!groups.has(key)) {
+    groups.set(key, {
+      sourceId: event && event.sourceId,
+      sourceKey: event && event.sourceKey,
+      eventCount: 0,
+      openCount: 0,
+      failedCount: 0,
+      dueForDeliveryCount: 0,
+      retryExhaustedCount: 0,
+      latestCreatedAt: undefined,
+      oldestUnacknowledgedAt: undefined
+    });
+  }
+  return groups.get(key);
 }
 
 function statusForOverview(summary) {

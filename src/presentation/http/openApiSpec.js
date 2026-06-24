@@ -1404,7 +1404,7 @@ function createOpenApiSpec() {
           ],
           responses: {
             200: {
-              description: 'Notification outbox overview with counts by type, severity, status, acknowledgement, and attention samples'
+              description: 'Notification outbox overview with counts by type, severity, status, acknowledgement, source pressure, sourceHotspots, and attention samples'
             }
           }
         }

@@ -185,6 +185,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /sourceId/);
     assert.match(webAppJs, /api\/events\/overview/);
     assert.match(webAppJs, /renderNotificationEventOverview/);
+    assert.match(webAppJs, /renderNotificationSourceHotspots/);
+    assert.match(webAppJs, /renderEventSourceDrilldownButton/);
     assert.match(webAppJs, /event-summary-strip/);
     assert.match(webAppJs, /formatOpinionChainSummary/);
     assert.match(webAppJs, /renderPrimaryAuthorProfile/);
@@ -394,6 +396,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(contextReviewResultEvents.events[0].payload.sourceKey, 'nga');
     assert.equal(eventOverview.eventCount, 1);
     assert.equal(eventOverview.byType['context-review-result'], 1);
+    assert.equal(eventOverview.byOpenSourceKey.nga, 1);
+    assert.equal(eventOverview.sourceHotspots[0].sourceKey, 'nga');
+    assert.equal(eventOverview.sourceHotspots[0].openCount, 1);
     assert.equal(eventOverview.generatedAt, '2026-06-21T11:06:00.000Z');
     assert.equal(openApi.openapi, '3.0.3');
     assert.ok(openApi.paths['/api/interpret-text']);

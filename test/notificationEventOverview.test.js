@@ -64,6 +64,14 @@ test('notification event overview summarizes outbox pressure and distribution', 
   assert.equal(overview.byOpenDeliveryStatus.failed, 1);
   assert.equal(overview.byAcknowledgement.unacknowledged, 2);
   assert.equal(overview.bySourceKey['forum-a'], 2);
+  assert.equal(overview.byOpenSourceKey['forum-a'], 2);
+  assert.equal(overview.sourceHotspots[0].sourceKey, 'forum-a');
+  assert.equal(overview.sourceHotspots[0].sourceId, 'source-1');
+  assert.equal(overview.sourceHotspots[0].openCount, 2);
+  assert.equal(overview.sourceHotspots[0].failedCount, 1);
+  assert.equal(overview.sourceHotspots[0].dueForDeliveryCount, 2);
+  assert.equal(overview.sourceHotspots[0].retryExhaustedCount, 1);
+  assert.equal(overview.sourceHotspots[0].oldestUnacknowledgedAt, '2026-06-18T09:00:00.000Z');
   assert.equal(overview.attention.failedEvents[0].id, 'event-2');
   assert.equal(overview.attention.retryExhaustedEvents[0].lastDeliveryError.message, 'webhook down');
   assert.match(overview.recommendedNextAction, /channel diagnostics/);
