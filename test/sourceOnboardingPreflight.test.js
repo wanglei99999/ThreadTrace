@@ -7,6 +7,7 @@ const path = require('node:path');
 const test = require('node:test');
 const { getSourceOnboardingPreflight } = require('../src/application/use-cases/getSourceOnboardingPreflight');
 const { createThreadTraceRuntime } = require('../src/runtime/threadTraceRuntime');
+const { makeWorkspaceTempDir } = require('./helpers/workspaceTempDir');
 
 test('source onboarding preflight aggregates catalog, connector, and source validation steps', function () {
   const preflight = getSourceOnboardingPreflight({
@@ -101,7 +102,7 @@ test('runtime source onboarding preflight validates normalized thread JSON input
 });
 
 test('runtime source onboarding preflight can simulate an external connector module', async function () {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-source-onboarding-module-'));
+  const tempDir = await makeWorkspaceTempDir('threadtrace-source-onboarding-module-');
   const modulePath = path.join(tempDir, 'externalConnector.cjs');
   await fs.writeFile(modulePath, [
     "'use strict';",
@@ -144,7 +145,7 @@ test('runtime source onboarding preflight can simulate an external connector mod
 });
 
 test('source onboarding preflight surfaces source validation next-action details', async function () {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-source-onboarding-actions-'));
+  const tempDir = await makeWorkspaceTempDir('threadtrace-source-onboarding-actions-');
   const modulePath = path.join(tempDir, 'externalConnector.cjs');
   await fs.writeFile(modulePath, [
     "'use strict';",

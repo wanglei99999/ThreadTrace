@@ -9,6 +9,7 @@ const { createApplicationError } = require('../src/application/errors/applicatio
 const { createThreadTraceServer } = require('../src/presentation/http/createServer');
 const { createThreadTraceConfig } = require('../src/runtime/threadTraceConfig');
 const { createThreadTraceRuntime } = require('../src/runtime/threadTraceRuntime');
+const { makeWorkspaceTempDir } = require('./helpers/workspaceTempDir');
 
 test('http server exposes health, adapters, and context APIs', async function () {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-http-core-'));
@@ -481,7 +482,9 @@ test('http server lists file-audit review action executor records', async functi
     });
     const diagnostics = await getJson(baseUrl + '/api/context-review-results/action-executor/diagnostics?limit=10');
     const overview = await getJson(baseUrl + '/api/context-review-results/action-audits/overview?limit=10');
+    const sourceOverview = await getJson(baseUrl + '/api/context-review-results/action-audits/overview?sourceKey=nga&limit=10');
     const audits = await getJson(baseUrl + '/api/context-review-results/action-audits?limit=10');
+    const sourceAudits = await getJson(baseUrl + '/api/context-review-results/action-audits?sourceKey=nga&limit=10');
     const closureAudits = await getJson(baseUrl + '/api/context-review-results/action-audits?action=tasks.closure');
     const executions = await getJson(baseUrl + '/api/context-review-results/action-executions?limit=10');
     const closureExecutions = await getJson(baseUrl + '/api/context-review-results/action-executions?action=tasks.closure&status=completed&sourceKey=nga');
@@ -497,10 +500,18 @@ test('http server lists file-audit review action executor records', async functi
     assert.equal(overview.status, 'ok');
     assert.equal(overview.count, 2);
     assert.equal(overview.taskCount, 1);
+    assert.equal(overview.bySourceKey.nga, 2);
     assert.equal(overview.plannedClosureCount, 1);
     assert.equal(overview.plannedMergeCandidateCount, 1);
+    assert.equal(sourceOverview.sourceKey, 'nga');
+    assert.equal(sourceOverview.query.sourceKey, 'nga');
+    assert.equal(sourceOverview.count, 2);
     assert.equal(audits.count, 2);
+    assert.equal(sourceAudits.sourceKey, 'nga');
+    assert.equal(sourceAudits.count, 2);
+    assert.equal(sourceAudits.audits[0].sourceKey, 'nga');
     assert.equal(closureAudits.count, 1);
+    assert.equal(closureAudits.audits[0].sourceKey, 'nga');
     assert.equal(closureAudits.audits[0].request.taskId, apply.task.id);
     assert.equal(executions.status, 'ok');
     assert.equal(executions.count, 2);
@@ -509,6 +520,9 @@ test('http server lists file-audit review action executor records', async functi
     assert.equal(closureExecutions.executions[0].taskId, apply.task.id);
     assert.equal(closureExecutions.executions[0].sourceKey, 'nga');
     assert.ok(openApi.paths['/api/context-review-results/action-executions']);
+    assert.ok(openApi.paths['/api/context-review-results/action-audits'].get.parameters.find(function (parameter) {
+      return parameter.name === 'sourceKey';
+    }));
   } finally {
     await close(server);
   }
@@ -832,7 +846,7 @@ test('http server synthesizes runbook notification events', async function () {
 });
 
 test('http server validates connector module files', async function () {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-http-connector-module-validation-'));
+  const tempDir = await makeWorkspaceTempDir('threadtrace-http-connector-module-validation-');
   const goodModulePath = path.join(tempDir, 'goodConnector.cjs');
   const brokenModulePath = path.join(tempDir, 'brokenConnector.cjs');
   await fs.writeFile(goodModulePath, [
@@ -885,7 +899,7 @@ test('http server validates connector module files', async function () {
 });
 
 test('http server source onboarding preflight can simulate connector modules', async function () {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-http-source-onboarding-module-'));
+  const tempDir = await makeWorkspaceTempDir('threadtrace-http-source-onboarding-module-');
   const modulePath = path.join(tempDir, 'externalConnector.cjs');
   await fs.writeFile(modulePath, [
     "'use strict';",

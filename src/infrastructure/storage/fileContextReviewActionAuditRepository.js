@@ -5,6 +5,10 @@ const path = require('path');
 const {
   assertContextReviewActionAuditRepository
 } = require('../../application/ports/contextReviewActionAuditRepository');
+const {
+  auditSourceId,
+  auditSourceKey
+} = require('../../domain/review-actions/contextReviewActionAuditScope');
 
 function createFileContextReviewActionAuditRepository(options) {
   const baseDir = path.resolve((options && options.baseDir) || path.join(process.cwd(), 'data', 'store', 'review-action-audits'));
@@ -19,7 +23,11 @@ function createFileContextReviewActionAuditRepository(options) {
         const record = JSON.parse(await fs.readFile(filePath, 'utf8'));
         if (safeQuery.action && record.action !== safeQuery.action) continue;
         if (safeQuery.taskId && auditTaskId(record) !== safeQuery.taskId) continue;
+        if (safeQuery.sourceId && auditSourceId(record) !== safeQuery.sourceId) continue;
+        if (safeQuery.sourceKey && auditSourceKey(record) !== safeQuery.sourceKey) continue;
         records.push(Object.assign({}, record, {
+          sourceId: auditSourceId(record),
+          sourceKey: auditSourceKey(record),
           filePath
         }));
       }

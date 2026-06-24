@@ -104,7 +104,9 @@ Inspect audit records with:
 
 ```powershell
 node src/presentation/cli/threadtrace.js review-action-audits
+node src/presentation/cli/threadtrace.js review-action-audits --source-key nga
 node src/presentation/cli/threadtrace.js review-action-audit-overview
+node src/presentation/cli/threadtrace.js review-action-audit-overview --source-key nga
 node src/presentation/cli/threadtrace.js review-action-executions
 node src/presentation/cli/threadtrace.js review-action-executions --source-key nga
 node src/presentation/cli/threadtrace.js review-action-executions --status running --running-stale-after-ms 600000
@@ -113,7 +115,9 @@ node src/presentation/cli/threadtrace.js review-action-executor-diagnostics
 
 ```text
 GET /api/context-review-results/action-audits
+GET /api/context-review-results/action-audits?sourceKey=nga
 GET /api/context-review-results/action-audits/overview
+GET /api/context-review-results/action-audits/overview?sourceKey=nga
 GET /api/context-review-results/action-executions
 GET /api/context-review-results/action-executor/diagnostics
 ```

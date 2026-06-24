@@ -2,11 +2,11 @@
 
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
-const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 const { getConnectorRolloutPlan } = require('../src/application/use-cases/getConnectorRolloutPlan');
 const { createThreadTraceRuntime } = require('../src/runtime/threadTraceRuntime');
+const { makeWorkspaceTempDir } = require('./helpers/workspaceTempDir');
 
 test('connector rollout plan aggregates rollout steps and next actions', function () {
   const plan = getConnectorRolloutPlan({
@@ -107,7 +107,7 @@ test('connector rollout plan aggregates rollout steps and next actions', functio
 });
 
 test('runtime connector rollout plan can simulate an external connector module', async function () {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-connector-rollout-'));
+  const tempDir = await makeWorkspaceTempDir('threadtrace-connector-rollout-');
   const modulePath = path.join(tempDir, 'externalConnector.cjs');
   await fs.writeFile(modulePath, [
     "'use strict';",
@@ -150,7 +150,7 @@ test('runtime connector rollout plan can simulate an external connector module',
 });
 
 test('runtime connector rollout plan can include source ingest dry-run', async function () {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-connector-rollout-dry-run-'));
+  const tempDir = await makeWorkspaceTempDir('threadtrace-connector-rollout-dry-run-');
   const inputFile = path.join(tempDir, 'thread.json');
   await fs.writeFile(inputFile, JSON.stringify({
     sourceKey: 'external',

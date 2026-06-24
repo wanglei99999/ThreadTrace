@@ -16,9 +16,11 @@ test('context review action audit overview aggregates executor audit records', a
     contextReviewActionAuditRepository: {
       async listActionAudits(query) {
         assert.equal(query.limit, 100);
+        assert.equal(query.sourceKey, 'nga');
         return audits;
       }
     },
+    sourceKey: 'nga',
     now: '2026-06-21T12:00:00.000Z'
   });
 
@@ -33,6 +35,11 @@ test('context review action audit overview aggregates executor audit records', a
   assert.deepEqual(overview.byAdapter, {
     'file-audit': 2
   });
+  assert.deepEqual(overview.bySourceKey, {
+    nga: 2
+  });
+  assert.equal(overview.recentAudits[0].sourceKey, 'nga');
+  assert.equal(overview.query.sourceKey, 'nga');
   assert.equal(overview.plannedClosureCount, 1);
   assert.equal(overview.plannedMergeCandidateCount, 1);
   assert.equal(overview.latestGeneratedAt, '2026-06-21T11:00:00.000Z');
@@ -57,7 +64,8 @@ function audit(action, taskId, generatedAt, request) {
     action,
     generatedAt,
     request: Object.assign({
-      taskId
+      taskId,
+      sourceKey: 'nga'
     }, request)
   };
 }

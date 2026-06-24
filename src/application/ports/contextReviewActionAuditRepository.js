@@ -6,7 +6,7 @@
  * downstream mutation attempts can be inspected independently.
  *
  * @typedef {Object} ContextReviewActionAuditRepository
- * @property {(query?: { action?: string, taskId?: string, limit?: number }) => Promise<Object[]>} listActionAudits
+ * @property {(query?: { action?: string, taskId?: string, sourceId?: string, sourceKey?: string, limit?: number }) => Promise<Object[]>} listActionAudits
  */
 
 function assertContextReviewActionAuditRepository(repository) {

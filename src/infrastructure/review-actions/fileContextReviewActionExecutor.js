@@ -16,6 +16,8 @@ function createFileContextReviewActionExecutor(options) {
         action: 'tasks.closure',
         request: {
           taskId: safeRequest.taskId,
+          sourceId: safeRequest.sourceId,
+          sourceKey: safeRequest.sourceKey,
           closeTaskIds: safeRequest.closeTaskIds || [],
           actionGate: compactActionGate(safeRequest.actionGate),
           now: safeRequest.now,
@@ -38,6 +40,8 @@ function createFileContextReviewActionExecutor(options) {
         action: 'context.merge',
         request: {
           taskId: safeRequest.taskId,
+          sourceId: safeRequest.sourceId,
+          sourceKey: safeRequest.sourceKey,
           mergeCandidates: safeRequest.mergeCandidates || [],
           actionGate: compactActionGate(safeRequest.actionGate),
           now: safeRequest.now,
@@ -86,12 +90,16 @@ function compactActionGate(actionGate) {
   return {
     generatedAt: actionGate.generatedAt,
     status: actionGate.status,
+    sourceId: actionGate.sourceId,
+    sourceKey: actionGate.sourceKey,
     gateCount: actionGate.gateCount,
     executable: actionGate.executable,
     recommendedNextAction: actionGate.recommendedNextAction,
     actionPlan: actionGate.actionPlan ? {
       count: actionGate.actionPlan.count,
       status: actionGate.actionPlan.status,
+      sourceId: actionGate.actionPlan.sourceId,
+      sourceKey: actionGate.actionPlan.sourceKey,
       closeTaskIds: actionGate.actionPlan.closeTaskIds,
       mergeCandidates: actionGate.actionPlan.mergeCandidates,
       risk: actionGate.actionPlan.risk

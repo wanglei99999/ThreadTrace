@@ -2,14 +2,14 @@
 
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
-const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 const { createThreadTraceConfig } = require('../src/runtime/threadTraceConfig');
 const { createThreadTraceRuntime } = require('../src/runtime/threadTraceRuntime');
+const { makeWorkspaceTempDir } = require('./helpers/workspaceTempDir');
 
 test('runtime loads external connector modules from configuration', async function () {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-connector-module-'));
+  const tempDir = await makeWorkspaceTempDir('threadtrace-connector-module-');
   const modulePath = path.join(tempDir, 'externalConnector.cjs');
   await fs.writeFile(modulePath, [
     "'use strict';",
@@ -85,7 +85,7 @@ test('threadtrace config parses connector module paths', function () {
 });
 
 test('runtime validates connector module files before startup configuration', async function () {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-connector-module-validation-'));
+  const tempDir = await makeWorkspaceTempDir('threadtrace-connector-module-validation-');
   const goodModulePath = path.join(tempDir, 'goodConnector.cjs');
   const emptyModulePath = path.join(tempDir, 'emptyConnector.cjs');
   const brokenModulePath = path.join(tempDir, 'brokenConnector.cjs');
@@ -141,7 +141,7 @@ test('runtime validates connector module files before startup configuration', as
 });
 
 test('connector module validation reports contract and duplicate registration failures', async function () {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-connector-module-contract-fail-'));
+  const tempDir = await makeWorkspaceTempDir('threadtrace-connector-module-contract-fail-');
   const modulePath = path.join(tempDir, 'contractFailConnector.cjs');
   await fs.writeFile(modulePath, [
     "'use strict';",
@@ -202,7 +202,7 @@ test('connector module validation reports contract and duplicate registration fa
 });
 
 test('documented external normalized connector validates and dry-runs sample JSON', async function () {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-docs-connector-example-'));
+  const tempDir = await makeWorkspaceTempDir('threadtrace-docs-connector-example-');
   const cwd = path.resolve(__dirname, '..');
   const modulePath = path.join(cwd, 'docs', 'examples', 'external-normalized-feed-connector.cjs');
   const inputFile = path.join(cwd, 'docs', 'examples', 'external-thread.sample.json');
@@ -233,7 +233,7 @@ test('documented external normalized connector validates and dry-runs sample JSO
 });
 
 test('documented external connector package validates and dry-runs sample JSON', async function () {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-docs-connector-package-'));
+  const tempDir = await makeWorkspaceTempDir('threadtrace-docs-connector-package-');
   const cwd = path.resolve(__dirname, '..');
   const modulePath = path.join(cwd, 'docs', 'examples', 'external-connector-package', 'index.cjs');
   const inputFile = path.join(cwd, 'docs', 'examples', 'external-thread.sample.json');
@@ -265,7 +265,7 @@ test('documented external connector package validates and dry-runs sample JSON',
 });
 
 test('connector module validation reloads changed module files', async function () {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-connector-module-reload-'));
+  const tempDir = await makeWorkspaceTempDir('threadtrace-connector-module-reload-');
   const modulePath = path.join(tempDir, 'reloadConnector.cjs');
   const runtime = createThreadTraceRuntime({
     storeDir: path.join(tempDir, 'store')
@@ -287,7 +287,7 @@ test('connector module validation reloads changed module files', async function 
 });
 
 test('runtime reports connector module load failures without blocking startup', async function () {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-broken-connector-module-'));
+  const tempDir = await makeWorkspaceTempDir('threadtrace-broken-connector-module-');
   const modulePath = path.join(tempDir, 'brokenConnector.cjs');
   await fs.writeFile(modulePath, [
     "'use strict';",

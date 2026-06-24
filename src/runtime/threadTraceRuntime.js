@@ -364,6 +364,8 @@ function createThreadTraceRuntime(options) {
         }),
         action: safeRequest.action,
         taskId: safeRequest.taskId,
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
         limit: safeRequest.limit || 50,
         now: safeRequest.now
       });
@@ -382,6 +384,8 @@ function createThreadTraceRuntime(options) {
         }),
         action: safeRequest.action,
         taskId: safeRequest.taskId,
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
         limit: safeRequest.limit || 100,
         now: safeRequest.now
       });

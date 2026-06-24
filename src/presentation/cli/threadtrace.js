@@ -660,6 +660,8 @@ function main(argv) {
     runtime.listContextReviewActionAudits({
       action: options.action,
       taskId: options.taskId,
+      sourceId: options.sourceId,
+      sourceKey: options.sourceKey || options.forum,
       limit: options.limit ? Number(options.limit) : 50,
       now: options.now,
       storeDir
@@ -667,7 +669,7 @@ function main(argv) {
       console.log('Review action audits: ' + result.count);
       result.audits.forEach(function (audit) {
         const request = audit.request || {};
-        console.log((audit.generatedAt || '') + '\t' + (audit.action || '') + '\t' + (request.taskId || '') + '\t' + (audit.filePath || ''));
+        console.log((audit.generatedAt || '') + '\t' + (audit.action || '') + '\t' + (audit.sourceKey || '') + '\t' + (audit.sourceId || '') + '\t' + (request.taskId || '') + '\t' + (audit.filePath || ''));
       });
     }).catch(function (error) {
       console.error(error && error.stack ? error.stack : error);
@@ -709,6 +711,8 @@ function main(argv) {
     runtime.getContextReviewActionAuditOverview({
       action: options.action,
       taskId: options.taskId,
+      sourceId: options.sourceId,
+      sourceKey: options.sourceKey || options.forum,
       limit: options.limit ? Number(options.limit) : 100,
       now: options.now,
       storeDir
@@ -717,10 +721,11 @@ function main(argv) {
       console.log('Audits: ' + overview.count + '\ttasks=' + overview.taskCount + '\tclose=' + overview.plannedClosureCount + '\tmerge=' + overview.plannedMergeCandidateCount);
       console.log('By action: ' + JSON.stringify(overview.byAction));
       console.log('By adapter: ' + JSON.stringify(overview.byAdapter));
+      console.log('By source key: ' + JSON.stringify(overview.bySourceKey));
       console.log('Next action: ' + overview.recommendedNextAction);
       overview.recentAudits.forEach(function (audit) {
         const request = audit.request || {};
-        console.log((audit.generatedAt || '') + '\t' + (audit.action || '') + '\t' + (request.taskId || '') + '\t' + (audit.filePath || ''));
+        console.log((audit.generatedAt || '') + '\t' + (audit.action || '') + '\t' + (audit.sourceKey || '') + '\t' + (audit.sourceId || '') + '\t' + (request.taskId || '') + '\t' + (audit.filePath || ''));
       });
     }).catch(function (error) {
       console.error(error && error.stack ? error.stack : error);
@@ -2555,9 +2560,9 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js review-action-plan [--source-key key] [--source-id id] [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-gate [--source-key key] [--source-id id] [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-apply [--execute true] [--source-key key] [--source-id id] [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
-  console.log('  node src/presentation/cli/threadtrace.js review-action-audits [--action tasks.closure|context.merge] [--task-id id] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js review-action-audits [--source-key key] [--source-id id] [--action tasks.closure|context.merge] [--task-id id] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-executions [--source-key key] [--source-id id] [--action tasks.closure|context.merge] [--status running|completed|failed] [--task-id id] [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');
-  console.log('  node src/presentation/cli/threadtrace.js review-action-audit-overview [--action tasks.closure|context.merge] [--task-id id] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js review-action-audit-overview [--source-key key] [--source-id id] [--action tasks.closure|context.merge] [--task-id id] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-executor-diagnostics [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js worker-topology-plan [--topology operations-worker|split-workers] [--source-task-mode ingest|insight-pipeline] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js runtime-diagnostics [--now iso]');

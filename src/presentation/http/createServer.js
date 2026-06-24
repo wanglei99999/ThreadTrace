@@ -205,6 +205,8 @@ async function routeRequest(request, response, context) {
     const result = await context.runtime.listContextReviewActionAudits({
       action: url.searchParams.get('action') || undefined,
       taskId: url.searchParams.get('taskId') || undefined,
+      sourceId: url.searchParams.get('sourceId') || undefined,
+      sourceKey: url.searchParams.get('sourceKey') || url.searchParams.get('forum') || undefined,
       limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 50,
       runningStaleAfterMs: url.searchParams.get('runningStaleAfterMs') ? Number(url.searchParams.get('runningStaleAfterMs')) : undefined,
       now: url.searchParams.get('now') || undefined,
@@ -218,6 +220,8 @@ async function routeRequest(request, response, context) {
     const result = await context.runtime.getContextReviewActionAuditOverview({
       action: url.searchParams.get('action') || undefined,
       taskId: url.searchParams.get('taskId') || undefined,
+      sourceId: url.searchParams.get('sourceId') || undefined,
+      sourceKey: url.searchParams.get('sourceKey') || url.searchParams.get('forum') || undefined,
       limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,
       now: url.searchParams.get('now') || undefined,
       storeDir: url.searchParams.get('storeDir') || undefined

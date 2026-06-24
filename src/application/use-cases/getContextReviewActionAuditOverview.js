@@ -3,6 +3,10 @@
 const {
   assertContextReviewActionAuditRepository
 } = require('../ports/contextReviewActionAuditRepository');
+const {
+  auditSourceId,
+  auditSourceKey
+} = require('../../domain/review-actions/contextReviewActionAuditScope');
 
 async function getContextReviewActionAuditOverview(options) {
   const safeOptions = options || {};
@@ -11,6 +15,8 @@ async function getContextReviewActionAuditOverview(options) {
   const audits = await repository.listActionAudits({
     action: safeOptions.action,
     taskId: safeOptions.taskId,
+    sourceId: safeOptions.sourceId,
+    sourceKey: safeOptions.sourceKey || safeOptions.forum,
     limit
   });
 
@@ -19,13 +25,15 @@ async function getContextReviewActionAuditOverview(options) {
     limit,
     action: safeOptions.action,
     taskId: safeOptions.taskId,
+    sourceId: safeOptions.sourceId,
+    sourceKey: safeOptions.sourceKey || safeOptions.forum,
     now: safeOptions.now
   });
 }
 
 function buildContextReviewActionAuditOverview(options) {
   const safeOptions = options || {};
-  const audits = safeOptions.audits || [];
+  const audits = (safeOptions.audits || []).map(withSourceScope);
   const taskIds = unique(audits.map(function (audit) {
     return audit.request && audit.request.taskId;
   }).filter(Boolean));
@@ -33,15 +41,21 @@ function buildContextReviewActionAuditOverview(options) {
   return {
     generatedAt: safeOptions.now || new Date().toISOString(),
     status: audits.length > 0 ? 'ok' : 'warn',
+    sourceId: safeOptions.sourceId,
+    sourceKey: safeOptions.sourceKey,
     query: {
       action: safeOptions.action,
       taskId: safeOptions.taskId,
+      sourceId: safeOptions.sourceId,
+      sourceKey: safeOptions.sourceKey,
       limit: safeOptions.limit
     },
     count: audits.length,
     taskCount: taskIds.length,
     byAction: countBy(audits, function (audit) { return audit.action || 'unknown'; }),
     byAdapter: countBy(audits, function (audit) { return audit.adapter || 'unknown'; }),
+    bySourceKey: countBy(audits, function (audit) { return audit.sourceKey || 'unknown'; }),
+    bySourceId: countBy(audits, function (audit) { return audit.sourceId || 'unknown'; }),
     plannedClosureCount: audits.reduce(function (sum, audit) {
       return sum + (((audit.request || {}).closeTaskIds || []).length);
     }, 0),
@@ -66,6 +80,13 @@ function countBy(items, getKey) {
 
 function unique(values) {
   return Array.from(new Set(values));
+}
+
+function withSourceScope(audit) {
+  return Object.assign({}, audit, {
+    sourceId: auditSourceId(audit),
+    sourceKey: auditSourceKey(audit)
+  });
 }
 
 module.exports = {
