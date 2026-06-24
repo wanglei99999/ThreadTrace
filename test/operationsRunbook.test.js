@@ -304,6 +304,8 @@ test('operations runbook points review action ledger failures to execution inspe
   assert.equal(runbook.actionCount, 1);
   assert.equal(runbook.actions[0].key, 'checklist.reviewActions.executionLedger');
   assert.equal(runbook.actions[0].severity, 'critical');
+  assert.equal(runbook.actions[0].evidence.sourceId, 'source-nga');
+  assert.equal(runbook.actions[0].evidence.sourceKey, 'nga');
   assert.match(runbook.actions[0].recommendedCommand, /review-action-executions --status failed/);
   assert.match(runbook.actions[0].recommendedCommand, /--source-id source-nga/);
   assert.match(runbook.actions[0].recommendedCommand, /--source-key nga/);
@@ -341,6 +343,7 @@ test('operations runbook points stale review action ledger runs to running inspe
   assert.equal(runbook.status, 'fail');
   assert.equal(runbook.actionCount, 1);
   assert.equal(runbook.actions[0].key, 'checklist.reviewActions.executionLedger');
+  assert.equal(runbook.actions[0].evidence.sourceKey, 'external');
   assert.match(runbook.actions[0].recommendedCommand, /review-action-executions --status running/);
   assert.match(runbook.actions[0].recommendedCommand, /--source-key external/);
   assert.match(runbook.actions[0].relatedCommands[1], /review-action-gate/);

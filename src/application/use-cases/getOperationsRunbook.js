@@ -172,11 +172,33 @@ function checklistActions(checklist, scope) {
 
 function checklistActionEvidence(item, scope) {
   const evidence = Object.assign({}, item.evidence || {});
-  const sourceKey = evidence.sourceKey || scope && scope.sourceKey;
-  if (item.area === 'sources' && sourceKey) {
-    evidence.sourceKey = sourceKey;
+  const itemScope = checklistActionSourceScope(item, evidence, scope);
+  if (itemScope.sourceId) {
+    evidence.sourceId = itemScope.sourceId;
+  }
+  if (itemScope.sourceKey) {
+    evidence.sourceKey = itemScope.sourceKey;
   }
   return evidence;
+}
+
+function checklistActionSourceScope(item, evidence, scope) {
+  const safeEvidence = evidence || {};
+  const safeScope = scope || {};
+  if (item.key === 'reviewActions.executionLedger') {
+    const ledgerScope = reviewActionExecutionLedgerScope(safeEvidence);
+    return {
+      sourceId: safeEvidence.sourceId || ledgerScope.sourceId || safeScope.sourceId,
+      sourceKey: safeEvidence.sourceKey || ledgerScope.sourceKey || safeScope.sourceKey
+    };
+  }
+  if (item.area === 'sources') {
+    return {
+      sourceId: safeEvidence.sourceId || safeScope.sourceId,
+      sourceKey: safeEvidence.sourceKey || safeScope.sourceKey
+    };
+  }
+  return {};
 }
 
 function sourceDiagnosticsActions(checklist) {
@@ -510,7 +532,9 @@ function reviewActionExecutionLedgerCommands(item) {
 
 function reviewActionExecutionLedgerScope(evidence) {
   const safeEvidence = evidence || {};
-  const sourceId = safeEvidence.sourceId || uniqueValue([
+  const sourceId = safeEvidence.sourceId ||
+    singleKnownCountKey(safeEvidence.bySourceId) ||
+    uniqueValue([
     safeEvidence.failedExecutions,
     safeEvidence.staleRunningExecutions,
     safeEvidence.executions

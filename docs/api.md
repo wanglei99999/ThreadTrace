@@ -453,7 +453,7 @@ Request:
 }
 ```
 
-The endpoint defaults to dry-run. Set `execute: true` or `dryRun: false` to persist `runbook-action` events. Event IDs are stable per runbook action key plus `sourceId` / `sourceKey` scope when present, so repeated synthesis updates pending or failed events without duplicating alerts while keeping different sources isolated. When `sourceId`, `sourceKey`, or `forum` is provided, stale runbook event resolution is scoped to that source filter so a partial source run does not resolve alerts owned by other sources. The response includes created, updated, resolved, reopened, and skipped counts. Operator-acknowledged and delivered events are skipped.
+The endpoint defaults to dry-run. Set `execute: true` or `dryRun: false` to persist `runbook-action` events. Event IDs are stable per runbook action key plus `sourceId` / `sourceKey` scope when present, so repeated synthesis updates pending or failed events without duplicating alerts while keeping different sources isolated. Review action execution ledger runbook actions infer `sourceId` / `sourceKey` from single-source ledger evidence before event synthesis, so stale or failed mutation-window alerts do not merge across sources. When `sourceId`, `sourceKey`, or `forum` is provided, stale runbook event resolution is scoped to that source filter so a partial source run does not resolve alerts owned by other sources. The response includes created, updated, resolved, reopened, and skipped counts. Operator-acknowledged and delivered events are skipped.
 
 ### `GET /api/notifications/diagnostics`
 

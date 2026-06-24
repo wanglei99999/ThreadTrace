@@ -2,6 +2,7 @@
 
 const assert = require('node:assert/strict');
 const test = require('node:test');
+const { getOperationsRunbook } = require('../src/application/use-cases/getOperationsRunbook');
 const { synthesizeRunbookNotificationEvents } = require('../src/application/use-cases/synthesizeRunbookNotificationEvents');
 const { buildRunbookActionEventId } = require('../src/domain/events/notificationEvent');
 
@@ -91,6 +92,46 @@ test('runbook notification event id scopes source checklist actions by source ke
 
   assert.notEqual(forumA, forumB);
   assert.notEqual(forumA, unscoped);
+});
+
+test('runbook notification events carry inferred review action ledger source scope', async function () {
+  const saved = [];
+  const runbook = getOperationsRunbook({
+    now: '2026-06-21T10:00:00.000Z',
+    checklist: {
+      generatedAt: '2026-06-21T10:00:00.000Z',
+      items: [
+        {
+          key: 'reviewActions.executionLedger',
+          area: 'review-actions',
+          status: 'fail',
+          summary: 'Review action execution ledger has stale running records.',
+          evidence: {
+            count: 1,
+            running: 1,
+            staleRunning: 1,
+            failed: 0,
+            staleRunningBySourceKey: {
+              'forum-a': 1
+            }
+          }
+        }
+      ]
+    }
+  });
+  const result = await synthesizeRunbookNotificationEvents({
+    notificationEventRepository: repository([], saved),
+    runbook,
+    execute: true,
+    now: '2026-06-21T10:01:00.000Z'
+  });
+
+  assert.equal(result.createdCount, 1);
+  assert.equal(saved.length, 1);
+  assert.equal(saved[0].sourceKey, 'forum-a');
+  assert.equal(saved[0].payload.action.evidence.sourceKey, 'forum-a');
+  assert.equal(saved[0].id, buildRunbookActionEventId(saved[0].payload.action));
+  assert.match(saved[0].payload.action.recommendedCommand, /--source-key forum-a/);
 });
 
 test('runbook notification event synthesis skips acknowledged and delivered events', async function () {
