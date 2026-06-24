@@ -1232,10 +1232,24 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Manifest plan is ok or has warnings'
+              description: 'Manifest plan is ok or has warnings',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/RolloutManifestPlan'
+                  }
+                }
+              }
             },
             503: {
-              description: 'Manifest plan has failing checks'
+              description: 'Manifest plan has failing checks',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/RolloutManifestPlan'
+                  }
+                }
+              }
             },
             400: {
               $ref: '#/components/responses/BadRequest'
@@ -1275,10 +1289,24 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Resource provisioning plan is ok or has warnings, including compact evidenceSummary and optional PostgreSQL schemaDrift details'
+              description: 'Resource provisioning plan is ok or has warnings, including compact evidenceSummary and optional PostgreSQL schemaDrift details',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/ResourceProvisioningPlan'
+                  }
+                }
+              }
             },
             503: {
-              description: 'Required resource provisioning has failing checks, including compact evidenceSummary and optional PostgreSQL schemaDrift details'
+              description: 'Required resource provisioning has failing checks, including compact evidenceSummary and optional PostgreSQL schemaDrift details',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/ResourceProvisioningPlan'
+                  }
+                }
+              }
             },
             400: {
               $ref: '#/components/responses/BadRequest'
@@ -1402,10 +1430,24 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Deployment gate is ok or has warnings, with lower-level action details when available'
+              description: 'Deployment gate is ok or has warnings, with lower-level action details when available',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/DeploymentGateReport'
+                  }
+                }
+              }
             },
             503: {
-              description: 'Deployment gate has failing checks, with lower-level action details and evidenceSummary when available'
+              description: 'Deployment gate has failing checks, with lower-level action details and evidenceSummary when available',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/DeploymentGateReport'
+                  }
+                }
+              }
             },
             400: {
               $ref: '#/components/responses/BadRequest'
@@ -3039,6 +3081,215 @@ function createOpenApiSpec() {
               additionalProperties: true
             },
             rolloutManifestDraft: { $ref: '#/components/schemas/SourceRolloutManifestDraft' }
+          }
+        },
+        OperationsPlanStep: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', example: 'manifest.structure' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            summary: { type: 'string' },
+            evidence: {
+              type: 'object',
+              additionalProperties: true
+            }
+          }
+        },
+        OperationsPlanAction: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', example: 'resources.provisioning' },
+            sourceId: { type: 'string' },
+            severity: { type: 'string', enum: ['warning', 'critical'] },
+            summary: { type: 'string' },
+            command: { type: 'string' },
+            commands: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            relatedCommands: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            env: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            evidence: {
+              type: 'object',
+              additionalProperties: true
+            },
+            evidenceSummary: { type: 'string' },
+            details: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true }
+            }
+          }
+        },
+        RolloutManifestPlan: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            manifestVersion: { type: 'string', example: '1.0' },
+            name: { type: 'string', example: 'nga-sample-rollout' },
+            sourceKey: { type: 'string', example: 'nga' },
+            sourceType: { type: 'string', example: 'saved-html-directory' },
+            modulePath: { type: 'string' },
+            steps: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/OperationsPlanStep' }
+            },
+            nextActions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/OperationsPlanAction' }
+            },
+            manifest: {
+              type: 'object',
+              additionalProperties: true
+            },
+            connectorRolloutPlan: {
+              type: 'object',
+              additionalProperties: true
+            },
+            workerTopologyPlan: { $ref: '#/components/schemas/WorkerTopologyPlan' }
+          }
+        },
+        PostgresSchemaDrift: {
+          type: 'object',
+          properties: {
+            status: { type: 'string', enum: ['ok', 'fail'] },
+            missingCount: { type: 'number' },
+            missingExtensions: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            missingTables: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            missingColumns: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            missingIndexes: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            inspectionErrors: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true }
+            },
+            applyCommand: {
+              type: 'string',
+              example: 'psql "$env:THREADTRACE_DATABASE_URL" -f docs/postgresql-schema.sql'
+            }
+          }
+        },
+        ResourceProvisioningItem: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', example: 'storage.postgres' },
+            area: { type: 'string', example: 'storage' },
+            required: { type: 'boolean' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            summary: { type: 'string' },
+            evidence: {
+              type: 'object',
+              additionalProperties: true
+            },
+            evidenceSummary: { type: 'string' },
+            env: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            commands: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            provisioning: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            schemaDrift: { $ref: '#/components/schemas/PostgresSchemaDrift' }
+          }
+        },
+        ResourceProvisioningEnvironment: {
+          type: 'object',
+          properties: {
+            storageMode: { type: 'string', example: 'postgres' },
+            sourceTaskMode: { type: 'string', example: 'ingest' },
+            notificationChannel: { type: 'string', example: 'file' },
+            reviewActionExecutor: { type: 'string', example: 'file-audit' },
+            llmProvider: { type: 'string', example: 'mock' },
+            manifestName: { type: 'string' },
+            sourceKey: { type: 'string', example: 'nga' },
+            sourceType: { type: 'string', example: 'saved-html-directory' }
+          }
+        },
+        ResourceProvisioningPlan: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            environment: { $ref: '#/components/schemas/ResourceProvisioningEnvironment' },
+            resources: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/ResourceProvisioningItem' }
+            },
+            nextActions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/OperationsPlanAction' }
+            },
+            runtimeDiagnostics: {
+              type: 'object',
+              additionalProperties: true
+            },
+            deploymentChecklist: {
+              type: 'object',
+              additionalProperties: true
+            },
+            rolloutManifestPlan: { $ref: '#/components/schemas/RolloutManifestPlan' }
+          }
+        },
+        DeploymentGateItem: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', example: 'resources.provisioning' },
+            area: { type: 'string', example: 'resources' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            summary: { type: 'string' },
+            evidence: {
+              type: 'object',
+              additionalProperties: true
+            },
+            commands: {
+              type: 'array',
+              items: { type: 'string' }
+            }
+          }
+        },
+        DeploymentGateReport: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            gateCount: { type: 'number', example: 4 },
+            gates: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/DeploymentGateItem' }
+            },
+            nextActions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/OperationsPlanAction' }
+            },
+            rolloutManifestPlan: { $ref: '#/components/schemas/RolloutManifestPlan' },
+            resourceProvisioningPlan: { $ref: '#/components/schemas/ResourceProvisioningPlan' },
+            deploymentChecklist: {
+              type: 'object',
+              additionalProperties: true
+            },
+            operationsRunbook: { $ref: '#/components/schemas/OperationsRunbook' }
           }
         },
         RunbookAction: {
