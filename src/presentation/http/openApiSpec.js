@@ -2059,7 +2059,14 @@ function createOpenApiSpec() {
           ],
           responses: {
             200: {
-              description: 'Lifecycle report with disable guard state, failure retry state, recommended commands, and recent lifecycle task audit records'
+              description: 'Lifecycle report with disable guard state, failure retry state, recommended commands, and recent lifecycle task audit records',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceLifecycleReport'
+                  }
+                }
+              }
             }
           }
         }
@@ -2080,7 +2087,14 @@ function createOpenApiSpec() {
           ],
           responses: {
             200: {
-              description: 'Schedule preview with due and skipped sources plus decision reasons'
+              description: 'Schedule preview with due and skipped sources plus decision reasons',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceScheduleReport'
+                  }
+                }
+              }
             }
           }
         }
@@ -2998,6 +3012,211 @@ function createOpenApiSpec() {
             nextActions: {
               type: 'array',
               items: { $ref: '#/components/schemas/SourceDiagnosticAction' }
+            }
+          }
+        },
+        SourceRunState: {
+          type: 'object',
+          properties: {
+            status: { type: 'string', example: 'completed' },
+            lastStartedAt: { type: 'string', example: '2026-06-18T09:00:00.000Z' },
+            lastFinishedAt: { type: 'string', example: '2026-06-18T09:01:00.000Z' },
+            lastTaskId: { type: 'string' },
+            failureCount: { type: 'number', example: 0 },
+            lastError: {
+              type: 'object',
+              additionalProperties: true
+            }
+          }
+        },
+        SourceFailureRetryPlan: {
+          type: 'object',
+          properties: {
+            active: { type: 'boolean', example: false },
+            elapsed: { type: 'boolean', example: true },
+            retryAt: { type: 'string', example: '2026-06-18T09:02:00.000Z' },
+            failureCount: { type: 'number', example: 1 },
+            backoffMs: { type: 'number', example: 60000 }
+          }
+        },
+        SourceDisableGuard: {
+          type: 'object',
+          properties: {
+            canDisable: { type: 'boolean', example: true },
+            blocked: { type: 'boolean', example: false },
+            running: { type: 'boolean', example: false },
+            stale: { type: 'boolean', example: false },
+            staleAfterMs: { type: 'number', example: 600000 },
+            lastStartedAt: { type: 'string', example: '2026-06-18T09:00:00.000Z' }
+          }
+        },
+        SourceLifecycleTask: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            type: { type: 'string', enum: ['disable-tracked-source', 'enable-tracked-source', 'reset-tracked-source-failure'] },
+            status: { type: 'string', enum: ['running', 'completed', 'failed'] },
+            sourceId: { type: 'string' },
+            execute: { type: 'boolean' },
+            dryRun: { type: 'boolean' },
+            force: { type: 'boolean' },
+            createdAt: { type: 'string' },
+            updatedAt: { type: 'string' },
+            finishedAt: { type: 'string' },
+            error: {
+              type: 'object',
+              properties: {
+                message: { type: 'string' }
+              },
+              additionalProperties: true
+            }
+          }
+        },
+        SourceLifecycleItem: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            sourceKey: { type: 'string', example: 'nga' },
+            sourceType: { type: 'string', example: 'thread-url' },
+            displayName: { type: 'string' },
+            enabled: { type: 'boolean' },
+            runState: { $ref: '#/components/schemas/SourceRunState' },
+            disableGuard: { $ref: '#/components/schemas/SourceDisableGuard' },
+            failureRetry: { $ref: '#/components/schemas/SourceFailureRetryPlan' },
+            latestLifecycleTask: { $ref: '#/components/schemas/SourceLifecycleTask' },
+            nextAction: {
+              type: 'string',
+              enum: [
+                'enable-source',
+                'wait-for-run-or-force-disable',
+                'wait-for-failure-backoff',
+                'run-due-source-task',
+                'disable-or-recover-stale-run',
+                'disable-source'
+              ]
+            },
+            recommendedCommands: {
+              type: 'array',
+              items: { type: 'string' }
+            }
+          }
+        },
+        SourceLifecycleBlockedDisable: {
+          type: 'object',
+          properties: {
+            sourceId: { type: 'string' },
+            sourceKey: { type: 'string', example: 'nga' },
+            displayName: { type: 'string' },
+            lastStartedAt: { type: 'string' },
+            staleAfterMs: { type: 'number', example: 600000 },
+            nextAction: { type: 'string', example: 'wait-for-run-or-force-disable' },
+            recommendedCommands: {
+              type: 'array',
+              items: { type: 'string' }
+            }
+          }
+        },
+        SourceLifecycleSummary: {
+          type: 'object',
+          properties: {
+            total: { type: 'number', example: 1 },
+            enabled: { type: 'number', example: 1 },
+            disabled: { type: 'number', example: 0 },
+            running: { type: 'number', example: 0 },
+            staleRunning: { type: 'number', example: 0 },
+            failureRetryWaiting: { type: 'number', example: 0 },
+            disableBlocked: { type: 'number', example: 0 }
+          }
+        },
+        SourceLifecycleReport: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn'] },
+            windowLimit: { type: 'number', example: 100 },
+            taskWindowLimit: { type: 'number', example: 100 },
+            sourceRunStaleAfterMs: { type: 'number', example: 600000 },
+            summary: { $ref: '#/components/schemas/SourceLifecycleSummary' },
+            blockedDisables: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceLifecycleBlockedDisable' }
+            },
+            sources: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceLifecycleItem' }
+            },
+            recentLifecycleTasks: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceLifecycleTask' }
+            }
+          }
+        },
+        SourceScheduleConfig: {
+          type: 'object',
+          properties: {
+            enabled: { type: 'boolean', example: true },
+            intervalMinutes: { type: 'number', example: 15 },
+            nextRunAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' }
+          }
+        },
+        SourceScheduleDecision: {
+          type: 'object',
+          properties: {
+            due: { type: 'boolean', example: true },
+            reason: { type: 'string', example: 'never-finished' },
+            nextRunAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            retryAt: { type: 'string', example: '2026-06-18T10:01:00.000Z' },
+            failureCount: { type: 'number', example: 1 },
+            backoffMs: { type: 'number', example: 60000 },
+            baseReason: { type: 'string', example: 'never-finished' }
+          }
+        },
+        SourceScheduleItem: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            sourceKey: { type: 'string', example: 'nga' },
+            sourceType: { type: 'string', example: 'thread-url' },
+            displayName: { type: 'string' },
+            enabled: { type: 'boolean' },
+            schedule: { $ref: '#/components/schemas/SourceScheduleConfig' },
+            runState: { $ref: '#/components/schemas/SourceRunState' },
+            decision: { $ref: '#/components/schemas/SourceScheduleDecision' }
+          }
+        },
+        SourceScheduleSummary: {
+          type: 'object',
+          properties: {
+            total: { type: 'number', example: 1 },
+            due: { type: 'number', example: 1 },
+            skipped: { type: 'number', example: 0 },
+            byReason: {
+              type: 'object',
+              additionalProperties: { type: 'number' }
+            }
+          }
+        },
+        SourceScheduleReport: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok'] },
+            windowLimit: { type: 'number', example: 100 },
+            sourceRunStaleAfterMs: { type: 'number', example: 600000 },
+            sourceFailureRetryBackoffMs: { type: 'number', example: 60000 },
+            sourceFailureMaxRetryBackoffMs: { type: 'number', example: 3600000 },
+            summary: { $ref: '#/components/schemas/SourceScheduleSummary' },
+            dueSources: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceScheduleItem' }
+            },
+            skippedSources: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceScheduleItem' }
+            },
+            sources: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceScheduleItem' }
             }
           }
         },
