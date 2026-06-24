@@ -919,6 +919,11 @@ test('http server exposes operations runbook API', async function () {
     assert.equal(runbook.actions[0].recommendedCommand, 'node src/presentation/cli/threadtrace.js review-action-executor-diagnostics');
     assert.equal(runbook.sourceLifecycleReport.summary.total, 0);
     assert.ok(openApi.paths['/api/operations/runbook']);
+    assert.equal(openApi.paths['/api/operations/runbook'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/OperationsRunbook');
+    assert.equal(openApi.paths['/api/operations/runbook'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/OperationsRunbook');
+    assert.equal(openApi.components.schemas.OperationsRunbook.properties.actions.items.$ref, '#/components/schemas/RunbookAction');
+    assert.equal(openApi.components.schemas.RunbookAction.properties.relatedCommands.items.type, 'string');
+    assert.equal(openApi.components.schemas.RunbookAction.properties.evidence.additionalProperties, true);
     assert.ok(openApi.paths['/api/operations/runbook'].get.parameters.some(function (parameter) {
       return parameter.name === 'sourceFailureRetryBackoffMs';
     }));
@@ -971,6 +976,7 @@ test('http server synthesizes runbook notification events', async function () {
       limit: 25,
       now: '2026-06-19T10:00:00.000Z'
     });
+    const openApi = await getJson(baseUrl + '/openapi.json');
 
     assert.equal(calls.length, 1);
     assert.equal(calls[0].execute, true);
@@ -982,6 +988,12 @@ test('http server synthesizes runbook notification events', async function () {
     assert.equal(calls[0].now, '2026-06-19T10:00:00.000Z');
     assert.equal(result.executed, true);
     assert.equal(result.results[0].event.type, 'runbook-action');
+    assert.equal(openApi.paths['/api/operations/runbook/events'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/RunbookNotificationEventSynthesisResult');
+    assert.equal(openApi.components.schemas.RunbookNotificationEventSynthesisResult.properties.results.items.$ref, '#/components/schemas/RunbookNotificationEventSynthesisItem');
+    assert.equal(openApi.components.schemas.RunbookNotificationEventSynthesisResult.properties.runbook.$ref, '#/components/schemas/OperationsRunbook');
+    assert.equal(openApi.components.schemas.RunbookNotificationEventSynthesisItem.properties.event.$ref, '#/components/schemas/NotificationEvent');
+    assert.equal(openApi.components.schemas.NotificationEvent.properties.type.enum.includes('runbook-action'), true);
+    assert.equal(openApi.components.schemas.NotificationEvent.properties.sourceKey.example, 'nga');
   } finally {
     await close(server);
   }

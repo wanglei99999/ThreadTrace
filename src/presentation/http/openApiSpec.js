@@ -1030,10 +1030,24 @@ function createOpenApiSpec() {
           ],
           responses: {
             200: {
-              description: 'Runbook has no critical actions; source diagnostics repair actions and filtered source readiness actions carry source scope when present'
+              description: 'Runbook has no critical actions; source diagnostics repair actions and filtered source readiness actions carry source scope when present',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/OperationsRunbook'
+                  }
+                }
+              }
             },
             503: {
-              description: 'Runbook contains critical actions, including source-scoped diagnostics and source readiness actions when stored sources are broken'
+              description: 'Runbook contains critical actions, including source-scoped diagnostics and source readiness actions when stored sources are broken',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/OperationsRunbook'
+                  }
+                }
+              }
             }
           }
         }
@@ -1072,7 +1086,14 @@ function createOpenApiSpec() {
           },
           responses: {
             200: {
-              description: 'Runbook notification event synthesis result; event identity and stale resolution are scoped by sourceId/sourceKey/forum when provided'
+              description: 'Runbook notification event synthesis result; event identity and stale resolution are scoped by sourceId/sourceKey/forum when provided',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/RunbookNotificationEventSynthesisResult'
+                  }
+                }
+              }
             }
           }
         }
@@ -2425,6 +2446,122 @@ function createOpenApiSpec() {
               items: { $ref: '#/components/schemas/AuthorReviewQueueItem' }
             },
             recommendedNextAction: { type: 'string' }
+          }
+        },
+        RunbookAction: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', example: 'sourceDiagnostics.source.handler.tracked-source-nga-001' },
+            severity: { type: 'string', enum: ['critical', 'warning'] },
+            area: { type: 'string', example: 'sources' },
+            title: { type: 'string', example: 'Fix tracked source ingest handler.' },
+            summary: { type: 'string' },
+            recommendedCommand: {
+              type: 'string',
+              example: 'node src/presentation/cli/threadtrace.js source-diagnostics --source-id tracked-source-nga-001'
+            },
+            relatedCommands: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            evidence: {
+              type: 'object',
+              description: 'Structured evidence from readiness, source diagnostics, lifecycle, notification, review action, author queue, or pipeline checks.',
+              additionalProperties: true
+            },
+            evidenceSummary: { type: 'string' }
+          }
+        },
+        OperationsRunbook: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-19T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            actionCount: { type: 'number', example: 2 },
+            actions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/RunbookAction' }
+            },
+            checklist: {
+              type: 'object',
+              additionalProperties: true
+            },
+            sourceLifecycleReport: {
+              type: 'object',
+              additionalProperties: true
+            },
+            reviewActionGate: {
+              type: 'object',
+              additionalProperties: true
+            },
+            notificationEventOverview: {
+              type: 'object',
+              additionalProperties: true
+            },
+            pipelineRuns: {
+              type: 'object',
+              additionalProperties: true
+            }
+          }
+        },
+        NotificationEvent: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', example: 'runbook-action-afdda22a04d1' },
+            type: {
+              type: 'string',
+              enum: ['source-changed', 'runbook-action', 'context-review-result', 'author-review-queue']
+            },
+            severity: { type: 'string', enum: ['debug', 'info', 'warning', 'critical'] },
+            sourceId: { type: 'string', example: 'tracked-source-nga-001' },
+            sourceKey: { type: 'string', example: 'nga' },
+            taskId: { type: 'string' },
+            createdAt: { type: 'string', example: '2026-06-19T10:00:00.000Z' },
+            title: { type: 'string' },
+            summary: { type: 'string' },
+            payload: {
+              type: 'object',
+              additionalProperties: true
+            },
+            deliveryStatus: { type: 'string', enum: ['pending', 'delivered', 'failed', 'resolved'] },
+            deliveryAttempts: { type: 'number', example: 0 },
+            nextDeliveryAt: { type: 'string', example: '2026-06-19T10:00:00.000Z' },
+            lastDeliveryError: { type: 'string' },
+            lastDeliveryAttemptAt: { type: 'string' },
+            lastDeliveredAt: { type: 'string' },
+            acknowledgedAt: { type: 'string' },
+            acknowledgedBy: { type: 'string' },
+            acknowledgementNote: { type: 'string' }
+          }
+        },
+        RunbookNotificationEventSynthesisItem: {
+          type: 'object',
+          properties: {
+            status: { type: 'string', enum: ['created', 'updated', 'resolved', 'reopened', 'skipped'] },
+            actionKey: { type: 'string', example: 'checklist.sources.ingestConfiguration' },
+            event: { $ref: '#/components/schemas/NotificationEvent' },
+            reason: { type: 'string', example: 'runbook-action-cleared' }
+          }
+        },
+        RunbookNotificationEventSynthesisResult: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-19T10:00:00.000Z' },
+            status: { type: 'string', example: 'ok' },
+            dryRun: { type: 'boolean', example: true },
+            executed: { type: 'boolean', example: false },
+            actionCount: { type: 'number', example: 1 },
+            eventCount: { type: 'number', example: 1 },
+            createdCount: { type: 'number', example: 1 },
+            updatedCount: { type: 'number', example: 0 },
+            resolvedCount: { type: 'number', example: 0 },
+            reopenedCount: { type: 'number', example: 0 },
+            skippedCount: { type: 'number', example: 0 },
+            results: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/RunbookNotificationEventSynthesisItem' }
+            },
+            runbook: { $ref: '#/components/schemas/OperationsRunbook' }
           }
         },
         WorkerTopologyWorker: {
