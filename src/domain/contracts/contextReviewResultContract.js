@@ -12,6 +12,8 @@ function getContextReviewResultContract() {
         version: { type: 'string' },
         handoffVersion: { type: 'string' },
         handoffId: { type: 'string' },
+        sourceId: { type: 'string' },
+        sourceKey: { type: 'string' },
         status: {
           type: 'string',
           enum: ['accepted', 'partially-accepted', 'rejected', 'needs-more-evidence']
@@ -93,6 +95,8 @@ function getContextReviewResultContract() {
       version: '1.0.0',
       handoffVersion: '1.0.0',
       handoffId: 'context-review-45974302-150058-001',
+      sourceId: 'tracked-source-nga-001',
+      sourceKey: 'nga',
       status: 'partially-accepted',
       reviewer: {
         type: 'human',

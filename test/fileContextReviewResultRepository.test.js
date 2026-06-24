@@ -16,6 +16,8 @@ test('file context review result repository saves, finds, and filters records', 
     id: 'result-1',
     status: 'partially-accepted',
     handoffId: 'handoff-1',
+    sourceId: 'source-a',
+    sourceKey: 'forum-a',
     reviewer: { id: 'operator-1' },
     submittedAt: '2026-06-21T10:00:00.000Z'
   };
@@ -23,6 +25,12 @@ test('file context review result repository saves, finds, and filters records', 
     id: 'result-2',
     status: 'accepted',
     handoffId: 'handoff-2',
+    result: {
+      sourceKey: 'forum-b'
+    },
+    trace: {
+      sourceId: 'source-b'
+    },
     reviewer: { id: 'operator-2' },
     submittedAt: '2026-06-21T11:00:00.000Z'
   };
@@ -33,6 +41,8 @@ test('file context review result repository saves, finds, and filters records', 
   const found = await repository.findReviewResult('result-1');
   const byStatus = await repository.listReviewResults({ status: 'accepted' });
   const byReviewer = await repository.listReviewResults({ reviewerId: 'operator-1' });
+  const bySourceKey = await repository.listReviewResults({ sourceKey: 'forum-b' });
+  const bySourceId = await repository.listReviewResults({ sourceId: 'source-a' });
   const all = await repository.listReviewResults();
 
   assert.equal(found.id, 'result-1');
@@ -40,5 +50,9 @@ test('file context review result repository saves, finds, and filters records', 
   assert.equal(byStatus[0].id, 'result-2');
   assert.equal(byReviewer.length, 1);
   assert.equal(byReviewer[0].id, 'result-1');
+  assert.equal(bySourceKey.length, 1);
+  assert.equal(bySourceKey[0].id, 'result-2');
+  assert.equal(bySourceId.length, 1);
+  assert.equal(bySourceId[0].id, 'result-1');
   assert.deepEqual(all.map(function (record) { return record.id; }), ['result-2', 'result-1']);
 });

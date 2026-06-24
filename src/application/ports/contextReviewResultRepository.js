@@ -7,7 +7,7 @@
  * @typedef {Object} ContextReviewResultRepository
  * @property {(record: Object) => Promise<void>} saveReviewResult
  * @property {(id: string) => Promise<Object | undefined>} findReviewResult
- * @property {(query?: { handoffId?: string, status?: string, reviewerId?: string, limit?: number }) => Promise<Object[]>} listReviewResults
+ * @property {(query?: { handoffId?: string, status?: string, reviewerId?: string, sourceId?: string, sourceKey?: string, limit?: number }) => Promise<Object[]>} listReviewResults
  */
 
 function assertContextReviewResultRepository(repository) {

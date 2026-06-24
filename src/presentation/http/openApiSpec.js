@@ -183,6 +183,8 @@ function createOpenApiSpec() {
             { name: 'handoffId', in: 'query', required: false, schema: { type: 'string' } },
             { name: 'status', in: 'query', required: false, schema: { type: 'string', example: 'partially-accepted' } },
             { name: 'reviewerId', in: 'query', required: false, schema: { type: 'string', example: 'operator-1' } },
+            { name: 'sourceId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
             { name: 'limit', in: 'query', required: false, schema: { type: 'number', example: 50 } },
             { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
           ],
@@ -202,6 +204,9 @@ function createOpenApiSpec() {
                   type: 'object',
                   properties: {
                     id: { type: 'string' },
+                    sourceId: { type: 'string' },
+                    sourceKey: { type: 'string', example: 'nga' },
+                    forum: { type: 'string', example: 'nga' },
                     result: { type: 'object' },
                     payload: { type: 'object' },
                     traceId: { type: 'string' },
@@ -229,6 +234,8 @@ function createOpenApiSpec() {
             { name: 'handoffId', in: 'query', required: false, schema: { type: 'string' } },
             { name: 'status', in: 'query', required: false, schema: { type: 'string', example: 'partially-accepted' } },
             { name: 'reviewerId', in: 'query', required: false, schema: { type: 'string', example: 'operator-1' } },
+            { name: 'sourceId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
             { name: 'limit', in: 'query', required: false, schema: { type: 'number', example: 100 } },
             { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-21T10:00:00.000Z' } },
             { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
@@ -247,6 +254,8 @@ function createOpenApiSpec() {
             { name: 'handoffId', in: 'query', required: false, schema: { type: 'string' } },
             { name: 'status', in: 'query', required: false, schema: { type: 'string', example: 'partially-accepted' } },
             { name: 'reviewerId', in: 'query', required: false, schema: { type: 'string', example: 'operator-1' } },
+            { name: 'sourceId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
             { name: 'limit', in: 'query', required: false, schema: { type: 'number', example: 100 } },
             { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-21T10:00:00.000Z' } },
             { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
@@ -265,6 +274,8 @@ function createOpenApiSpec() {
             { name: 'handoffId', in: 'query', required: false, schema: { type: 'string' } },
             { name: 'status', in: 'query', required: false, schema: { type: 'string', example: 'partially-accepted' } },
             { name: 'reviewerId', in: 'query', required: false, schema: { type: 'string', example: 'operator-1' } },
+            { name: 'sourceId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
             { name: 'limit', in: 'query', required: false, schema: { type: 'number', example: 100 } },
             { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-21T10:00:00.000Z' } },
             { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
@@ -291,6 +302,8 @@ function createOpenApiSpec() {
                     handoffId: { type: 'string' },
                     status: { type: 'string', example: 'partially-accepted' },
                     reviewerId: { type: 'string', example: 'operator-1' },
+                    sourceId: { type: 'string' },
+                    sourceKey: { type: 'string', example: 'nga' },
                     limit: { type: 'number', example: 100 },
                     now: { type: 'string', example: '2026-06-21T10:00:00.000Z' },
                     storeDir: { type: 'string' },
@@ -399,6 +412,8 @@ function createOpenApiSpec() {
                     handoffId: { type: 'string' },
                     status: { type: 'string', example: 'partially-accepted' },
                     reviewerId: { type: 'string', example: 'operator-1' },
+                    sourceId: { type: 'string' },
+                    sourceKey: { type: 'string', example: 'nga' },
                     limit: { type: 'number', example: 50 },
                     now: { type: 'string', example: '2026-06-21T10:00:00.000Z' },
                     storeDir: { type: 'string' }

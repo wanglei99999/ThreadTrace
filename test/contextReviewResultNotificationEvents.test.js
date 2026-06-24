@@ -46,6 +46,32 @@ test('context review result notification synthesis executes stable outbox events
   assert.equal(saved[0].payload.handoffId, 'handoff-review-1');
 });
 
+test('context review result notification events carry and isolate source scope', async function () {
+  const saved = [];
+  const forumARecord = reviewRecord('review-1', 'critical', { sourceId: 'source-a', sourceKey: 'forum-a' });
+  const forumBRecord = reviewRecord('review-1', 'critical', { sourceId: 'source-b', sourceKey: 'forum-b' });
+  const result = await synthesizeContextReviewResultNotificationEvents({
+    contextReviewResultRepository: reviewRepository([forumARecord, forumBRecord], function (query) {
+      assert.equal(query.sourceKey, 'forum-a');
+      return [forumARecord];
+    }),
+    notificationEventRepository: eventRepository([], saved),
+    sourceKey: 'forum-a',
+    execute: true,
+    now: '2026-06-21T10:00:00.000Z'
+  });
+  const otherEvent = createContextReviewResultEvent({ record: forumBRecord });
+
+  assert.equal(result.reviewResultCount, 1);
+  assert.equal(result.createdCount, 1);
+  assert.equal(saved.length, 1);
+  assert.equal(saved[0].sourceId, 'source-a');
+  assert.equal(saved[0].sourceKey, 'forum-a');
+  assert.equal(saved[0].payload.sourceId, 'source-a');
+  assert.equal(saved[0].payload.sourceKey, 'forum-a');
+  assert.notEqual(saved[0].id, otherEvent.id);
+});
+
 test('context review result notification synthesis skips acknowledged and delivered events', async function () {
   const record1 = reviewRecord('review-1', 'warning');
   const record2 = reviewRecord('review-2', 'critical');
@@ -70,11 +96,14 @@ test('context review result notification synthesis skips acknowledged and delive
   assert.equal(saved.length, 0);
 });
 
-function reviewRecord(id, severity) {
+function reviewRecord(id, severity, scope) {
+  const safeScope = scope || {};
   return {
     id,
     status: severity === 'info' ? 'accepted' : 'partially-accepted',
     handoffId: 'handoff-' + id,
+    sourceId: safeScope.sourceId,
+    sourceKey: safeScope.sourceKey,
     reviewer: { id: 'operator-1' },
     submittedAt: '2026-06-21T09:00:00.000Z',
     summary: {
@@ -90,12 +119,12 @@ function reviewRecord(id, severity) {
   };
 }
 
-function reviewRepository(records) {
+function reviewRepository(records, onList) {
   return {
     async saveReviewResult() {},
     async findReviewResult() {},
-    async listReviewResults() {
-      return records;
+    async listReviewResults(query) {
+      return onList ? onList(query) : records;
     }
   };
 }

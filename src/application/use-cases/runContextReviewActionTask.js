@@ -35,6 +35,8 @@ async function runContextReviewActionTask(options) {
     handoffId: safeOptions.handoffId,
     status: safeOptions.status,
     reviewerId: safeOptions.reviewerId,
+    sourceId: safeOptions.sourceId,
+    sourceKey: safeOptions.sourceKey || safeOptions.forum,
     limit: safeOptions.limit || 100,
     storeDir: safeOptions.storeDir,
     now: safeOptions.now
@@ -57,6 +59,8 @@ async function runContextReviewActionTask(options) {
       handoffId: safeOptions.handoffId,
       status: safeOptions.status,
       reviewerId: safeOptions.reviewerId,
+      sourceId: safeOptions.sourceId,
+      sourceKey: safeOptions.sourceKey || safeOptions.forum,
       limit: safeOptions.limit || 100,
       now: safeOptions.now,
       storeDir: safeOptions.storeDir

@@ -571,7 +571,7 @@ function main(argv) {
       console.log('Mode: ' + (result.dryRun ? 'dry-run' : 'execute'));
       console.log('Review results: ' + result.reviewResultCount + '\tcreated=' + result.createdCount + '\tupdated=' + result.updatedCount + '\tskipped=' + result.skippedCount);
       result.results.forEach(function (item) {
-        console.log(item.status + '\t' + (item.recordId || 'unknown-record') + '\t' + item.event.id + '\t' + item.event.severity);
+        console.log(item.status + '\t' + (item.sourceKey || '') + '\t' + (item.recordId || 'unknown-record') + '\t' + item.event.id + '\t' + item.event.severity);
       });
     }).catch(function (error) {
       console.error(error && error.stack ? error.stack : error);
@@ -2321,6 +2321,8 @@ function buildReviewResultQuery(options, storeDir) {
     handoffId: options.handoffId,
     status: options.status,
     reviewerId: options.reviewerId,
+    sourceId: options.sourceId,
+    sourceKey: options.sourceKey || options.forum,
     limit: options.limit ? Number(options.limit) : 100,
     now: options.now
   };
@@ -2547,10 +2549,10 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js operations-runbook [--forum nga] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--running-stale-after-ms ms] [--event-limit n] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js synthesize-runbook-events [--forum nga] [--source-id id] [--resolve-stale true|false] [--execute true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js synthesize-author-review-queue-events [--execute true] [--source-key key] [--status open] [--resolve-stale true] [--store-dir dir] [--limit n]');
-  console.log('  node src/presentation/cli/threadtrace.js synthesize-context-review-result-events [--execute true] [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n]');
-  console.log('  node src/presentation/cli/threadtrace.js review-action-plan [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
-  console.log('  node src/presentation/cli/threadtrace.js review-action-gate [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
-  console.log('  node src/presentation/cli/threadtrace.js review-action-apply [--execute true] [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js synthesize-context-review-result-events [--execute true] [--source-key key] [--source-id id] [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js review-action-plan [--source-key key] [--source-id id] [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js review-action-gate [--source-key key] [--source-id id] [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js review-action-apply [--execute true] [--source-key key] [--source-id id] [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-audits [--action tasks.closure|context.merge] [--task-id id] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-executions [--action tasks.closure|context.merge] [--status running|completed|failed] [--task-id id] [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js review-action-audit-overview [--action tasks.closure|context.merge] [--task-id id] [--store-dir dir] [--limit n]');

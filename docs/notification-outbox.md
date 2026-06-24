@@ -50,7 +50,7 @@ node src/presentation/cli/threadtrace.js notification-diagnostics --channel webh
 node src/presentation/cli/threadtrace.js synthesize-runbook-events
 node src/presentation/cli/threadtrace.js synthesize-runbook-events --execute true
 node src/presentation/cli/threadtrace.js synthesize-context-review-result-events
-node src/presentation/cli/threadtrace.js synthesize-context-review-result-events --execute true
+node src/presentation/cli/threadtrace.js synthesize-context-review-result-events --execute true --source-key nga
 node src/presentation/cli/threadtrace.js synthesize-author-review-queue-events
 node src/presentation/cli/threadtrace.js synthesize-author-review-queue-events --execute true --source-key nga
 node src/presentation/cli/threadtrace.js dispatch-events --channel file
@@ -70,7 +70,7 @@ npm run worker:events-loop
 npm run worker:operations-once -- --runbook-events true
 npm run worker:operations-loop -- --runbook-events-execute true
 npm run worker:operations-once -- --context-review-result-events true
-npm run worker:operations-loop -- --context-review-result-events-execute true
+npm run worker:operations-loop -- --context-review-result-events-execute true --source-key nga
 npm run worker:operations-once -- --author-review-queue-events true
 npm run worker:operations-loop -- --author-review-queue-events-execute true --source-key nga
 npm run worker:operations-once -- --archive-events true --source-key nga
@@ -89,7 +89,7 @@ POST /api/events/ack
 POST /api/events/archive
 ```
 
-`synthesize-runbook-events`, `synthesize-context-review-result-events`, `synthesize-author-review-queue-events`, `POST /api/operations/runbook/events`, `POST /api/context-review-results/events`, and `POST /api/intelligence/author-review-queue/events` default to dry-run. Set `--execute true` or request body `{"execute": true}` to persist events into the outbox. Stable event IDs are derived from the runbook action key, context review result record id, or durable author queue item id, so repeated synthesis updates pending/failed events without duplicating alerts. Stale runbook and author queue events are marked `resolved` when the underlying action or queue item disappears, and system-resolved events reopen as `pending` if the same action returns. Operator-acknowledged or already delivered events are left untouched for audit safety.
+`synthesize-runbook-events`, `synthesize-context-review-result-events`, `synthesize-author-review-queue-events`, `POST /api/operations/runbook/events`, `POST /api/context-review-results/events`, and `POST /api/intelligence/author-review-queue/events` default to dry-run. Set `--execute true` or request body `{"execute": true}` to persist events into the outbox. Stable event IDs are derived from the runbook action key, source-scoped context review result record id, or durable author queue item id, so repeated synthesis updates pending/failed events without duplicating alerts or crossing sources. Context review result synthesis supports `sourceId` and `sourceKey` / `forum` filters and generated events carry that scope when the record, result payload, or trace contains it. Stale runbook and author queue events are marked `resolved` when the underlying action or queue item disappears, and system-resolved events reopen as `pending` if the same action returns. Operator-acknowledged or already delivered events are left untouched for audit safety.
 
 Use `ack-events` or `POST /api/events/ack` to close handled events in bulk. Without explicit `eventIds`, bulk acknowledgement defaults to `acknowledged=false` and the requested filter window, including optional `sourceKey` / `forum`, which keeps historical acknowledged events immutable while giving operators a fast way to clear delivered or resolved alerts. The CLI and API support `dryRun=true` for acknowledgement previews; `npm run operations:ack-events` uses dry-run by default and requires `-- --execute true` to persist.
 

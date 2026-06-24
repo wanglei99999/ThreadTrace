@@ -68,13 +68,14 @@ function createContextReviewResultEvent(input) {
   const record = safeInput.record || {};
   const summary = record.summary || {};
   const notification = summary.notification || {};
+  const scope = contextReviewResultScope(record);
   const now = safeInput.createdAt || new Date().toISOString();
   return {
     id: safeInput.id || buildContextReviewResultEventId(record),
     type: 'context-review-result',
     severity: notification.severity || 'info',
-    sourceId: undefined,
-    sourceKey: undefined,
+    sourceId: scope.sourceId,
+    sourceKey: scope.sourceKey,
     taskId: undefined,
     createdAt: now,
     title: 'Context review result: ' + (record.handoffId || record.id || 'unknown'),
@@ -82,6 +83,8 @@ function createContextReviewResultEvent(input) {
     payload: {
       recordId: record.id,
       handoffId: record.handoffId,
+      sourceId: scope.sourceId,
+      sourceKey: scope.sourceKey,
       status: record.status,
       reviewer: record.reviewer,
       submittedAt: record.submittedAt,
@@ -202,13 +205,31 @@ function buildRunbookActionEventId(action) {
 }
 
 function buildContextReviewResultEventId(record) {
-  const key = record && record.id ? record.id : JSON.stringify({
+  const scope = contextReviewResultScope(record);
+  const recordKey = record && record.id ? record.id : JSON.stringify({
     handoffId: record && record.handoffId,
     submittedAt: record && record.submittedAt,
     status: record && record.status
   });
+  const key = scope.sourceId || scope.sourceKey
+    ? JSON.stringify({
+      recordKey,
+      sourceId: scope.sourceId,
+      sourceKey: scope.sourceKey
+    })
+    : recordKey;
   const digest = crypto.createHash('sha1').update(String(key)).digest('hex').slice(0, 12);
   return 'context-review-result-' + digest;
+}
+
+function contextReviewResultScope(record) {
+  const safeRecord = record || {};
+  const result = safeRecord.result || {};
+  const trace = safeRecord.trace || {};
+  return {
+    sourceId: safeRecord.sourceId || result.sourceId || trace.sourceId,
+    sourceKey: safeRecord.sourceKey || result.sourceKey || result.forum || trace.sourceKey || trace.forum
+  };
 }
 
 function buildAuthorReviewQueueEventId(item) {

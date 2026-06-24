@@ -56,11 +56,11 @@ Validates a `ContextReviewResult` and returns an operational summary for task cl
 
 ### `POST /api/context-review-results`
 
-Validates, summarizes, and stores a `ContextReviewResult` in the durable review archive. File storage writes records under `context-review-results` inside the configured store directory. Each record preserves the original result, validation details, derived summary, reviewer metadata, handoff id, and trace metadata.
+Validates, summarizes, and stores a `ContextReviewResult` in the durable review archive. File storage writes records under `context-review-results` inside the configured store directory. Each record preserves the original result, validation details, derived summary, reviewer metadata, handoff id, optional `sourceId` / `sourceKey`, and trace metadata.
 
 ### `GET /api/context-review-results`
 
-Lists submitted review result records. Optional filters: `handoffId`, `status`, `reviewerId`, `limit`, and `storeDir`. This endpoint is the read side for review audit trails, task closure dashboards, and future merge workers.
+Lists submitted review result records. Optional filters: `handoffId`, `status`, `reviewerId`, `sourceId`, `sourceKey` / `forum`, `limit`, and `storeDir`. This endpoint is the read side for review audit trails, task closure dashboards, and future merge workers.
 
 ### `GET /api/context-review-results/overview`
 
@@ -68,7 +68,7 @@ Aggregates submitted review result records for dashboards and worker planning. O
 
 ### `GET /api/context-review-results/action-plan`
 
-Builds a read-only closure and merge plan from submitted review results. Optional filters: `handoffId`, `status`, `reviewerId`, `limit`, `now`, and `storeDir`. The response separates tasks that can be closed, tasks that must stay open, merge candidates, blocked tasks, conflicts, risk reasons, and the recommended next action. This endpoint is intentionally non-mutating so future task-closure or context-merge workers can consume it first in dry-run mode.
+Builds a read-only closure and merge plan from submitted review results. Optional filters: `handoffId`, `status`, `reviewerId`, `sourceId`, `sourceKey` / `forum`, `limit`, `now`, and `storeDir`. The response separates tasks that can be closed, tasks that must stay open, merge candidates, blocked tasks, conflicts, risk reasons, and the recommended next action. This endpoint is intentionally non-mutating so future task-closure or context-merge workers can consume it first in dry-run mode.
 
 ### `GET /api/context-review-results/action-gate`
 
@@ -96,7 +96,7 @@ Reports the configured review action executor mode, source, required method read
 
 ### `POST /api/context-review-results/events`
 
-Dry-runs or executes synthesis of attention-worthy review results into notification outbox events. Only `warning` and `critical` review summaries generate events. The endpoint defaults to dry-run; set `execute: true` or `dryRun: false` to persist `context-review-result` events. Optional filters: `handoffId`, `status`, `reviewerId`, `limit`, `now`, and `storeDir`.
+Dry-runs or executes synthesis of attention-worthy review results into notification outbox events. Only `warning` and `critical` review summaries generate events. The endpoint defaults to dry-run; set `execute: true` or `dryRun: false` to persist `context-review-result` events. Optional filters: `handoffId`, `status`, `reviewerId`, `sourceId`, `sourceKey` / `forum`, `limit`, `now`, and `storeDir`. Generated events carry `sourceId` / `sourceKey` when the review result record, payload, or trace provides them.
 
 ### `POST /api/analyze-directory`
 

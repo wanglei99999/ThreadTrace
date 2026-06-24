@@ -328,6 +328,8 @@ test('postgres context review result repository upserts and filters records', as
     id: 'review-result-1',
     status: 'partially-accepted',
     handoffId: 'handoff-1',
+    sourceId: 'source-a',
+    sourceKey: 'forum-a',
     handoffVersion: '1.0.0',
     reviewer: { id: 'operator-1' },
     submittedAt: '2026-06-21T10:00:00.000Z'
@@ -336,6 +338,8 @@ test('postgres context review result repository upserts and filters records', as
     handoffId: 'handoff-1',
     status: 'partially-accepted',
     reviewerId: 'operator-1',
+    sourceId: 'source-a',
+    sourceKey: 'forum-a',
     limit: 5
   });
 
@@ -346,7 +350,9 @@ test('postgres context review result repository upserts and filters records', as
   assert.match(queries[1].sql, /handoff_id = \$1/);
   assert.match(queries[1].sql, /status = \$2/);
   assert.match(queries[1].sql, /reviewer_id = \$3/);
-  assert.deepEqual(queries[1].params, ['handoff-1', 'partially-accepted', 'operator-1', 5]);
+  assert.match(queries[1].sql, /record->>'sourceId'/);
+  assert.match(queries[1].sql, /record->>'sourceKey'/);
+  assert.deepEqual(queries[1].params, ['handoff-1', 'partially-accepted', 'operator-1', 'source-a', 'forum-a', 5]);
   assert.equal(records[0].id, 'review-result-1');
 });
 

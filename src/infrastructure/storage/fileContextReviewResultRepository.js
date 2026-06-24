@@ -34,6 +34,8 @@ function createFileContextReviewResultRepository(options) {
         if (safeQuery.handoffId && record.handoffId !== safeQuery.handoffId) continue;
         if (safeQuery.status && record.status !== safeQuery.status) continue;
         if (safeQuery.reviewerId && reviewerId(record) !== safeQuery.reviewerId) continue;
+        if (safeQuery.sourceId && reviewResultSourceId(record) !== safeQuery.sourceId) continue;
+        if (safeQuery.sourceKey && reviewResultSourceKey(record) !== safeQuery.sourceKey) continue;
         records.push(record);
       }
 
@@ -74,6 +76,20 @@ async function listReviewResultFiles(baseDir) {
 
 function reviewerId(record) {
   return record && record.reviewer ? record.reviewer.id : undefined;
+}
+
+function reviewResultSourceId(record) {
+  const safeRecord = record || {};
+  return safeRecord.sourceId ||
+    (safeRecord.result && safeRecord.result.sourceId) ||
+    (safeRecord.trace && safeRecord.trace.sourceId);
+}
+
+function reviewResultSourceKey(record) {
+  const safeRecord = record || {};
+  return safeRecord.sourceKey ||
+    (safeRecord.result && (safeRecord.result.sourceKey || safeRecord.result.forum)) ||
+    (safeRecord.trace && (safeRecord.trace.sourceKey || safeRecord.trace.forum));
 }
 
 module.exports = {

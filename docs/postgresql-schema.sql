@@ -65,6 +65,8 @@ create table if not exists context_review_results (
 create index if not exists idx_context_review_results_handoff on context_review_results(handoff_id);
 create index if not exists idx_context_review_results_status_time on context_review_results(status, submitted_at desc);
 create index if not exists idx_context_review_results_reviewer on context_review_results(reviewer_id);
+create index if not exists idx_context_review_results_source_key on context_review_results((coalesce(record->>'sourceKey', record->'result'->>'sourceKey', record->'result'->>'forum', record->'trace'->>'sourceKey', record->'trace'->>'forum')));
+create index if not exists idx_context_review_results_source_id on context_review_results((coalesce(record->>'sourceId', record->'result'->>'sourceId', record->'trace'->>'sourceId')));
 
 create table if not exists context_review_action_executions (
   execution_key text primary key,

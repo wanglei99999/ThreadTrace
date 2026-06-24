@@ -56,6 +56,14 @@ function createPostgresContextReviewResultRepository(options) {
         params.push(safeQuery.reviewerId);
         where.push('reviewer_id = $' + params.length);
       }
+      if (safeQuery.sourceId) {
+        params.push(safeQuery.sourceId);
+        where.push(sourceIdSql() + ' = $' + params.length);
+      }
+      if (safeQuery.sourceKey) {
+        params.push(safeQuery.sourceKey);
+        where.push(sourceKeySql() + ' = $' + params.length);
+      }
       if (safeQuery.limit) {
         params.push(Number(safeQuery.limit));
       }
@@ -73,6 +81,14 @@ function createPostgresContextReviewResultRepository(options) {
   };
 
   return assertContextReviewResultRepository(repository);
+}
+
+function sourceIdSql() {
+  return "coalesce(record->>'sourceId', record->'result'->>'sourceId', record->'trace'->>'sourceId')";
+}
+
+function sourceKeySql() {
+  return "coalesce(record->>'sourceKey', record->'result'->>'sourceKey', record->'result'->>'forum', record->'trace'->>'sourceKey', record->'trace'->>'forum')";
 }
 
 module.exports = {

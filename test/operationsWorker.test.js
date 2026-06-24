@@ -216,7 +216,7 @@ test('operations worker can synthesize context review result events before dispa
         };
       },
       async synthesizeContextReviewResultNotificationEvents(request) {
-        calls.push(['review-result-events', request.execute, request.handoffId]);
+        calls.push(['review-result-events', request.execute, request.handoffId, request.sourceId, request.sourceKey]);
         return {
           reviewResultCount: 1,
           actionCount: 1,
@@ -254,13 +254,15 @@ test('operations worker can synthesize context review result events before dispa
   const result = await worker.runOnce({
     contextReviewResultEvents: {
       execute: true,
-      handoffId: 'handoff-1'
+      handoffId: 'handoff-1',
+      sourceId: 'source-a',
+      sourceKey: 'forum-a'
     }
   });
 
   assert.deepEqual(calls, [
     ['sources'],
-    ['review-result-events', true, 'handoff-1'],
+    ['review-result-events', true, 'handoff-1', 'source-a', 'forum-a'],
     ['events'],
     ['overview']
   ]);

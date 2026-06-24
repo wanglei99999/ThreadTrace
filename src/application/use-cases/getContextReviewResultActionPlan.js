@@ -10,6 +10,8 @@ async function getContextReviewResultActionPlan(options) {
     handoffId: safeOptions.handoffId,
     status: safeOptions.status,
     reviewerId: safeOptions.reviewerId,
+    sourceId: safeOptions.sourceId,
+    sourceKey: safeOptions.sourceKey || safeOptions.forum,
     limit: safeOptions.limit || 100
   });
   const collected = collectPlanInputs(records);

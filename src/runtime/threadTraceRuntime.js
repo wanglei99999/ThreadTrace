@@ -257,6 +257,8 @@ function createThreadTraceRuntime(options) {
         contextReviewResultRepository: repositories.contextReviewResultRepository,
         result: safeRequest.result || safeRequest.payload,
         id: safeRequest.id,
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
         now: safeRequest.now,
         requestId: safeRequest.requestId,
         traceId: safeRequest.traceId,
@@ -272,6 +274,8 @@ function createThreadTraceRuntime(options) {
         handoffId: safeRequest.handoffId,
         status: safeRequest.status,
         reviewerId: safeRequest.reviewerId,
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
         limit: safeRequest.limit || 50
       });
     },
@@ -284,6 +288,8 @@ function createThreadTraceRuntime(options) {
         handoffId: safeRequest.handoffId,
         status: safeRequest.status,
         reviewerId: safeRequest.reviewerId,
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
         limit: safeRequest.limit || 100,
         now: safeRequest.now
       });
@@ -297,6 +303,8 @@ function createThreadTraceRuntime(options) {
         handoffId: safeRequest.handoffId,
         status: safeRequest.status,
         reviewerId: safeRequest.reviewerId,
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
         limit: safeRequest.limit || 100,
         now: safeRequest.now
       });
@@ -310,6 +318,8 @@ function createThreadTraceRuntime(options) {
         handoffId: safeRequest.handoffId,
         status: safeRequest.status,
         reviewerId: safeRequest.reviewerId,
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
         limit: safeRequest.limit || 100,
         now: safeRequest.now
       });
@@ -329,6 +339,8 @@ function createThreadTraceRuntime(options) {
         handoffId: safeRequest.handoffId,
         status: safeRequest.status,
         reviewerId: safeRequest.reviewerId,
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
         execute: safeRequest.execute,
         limit: safeRequest.limit || 100,
         now: safeRequest.now,
@@ -1744,6 +1756,8 @@ function createThreadTraceRuntime(options) {
         handoffId: safeRequest.handoffId,
         status: safeRequest.status,
         reviewerId: safeRequest.reviewerId,
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
         execute: safeRequest.execute,
         limit: safeRequest.limit || 50,
         now: safeRequest.now

@@ -14,6 +14,8 @@ async function synthesizeContextReviewResultNotificationEvents(options) {
     handoffId: safeOptions.handoffId,
     status: safeOptions.status,
     reviewerId: safeOptions.reviewerId,
+    sourceId: safeOptions.sourceId,
+    sourceKey: safeOptions.sourceKey || safeOptions.forum,
     limit: safeOptions.limit || 50
   });
   const notifyRecords = records.filter(shouldNotifyRecord);
@@ -31,6 +33,8 @@ async function synthesizeContextReviewResultNotificationEvents(options) {
       status: result.status,
       recordId: record.id,
       handoffId: record.handoffId,
+      sourceId: result.event.sourceId,
+      sourceKey: result.event.sourceKey,
       event: result.event,
       reason: result.reason
     });

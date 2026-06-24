@@ -21,6 +21,8 @@ async function submitContextReviewResult(options) {
     status: result.status,
     handoffId: result.handoffId,
     handoffVersion: result.handoffVersion,
+    sourceId: safeOptions.sourceId || result.sourceId,
+    sourceKey: safeOptions.sourceKey || safeOptions.forum || result.sourceKey || result.forum,
     reviewer: result.reviewer,
     submittedAt: now,
     result,
@@ -43,6 +45,8 @@ function buildTrace(options) {
   if (options.requestId) trace.requestId = options.requestId;
   if (options.traceId) trace.traceId = options.traceId;
   if (options.idempotencyKey) trace.idempotencyKey = options.idempotencyKey;
+  if (options.sourceId) trace.sourceId = options.sourceId;
+  if (options.sourceKey || options.forum) trace.sourceKey = options.sourceKey || options.forum;
   return Object.keys(trace).length > 0 ? trace : undefined;
 }
 

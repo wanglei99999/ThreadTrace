@@ -144,6 +144,8 @@ async function routeRequest(request, response, context) {
     const result = await context.runtime.submitContextReviewResult({
       result: body.result || body.payload || body,
       id: body.id,
+      sourceId: body.sourceId,
+      sourceKey: body.sourceKey || body.forum,
       now: body.now,
       storeDir: body.storeDir || context.storeDir,
       requestId: context.requestId,
@@ -159,6 +161,8 @@ async function routeRequest(request, response, context) {
       handoffId: url.searchParams.get('handoffId') || undefined,
       status: url.searchParams.get('status') || undefined,
       reviewerId: url.searchParams.get('reviewerId') || undefined,
+      sourceId: url.searchParams.get('sourceId') || undefined,
+      sourceKey: url.searchParams.get('sourceKey') || url.searchParams.get('forum') || undefined,
       limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,
       now: url.searchParams.get('now') || undefined,
       storeDir: url.searchParams.get('storeDir') || undefined
@@ -172,6 +176,8 @@ async function routeRequest(request, response, context) {
       handoffId: url.searchParams.get('handoffId') || undefined,
       status: url.searchParams.get('status') || undefined,
       reviewerId: url.searchParams.get('reviewerId') || undefined,
+      sourceId: url.searchParams.get('sourceId') || undefined,
+      sourceKey: url.searchParams.get('sourceKey') || url.searchParams.get('forum') || undefined,
       limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,
       now: url.searchParams.get('now') || undefined,
       storeDir: url.searchParams.get('storeDir') || undefined
@@ -185,6 +191,8 @@ async function routeRequest(request, response, context) {
       handoffId: url.searchParams.get('handoffId') || undefined,
       status: url.searchParams.get('status') || undefined,
       reviewerId: url.searchParams.get('reviewerId') || undefined,
+      sourceId: url.searchParams.get('sourceId') || undefined,
+      sourceKey: url.searchParams.get('sourceKey') || url.searchParams.get('forum') || undefined,
       limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,
       now: url.searchParams.get('now') || undefined,
       storeDir: url.searchParams.get('storeDir') || undefined
@@ -247,6 +255,8 @@ async function routeRequest(request, response, context) {
       handoffId: body.handoffId,
       status: body.status,
       reviewerId: body.reviewerId,
+      sourceId: body.sourceId,
+      sourceKey: body.sourceKey || body.forum,
       execute: body.execute === true || body.dryRun === false,
       limit: body.limit,
       now: body.now,
@@ -264,6 +274,8 @@ async function routeRequest(request, response, context) {
       handoffId: url.searchParams.get('handoffId') || undefined,
       status: url.searchParams.get('status') || undefined,
       reviewerId: url.searchParams.get('reviewerId') || undefined,
+      sourceId: url.searchParams.get('sourceId') || undefined,
+      sourceKey: url.searchParams.get('sourceKey') || url.searchParams.get('forum') || undefined,
       limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 50,
       storeDir: url.searchParams.get('storeDir') || undefined
     });
@@ -617,6 +629,8 @@ async function routeRequest(request, response, context) {
       handoffId: body.handoffId,
       status: body.status,
       reviewerId: body.reviewerId,
+      sourceId: body.sourceId,
+      sourceKey: body.sourceKey || body.forum,
       execute: body.execute === true || body.dryRun === false,
       limit: body.limit,
       now: body.now,

@@ -137,6 +137,8 @@ function buildRequest(options, storeDir, config) {
       : undefined,
     contextReviewResultEvents: options.contextReviewResultEvents === 'true' || options.contextReviewResultEventsExecute === 'true'
       ? {
+        sourceId: options.sourceId,
+        sourceKey: options.sourceKey || options.forum,
         execute: options.contextReviewResultEventsExecute === 'true',
         handoffId: options.handoffId,
         status: options.reviewStatus,
@@ -160,6 +162,8 @@ function buildRequest(options, storeDir, config) {
       : undefined,
     reviewAction: options.reviewAction === 'true' || options.reviewActionExecute === 'true'
       ? {
+        sourceId: options.sourceId,
+        sourceKey: options.sourceKey || options.forum,
         execute: options.reviewActionExecute === 'true',
         handoffId: options.handoffId,
         status: options.reviewStatus,

@@ -34,6 +34,8 @@ test('submit context review result validates, summarizes, and stores record', as
   assert.equal(saved.length, 1);
   assert.equal(saved[0].id, 'review-result-1');
   assert.equal(saved[0].submittedAt, '2026-06-21T10:00:00.000Z');
+  assert.equal(saved[0].sourceId, 'tracked-source-nga-001');
+  assert.equal(saved[0].sourceKey, 'nga');
   assert.equal(saved[0].summary.notification.severity, 'warning');
   assert.equal(saved[0].trace.requestId, 'request-1');
   assert.equal(saved[0].trace.idempotencyKey, 'idem-1');

@@ -231,21 +231,24 @@ test('http server exposes health, adapters, and context APIs', async function ()
       result: contextReviewResultContract.example,
       now: '2026-06-21T10:00:00.000Z'
     }, 201);
-    const listedContextReviewResults = await getJson(baseUrl + '/api/context-review-results?handoffId=' + encodeURIComponent(contextReviewResultContract.example.handoffId));
-    const contextReviewResultOverview = await getJson(baseUrl + '/api/context-review-results/overview?now=2026-06-21T11:00:00.000Z');
-    const contextReviewResultActionPlan = await getJson(baseUrl + '/api/context-review-results/action-plan?now=2026-06-21T11:00:00.000Z');
-    const contextReviewResultActionGate = await getJson(baseUrl + '/api/context-review-results/action-gate?now=2026-06-21T11:00:00.000Z');
+    const listedContextReviewResults = await getJson(baseUrl + '/api/context-review-results?sourceKey=nga&handoffId=' + encodeURIComponent(contextReviewResultContract.example.handoffId));
+    const contextReviewResultOverview = await getJson(baseUrl + '/api/context-review-results/overview?sourceKey=nga&now=2026-06-21T11:00:00.000Z');
+    const contextReviewResultActionPlan = await getJson(baseUrl + '/api/context-review-results/action-plan?sourceKey=nga&now=2026-06-21T11:00:00.000Z');
+    const contextReviewResultActionGate = await getJson(baseUrl + '/api/context-review-results/action-gate?sourceKey=nga&now=2026-06-21T11:00:00.000Z');
     const contextReviewActionApply = await postJson(baseUrl + '/api/context-review-results/action-tasks/apply', {
+      sourceKey: 'nga',
       now: '2026-06-21T11:00:00.000Z'
     });
     const contextReviewActionAuditOverview = await getJson(baseUrl + '/api/context-review-results/action-audits/overview?now=2026-06-21T11:10:00.000Z');
     const contextReviewActionAudits = await getJson(baseUrl + '/api/context-review-results/action-audits?now=2026-06-21T11:10:00.000Z');
     const contextReviewActionExecutorDiagnostics = await getJson(baseUrl + '/api/context-review-results/action-executor/diagnostics?now=2026-06-21T11:10:00.000Z');
     const contextReviewResultEventDryRun = await postJson(baseUrl + '/api/context-review-results/events', {
+      sourceKey: 'nga',
       now: '2026-06-21T11:05:00.000Z'
     });
     const contextReviewResultEventExecute = await postJson(baseUrl + '/api/context-review-results/events', {
       execute: true,
+      sourceKey: 'nga',
       now: '2026-06-21T11:05:00.000Z'
     });
     const contextReviewResultEvents = await getJson(baseUrl + '/api/events?type=context-review-result');
@@ -316,6 +319,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(contextReviewResultSummary.summary.taskClosure.closeTaskIds.length, 1);
     assert.equal(submittedContextReviewResult.status, 'stored');
     assert.equal(submittedContextReviewResult.record.id, 'http-review-result-1');
+    assert.equal(submittedContextReviewResult.record.sourceKey, 'nga');
     assert.equal(submittedContextReviewResult.record.summary.notification.severity, 'warning');
     assert.equal(listedContextReviewResults.count, 1);
     assert.equal(listedContextReviewResults.reviewResults[0].id, 'http-review-result-1');
@@ -353,6 +357,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(contextReviewResultEventExecute.createdCount, 1);
     assert.equal(contextReviewResultEvents.events.length, 1);
     assert.equal(contextReviewResultEvents.events[0].type, 'context-review-result');
+    assert.equal(contextReviewResultEvents.events[0].sourceKey, 'nga');
+    assert.equal(contextReviewResultEvents.events[0].payload.sourceKey, 'nga');
     assert.equal(eventOverview.eventCount, 1);
     assert.equal(eventOverview.byType['context-review-result'], 1);
     assert.equal(eventOverview.generatedAt, '2026-06-21T11:06:00.000Z');
