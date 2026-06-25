@@ -7473,10 +7473,18 @@ function metric(label, value) {
 }
 
 function evidenceList(items) {
-  if (!items || items.length === 0) return '<div class="muted">暂无</div>';
+  if (!items || items.length === 0) return emptySignal('No evidence signals yet.', 'Standby');
   return items.map(function (item) {
     return '<div class="evidence-row"><span>' + escapeHtml(item) + '</span></div>';
   }).join('');
+}
+
+function emptySignal(message, label) {
+  return '<div class="empty-signal" role="status">' +
+    '<span>' + escapeHtml(label || 'Standby') + '</span>' +
+    '<strong>' + escapeHtml(message || 'No signal yet.') + '</strong>' +
+    '<i aria-hidden="true"></i>' +
+    '</div>';
 }
 
 function formatCheckValue(value) {
@@ -7516,7 +7524,7 @@ function schemaDriftSummary(schemaDrift) {
 }
 
 function tagList(items) {
-  if (!items || items.length === 0) return '<div class="muted">暂无</div>';
+  if (!items || items.length === 0) return emptySignal('No tags yet.', 'Quiet');
   return '<div class="tag-list">' + items.map(function (item) {
     return '<span class="tag">' + escapeHtml(item) + '</span>';
   }).join('') + '</div>';
