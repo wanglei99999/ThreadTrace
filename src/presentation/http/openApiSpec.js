@@ -1165,8 +1165,9 @@ function createOpenApiSpec() {
       },
       '/api/operations/trace-context': {
         get: {
-          summary: 'Get tasks correlated by request, trace, or idempotency key',
+          summary: 'Get tasks correlated by task, request, trace, or idempotency key',
           parameters: [
+            { name: 'taskId', in: 'query', required: false, schema: { type: 'string' } },
             { name: 'requestId', in: 'query', required: false, schema: { type: 'string' } },
             { name: 'traceId', in: 'query', required: false, schema: { type: 'string' } },
             { name: 'idempotencyKey', in: 'query', required: false, schema: { type: 'string' } },
@@ -1182,6 +1183,9 @@ function createOpenApiSpec() {
             },
             400: {
               $ref: '#/components/responses/BadRequest'
+            },
+            404: {
+              $ref: '#/components/responses/NotFound'
             }
           }
         }

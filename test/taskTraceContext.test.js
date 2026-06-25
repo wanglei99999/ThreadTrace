@@ -60,6 +60,86 @@ test('task trace context reports idempotency duplicate risk', async function () 
   assert.deepEqual(context.summary.idempotency.taskIds, ['task-2', 'task-1']);
 });
 
+test('task trace context can anchor by task id and expand trace metadata', async function () {
+  const anchorTask = task('task-1', 'source-ingest', 'completed', '2026-06-19T10:01:00.000Z', {
+    traceId: 'trace-1',
+    idempotencyKey: 'idem-1'
+  });
+  const tasks = [
+    task('task-2', 'semantic-enrichment', 'completed', '2026-06-19T10:02:00.000Z', {
+      traceId: 'trace-1',
+      idempotencyKey: 'idem-1'
+    })
+  ];
+  const context = await getTaskTraceContext({
+    taskId: 'task-1',
+    taskRepository: {
+      async saveTask() {},
+      async findTask(id) {
+        assert.equal(id, 'task-1');
+        return anchorTask;
+      },
+      async listTasks(query) {
+        assert.equal(query.requestId, 'request-1');
+        assert.equal(query.traceId, 'trace-1');
+        assert.equal(query.idempotencyKey, 'idem-1');
+        return tasks;
+      }
+    }
+  });
+
+  assert.equal(context.query.taskId, 'task-1');
+  assert.equal(context.query.requestId, 'request-1');
+  assert.equal(context.query.traceId, 'trace-1');
+  assert.equal(context.taskCount, 2);
+  assert.deepEqual(context.tasks.map(function (item) { return item.id; }), ['task-2', 'task-1']);
+  assert.equal(context.summary.idempotency.duplicateExecutionRisk, true);
+});
+
+test('task trace context returns an untraced task id anchor by itself', async function () {
+  const anchorTask = untracedTask('task-untraced', 'manual-maintenance', 'completed', '2026-06-19T10:01:00.000Z');
+  const context = await getTaskTraceContext({
+    taskId: 'task-untraced',
+    taskRepository: {
+      async saveTask() {},
+      async findTask(id) {
+        assert.equal(id, 'task-untraced');
+        return anchorTask;
+      },
+      async listTasks() {
+        assert.fail('untraced task id lookups should not list correlated tasks');
+      }
+    }
+  });
+
+  assert.equal(context.query.taskId, 'task-untraced');
+  assert.equal(context.query.requestId, undefined);
+  assert.equal(context.taskCount, 1);
+  assert.equal(context.tasks[0].id, 'task-untraced');
+  assert.equal(context.tasks[0].trace, undefined);
+});
+
+test('task trace context reports missing task id anchors', async function () {
+  await assert.rejects(function () {
+    return getTaskTraceContext({
+      taskId: 'missing-task',
+      taskRepository: {
+        async saveTask() {},
+        async findTask(id) {
+          assert.equal(id, 'missing-task');
+          return undefined;
+        },
+        async listTasks() { return []; }
+      }
+    });
+  }, function (error) {
+    assert.equal(error.code, 'trace_context_task_not_found');
+    assert.equal(error.statusCode, 404);
+    assert.deepEqual(error.details, { taskId: 'missing-task' });
+    return true;
+  });
+});
+
 test('task trace context requires a trace query key', async function () {
   await assert.rejects(function () {
     return getTaskTraceContext({
@@ -87,6 +167,18 @@ function task(id, type, status, createdAt, traceOverrides) {
         ...(traceOverrides || {})
       }
     },
+    output: {},
+    createdAt,
+    updatedAt: createdAt
+  };
+}
+
+function untracedTask(id, type, status, createdAt) {
+  return {
+    id,
+    type,
+    status,
+    input: {},
     output: {},
     createdAt,
     updatedAt: createdAt

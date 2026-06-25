@@ -653,6 +653,7 @@ async function routeRequest(request, response, context) {
 
   if (request.method === 'GET' && url.pathname === '/api/operations/trace-context') {
     const result = await context.runtime.getTaskTraceContext({
+      taskId: url.searchParams.get('taskId') || undefined,
       requestId: url.searchParams.get('requestId') || undefined,
       traceId: url.searchParams.get('traceId') || undefined,
       idempotencyKey: url.searchParams.get('idempotencyKey') || undefined,

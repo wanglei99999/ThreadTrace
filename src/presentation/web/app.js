@@ -1458,11 +1458,12 @@ function appendOptionalQuery(query, key, value) {
 
 async function loadTaskTraceContextFromButton(button) {
   const query = new URLSearchParams();
+  appendOptionalQuery(query, 'taskId', button.dataset.taskId);
   appendOptionalQuery(query, 'requestId', button.dataset.requestId);
   appendOptionalQuery(query, 'traceId', button.dataset.traceId);
   appendOptionalQuery(query, 'idempotencyKey', button.dataset.idempotencyKey);
   query.set('limit', button.dataset.limit || '20');
-  if (!query.get('requestId') && !query.get('traceId') && !query.get('idempotencyKey')) {
+  if (!query.get('taskId') && !query.get('requestId') && !query.get('traceId') && !query.get('idempotencyKey')) {
     renderError('taskResult', new Error('No trace metadata is available for this task.'));
     return;
   }
@@ -3157,7 +3158,7 @@ function renderRolloutRollbackButtons(report) {
 
 function renderTaskTraceButton(task) {
   const trace = taskTraceMetadata(task);
-  if (!trace.requestId && !trace.traceId && !trace.idempotencyKey) return '';
+  if (!task || (!task.id && !trace.requestId && !trace.traceId && !trace.idempotencyKey)) return '';
   return '<div class="button-group source-op-buttons">' +
     '<button class="inline-button secondary-inline-button" type="button" data-action="load-trace-context"' +
     ' data-task-id="' + escapeHtml(task && task.id || '') + '"' +
@@ -3170,7 +3171,7 @@ function renderTaskTraceButton(task) {
 }
 
 function taskTraceMetadata(task) {
-  return task && task.input && task.input._trace || {};
+  return task && (task.trace || task.input && task.input._trace) || {};
 }
 
 function renderSourceTaskRunResult(result) {
@@ -3298,6 +3299,7 @@ function renderTaskTraceContext(result) {
         summaryTile('Reusable', idempotency.reusableTaskId || 'none', idempotency.reusableTaskId ? 'ok' : 'muted')
       ].join('') + '</div>',
       metric('Request', result.query && result.query.requestId || 'none'),
+      metric('Task', result.query && result.query.taskId || 'none'),
       metric('Trace', result.query && result.query.traceId || 'none'),
       metric('Idempotency', result.query && result.query.idempotencyKey || 'none'),
       metric('By status', compactCountMap(summary.byStatus || {})),

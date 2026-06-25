@@ -1443,6 +1443,7 @@ function createThreadTraceRuntime(options) {
       const repositories = createRepositoriesFor(safeRequest.storeDir);
       return getTaskTraceContext({
         taskRepository: repositories.taskRepository,
+        taskId: safeRequest.taskId,
         requestId: safeRequest.requestId,
         traceId: safeRequest.traceId,
         idempotencyKey: safeRequest.idempotencyKey,

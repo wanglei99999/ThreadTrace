@@ -85,6 +85,7 @@ Correlate a rollout apply request:
 ```powershell
 node src/presentation/cli/threadtrace.js trace-context --request-id <request-id>
 node src/presentation/cli/threadtrace.js trace-context --idempotency-key <key>
+node src/presentation/cli/threadtrace.js trace-context --task-id <task-id>
 ```
 
 Use `idempotency-key` on the HTTP request or `--idempotency-key` on the CLI to safely replay the same dry-run/apply call without creating duplicate audit records.

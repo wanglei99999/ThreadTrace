@@ -88,4 +88,5 @@ Correlate a disable request:
 ```powershell
 node src/presentation/cli/threadtrace.js trace-context --request-id <request-id>
 node src/presentation/cli/threadtrace.js trace-context --idempotency-key <key>
+node src/presentation/cli/threadtrace.js trace-context --task-id <task-id>
 ```

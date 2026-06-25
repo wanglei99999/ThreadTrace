@@ -639,6 +639,7 @@ function main(argv) {
   if (command === 'trace-context') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.getTaskTraceContext({
+      taskId: options.taskId,
       requestId: options.requestId,
       traceId: options.traceId,
       idempotencyKey: options.idempotencyKey,
@@ -649,7 +650,7 @@ function main(argv) {
       storeDir
     }).then(function (result) {
       console.log('Trace context: tasks=' + result.taskCount);
-      console.log('Query: requestId=' + (result.query.requestId || '') + ', traceId=' + (result.query.traceId || '') + ', idempotencyKey=' + (result.query.idempotencyKey || ''));
+      console.log('Query: taskId=' + (result.query.taskId || '') + ', requestId=' + (result.query.requestId || '') + ', traceId=' + (result.query.traceId || '') + ', idempotencyKey=' + (result.query.idempotencyKey || ''));
       result.tasks.forEach(function (task) {
         console.log(task.status + '\t' + task.type + '\t' + task.id + '\t' + task.createdAt);
       });
@@ -2991,7 +2992,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js source-attention-report [--forum nga] [--source-key key] [--source-id id] [--source-failure-retry-backoff-ms ms] [--running-stale-after-ms ms] [--json true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-type-operations-report [--forum nga] [--source-type type] [--module-path file] [--json true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-type-drilldown --source-type type [--forum nga] [--json true] [--store-dir dir] [--limit n]');
-  console.log('  node src/presentation/cli/threadtrace.js trace-context [--request-id id | --trace-id id | --idempotency-key key] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js trace-context [--task-id id | --request-id id | --trace-id id | --idempotency-key key] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-runbook [--forum nga] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--running-stale-after-ms ms] [--event-limit n] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js synthesize-runbook-events [--forum nga] [--source-id id] [--resolve-stale true|false] [--execute true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js synthesize-source-attention-events [--source-key key] [--priority-score-threshold n] [--resolve-stale true] [--execute true] [--store-dir dir] [--limit n]');

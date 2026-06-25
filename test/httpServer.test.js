@@ -160,6 +160,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /renderTaskTraceButton/);
     assert.match(webAppJs, /renderTaskTraceContext/);
     assert.match(webAppJs, /load-trace-context/);
+    assert.match(webAppJs, /data-task-id/);
+    assert.match(webAppJs, /query\.get\('taskId'\)/);
     assert.match(webAppJs, /Task trace context/);
     assert.match(webAppJs, /run-rollout-apply-dry-run/);
     assert.match(webAppJs, /Apply dry-run/);
@@ -671,6 +673,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/runtime/diagnostics']);
     assert.ok(openApi.paths['/api/sources/validate']);
     assert.ok(openApi.paths['/api/operations/trace-context']);
+    assert.ok(openApi.paths['/api/operations/trace-context'].get.parameters.some(function (parameter) {
+      return parameter.name === 'taskId';
+    }));
     assert.ok(openApi.paths['/api/thread-json/validate']);
     assert.equal(openApi.components.schemas.ErrorResponse.properties.error.properties.code.example, 'source_run_already_running');
     assert.equal(openApi.components.schemas.ErrorResponse.properties.error.properties.requestId.type, 'string');
@@ -2083,6 +2088,9 @@ test('http server can run and list ingest tasks', async function () {
     const tasksByRequestId = await getJson(baseUrl + '/api/tasks?requestId=http-task-request-1');
     const tasksByIdempotencyKey = await getJson(baseUrl + '/api/tasks?idempotencyKey=http-task-idem-1');
     const traceContext = await getJson(baseUrl + '/api/operations/trace-context?requestId=http-task-request-1');
+    const traceContextByTaskId = await getJson(baseUrl + '/api/operations/trace-context?taskId=' + encodeURIComponent(taskResult.task.id));
+    const missingTraceTask = await fetch(baseUrl + '/api/operations/trace-context?taskId=missing-task');
+    const missingTraceTaskBody = await missingTraceTask.json();
     const missingTraceQuery = await fetch(baseUrl + '/api/operations/trace-context');
     const missingTraceQueryBody = await missingTraceQuery.json();
 
@@ -2104,6 +2112,12 @@ test('http server can run and list ingest tasks', async function () {
     assert.equal(traceContext.taskCount, 1);
     assert.equal(traceContext.summary.byStatus.completed, 1);
     assert.equal(traceContext.tasks[0].id, taskResult.task.id);
+    assert.equal(traceContextByTaskId.query.taskId, taskResult.task.id);
+    assert.equal(traceContextByTaskId.query.requestId, 'http-task-request-1');
+    assert.equal(traceContextByTaskId.taskCount, 1);
+    assert.equal(traceContextByTaskId.tasks[0].id, taskResult.task.id);
+    assert.equal(missingTraceTask.status, 404);
+    assert.equal(missingTraceTaskBody.error.code, 'trace_context_task_not_found');
     assert.equal(missingTraceQuery.status, 400);
     assert.equal(missingTraceQueryBody.error.code, 'trace_context_query_required');
   } finally {

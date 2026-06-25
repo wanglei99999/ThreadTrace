@@ -21,6 +21,7 @@ Task records may include:
 - `requestId`: request correlation id, usually from the HTTP `x-request-id` header.
 - `traceId`: business or model trace id supplied by the caller, such as a semantic enrichment trace.
 - `idempotencyKey`: client retry key from the HTTP `idempotency-key` header.
+- `taskId`: task record id used as an operator-friendly anchor. If the task has trace metadata, ThreadTrace expands the query to the correlated task set; if it has no trace metadata, the context still returns the task itself.
 
 ## Current Behavior
 
@@ -69,6 +70,7 @@ For an operator-friendly summary of the correlated tasks, use:
 GET /api/operations/trace-context?requestId=http-request-1
 GET /api/operations/trace-context?traceId=semantic-trace-1
 GET /api/operations/trace-context?idempotencyKey=client-retry-key-1
+GET /api/operations/trace-context?taskId=task-123
 ```
 
 CLI:
@@ -77,10 +79,11 @@ CLI:
 node src/presentation/cli/threadtrace.js trace-context --request-id http-request-1
 node src/presentation/cli/threadtrace.js trace-context --trace-id semantic-trace-1
 node src/presentation/cli/threadtrace.js trace-context --idempotency-key client-retry-key-1
+node src/presentation/cli/threadtrace.js trace-context --task-id task-123
 ```
 
 ## Web
 
-The Web workbench renders `Trace` controls on task-producing operation results such as rollout apply and source lifecycle updates when the returned task includes `_trace` metadata. The control opens the same `/api/operations/trace-context` summary in the task panel, showing correlated task counts, status/type distribution, idempotency duplicate risk, reusable completed task id, and the individual task records.
+The Web workbench renders `Trace` controls on task-producing operation results such as rollout apply and source lifecycle updates when the returned task includes a task id. The control opens the same `/api/operations/trace-context` summary in the task panel, showing correlated task counts, status/type distribution, idempotency duplicate risk, reusable completed task id, and the individual task records.
 
 When querying by `idempotencyKey`, the response includes `summary.idempotency`. If `duplicateExecutionRisk=true`, more than one task was recorded for the same key and an operator should inspect the caller retry behavior before enabling automatic idempotent replay.
