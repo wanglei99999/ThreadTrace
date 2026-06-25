@@ -3,6 +3,8 @@
 const state = {
   adapters: [],
   sourceTypes: [],
+  connectorPackages: [],
+  connectorModuleErrors: [],
   currentView: 'history',
   rolloutManifestDraft: undefined,
   onboardingRecipeManifestDraft: undefined,
@@ -657,10 +659,14 @@ async function loadConnectorCatalog() {
     const result = await fetchJson('/api/connectors/catalog', {
       acceptErrorStatus: true
     });
+    state.connectorPackages = result.packages || [];
+    state.connectorModuleErrors = result.moduleErrors || [];
     state.sourceTypes = mergeSourceTypeLists(state.sourceTypes, result.sourceTypes || []);
     fillSuggestionLists();
     renderSourceOnboardingRecipeFromForm();
   } catch (error) {
+    state.connectorPackages = state.connectorPackages || [];
+    state.connectorModuleErrors = state.connectorModuleErrors || [];
     state.sourceTypes = state.sourceTypes || [];
     renderSourceOnboardingRecipeFromForm();
   }
@@ -708,10 +714,12 @@ function fillSuggestionLists() {
 
 function mergeSourceTypeLists(current, incoming) {
   const result = [];
-  const known = new Set();
+  const bySourceType = new Map();
   (current || []).concat(incoming || []).forEach(function (item) {
-    if (!item || !item.sourceType || known.has(item.sourceType)) return;
-    known.add(item.sourceType);
+    if (!item || !item.sourceType) return;
+    bySourceType.set(item.sourceType, Object.assign({}, bySourceType.get(item.sourceType) || {}, item));
+  });
+  bySourceType.forEach(function (item) {
     result.push(item);
   });
   return result;
@@ -1853,7 +1861,7 @@ function renderSourceOnboardingRecipe(sourceTypeSpec, selectedSourceKey) {
   const optionalFields = recipe.optionalLocationFields || [];
   const adapterSummary = recipe.adapterGuidance && recipe.adapterGuidance.summary || (recipe.requiresAdapter ? 'Adapter required.' : 'Adapter not required.');
   const compatibleLabel = compatibleSourceKeys.length > 0 ? compatibleSourceKeys.join(', ') : 'none';
-  return [
+  return renderConnectorCatalogPanels(sourceTypeSpec).concat([
     panel('Source onboarding recipe', [
       metric('Source type', sourceTypeSpec.sourceType),
       metric('Adapter', recipe.requiresAdapter ? 'required' : 'not required'),
@@ -1877,7 +1885,63 @@ function renderSourceOnboardingRecipe(sourceTypeSpec, selectedSourceKey) {
       '</span></div>',
       '<pre>' + escapeHtml(JSON.stringify(manifest, null, 2)) + '</pre>'
     ].join(''), 'wide')
+  ]).join('');
+}
+
+function renderConnectorCatalogPanels(sourceTypeSpec) {
+  const panels = [];
+  if (sourceTypeSpec.package) {
+    panels.push(panel('Connector package', [
+      renderConnectorPackageSummary(sourceTypeSpec.package),
+      renderConnectorPackageCategories(sourceTypeSpec.package.categories),
+      metric('Recommended manifest', sourceTypeSpec.package.rollout && sourceTypeSpec.package.rollout.recommendedManifest || 'none')
+    ].join(''), 'wide'));
+  } else if ((state.connectorPackages || []).length > 0) {
+    panels.push(panel('Connector packages', renderConnectorPackageCatalogRows(state.connectorPackages), 'wide'));
+  }
+  if ((state.connectorModuleErrors || []).length > 0) {
+    panels.push(panel('Connector module errors', evidenceList(state.connectorModuleErrors.map(function (error) {
+      return (error.modulePath || 'unknown-module') + ' | ' + (error.message || 'load failed');
+    })), 'wide'));
+  }
+  return panels;
+}
+
+function renderConnectorPackageSummary(connectorPackage) {
+  const packageSourceType = connectorPackage.sourceType || {};
+  return [
+    '<div class="action-row ops-row"><span>',
+    '<strong>' + escapeHtml(connectorPackage.displayName || connectorPackage.packageName || 'Connector package') + '</strong>',
+    '<small>' + escapeHtml([
+      connectorPackage.packageName,
+      connectorPackage.packageVersion ? 'version=' + connectorPackage.packageVersion : undefined,
+      connectorPackage.packageType ? 'type=' + connectorPackage.packageType : undefined,
+      packageSourceType.kind ? 'kind=' + packageSourceType.kind : undefined
+    ].filter(Boolean).join(' | ')) + '</small>',
+    '<small>' + escapeHtml(packageSourceType.description || packageSourceType.displayName || '') + '</small>',
+    '</span>' + statusBadge('package', 'ok') + '</div>'
   ].join('');
+}
+
+function renderConnectorPackageCategories(categories) {
+  if (!categories || categories.length === 0) return tagList(['uncategorized']);
+  return tagList(categories.map(function (category) {
+    return 'category:' + category;
+  }));
+}
+
+function renderConnectorPackageCatalogRows(packages) {
+  if (!packages.length) return '<div class="muted">No connector package metadata loaded.</div>';
+  return packages.map(function (connectorPackage) {
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(connectorPackage.displayName || connectorPackage.packageName || 'Connector package') + '</strong>' +
+      '<small>' + escapeHtml([
+        connectorPackage.packageName,
+        connectorPackage.packageType,
+        (connectorPackage.categories || []).join(',')
+      ].filter(Boolean).join(' | ')) + '</small>' +
+      '</span>' + statusBadge('package', 'ok') + '</div>';
+  }).join('');
 }
 
 function buildOnboardingRecipeManifest(template, sourceKey) {
@@ -1980,6 +2044,7 @@ function renderSourceOnboardingPreflight(result) {
   }
   if (result.connectorModuleValidation) {
     rememberConnectorContractSourceTypes(result.connectorModuleValidation.contractSummary);
+    rememberConnectorPackageManifests(result.connectorModuleValidation.packageManifests);
     panels.push(panel('Connector 模块', [
       renderConnectorContractTiles(result.connectorModuleValidation.contractSummary),
       metric('可加载', result.connectorModuleValidation.valid ? 'yes' : 'no'),
@@ -1989,6 +2054,9 @@ function renderSourceOnboardingPreflight(result) {
     ].join('')));
     if (hasConnectorContractDetails(result.connectorModuleValidation.contractSummary)) {
       panels.push(panel('Connector contract summary', renderConnectorContractSummary(result.connectorModuleValidation.contractSummary), 'wide'));
+    }
+    if ((result.connectorModuleValidation.packageManifests || []).length > 0) {
+      panels.push(panel('Connector packages', renderConnectorPackageManifestRows(result.connectorModuleValidation.packageManifests), 'wide'));
     }
     const failureRows = connectorContractFailureRows(result.connectorModuleValidation.checks || []);
     if (failureRows.length > 0) {
@@ -2008,6 +2076,7 @@ function renderSourceOnboardingPreflight(result) {
 
 function renderConnectorModuleValidation(result) {
   rememberConnectorContractSourceTypes(result.contractSummary);
+  rememberConnectorPackageManifests(result.packageManifests);
   const modules = result.modules || [];
   const errors = result.errors || [];
   const registrationCount = modules.reduce(function (total, item) {
@@ -2026,6 +2095,9 @@ function renderConnectorModuleValidation(result) {
   ];
   if (hasConnectorContractDetails(result.contractSummary)) {
     panels.push(panel('Contract summary', renderConnectorContractSummary(result.contractSummary), 'wide'));
+  }
+  if ((result.packageManifests || []).length > 0) {
+    panels.push(panel('Connector packages', renderConnectorPackageManifestRows(result.packageManifests), 'wide'));
   }
   const failureRows = connectorContractFailureRows(result.checks || []);
   if (failureRows.length > 0) {
@@ -2092,6 +2164,53 @@ function rememberConnectorContractSourceTypes(summary) {
     });
   });
   fillSuggestionLists();
+}
+
+function rememberConnectorPackageManifests(packageManifests) {
+  if (!packageManifests || packageManifests.length === 0) return;
+  const known = new Set((state.connectorPackages || []).map(function (item) {
+    return item.packageName + '|' + item.modulePath;
+  }));
+  packageManifests.forEach(function (item) {
+    if (!item || !item.packageName) return;
+    const key = item.packageName + '|' + item.modulePath;
+    if (known.has(key)) return;
+    known.add(key);
+    state.connectorPackages.push({
+      modulePath: item.modulePath,
+      packagePath: item.packagePath,
+      packageName: item.packageName,
+      packageVersion: item.packageVersion,
+      displayName: item.displayName,
+      packageType: item.packageType,
+      categories: item.categories || [],
+      capabilities: item.capabilities || {},
+      rollout: item.rollout,
+      sourceTypes: (item.declaredSourceTypes || []).map(function (sourceType) {
+        return {
+          sourceType
+        };
+      })
+    });
+  });
+}
+
+function renderConnectorPackageManifestRows(packageManifests) {
+  if (!packageManifests || packageManifests.length === 0) return '<div class="muted">No connector package manifests.</div>';
+  return packageManifests.map(function (item) {
+    const details = [
+      item.packageName,
+      item.packageVersion ? 'version=' + item.packageVersion : undefined,
+      item.packageType ? 'type=' + item.packageType : undefined,
+      (item.categories || []).length ? 'categories=' + item.categories.join(',') : undefined,
+      (item.declaredSourceTypes || []).length ? 'sourceTypes=' + item.declaredSourceTypes.join(',') : undefined
+    ].filter(Boolean).join(' | ');
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(item.displayName || item.packageName || 'Connector package') + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '<small>' + escapeHtml(item.rollout && item.rollout.recommendedManifest ? 'recommendedManifest=' + item.rollout.recommendedManifest : 'recommendedManifest=none') + '</small>' +
+      '</span>' + statusBadge(item.status || 'unknown', statusVariant(item.status)) + '</div>';
+  }).join('');
 }
 
 function renderConnectorContractSummary(summary) {
@@ -2171,7 +2290,10 @@ function renderConnectorRolloutPlan(result) {
   const steps = result.steps || [];
   const actions = result.nextActions || [];
   const moduleValidation = result.connectorModuleValidation;
-  if (moduleValidation) rememberConnectorContractSourceTypes(moduleValidation.contractSummary);
+  if (moduleValidation) {
+    rememberConnectorContractSourceTypes(moduleValidation.contractSummary);
+    rememberConnectorPackageManifests(moduleValidation.packageManifests);
+  }
   const panels = [
     panel('Connector rollout plan', [
       moduleValidation ? renderConnectorContractTiles(moduleValidation.contractSummary) : '',
@@ -2193,6 +2315,9 @@ function renderConnectorRolloutPlan(result) {
   }
   if (moduleValidation && hasConnectorContractDetails(moduleValidation.contractSummary)) {
     panels.push(panel('Connector contract summary', renderConnectorContractSummary(moduleValidation.contractSummary), 'wide'));
+  }
+  if (moduleValidation && (moduleValidation.packageManifests || []).length > 0) {
+    panels.push(panel('Connector packages', renderConnectorPackageManifestRows(moduleValidation.packageManifests), 'wide'));
   }
   if (moduleValidation) {
     const failureRows = connectorContractFailureRows(moduleValidation.checks || []);

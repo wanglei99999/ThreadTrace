@@ -260,6 +260,7 @@ test('documented external connector package validates and dry-runs sample JSON',
   assert.equal(validation.contractSummary.sourceIngestHandlers[0].capabilities.packageTemplate, true);
   assert.equal(validation.packageManifests[0].status, 'ok');
   assert.equal(validation.packageManifests[0].packageName, '@threadtrace/example-external-connector-package');
+  assert.deepEqual(validation.packageManifests[0].categories, ['api', 'archive', 'json-package']);
   assert.deepEqual(validation.packageManifests[0].declaredSourceTypes, ['package-normalized-feed']);
   assert.equal(validation.packageManifests[0].capabilities.acceptsCanonicalSnapshot, true);
   assert.equal(dryRun.status, 'ok');
@@ -297,6 +298,7 @@ test('documented rss archive connector package validates and dry-runs sample JSO
 
   assert.equal(validation.valid, true);
   assert.equal(validation.packageManifests[0].packageName, '@threadtrace/example-rss-archive-connector-package');
+  assert.deepEqual(validation.packageManifests[0].categories, ['rss', 'api', 'archive', 'json-package']);
   assert.deepEqual(validation.packageManifests[0].declaredSourceTypes, ['rss-archive-normalized-feed']);
   assert.equal(validation.packageManifests[0].capabilities.rssTemplate, true);
   assert.equal(validation.contractSummary.sourceIngestHandlers[0].sourceType, 'rss-archive-normalized-feed');

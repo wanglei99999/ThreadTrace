@@ -187,6 +187,7 @@ function summarizePackageManifests(modules) {
       manifestVersion: manifest.version,
       packageType: manifest.packageType,
       displayName: manifest.displayName,
+      categories: Array.isArray(manifest.categories) ? manifest.categories.slice() : [],
       declaredSourceTypes,
       registeredSourceTypes,
       declaredAdapters,
