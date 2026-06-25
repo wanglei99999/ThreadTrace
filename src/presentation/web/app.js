@@ -692,6 +692,14 @@ async function handleRolloutReadinessAction(event) {
   if (!button) return;
   if (button.dataset.action === 'copy-lifecycle-command') {
     await copyLifecycleCommandFromButton(button);
+    return;
+  }
+  if (button.dataset.action === 'load-source-drilldown') {
+    await loadSourceOperationsDrilldownFromButton(button);
+    return;
+  }
+  if (button.dataset.action === 'load-source-type-drilldown') {
+    await loadSourceTypeOperationsDrilldownFromButton(button);
   }
 }
 
@@ -2853,7 +2861,8 @@ function renderRolloutReadinessChecks(result) {
       ].join('') + '</div>',
       metric('Manifest', manifest.name || 'unnamed'),
       metric('Source', (source.sourceKey || source.forum || 'unknown') + ' / ' + (source.sourceType || 'unknown')),
-      metric('Module', connector.modulePath || source.modulePath || 'not provided')
+      metric('Module', connector.modulePath || source.modulePath || 'not provided'),
+      renderRolloutReadinessOpsButtons(source)
     ].join(''), 'wide'),
     panel('Readiness checks', evidenceList(checks.map(function (check) {
       const actionCount = check.result && check.result.nextActions ? check.result.nextActions.length : 0;
@@ -2866,6 +2875,25 @@ function renderRolloutReadinessChecks(result) {
     panels.push(panel('Readiness next actions', actionRows, 'wide'));
   }
   return panels.join('');
+}
+
+function renderRolloutReadinessOpsButtons(source) {
+  const sourceKey = source.sourceKey || source.forum || '';
+  const sourceType = source.sourceType || '';
+  if (!sourceKey && !sourceType) return '';
+  return '<div class="button-group source-op-buttons">' +
+    renderSourceDrilldownButtonForScope({ sourceKey }) +
+    renderSourceTypeDrilldownButton({ sourceKey, sourceType }) +
+    '</div>';
+}
+
+function renderSourceTypeDrilldownButton(scope) {
+  const safeScope = scope || {};
+  if (!safeScope.sourceType) return '';
+  return '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-type-drilldown"' +
+    ' data-source-type="' + escapeHtml(safeScope.sourceType || '') + '"' +
+    ' data-source-key="' + escapeHtml(safeScope.sourceKey || '') + '"' +
+    ' data-limit="50" data-scan-limit="250">Type ops</button>';
 }
 
 function renderRolloutReadinessActionRows(checks) {

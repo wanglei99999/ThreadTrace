@@ -144,7 +144,10 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /run-rollout-readiness-checks/);
     assert.match(webAppJs, /renderRolloutReadinessChecks/);
     assert.match(webAppJs, /renderRolloutReadinessActionRows/);
+    assert.match(webAppJs, /renderRolloutReadinessOpsButtons/);
+    assert.match(webAppJs, /renderSourceTypeDrilldownButton/);
     assert.match(webAppJs, /copy-lifecycle-command/);
+    assert.match(webAppJs, /Type ops/);
     assert.match(homeHtml, /modulePath/);
     assert.match(homeHtml, /locationJson/);
     assert.match(homeHtml, /connectorModuleValidationForm/);
