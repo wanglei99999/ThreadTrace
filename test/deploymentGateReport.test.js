@@ -230,3 +230,29 @@ test('runtime deployment gate can include LLM evaluation readiness evidence', as
     return gate.key === 'deployment.checklist';
   }).status, 'ok');
 });
+
+test('runtime deployment gate reads LLM readiness mode from manifest deployment config', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-deployment-gate-llm-manifest-'));
+  const runtime = createThreadTraceRuntime({
+    defaultInputDir: path.resolve(__dirname, '..', 'example'),
+    storeDir: path.join(tempDir, 'store')
+  });
+
+  const report = await runtime.getDeploymentGateReport({
+    now: '2026-06-25T10:00:00.000Z',
+    storeDir: path.join(tempDir, 'store'),
+    manifest: {
+      version: '1.0',
+      name: 'llm-manifest-gate',
+      deployment: {
+        llmReadinessMode: 'evaluation',
+        llmProvider: 'mock'
+      }
+    }
+  });
+
+  assert.equal(report.deploymentChecklist.llmEvaluation.status, 'ok');
+  assert.equal(report.deploymentChecklist.items.find(function (item) {
+    return item.key === 'llm.semanticEvaluation';
+  }).status, 'ok');
+});

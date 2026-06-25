@@ -251,9 +251,10 @@ function bindForms() {
 
   document.getElementById('deploymentGateForm').addEventListener('submit', async function (event) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const request = appendDeploymentGateOptions(parseManifestJson(new FormData(form).get('manifestJson')), form);
     await renderAsync('deploymentGateResult', function () {
-      return requestJson('/api/deployment/gate', parseManifestJson(form.get('manifestJson')), {
+      return requestJson('/api/deployment/gate', request, {
         acceptErrorStatus: true
       });
     }, renderDeploymentGateReport);
@@ -707,7 +708,7 @@ async function runRolloutReadinessChecks(manifest) {
       url: '/api/deployment/gate',
       targetId: 'deploymentGateResult',
       renderer: renderDeploymentGateReport,
-      manifest
+      manifest: appendDeploymentGateOptions(manifest)
     })
   ]);
   document.getElementById('rolloutReadinessResult').innerHTML = renderRolloutReadinessChecks({
@@ -1087,6 +1088,32 @@ function parseManifestJson(value) {
     throw new Error('Rollout manifest JSON must be an object.');
   }
   return parsed;
+}
+
+function appendDeploymentGateOptions(manifest, form) {
+  const request = clonePlainObject(manifest || {});
+  const sourceForm = form || document.getElementById('deploymentGateForm');
+  const modeControl = sourceForm && typeof sourceForm.querySelector === 'function'
+    ? sourceForm.querySelector('select[name="llmReadinessMode"]')
+    : undefined;
+  const providerControl = sourceForm && typeof sourceForm.querySelector === 'function'
+    ? sourceForm.querySelector('select[name="provider"]')
+    : undefined;
+  const mode = modeControl ? modeControl.value : sourceForm && typeof sourceForm.get === 'function' ? sourceForm.get('llmReadinessMode') : undefined;
+  const provider = providerControl ? providerControl.value : sourceForm && typeof sourceForm.get === 'function' ? sourceForm.get('provider') : undefined;
+  if (mode && mode !== 'configuration') {
+    request.llmReadinessMode = mode;
+    request.deployment = Object.assign({}, request.deployment || {}, {
+      llmReadinessMode: mode
+    });
+  }
+  if (provider) {
+    request.provider = provider;
+    request.deployment = Object.assign({}, request.deployment || {}, {
+      llmProvider: provider
+    });
+  }
+  return request;
 }
 
 function parseContextReviewResultJson(value) {
@@ -3150,6 +3177,8 @@ function renderDeploymentGateReport(result) {
       return gate.status + ' 路 ' + gate.area + ' 路 ' + gate.key + ' 路 ' + gate.summary;
     })), 'wide')
   ];
+  const llmSummary = renderDeploymentGateLlmSummary(result);
+  if (llmSummary) panels.push(llmSummary);
   if (actions.length > 0) {
     panels.push(panel('Gate actions', evidenceList(actions.map(function (action) {
       const details = (action.details || []).map(function (detail) {
@@ -3159,6 +3188,52 @@ function renderDeploymentGateReport(result) {
     })), 'wide'));
   }
   return panels.join('');
+}
+
+function renderDeploymentGateLlmSummary(result) {
+  const checklist = result && result.deploymentChecklist || {};
+  const items = checklist.items || [];
+  const llmItems = items.filter(function (item) {
+    return item.area === 'llm';
+  });
+  if (llmItems.length === 0) return '';
+  const evaluation = checklist.llmEvaluation || {};
+  const preflight = checklist.llmPreflight || {};
+  const summary = evaluation.summary || {};
+  const configStatus = checklistStatusForItem(llmItems, 'llm.configuration') || 'unknown';
+  const preflightStatus = preflight.status || checklistStatusForItem(llmItems, 'llm.preflight') || 'not run';
+  const evaluationStatus = evaluation.status || checklistStatusForItem(llmItems, 'llm.semanticEvaluation') || 'not run';
+  return panel('LLM readiness', [
+    '<div class="summary-strip">',
+    summaryTile('Config', configStatus, statusVariant(configStatus)),
+    summaryTile('Preflight', preflightStatus, statusVariant(preflight.status)),
+    summaryTile('Evaluation', evaluationStatus, statusVariant(evaluation.status)),
+    summaryTile('Samples', String(evaluation.sampleCount || 0)),
+    summaryTile('Warn', String(summary.warn || 0), (summary.warn || 0) > 0 ? 'warn' : 'ok'),
+    '</div>',
+    metric('Provider', evaluation.provider || preflight.provider || llmProviderFromItems(llmItems) || 'unknown'),
+    metric('Mode', evaluation.status ? 'evaluation' : preflight.status ? 'preflight' : 'configuration'),
+    evidenceList(llmItems.map(function (item) {
+      const evidence = item.evidence || {};
+      const sampleText = evidence.sampleCount ? ' samples=' + evidence.sampleCount : '';
+      const traceText = evidence.traceId ? ' trace=' + evidence.traceId : '';
+      return item.status + ' | ' + item.key + ' | ' + item.summary + sampleText + traceText;
+    }))
+  ].join(''), 'wide');
+}
+
+function checklistStatusForItem(items, key) {
+  const item = (items || []).find(function (candidate) {
+    return candidate.key === key;
+  });
+  return item && item.status;
+}
+
+function llmProviderFromItems(items) {
+  const item = (items || []).find(function (candidate) {
+    return candidate.evidence && candidate.evidence.provider;
+  });
+  return item && item.evidence && item.evidence.provider;
 }
 
 function renderRolloutApplyExecutionGate(result, options) {

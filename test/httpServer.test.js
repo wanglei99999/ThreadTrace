@@ -89,6 +89,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
         topology: 'operations-worker',
         sourceTaskMode: 'ingest'
       },
+      provider: 'mock',
+      llmReadinessMode: 'evaluation',
       now: '2026-06-19T10:00:00.000Z'
     });
     const rolloutApply = await postJson(baseUrl + '/api/operations/rollout-manifest/apply', {
@@ -145,6 +147,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /renderRolloutReadinessChecks/);
     assert.match(webAppJs, /renderRolloutReadinessActionRows/);
     assert.match(webAppJs, /renderRolloutReadinessOpsButtons/);
+    assert.match(webAppJs, /appendDeploymentGateOptions/);
+    assert.match(webAppJs, /renderDeploymentGateLlmSummary/);
     assert.match(webAppJs, /renderSourceTypeDrilldownButton/);
     assert.match(webAppJs, /runRolloutApplyDryRun/);
     assert.match(webAppJs, /runRolloutApplyRequest/);
@@ -196,6 +200,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(homeHtml, /rolloutManifestForm/);
     assert.match(homeHtml, /resourceProvisioningForm/);
     assert.match(homeHtml, /deploymentGateForm/);
+    assert.match(homeHtml, /llmReadinessMode/);
+    assert.match(homeHtml, /openai-compatible/);
     assert.match(homeHtml, /runRolloutReadinessButton/);
     assert.match(homeHtml, /rolloutApplyForm/);
     assert.match(homeHtml, /sourceDryRunResult/);
@@ -496,6 +502,10 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(deploymentGate.gates.find(function (gate) {
       return gate.key === 'deployment.checklist';
     }).status, 'warn');
+    assert.equal(deploymentGate.deploymentChecklist.llmEvaluation.status, 'ok');
+    assert.equal(deploymentGate.deploymentChecklist.items.find(function (item) {
+      return item.key === 'llm.semanticEvaluation';
+    }).status, 'ok');
     assert.equal(deploymentGate.resourceProvisioningPlan.status, 'warn');
     assert.equal(rolloutApply.task.type, 'rollout-manifest-apply');
     assert.equal(rolloutApply.report.status, 'warn');

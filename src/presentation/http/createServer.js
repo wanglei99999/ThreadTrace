@@ -958,7 +958,9 @@ async function routeRequest(request, response, context) {
       now: body.now,
       storeDir: body.storeDir || context.storeDir,
       runningStaleAfterMs: body.runningStaleAfterMs,
-      workerStaleAfterMs: body.workerStaleAfterMs
+      workerStaleAfterMs: body.workerStaleAfterMs,
+      llmReadinessMode: body.llmReadinessMode,
+      provider: body.provider
     });
     writeJson(response, report.status === 'fail' ? 503 : 200, report);
     return;

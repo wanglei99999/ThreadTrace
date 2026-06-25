@@ -474,6 +474,21 @@
   }
 }</textarea>
           </label>
+          <label class="compact">
+            <span>LLM mode</span>
+            <select name="llmReadinessMode">
+              <option value="configuration">configuration</option>
+              <option value="preflight">preflight</option>
+              <option value="evaluation">evaluation</option>
+            </select>
+          </label>
+          <label class="compact">
+            <span>LLM provider</span>
+            <select name="provider">
+              <option value="mock">mock</option>
+              <option value="openai-compatible">openai-compatible</option>
+            </select>
+          </label>
           <button type="submit">Deployment gate</button>
           <button id="runRolloutReadinessButton" class="secondary-button" type="button">Run rollout checks</button>
         </form>
@@ -528,6 +543,6 @@
   </div>
   <datalist id="forumSuggestions"></datalist>
   <datalist id="sourceTypeSuggestions"></datalist>
-  <script src="/app.js?v=rollout-readiness-workbench"></script>
+  <script src="/app.js?v=llm-readiness-workbench-3"></script>
 </body>
 </html>

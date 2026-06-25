@@ -830,6 +830,9 @@ function createThreadTraceRuntime(options) {
 
     async getDeploymentGateReport(request) {
       const safeRequest = request || {};
+      const deployment = safeRequest.manifest && safeRequest.manifest.deployment || {};
+      const llmReadinessMode = safeRequest.llmReadinessMode || deployment.llmReadinessMode;
+      const provider = safeRequest.provider || deployment.llmProvider || deployment.provider;
       const rolloutManifestPlan = safeRequest.manifest
         ? await this.getRolloutManifestPlan({
           manifest: safeRequest.manifest,
@@ -838,8 +841,8 @@ function createThreadTraceRuntime(options) {
           limit: safeRequest.limit,
           runningStaleAfterMs: safeRequest.runningStaleAfterMs,
           workerStaleAfterMs: safeRequest.workerStaleAfterMs,
-          llmReadinessMode: safeRequest.llmReadinessMode,
-          provider: safeRequest.provider
+          llmReadinessMode,
+          provider
         })
         : undefined;
       const resourceProvisioningPlan = await this.getResourceProvisioningPlan({
@@ -852,8 +855,8 @@ function createThreadTraceRuntime(options) {
         storeDir: safeRequest.storeDir,
         runningStaleAfterMs: safeRequest.runningStaleAfterMs,
         workerStaleAfterMs: safeRequest.workerStaleAfterMs,
-        llmReadinessMode: safeRequest.llmReadinessMode,
-        provider: safeRequest.provider
+        llmReadinessMode,
+        provider
       });
       const deploymentChecklist = await this.getDeploymentChecklist({
         forum: safeRequest.forum,
@@ -864,8 +867,8 @@ function createThreadTraceRuntime(options) {
         storeDir: safeRequest.storeDir,
         runningStaleAfterMs: safeRequest.runningStaleAfterMs,
         workerStaleAfterMs: safeRequest.workerStaleAfterMs,
-        llmReadinessMode: safeRequest.llmReadinessMode,
-        provider: safeRequest.provider
+        llmReadinessMode,
+        provider
       });
       const operationsRunbook = await this.getOperationsRunbook({
         forum: safeRequest.forum,
@@ -878,8 +881,8 @@ function createThreadTraceRuntime(options) {
         storeDir: safeRequest.storeDir,
         runningStaleAfterMs: safeRequest.runningStaleAfterMs,
         workerStaleAfterMs: safeRequest.workerStaleAfterMs,
-        llmReadinessMode: safeRequest.llmReadinessMode,
-        provider: safeRequest.provider
+        llmReadinessMode,
+        provider
       });
 
       return getDeploymentGateReport({
