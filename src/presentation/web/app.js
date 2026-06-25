@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('loadConnectorModuleCatalogButton').addEventListener('click', loadConnectorModuleCatalogFromOnboardingForm);
   document.getElementById('onboardingResult').addEventListener('click', handleOnboardingAction);
   document.getElementById('sourceOnboardingRecipe').addEventListener('click', handleOnboardingAction);
+  document.getElementById('rolloutReadinessResult').addEventListener('click', handleRolloutReadinessAction);
   document.getElementById('refreshEventsButton').addEventListener('click', loadEvents);
   document.getElementById('refreshReviewResultsButton').addEventListener('click', loadContextReviewResults);
   document.getElementById('refreshReviewActionPlanButton').addEventListener('click', loadContextReviewResultActionPlan);
@@ -684,6 +685,14 @@ async function runManifestCheck(options) {
 function setLoading(targetId, message) {
   const target = document.getElementById(targetId);
   if (target) target.innerHTML = '<div class="empty">' + escapeHtml(message || 'Loading...') + '</div>';
+}
+
+async function handleRolloutReadinessAction(event) {
+  const button = event.target.closest('button[data-action]');
+  if (!button) return;
+  if (button.dataset.action === 'copy-lifecycle-command') {
+    await copyLifecycleCommandFromButton(button);
+  }
 }
 
 function fillRolloutManifestForms(manifest) {
@@ -2852,16 +2861,36 @@ function renderRolloutReadinessChecks(result) {
       return check.status + ' | ' + check.key + ' | ' + check.title + ' | ' + detail;
     })), 'wide')
   ];
-  const actionRows = checks.flatMap(function (check) {
-    return (check.result && check.result.nextActions || []).map(function (action) {
-      const commands = action.commands || (action.command ? [action.command] : []);
-      return check.key + ' | ' + (action.severity || 'info') + ' | ' + (action.key || 'action') + ' | ' + (action.summary || action.command || '') + ' | ' + commands.join(' | ');
-    });
-  });
-  if (actionRows.length > 0) {
-    panels.push(panel('Readiness next actions', evidenceList(actionRows), 'wide'));
+  const actionRows = renderRolloutReadinessActionRows(checks);
+  if (actionRows) {
+    panels.push(panel('Readiness next actions', actionRows, 'wide'));
   }
   return panels.join('');
+}
+
+function renderRolloutReadinessActionRows(checks) {
+  const rows = [];
+  (checks || []).forEach(function (check) {
+    (check.result && check.result.nextActions || []).forEach(function (action) {
+      const commands = action.commands || (action.command ? [action.command] : []);
+      rows.push('<div class="action-row ops-row"><span>' +
+        '<strong>' + escapeHtml(check.key + ' | ' + (action.severity || 'info') + ' | ' + (action.key || 'action')) + '</strong>' +
+        '<small>' + escapeHtml(action.summary || action.command || '') + '</small>' +
+        renderReadinessCommandRows(commands) +
+        '</span>' + statusBadge(action.severity || 'info', action.severity === 'critical' ? 'fail' : statusVariant(action.severity)) + '</div>');
+    });
+  });
+  return rows.join('');
+}
+
+function renderReadinessCommandRows(commands) {
+  if (!commands || commands.length === 0) return '';
+  return '<div class="lifecycle-command-list">' + commands.map(function (command) {
+    return '<div class="lifecycle-command-row">' +
+      '<code>' + escapeHtml(command) + '</code>' +
+      '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="copy-lifecycle-command">Copy</button>' +
+      '</div>';
+  }).join('') + '</div>';
 }
 
 function aggregateCheckStatus(checks) {
