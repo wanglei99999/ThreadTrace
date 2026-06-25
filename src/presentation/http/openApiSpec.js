@@ -4268,6 +4268,86 @@ function createOpenApiSpec() {
             }
           }
         },
+        SourceConnectorPackageSourceType: {
+          type: 'object',
+          properties: {
+            sourceType: { type: 'string', example: 'rss-archive-normalized-feed' },
+            displayName: { type: 'string', example: 'RSS/API Archive Normalized Feed' },
+            description: { type: 'string' },
+            kind: { type: 'string', example: 'normalized-thread-json' },
+            locationExample: { type: 'string', example: 'sample-location.json' },
+            rolloutManifestExample: { type: 'string', example: '../rss-archive-rollout-manifest.sample.json' }
+          }
+        },
+        SourceConnectorPackageAdapter: {
+          type: 'object',
+          properties: {
+            sourceKey: { type: 'string', example: 'custom-forum' },
+            displayName: { type: 'string', example: 'Custom Forum' }
+          }
+        },
+        SourceConnectorPackage: {
+          type: 'object',
+          properties: {
+            modulePath: { type: 'string', example: 'D:/connectors/rss-archive/index.cjs' },
+            packagePath: { type: 'string', example: 'D:/connectors/rss-archive/package.json' },
+            packageName: { type: 'string', example: '@threadtrace/example-rss-archive-connector-package' },
+            packageVersion: { type: 'string', example: '0.1.0' },
+            manifestVersion: { type: 'string', example: '1.0' },
+            displayName: { type: 'string', example: 'RSS/API Archive Connector Template' },
+            packageType: { type: 'string', example: 'normalized-thread-json' },
+            categories: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['rss', 'api', 'archive', 'json-package']
+            },
+            capabilities: {
+              type: 'object',
+              additionalProperties: true
+            },
+            rollout: {
+              type: 'object',
+              additionalProperties: true
+            },
+            sourceTypes: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceConnectorPackageSourceType' }
+            },
+            adapters: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceConnectorPackageAdapter' }
+            }
+          }
+        },
+        SourceConnectorCatalogSourceTypePackage: {
+          type: 'object',
+          properties: {
+            packageName: { type: 'string', example: '@threadtrace/example-rss-archive-connector-package' },
+            packageVersion: { type: 'string', example: '0.1.0' },
+            displayName: { type: 'string', example: 'RSS/API Archive Connector Template' },
+            packageType: { type: 'string', example: 'normalized-thread-json' },
+            categories: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            capabilities: {
+              type: 'object',
+              additionalProperties: true
+            },
+            rollout: {
+              type: 'object',
+              additionalProperties: true
+            },
+            sourceType: { $ref: '#/components/schemas/SourceConnectorPackageSourceType' }
+          }
+        },
+        ConnectorModuleError: {
+          type: 'object',
+          properties: {
+            modulePath: { type: 'string', example: 'D:/connectors/broken.cjs' },
+            message: { type: 'string', example: 'Cannot find module' }
+          }
+        },
         SourceOnboardingRecipeFlowStep: {
           type: 'object',
           properties: {
@@ -4331,6 +4411,7 @@ function createOpenApiSpec() {
               type: 'object',
               additionalProperties: true
             },
+            package: { $ref: '#/components/schemas/SourceConnectorCatalogSourceTypePackage' },
             compatibleSourceKeys: {
               type: 'array',
               items: { type: 'string' },
@@ -4343,6 +4424,14 @@ function createOpenApiSpec() {
           type: 'object',
           properties: {
             generatedAt: { type: 'string', example: '2026-06-19T10:00:00.000Z' },
+            packages: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceConnectorPackage' }
+            },
+            moduleErrors: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/ConnectorModuleError' }
+            },
             sourceTypes: {
               type: 'array',
               items: { $ref: '#/components/schemas/SourceConnectorCatalogSourceType' }

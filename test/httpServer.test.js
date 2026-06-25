@@ -550,7 +550,13 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.components.schemas.NotificationEventSourceHotspot.properties.retryExhaustedCount.type, 'number');
     assert.ok(openApi.paths['/api/connectors/catalog']);
     assert.equal(openApi.paths['/api/connectors/catalog'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceConnectorCatalog');
+    assert.equal(openApi.components.schemas.SourceConnectorCatalog.properties.packages.items.$ref, '#/components/schemas/SourceConnectorPackage');
+    assert.equal(openApi.components.schemas.SourceConnectorCatalog.properties.moduleErrors.items.$ref, '#/components/schemas/ConnectorModuleError');
     assert.equal(openApi.components.schemas.SourceConnectorCatalog.properties.sourceTypes.items.$ref, '#/components/schemas/SourceConnectorCatalogSourceType');
+    assert.equal(openApi.components.schemas.SourceConnectorCatalogSourceType.properties.package.$ref, '#/components/schemas/SourceConnectorCatalogSourceTypePackage');
+    assert.equal(openApi.components.schemas.SourceConnectorPackage.properties.sourceTypes.items.$ref, '#/components/schemas/SourceConnectorPackageSourceType');
+    assert.equal(openApi.components.schemas.SourceConnectorPackage.properties.adapters.items.$ref, '#/components/schemas/SourceConnectorPackageAdapter');
+    assert.deepEqual(openApi.components.schemas.SourceConnectorPackage.properties.categories.example, ['rss', 'api', 'archive', 'json-package']);
     assert.equal(openApi.components.schemas.SourceConnectorCatalogSourceType.properties.onboardingRecipe.$ref, '#/components/schemas/SourceOnboardingRecipe');
     assert.equal(openApi.components.schemas.SourceOnboardingRecipe.properties.recommendedFlow.items.$ref, '#/components/schemas/SourceOnboardingRecipeFlowStep');
     assert.ok(openApi.paths['/api/connectors/source-type-readiness']);

@@ -34,6 +34,8 @@ http://127.0.0.1:3017
 
 Lists registered source ingest handlers and forum adapters. Each `sourceTypes[]` item includes `locationSchema`, `compatibleSourceKeys`, and an `onboardingRecipe` for source onboarding UI or operator tooling.
 
+When connector modules are loaded from package-style connectors, the response also includes top-level `packages[]`, `moduleErrors[]`, and per-source-type `package` metadata. These fields expose package name/version, categories, capabilities, declared source types/adapters, and rollout hints so web consoles and generated SDKs can show connector provenance without re-reading package files.
+
 `onboardingRecipe` exposes required and optional location fields, adapter guidance, the recommended catalog -> preflight -> dry-run -> rollout flow, and a conservative `rolloutManifestTemplate` using `ingest.dryRun=true` plus the `operations-worker` topology.
 
 ### `GET /api/connectors/source-type-readiness`
