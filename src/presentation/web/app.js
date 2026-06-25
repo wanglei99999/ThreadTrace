@@ -158,7 +158,9 @@ function bindForms() {
         sourceType: 'thread-url',
         displayName: form.get('displayName'),
         url: form.get('url'),
-        intervalMinutes: Number(form.get('intervalMinutes')) || undefined
+        intervalMinutes: Number(form.get('intervalMinutes')) || undefined,
+        startPage: parsePositiveInteger(form.get('startPage')),
+        pageCount: parsePositiveInteger(form.get('pageCount'))
       });
     }, renderSourceSaveResult);
     await loadSystemStatus();
@@ -996,6 +998,14 @@ function parseOptionalLocationJson(value) {
   return parsed;
 }
 
+function parsePositiveInteger(value) {
+  const text = String(value || '').trim();
+  if (!text) return undefined;
+  const parsed = Number(text);
+  if (!Number.isInteger(parsed) || parsed <= 0) return undefined;
+  return parsed;
+}
+
 function inferLocationField(sourceType, locationValue) {
   const type = String(sourceType || '');
   const value = String(locationValue || '').trim();
@@ -1647,13 +1657,36 @@ async function loadRawPages() {
 async function crawlThreadUrl() {
   const form = new FormData(document.getElementById('threadUrlForm'));
   await renderAsync('rawPageResult', function () {
-    return requestJson('/api/crawl-page', {
+    return crawlThreadUrlWindow({
       forum: form.get('forum'),
-      url: form.get('url')
+      url: form.get('url'),
+      startPage: parsePositiveInteger(form.get('startPage')) || 1,
+      pageCount: parsePositiveInteger(form.get('pageCount')) || 1
     });
-  }, renderRawPageFetchResult);
+  }, renderRawPageFetchWindowResult);
   await loadSystemStatus();
   await loadRawPages();
+}
+
+async function crawlThreadUrlWindow(request) {
+  const results = [];
+  for (let offset = 0; offset < request.pageCount; offset += 1) {
+    const page = request.startPage + offset;
+    const result = await requestJson('/api/crawl-page', {
+      forum: request.forum,
+      url: request.url,
+      page
+    });
+    results.push({
+      page,
+      result
+    });
+  }
+  return {
+    startPage: request.startPage,
+    pageCount: request.pageCount,
+    results
+  };
 }
 
 async function runAllSources() {
@@ -5805,6 +5838,30 @@ function renderRawPageFetchResult(result) {
     metric('论坛', result.rawPage.sourceKey),
     metric('URL', result.rawPage.sourceUrl),
     metric('重复', result.duplicate ? '是' : '否')
+  ].join(''), 'wide');
+}
+
+function renderRawPageFetchWindowResult(windowResult) {
+  if (!windowResult || !Array.isArray(windowResult.results) || windowResult.results.length === 0) {
+    return '<div class="muted">No raw pages were fetched.</div>';
+  }
+  if (windowResult.results.length === 1) return renderRawPageFetchResult(windowResult.results[0].result);
+  const rows = windowResult.results.map(function (item) {
+    const rawPage = item.result && item.result.rawPage || {};
+    const details = [
+      'page=' + item.page,
+      rawPage.contentSha1 ? 'sha1=' + rawPage.contentSha1 : undefined,
+      rawPage.sourceUrl || undefined,
+      item.result && item.result.duplicate ? 'duplicate' : 'new'
+    ].filter(Boolean).join(' | ');
+    return '<div class="action-row"><span>' +
+      escapeHtml(rawPage.sourceUrl || ('page ' + item.page)) +
+      '<small>' + escapeHtml(details) + '</small></span></div>';
+  }).join('');
+  return panel('Raw pages fetched', [
+    metric('Start page', windowResult.startPage),
+    metric('Pages', windowResult.pageCount),
+    rows
   ].join(''), 'wide');
 }
 

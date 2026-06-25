@@ -2665,10 +2665,13 @@ test('http server exposes raw page crawl, list, and replay APIs', async function
   const baseUrl = 'http://127.0.0.1:' + address.port;
 
   try {
+    const homeHtml = await getText(baseUrl + '/', 'text/html');
+    const webAppJs = await getText(baseUrl + '/app.js', 'text/javascript');
     const crawlResult = await postJson(baseUrl + '/api/crawl-page', {
       forum: 'nga',
       sourceThreadId: '45974302',
-      url: 'https://example.test/thread'
+      url: 'https://example.test/thread',
+      page: 2
     });
     const pagesResult = await getJson(baseUrl + '/api/raw-pages?forum=nga&limit=5');
     const replayResult = await postJson(baseUrl + '/api/raw-pages/tasks/ingest', {
@@ -2677,6 +2680,10 @@ test('http server exposes raw page crawl, list, and replay APIs', async function
     });
 
     assert.equal(crawlResult.rawPage.contentSha1, 'abc123');
+    assert.equal(calls[0][1].page, 2);
+    assert.match(homeHtml, /name="startPage"/);
+    assert.match(homeHtml, /name="pageCount"/);
+    assert.match(webAppJs, /crawlThreadUrlWindow/);
     assert.equal(pagesResult.pages.length, 1);
     assert.equal(replayResult.task.status, 'completed');
     assert.deepEqual(calls.map(function (call) { return call[0]; }), [
