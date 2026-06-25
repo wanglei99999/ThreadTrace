@@ -341,15 +341,25 @@ function bindForms() {
       await loadSourceTypeOperationsDrilldownFromButton(button);
       return;
     }
+    if (button.dataset.action === 'run-due-sources' || button.dataset.action === 'run-due-pipelines') {
+      await runDueCollectionFromButton(button);
+      return;
+    }
     if (button.dataset.action === 'run-source' || button.dataset.action === 'run-source-pipeline') {
       await runSourceTaskFromButton(button, 'sourceOperationActionResult');
     }
   });
 
   document.getElementById('sourceOperationActionResult').addEventListener('click', async function (event) {
-    const button = event.target.closest('button[data-action="load-trace-context"]');
+    const button = event.target.closest('button[data-action]');
     if (!button) return;
-    await loadTaskTraceContextFromButton(button);
+    if (button.dataset.action === 'load-trace-context') {
+      await loadTaskTraceContextFromButton(button);
+      return;
+    }
+    if (button.dataset.action === 'load-task-detail') {
+      await loadTaskDetailFromButton(button);
+    }
   });
 
   document.getElementById('rolloutApplyResult').addEventListener('click', async function (event) {
@@ -1674,6 +1684,25 @@ async function runDuePipelines() {
       provider: 'mock'
     });
   }, renderDueSourcePipelineBatchRunResult);
+  await loadSystemStatus();
+  await loadTasks();
+  await loadSources();
+  await loadSourceOperations();
+  await loadEvents();
+  await loadRawPages();
+}
+
+async function runDueCollectionFromButton(button) {
+  const isPipeline = button.dataset.action === 'run-due-pipelines';
+  const limit = Number(button.dataset.limit);
+  const request = {};
+  if (Number.isFinite(limit) && limit > 0) request.limit = Math.floor(limit);
+  if (isPipeline) request.provider = button.dataset.provider || 'mock';
+  await renderAsync('sourceOperationActionResult', function () {
+    return requestJson(isPipeline ? '/api/sources/tasks/insight-pipeline-due' : '/api/sources/tasks/ingest-due', request, {
+      acceptErrorStatus: true
+    });
+  }, isPipeline ? renderDueSourcePipelineBatchRunResult : renderDueSourceBatchRunResult);
   await loadSystemStatus();
   await loadTasks();
   await loadSources();
@@ -3351,8 +3380,12 @@ function renderSourceOperationResultRows(results) {
     return '<div class="action-row ops-row source-operation-result-row"><span>' +
       '<strong>' + escapeHtml(source.displayName || source.id || 'Unknown source') + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
-      '</span>' +
+      '</span><span class="button-group source-op-buttons">' +
+      renderSourceDrilldownButton(source) +
+      renderTaskDetailButtonControl(task) +
+      renderTaskTraceButtonControl(task) +
       statusBadge(item.status || 'unknown', item.status === 'failed' ? 'fail' : 'ok') +
+      '</span>' +
       '</div>';
   }).join('') + '</div>';
 }
@@ -3746,6 +3779,7 @@ function renderSourceOperations(result) {
       renderSourceTypeOperationsEventControls(sourceTypeOperationsAlertableCount)
     ].join(''), 'wide'),
     panel('Collection status', renderCollectionStatusOverview(schedule), 'wide'),
+    panel('Collection actions', renderCollectionActionControls(schedule), 'wide'),
     panel('Source attention', renderSourceAttentionRows(attentionItems), 'wide'),
     panel('Source type operations', renderSourceTypeOperations(sourceTypeOperations), 'wide'),
     panel('Source type readiness', renderSourceTypeReadiness(sourceTypeReadiness), 'wide'),
@@ -4411,6 +4445,29 @@ function renderCollectionStatusOverview(schedule) {
     ? '<small>' + escapeHtml('filter=' + schedule.collectionStatus.join(',')) + '</small>'
     : '';
   return '<div class="tag-list reason-tags">' + (statusTags || '<span class="tag">no collection statuses</span>') + '</div>' + filtered;
+}
+
+function renderCollectionActionControls(schedule) {
+  const summary = schedule && schedule.summary || {};
+  const byStatus = summary.byCollectionStatus || {};
+  const dueCount = summary.due || byStatus.due || (schedule && schedule.dueSources && schedule.dueSources.length) || 0;
+  const retryWaiting = byStatus['retry-waiting'] || 0;
+  const scheduled = byStatus.scheduled || 0;
+  const blocked = (byStatus.running || 0) + (byStatus.disabled || 0) + (byStatus.unscheduled || 0);
+  const disabled = dueCount > 0 ? '' : ' disabled';
+  return '<div class="action-row ops-row collection-action-row"><span>' +
+    '<strong>Due collection</strong>' +
+    '<small>' + escapeHtml([
+      'due=' + dueCount,
+      'scheduled=' + scheduled,
+      'retryWaiting=' + retryWaiting,
+      'blocked=' + blocked,
+      'skipped=' + (summary.skipped || 0)
+    ].join(' | ')) + '</small>' +
+    '</span><span class="button-group source-op-buttons">' +
+    '<button class="inline-button secondary-inline-button" type="button" data-action="run-due-sources" data-limit="25"' + disabled + '>Run due</button>' +
+    '<button class="inline-button" type="button" data-action="run-due-pipelines" data-provider="mock" data-limit="25"' + disabled + '>Run insights</button>' +
+    '</span></div>';
 }
 
 function filterScheduleSourcesByCollectionStatus(sources, statuses) {
