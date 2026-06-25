@@ -1381,6 +1381,9 @@ async function loadSources() {
 async function loadSourceOperations() {
   await renderAsync('sourceOperationsResult', function () {
     return Promise.all([
+      fetchJson('/api/operations/source-cockpit?limit=100&cockpitLimit=12', {
+        acceptErrorStatus: true
+      }),
       fetchJson('/api/sources/lifecycle?limit=100', {
         acceptErrorStatus: true
       }),
@@ -1401,12 +1404,13 @@ async function loadSourceOperations() {
       })
     ]).then(function (results) {
       return {
-        lifecycle: results[0],
-        schedule: results[1],
-        runbook: results[2],
-        attention: results[3],
-        sourceTypeOperations: results[4],
-        sourceTypeReadiness: results[5]
+        cockpit: results[0],
+        lifecycle: results[1],
+        schedule: results[2],
+        runbook: results[3],
+        attention: results[4],
+        sourceTypeOperations: results[5],
+        sourceTypeReadiness: results[6]
       };
     });
   }, renderSourceOperations);
@@ -4071,6 +4075,7 @@ function renderOperationsRunbook(runbook) {
 }
 
 function renderSourceOperations(result) {
+  const cockpit = result.cockpit || {};
   const lifecycle = result.lifecycle || {};
   const schedule = result.schedule || {};
   const runbook = result.runbook || {};
@@ -4089,6 +4094,7 @@ function renderSourceOperations(result) {
   const sourceTypeOperationsAlertableCount = countAlertableSourceTypeOperations(sourceTypeOperations.sourceTypes || []);
   const collectionSummary = schedule.summary && schedule.summary.byCollectionStatus || {};
   const panels = [
+    panel('Operator queue', renderSourceOperationsCockpit(cockpit), 'wide'),
     panel('Source operations', [
       '<div class="summary-strip">',
       summaryTile('Lifecycle', lifecycle.status || 'unknown', statusVariant(lifecycle.status)),
@@ -4126,6 +4132,74 @@ function renderSourceOperations(result) {
     panels.push(panel('Source runbook actions', renderRunbookActionRows(sourceActions), 'wide'));
   }
   return panels.join('');
+}
+
+function renderSourceOperationsCockpit(cockpit) {
+  const summary = cockpit.summary || {};
+  const queue = cockpit.queue || [];
+  return [
+    '<div class="summary-strip">',
+    summaryTile('Queue', String(summary.total || 0), statusVariant(cockpit.status)),
+    summaryTile('Critical', String(summary.fail || 0), (summary.fail || 0) > 0 ? 'fail' : 'ok'),
+    summaryTile('Warning', String(summary.warning || 0), (summary.warning || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('Runnable', String(summary.runnable || 0), (summary.runnable || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('Sources', String(summary.sourceScoped || 0), (summary.sourceScoped || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('Types', String(summary.sourceTypeScoped || 0), (summary.sourceTypeScoped || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('Top priority', String(summary.highestPriorityScore || 0), (summary.highestPriorityScore || 0) >= 100 ? 'warn' : 'ok'),
+    '</div>',
+    renderSourceOperationsCockpitRows(queue),
+    renderSourceOperationsCockpitNextActions(cockpit.nextActions || [])
+  ].join('');
+}
+
+function renderSourceOperationsCockpitRows(queue) {
+  if (!queue.length) return '<div class="muted">No operator queue items.</div>';
+  return queue.map(function (item) {
+    const source = item.source || {};
+    const details = [
+      item.kind,
+      item.scope,
+      'priority=' + (item.priorityScore || 0),
+      item.signalCount !== undefined ? 'signals=' + item.signalCount : undefined,
+      item.recommendedNextAction ? 'next=' + item.recommendedNextAction : undefined
+    ].filter(Boolean).join(' | ');
+    const command = item.recommendedCommand ? '<small>' + escapeHtml(item.recommendedCommand) + '</small>' : '';
+    const related = (item.relatedCommands || []).filter(function (commandText) {
+      return commandText !== item.recommendedCommand;
+    }).slice(0, 2).map(function (commandText) {
+      return '<small>' + escapeHtml(commandText) + '</small>';
+    }).join('');
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml('#' + (item.rank || '?') + ' ' + (item.title || item.id || 'Queue item')) + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '<small>' + escapeHtml(item.summary || '') + '</small>' +
+      command +
+      related +
+      '</span><span class="button-group source-op-buttons">' +
+      renderSourceOperationsCockpitControls(item, source) +
+      statusBadge(item.severity || 'info', attentionStatusVariant(item.severity)) +
+      '</span></div>';
+  }).join('');
+}
+
+function renderSourceOperationsCockpitControls(item, source) {
+  if (item.scope === 'source-type' || item.sourceType) {
+    return '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-type-drilldown" data-source-type="' + escapeHtml(item.sourceType || '') + '" data-limit="50" data-scan-limit="250">Ops</button>';
+  }
+  const hasSourceId = Boolean(source && source.id);
+  const hasSourceScope = Boolean(source && (source.id || source.sourceKey));
+  return [
+    hasSourceScope ? renderSourceDrilldownButton(source || {}) : '',
+    item.runnable && hasSourceId ? renderSourceRunButtons(source) : '',
+    hasSourceId ? renderSourceFailureResetButtons(source) : ''
+  ].join('');
+}
+
+function renderSourceOperationsCockpitNextActions(actions) {
+  if (!actions.length) return '';
+  return '<div class="tag-list reason-tags">' + evidenceList(actions.slice(0, 5).map(function (action) {
+    return [action.severity || 'info', action.summary || action.key, action.recommendedCommand].filter(Boolean).join(' | ');
+  })) + '</div>';
 }
 
 function renderSourceTypeOperations(report) {

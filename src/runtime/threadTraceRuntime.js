@@ -61,6 +61,7 @@ const { getSourceLifecycleReport } = require('../application/use-cases/getSource
 const { getSourceScheduleReport } = require('../application/use-cases/getSourceScheduleReport');
 const { getSourceAttentionReport } = require('../application/use-cases/getSourceAttentionReport');
 const { getSourceTypeOperationsReport } = require('../application/use-cases/getSourceTypeOperationsReport');
+const { getSourceOperationsCockpit } = require('../application/use-cases/getSourceOperationsCockpit');
 const { getOperationalOverview } = require('../application/use-cases/getOperationalOverview');
 const { getSourceOperationsDrilldown } = require('../application/use-cases/getSourceOperationsDrilldown');
 const { getSourceTypeOperationsDrilldown } = require('../application/use-cases/getSourceTypeOperationsDrilldown');
@@ -1559,6 +1560,80 @@ function createThreadTraceRuntime(options) {
         sourceAttentionReport,
         sourceType: safeRequest.sourceType,
         limit: safeRequest.sourceTypeLimit || safeRequest.limit || 100,
+        now: safeRequest.now
+      });
+    },
+
+    async getSourceOperationsCockpit(request) {
+      const safeRequest = request || {};
+      const commonRequest = {
+        forum: safeRequest.forum,
+        sourceKey: safeRequest.sourceKey,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 100,
+        sourceRunStaleAfterMs: safeRequest.sourceRunStaleAfterMs,
+        sourceFailureRetryBackoffMs: safeRequest.sourceFailureRetryBackoffMs,
+        sourceFailureMaxRetryBackoffMs: safeRequest.sourceFailureMaxRetryBackoffMs,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir
+      };
+      const [
+        sourceLifecycleReport,
+        sourceScheduleReport,
+        operationsRunbook,
+        sourceTypeReadiness
+      ] = await Promise.all([
+        this.getSourceLifecycleReport(Object.assign({}, commonRequest, {
+          sourceType: safeRequest.sourceType,
+          taskLimit: safeRequest.taskLimit || safeRequest.limit || 100
+        })),
+        this.getSourceScheduleReport(Object.assign({}, commonRequest, {
+          sourceType: safeRequest.sourceType
+        })),
+        this.getOperationsRunbook(Object.assign({}, commonRequest, {
+          sourceId: safeRequest.sourceId,
+          sourceType: safeRequest.sourceType,
+          pipelineLimit: safeRequest.pipelineLimit || 20,
+          eventLimit: safeRequest.eventLimit,
+          maxAttempts: safeRequest.maxAttempts,
+          taskLimit: safeRequest.taskLimit || safeRequest.limit || 100,
+          runningStaleAfterMs: safeRequest.runningStaleAfterMs,
+          workerStaleAfterMs: safeRequest.workerStaleAfterMs
+        })),
+        this.getSourceTypeReadiness({
+          forum: safeRequest.forum,
+          sourceKey: safeRequest.sourceKey,
+          sourceType: safeRequest.sourceType,
+          enabled: safeRequest.enabled,
+          limit: safeRequest.limit || 100,
+          modulePath: safeRequest.modulePath || safeRequest.connectorModulePath,
+          now: safeRequest.now,
+          storeDir: safeRequest.storeDir
+        })
+      ]);
+      const sourceAttentionReport = getSourceAttentionReport({
+        scheduleReport: sourceScheduleReport,
+        lifecycleReport: sourceLifecycleReport,
+        operationsRunbook,
+        limit: safeRequest.attentionLimit || safeRequest.limit || 100,
+        now: safeRequest.now
+      });
+      const sourceTypeOperationsReport = getSourceTypeOperationsReport({
+        sourceTypeReadiness,
+        sourceScheduleReport,
+        sourceLifecycleReport,
+        sourceAttentionReport,
+        sourceType: safeRequest.sourceType,
+        limit: safeRequest.sourceTypeLimit || safeRequest.limit || 100,
+        now: safeRequest.now
+      });
+      return getSourceOperationsCockpit({
+        sourceAttentionReport,
+        sourceTypeOperationsReport,
+        operationsRunbook,
+        sourceScheduleReport,
+        sourceLifecycleReport,
+        limit: safeRequest.cockpitLimit || safeRequest.limit || 25,
         now: safeRequest.now
       });
     },

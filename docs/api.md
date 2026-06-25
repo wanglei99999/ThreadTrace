@@ -58,6 +58,14 @@ Aggregates multi-source operations by `sourceType`. It merges source type readin
 
 Use it when deciding whether a whole connector family is healthy: it reports due/running/retry-waiting counts, attention priority, actionable source counts, recommended commands, and per-type status.
 
+### `GET /api/operations/source-cockpit`
+
+Returns a prioritized source operations cockpit queue. It merges schedule, lifecycle, runbook, source attention, and source type operations signals into ranked operator work items.
+
+Optional filters include `sourceId`, `sourceKey` / `forum`, `sourceType`, `enabled`, `limit`, `cockpitLimit`, `attentionLimit`, `sourceTypeLimit`, `pipelineLimit`, `eventLimit`, `maxAttempts`, `modulePath`, `now`, and `storeDir`.
+
+The response includes queue totals, severity counts, runnable item counts, highest priority score, queue item kind distribution, ranked queue rows, and recommended next actions. Queue rows keep source or source-type scope plus suggested commands so Web dashboards, generated clients, or monitoring jobs can decide the next source to inspect without rejoining the lower-level reports. HTTP `503` means at least one cockpit item is critical; warnings return `200`.
+
 ### `GET /api/operations/source-type-drilldown`
 
 Returns an operational drill-down for one connector family. Required query parameter: `sourceType`.

@@ -1158,6 +1158,54 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/operations/source-cockpit': {
+        get: {
+          summary: 'Get prioritized source operations cockpit queue across schedule, lifecycle, runbook, attention, and source-type signals',
+          parameters: [
+            { name: 'sourceId', in: 'query', required: false, schema: { type: 'string', example: 'tracked-source-nga-001' } },
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceType', in: 'query', required: false, schema: { type: 'string', example: 'saved-html-directory' } },
+            { name: 'enabled', in: 'query', required: false, schema: { type: 'boolean' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'cockpitLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'attentionLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'sourceTypeLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'pipelineLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'eventLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'maxAttempts', in: 'query', required: false, schema: { type: 'number', example: 3 } },
+            { name: 'sourceRunStaleAfterMs', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'sourceFailureRetryBackoffMs', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'sourceFailureMaxRetryBackoffMs', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'workerStaleAfterMs', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'runningStaleAfterMs', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'modulePath', in: 'query', required: false, schema: { type: 'string', example: 'D:/connectors/custom-forum.cjs' } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Source operations cockpit is ok or has warnings',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceOperationsCockpit'
+                  }
+                }
+              }
+            },
+            503: {
+              description: 'Source operations cockpit contains critical queue items',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceOperationsCockpit'
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       '/api/operations/source-drilldown': {
         get: {
           summary: 'Get source-scoped operational drill-down across workers, tasks, events, and review queues',
@@ -4438,6 +4486,82 @@ function createOpenApiSpec() {
             nextAction: { type: 'string' },
             recommendedNextAction: { type: 'string' },
             recommendedCommand: { type: 'string' }
+          }
+        },
+        SourceOperationsCockpitSummary: {
+          type: 'object',
+          properties: {
+            total: { type: 'number', example: 3 },
+            fail: { type: 'number', example: 1 },
+            warning: { type: 'number', example: 2 },
+            info: { type: 'number', example: 0 },
+            muted: { type: 'number', example: 0 },
+            runnable: { type: 'number', example: 1 },
+            sourceScoped: { type: 'number', example: 2 },
+            sourceTypeScoped: { type: 'number', example: 1 },
+            highestPriorityScore: { type: 'number', example: 205 },
+            byKind: {
+              type: 'object',
+              additionalProperties: { type: 'number' }
+            },
+            inputs: {
+              type: 'object',
+              additionalProperties: true
+            }
+          }
+        },
+        SourceOperationsCockpitItem: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', example: 'source-attention:sourceId:source-1' },
+            rank: { type: 'number', example: 1 },
+            kind: { type: 'string', enum: ['source-attention', 'source-type-operations', 'runbook', 'due-source'] },
+            scope: { type: 'string', example: 'source' },
+            severity: { type: 'string', enum: ['critical', 'warning', 'info', 'muted'] },
+            priorityScore: { type: 'number', example: 110 },
+            title: { type: 'string', example: 'NGA saved page' },
+            summary: { type: 'string', example: 'retry wait: Failure retry window has not elapsed.' },
+            source: { $ref: '#/components/schemas/SourceScope' },
+            sourceType: { type: 'string', example: 'saved-html-directory' },
+            sourceCount: { type: 'number', example: 2 },
+            signalCount: { type: 'number', example: 3 },
+            signals: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true }
+            },
+            runnable: { type: 'boolean' },
+            recommendedNextAction: { type: 'string' },
+            recommendedCommand: { type: 'string' },
+            relatedCommands: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            topAttention: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true }
+            },
+            runbookKey: { type: 'string' }
+          }
+        },
+        SourceOperationsCockpit: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            windowLimit: { type: 'number', example: 25 },
+            summary: { $ref: '#/components/schemas/SourceOperationsCockpitSummary' },
+            queue: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceOperationsCockpitItem' }
+            },
+            nextActions: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true }
+            },
+            inputs: {
+              type: 'object',
+              additionalProperties: true
+            }
           }
         },
         SourceAttentionSummary: {

@@ -247,6 +247,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /Source attention/);
     assert.match(webAppJs, /buildSourceAttention/);
     assert.match(webAppJs, /renderSourceAttentionRows/);
+    assert.match(webAppJs, /operations\/source-cockpit/);
+    assert.match(webAppJs, /renderSourceOperationsCockpit/);
+    assert.match(webAppJs, /Operator queue/);
     assert.match(webAppJs, /operations\/source-attention/);
     assert.match(webAppJs, /operations\/source-type-operations/);
     assert.match(webAppJs, /operations\/source-type-drilldown/);
@@ -337,6 +340,11 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/operations/source-drilldown'].get.parameters.find(function (parameter) {
       return parameter.name === 'timelineLimit';
     }));
+    assert.equal(openApi.paths['/api/operations/source-cockpit'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceOperationsCockpit');
+    assert.equal(openApi.paths['/api/operations/source-cockpit'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/SourceOperationsCockpit');
+    assert.equal(openApi.components.schemas.SourceOperationsCockpit.properties.queue.items.$ref, '#/components/schemas/SourceOperationsCockpitItem');
+    assert.equal(openApi.components.schemas.SourceOperationsCockpitItem.properties.priorityScore.type, 'number');
+    assert.equal(openApi.components.schemas.SourceOperationsCockpitSummary.properties.byKind.additionalProperties.type, 'number');
     assert.equal(openApi.paths['/api/operations/source-type-drilldown'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceTypeOperationsDrilldown');
     assert.equal(openApi.paths['/api/operations/source-type-drilldown'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/SourceTypeOperationsDrilldown');
     assert.ok(openApi.paths['/api/operations/source-type-drilldown'].get.parameters.find(function (parameter) {
@@ -1215,6 +1223,75 @@ test('http server exposes source attention API', async function () {
     assert.equal(calls[0].limit, 10);
     assert.equal(calls[0].attentionLimit, 5);
     assert.equal(calls[0].sourceFailureRetryBackoffMs, 60000);
+  } finally {
+    await close(server);
+  }
+});
+
+test('http server exposes source operations cockpit API', async function () {
+  const calls = [];
+  const server = createThreadTraceServer({
+    runtime: {
+      listAdapters() {
+        return [{ sourceKey: 'nga', displayName: 'NGA' }];
+      },
+      async getSourceOperationsCockpit(request) {
+        calls.push(request);
+        return {
+          generatedAt: request.now || '2026-06-25T10:00:00.000Z',
+          status: 'fail',
+          windowLimit: request.cockpitLimit || request.limit,
+          summary: {
+            total: 1,
+            fail: 1,
+            warning: 0,
+            runnable: 1,
+            sourceScoped: 1,
+            sourceTypeScoped: 0,
+            highestPriorityScore: 130,
+            byKind: {
+              runbook: 1
+            }
+          },
+          queue: [
+            {
+              id: 'runbook:sourceDiagnostics.source.location.nga',
+              rank: 1,
+              kind: 'runbook',
+              scope: 'source',
+              severity: 'critical',
+              priorityScore: 130,
+              title: 'Fix source key level diagnostics.',
+              summary: 'Source location is missing required fields.',
+              source: {
+                sourceKey: request.sourceKey
+              },
+              recommendedCommand: 'node src/presentation/cli/threadtrace.js sources-diagnostics'
+            }
+          ],
+          nextActions: []
+        };
+      }
+    }
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const result = await getJsonWithStatus(baseUrl + '/api/operations/source-cockpit?sourceKey=nga&sourceType=saved-html-directory&enabled=true&limit=10&cockpitLimit=5&attentionLimit=7&sourceTypeLimit=3&sourceFailureRetryBackoffMs=60000&modulePath=D%3A%2Fconnectors%2Fcustom-forum.cjs&now=2026-06-25T10:00:00.000Z', 503);
+
+    assert.equal(result.status, 'fail');
+    assert.equal(result.queue[0].kind, 'runbook');
+    assert.equal(calls[0].sourceKey, 'nga');
+    assert.equal(calls[0].sourceType, 'saved-html-directory');
+    assert.equal(calls[0].enabled, true);
+    assert.equal(calls[0].limit, 10);
+    assert.equal(calls[0].cockpitLimit, 5);
+    assert.equal(calls[0].attentionLimit, 7);
+    assert.equal(calls[0].sourceTypeLimit, 3);
+    assert.equal(calls[0].sourceFailureRetryBackoffMs, 60000);
+    assert.equal(calls[0].modulePath, 'D:/connectors/custom-forum.cjs');
   } finally {
     await close(server);
   }
