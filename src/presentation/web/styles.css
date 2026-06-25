@@ -1065,6 +1065,13 @@ textarea:focus-visible {
     var(--panel);
 }
 
+#contextReviewResultForm.event-card-review {
+  display: grid;
+  grid-template-columns: minmax(360px, 1fr) minmax(260px, 0.58fr);
+  align-items: stretch;
+  gap: 14px;
+}
+
 .event-card-review::before {
   border-color: rgba(241, 189, 82, 0.38);
   background: var(--gold-soft);
@@ -1093,13 +1100,38 @@ textarea:focus-visible {
   flex-basis: 184px;
 }
 
+#contextReviewResultForm.event-card-review > label.full {
+  display: grid;
+  grid-column: 1;
+  align-content: stretch;
+  flex: none;
+  height: 100%;
+  min-width: 0;
+}
+
+#contextReviewResultForm.event-card-review > label.full span {
+  width: max-content;
+  max-width: 100%;
+  margin-bottom: 2px;
+  padding: 5px 8px;
+  border: 1px solid rgba(241, 189, 82, 0.3);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 245, 220, 0.78);
+  color: #73501b;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
 .event-card-review textarea {
-  min-height: 286px;
+  min-height: 360px;
   border-color: rgba(12, 23, 21, 0.16);
   background:
+    linear-gradient(180deg, rgba(255, 245, 220, 0.32), rgba(255, 245, 220, 0) 88px),
     linear-gradient(90deg, rgba(20, 114, 95, 0.05) 1px, transparent 1px),
     linear-gradient(180deg, #ffffff, #fbfcfc);
-  background-size: 32px 100%, 100% 100%;
+  background-size: 100% 100%, 32px 100%, 100% 100%;
   color: #14201e;
   font-family: "Cascadia Mono", Consolas, monospace;
   font-size: 13px;
@@ -1111,6 +1143,84 @@ textarea:focus-visible {
   box-shadow:
     0 0 0 3px rgba(36, 95, 159, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.review-command-shelf {
+  grid-column: 2;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgba(184, 201, 195, 0.74);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(246, 250, 248, 0.7)),
+    var(--panel-subtle);
+  box-shadow: var(--inner-light);
+}
+
+.review-command-group {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  min-width: 0;
+  padding-top: 25px;
+}
+
+.review-command-group::before {
+  content: attr(data-label);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: max-content;
+  max-width: 100%;
+  padding: 4px 7px;
+  border: 1px solid rgba(36, 95, 159, 0.18);
+  border-radius: var(--radius-sm);
+  background: rgba(238, 246, 255, 0.78);
+  color: #154d88;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.1;
+}
+
+.review-command-primary::before {
+  border-color: rgba(20, 114, 95, 0.22);
+  background: rgba(226, 243, 238, 0.8);
+  color: var(--accent-ink);
+}
+
+.review-command-group:nth-child(2)::before {
+  border-color: rgba(36, 95, 159, 0.18);
+  background: rgba(238, 246, 255, 0.78);
+  color: #154d88;
+}
+
+.review-command-group:nth-child(3)::before {
+  border-color: rgba(184, 201, 195, 0.72);
+  background: rgba(246, 248, 248, 0.88);
+  color: var(--muted-strong);
+}
+
+.review-command-group:nth-child(4)::before {
+  border-color: rgba(241, 189, 82, 0.28);
+  background: rgba(255, 245, 220, 0.84);
+  color: #73501b;
+}
+
+.review-command-shelf button[type="button"],
+.review-command-shelf button[type="submit"] {
+  width: 100%;
+  min-height: 38px;
+  flex: none;
+  padding: 0 10px;
+}
+
+.review-command-primary button[type="submit"] {
+  grid-column: span 2;
 }
 
 #previewAckEventsButton,
@@ -3653,6 +3763,15 @@ pre {
     grid-template-columns: 1fr;
   }
 
+  #contextReviewResultForm.event-card-review {
+    grid-template-columns: 1fr;
+  }
+
+  #contextReviewResultForm.event-card-review > label.full,
+  .review-command-shelf {
+    grid-column: 1;
+  }
+
   .search-workbench {
     grid-template-columns: 1fr;
   }
@@ -3982,6 +4101,10 @@ pre {
 
   #systemView .event-card label.full {
     flex-basis: 100%;
+  }
+
+  #contextReviewResultForm.event-card-review > label.full {
+    flex-basis: auto;
   }
 
   #systemView .rollout-card {
@@ -4327,6 +4450,18 @@ pre {
     white-space: normal;
     text-align: center;
     line-height: 1.15;
+  }
+
+  .review-command-shelf {
+    padding: 10px;
+  }
+
+  .review-command-group {
+    grid-template-columns: 1fr;
+  }
+
+  .review-command-primary button[type="submit"] {
+    grid-column: 1;
   }
 
   .event-card-filter button[type="submit"] {

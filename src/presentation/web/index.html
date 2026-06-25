@@ -338,16 +338,26 @@
   "evidenceRefs": []
 }</textarea>
           </label>
-          <button type="submit">Store review result</button>
-          <button id="refreshReviewResultsButton" class="secondary-button" type="button">Review overview</button>
-          <button id="refreshReviewActionPlanButton" class="secondary-button" type="button">Review action plan</button>
-          <button id="refreshReviewActionGateButton" class="secondary-button" type="button">Review gate</button>
-          <button id="runReviewActionApplyButton" class="secondary-button" type="button">Dry-run review apply</button>
-          <button id="refreshReviewActionAuditsButton" class="secondary-button" type="button">Review action audits</button>
-          <button id="refreshReviewActionExecutionsButton" class="secondary-button" type="button">Review action executions</button>
-          <button id="refreshReviewActionExecutorDiagnosticsButton" class="secondary-button" type="button">Review executor diagnostics</button>
-          <button id="synthesizeReviewResultEventsButton" class="secondary-button" type="button">Review alert check</button>
-          <button id="createReviewResultEventsButton" class="secondary-button" type="button">Create review alerts</button>
+          <div class="review-command-shelf" aria-label="Review commands">
+            <div class="review-command-group review-command-primary" data-label="Decision">
+              <button type="submit">Store review result</button>
+              <button id="refreshReviewResultsButton" class="secondary-button" type="button">Review overview</button>
+            </div>
+            <div class="review-command-group" data-label="Plan">
+              <button id="refreshReviewActionPlanButton" class="secondary-button" type="button">Review action plan</button>
+              <button id="refreshReviewActionGateButton" class="secondary-button" type="button">Review gate</button>
+              <button id="runReviewActionApplyButton" class="secondary-button" type="button">Dry-run review apply</button>
+            </div>
+            <div class="review-command-group" data-label="Audit">
+              <button id="refreshReviewActionAuditsButton" class="secondary-button" type="button">Review action audits</button>
+              <button id="refreshReviewActionExecutionsButton" class="secondary-button" type="button">Review action executions</button>
+              <button id="refreshReviewActionExecutorDiagnosticsButton" class="secondary-button" type="button">Review executor diagnostics</button>
+            </div>
+            <div class="review-command-group" data-label="Alerts">
+              <button id="synthesizeReviewResultEventsButton" class="secondary-button" type="button">Review alert check</button>
+              <button id="createReviewResultEventsButton" class="secondary-button" type="button">Create review alerts</button>
+            </div>
+          </div>
         </form>
         </div>
         <div class="system-zone-title" id="system-rollout">
