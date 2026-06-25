@@ -237,6 +237,14 @@ node src/presentation/cli/threadtrace.js source-type-operations-report --json tr
 
 `/api/connectors/catalog` combines source types with registered forum adapters, including `compatibleSourceKeys` for handler types that require an adapter.
 
+When a connector module is loaded from a package with `threadtraceConnector` metadata, the same catalog also includes package-level metadata:
+
+- top-level `packages` with package name, version, categories, capabilities, source types, adapters, and rollout hints
+- per-source-type `package` metadata so UI and operators can see which package owns a `sourceType`
+- `moduleErrors` for connector modules that failed to load in the current catalog context
+
+This lets future connector marketplace, onboarding, and operations screens render package provenance without re-reading `package.json` files.
+
 Each catalog source type also includes `onboardingRecipe`. The recipe is the source-type playbook that UI, generated clients, and operators can use before writing a source:
 
 - `requiredLocationFields` and `optionalLocationFields` derived from the handler location schema

@@ -54,7 +54,12 @@ test('CLI prints connector catalog as JSON with external module recipes', async 
 
   assert.equal(catalog.generatedAt, '2026-06-25T10:00:00.000Z');
   assert.equal(catalog.sourceTypes.length, 1);
+  assert.equal(catalog.packages.length, 1);
+  assert.equal(catalog.packages[0].packageName, '@threadtrace/example-external-connector-package');
+  assert.deepEqual(catalog.packages[0].categories, ['api', 'archive', 'json-package']);
   assert.equal(sourceType.sourceType, 'package-normalized-feed');
+  assert.equal(sourceType.package.packageName, '@threadtrace/example-external-connector-package');
+  assert.equal(sourceType.package.sourceType.rolloutManifestExample, '../external-package-rollout-manifest.sample.json');
   assert.deepEqual(sourceType.onboardingRecipe.requiredLocationFields, ['inputFile']);
   assert.equal(sourceType.onboardingRecipe.rolloutManifestTemplate.source.sourceType, 'package-normalized-feed');
   assert.ok(sourceType.onboardingRecipe.recommendedFlow.some(function (step) {

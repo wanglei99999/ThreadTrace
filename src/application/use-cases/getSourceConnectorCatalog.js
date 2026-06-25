@@ -10,9 +10,13 @@ function getSourceConnectorCatalog(options) {
   const adapters = forumAdapterRegistry && typeof forumAdapterRegistry.list === 'function'
     ? forumAdapterRegistry.list()
     : [];
+  const packages = summarizeConnectorPackages(safeOptions.connectorModules || []);
+  const packagesBySourceType = indexPackagesBySourceType(packages);
 
   return {
     generatedAt: safeOptions.now || new Date().toISOString(),
+    packages,
+    moduleErrors: safeOptions.connectorModuleErrors || [],
     sourceTypes: handlers.map(function (handler) {
       const locationSchema = getLocationSchema(handler);
       const requiresAdapter = handler.requiresAdapter !== false;
@@ -25,6 +29,7 @@ function getSourceConnectorCatalog(options) {
         requiresAdapter,
         locationSchema,
         capabilities: handler.capabilities || {},
+        package: packagesBySourceType[handler.sourceType],
         compatibleSourceKeys,
         onboardingRecipe: buildOnboardingRecipe({
           handler,
@@ -42,6 +47,82 @@ function getSourceConnectorCatalog(options) {
       };
     })
   };
+}
+
+function summarizeConnectorPackages(connectorModules) {
+  return (connectorModules || []).map(function (moduleReport) {
+    const packageManifest = moduleReport.packageManifest || {};
+    const manifest = packageManifest.manifest || {};
+    if (!packageManifest.found) return undefined;
+    return {
+      modulePath: moduleReport.modulePath,
+      packagePath: packageManifest.packagePath,
+      packageName: packageManifest.packageName,
+      packageVersion: packageManifest.packageVersion,
+      manifestVersion: manifest.version,
+      displayName: manifest.displayName,
+      packageType: manifest.packageType,
+      categories: Array.isArray(manifest.categories) ? manifest.categories.slice() : [],
+      capabilities: manifest.capabilities || {},
+      rollout: manifest.rollout,
+      sourceTypes: summarizePackageSourceTypes(manifest.sourceTypes),
+      adapters: summarizePackageAdapters(manifest.adapters || manifest.forumAdapters)
+    };
+  }).filter(Boolean);
+}
+
+function summarizePackageSourceTypes(sourceTypes) {
+  return (sourceTypes || []).map(function (item) {
+    if (typeof item === 'string') {
+      return {
+        sourceType: item
+      };
+    }
+    return {
+      sourceType: item && item.sourceType,
+      displayName: item && item.displayName,
+      description: item && item.description,
+      kind: item && item.kind,
+      locationExample: item && item.locationExample,
+      rolloutManifestExample: item && item.rolloutManifestExample
+    };
+  }).filter(function (item) {
+    return Boolean(item.sourceType);
+  });
+}
+
+function summarizePackageAdapters(adapters) {
+  return (adapters || []).map(function (item) {
+    if (typeof item === 'string') {
+      return {
+        sourceKey: item
+      };
+    }
+    return {
+      sourceKey: item && item.sourceKey,
+      displayName: item && item.displayName
+    };
+  }).filter(function (item) {
+    return Boolean(item.sourceKey);
+  });
+}
+
+function indexPackagesBySourceType(packages) {
+  return packages.reduce(function (result, connectorPackage) {
+    (connectorPackage.sourceTypes || []).forEach(function (sourceType) {
+      result[sourceType.sourceType] = {
+        packageName: connectorPackage.packageName,
+        packageVersion: connectorPackage.packageVersion,
+        displayName: connectorPackage.displayName,
+        packageType: connectorPackage.packageType,
+        categories: connectorPackage.categories,
+        capabilities: connectorPackage.capabilities,
+        rollout: connectorPackage.rollout,
+        sourceType: sourceType
+      };
+    });
+    return result;
+  }, {});
 }
 
 function getLocationSchema(handler) {

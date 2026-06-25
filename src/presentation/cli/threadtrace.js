@@ -2036,6 +2036,12 @@ function main(argv) {
     if (options.modulePath) {
       console.log('Module: ' + options.modulePath);
     }
+    if ((catalog.packages || []).length > 0) {
+      console.log('Connector packages: ' + catalog.packages.length);
+      catalog.packages.forEach(function (connectorPackage) {
+        console.log('  package\t' + connectorPackage.packageName + '\ttype=' + (connectorPackage.packageType || 'unknown') + '\tcategories=' + ((connectorPackage.categories || []).join(',') || 'none'));
+      });
+    }
     catalog.sourceTypes.forEach(function (sourceType) {
       const required = sourceType.locationSchema && sourceType.locationSchema.required
         ? sourceType.locationSchema.required.join(',')
@@ -2043,7 +2049,10 @@ function main(argv) {
       const compatible = sourceType.compatibleSourceKeys && sourceType.compatibleSourceKeys.length
         ? sourceType.compatibleSourceKeys.join(',')
         : 'none';
-      console.log(sourceType.sourceType + '\tadapter=' + sourceType.requiresAdapter + '\trequired=' + required + '\tcompatible=' + compatible);
+      const packageName = sourceType.package && sourceType.package.packageName
+        ? '\tpackage=' + sourceType.package.packageName
+        : '';
+      console.log(sourceType.sourceType + '\tadapter=' + sourceType.requiresAdapter + '\trequired=' + required + '\tcompatible=' + compatible + packageName);
       if (sourceType.onboardingRecipe) {
         const recipe = sourceType.onboardingRecipe;
         const fields = recipe.requiredLocationFields && recipe.requiredLocationFields.length

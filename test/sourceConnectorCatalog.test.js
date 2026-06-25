@@ -2,6 +2,7 @@
 
 const assert = require('node:assert/strict');
 const test = require('node:test');
+const path = require('node:path');
 const { createThreadTraceRuntime } = require('../src/runtime/threadTraceRuntime');
 
 test('runtime exposes source connector catalog', function () {
@@ -37,4 +38,29 @@ test('runtime exposes source connector catalog', function () {
   assert.ok(byType['thread-url'].onboardingRecipe.compatibleSourceKeys.includes('nga'));
   assert.match(byType['thread-url'].onboardingRecipe.recommendedFlow[1].cli, /source-onboarding-preflight/);
   assert.match(byType['thread-url'].onboardingRecipe.recommendedFlow[2].api, /\/api\/sources\/ingest\/dry-run/);
+});
+
+test('runtime connector catalog includes connector package manifest metadata', function () {
+  const cwd = path.resolve(__dirname, '..');
+  const runtime = createThreadTraceRuntime({
+    cwd
+  });
+  const catalog = runtime.getSourceConnectorCatalog({
+    modulePath: 'docs/examples/rss-archive-connector-package/index.cjs',
+    now: '2026-06-25T10:00:00.000Z'
+  });
+  const sourceType = catalog.sourceTypes.find(function (item) {
+    return item.sourceType === 'rss-archive-normalized-feed';
+  });
+
+  assert.equal(catalog.generatedAt, '2026-06-25T10:00:00.000Z');
+  assert.equal(catalog.packages.length, 1);
+  assert.equal(catalog.packages[0].packageName, '@threadtrace/example-rss-archive-connector-package');
+  assert.deepEqual(catalog.packages[0].categories, ['rss', 'api', 'archive', 'json-package']);
+  assert.equal(catalog.packages[0].rollout.recommendedManifest, '../rss-archive-rollout-manifest.sample.json');
+  assert.equal(catalog.packages[0].sourceTypes[0].sourceType, 'rss-archive-normalized-feed');
+  assert.equal(sourceType.package.packageName, '@threadtrace/example-rss-archive-connector-package');
+  assert.equal(sourceType.package.sourceType.locationExample, 'sample-location.json');
+  assert.equal(sourceType.package.capabilities.rssTemplate, true);
+  assert.deepEqual(catalog.moduleErrors, []);
 });
