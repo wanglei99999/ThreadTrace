@@ -87,6 +87,8 @@ Run history can be filtered with `sourceId`, `status`, and `limit`. It returns s
 
 The single-source and due-source pipeline endpoints use the same source run guard as ingest tasks. A non-stale `running` source is rejected or skipped; a stale `running` source can recover after `sourceRunStaleAfterMs`.
 
+`POST /api/sources/tasks/insight-pipeline-due` returns a durable batch task plus per-source results. Each completed source result includes the parent pipeline task, the ingest child task, cursor diff, semantic status, and schedule reason. The Web source operations cockpit renders the batch task, batch trace, source drill-down, pipeline task, and ingest task controls from this response so operators can audit one automatic collection trigger end to end.
+
 ## Runtime
 
 ```js

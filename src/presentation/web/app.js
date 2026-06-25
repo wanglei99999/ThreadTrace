@@ -3279,7 +3279,7 @@ function renderTaskTraceButton(task) {
   return button ? '<div class="button-group source-op-buttons">' + button + '</div>' : '';
 }
 
-function renderTaskTraceButtonControl(task) {
+function renderTaskTraceButtonControl(task, label) {
   const trace = taskTraceMetadata(task);
   if (!task || (!task.id && !trace.requestId && !trace.traceId && !trace.idempotencyKey)) return '';
   return '<button class="inline-button secondary-inline-button" type="button" data-action="load-trace-context"' +
@@ -3288,7 +3288,7 @@ function renderTaskTraceButtonControl(task) {
     ' data-request-id="' + escapeHtml(trace.requestId || '') + '"' +
     ' data-trace-id="' + escapeHtml(trace.traceId || '') + '"' +
     ' data-idempotency-key="' + escapeHtml(trace.idempotencyKey || '') + '"' +
-    ' data-limit="20">Trace</button>';
+    ' data-limit="20">' + escapeHtml(label || 'Trace') + '</button>';
 }
 
 function renderTaskDetailButton(task) {
@@ -3296,10 +3296,10 @@ function renderTaskDetailButton(task) {
   return button ? '<div class="button-group source-op-buttons">' + button + '</div>' : '';
 }
 
-function renderTaskDetailButtonControl(task) {
+function renderTaskDetailButtonControl(task, label) {
   if (!task || !task.id) return '';
   return '<button class="inline-button secondary-inline-button" type="button" data-action="load-task-detail" data-task-id="' +
-    escapeHtml(task.id) + '" data-trace-limit="20">Detail</button>';
+    escapeHtml(task.id) + '" data-trace-limit="20">' + escapeHtml(label || 'Detail') + '</button>';
 }
 
 function taskTraceMetadata(task) {
@@ -3332,17 +3332,23 @@ function renderSourceBatchRunResult(result) {
     metric('Sources', result.sourceCount),
     metric('Completed', result.completedCount),
     metric('Failed', result.failedCount),
+    renderBatchTaskControls(result.task),
     renderSourceOperationResultRows(result.results || [])
   ].join(''), 'wide');
 }
 
 function renderDueSourceBatchRunResult(result) {
   return panel('Due source batch run', [
+    metric('Batch task', result.task && result.task.id || 'none'),
+    metric('Task status', result.task && result.task.status || 'unknown'),
     metric('Sources', result.sourceCount),
     metric('Due', result.dueCount),
     metric('Skipped', result.skippedCount),
     metric('Completed', result.completedCount),
     metric('Failed', result.failedCount),
+    metric('Checked', result.checkedAt || 'unknown'),
+    metric('Finished', result.finishedAt || 'unknown'),
+    renderBatchTaskControls(result.task),
     renderSourceOperationResultRows(result.results || []),
     renderSourceOperationSkippedRows(result.skipped || [])
   ].join(''), 'wide');
@@ -3350,21 +3356,35 @@ function renderDueSourceBatchRunResult(result) {
 
 function renderDueSourcePipelineBatchRunResult(result) {
   return panel('Due source insight batch run', [
+    metric('Batch task', result.task && result.task.id || 'none'),
+    metric('Task status', result.task && result.task.status || 'unknown'),
     metric('Sources', result.sourceCount),
     metric('Due', result.dueCount),
     metric('Skipped', result.skippedCount),
     metric('Completed', result.completedCount),
     metric('Failed', result.failedCount),
+    metric('Checked', result.checkedAt || 'unknown'),
+    metric('Finished', result.finishedAt || 'unknown'),
+    renderBatchTaskControls(result.task),
     renderSourceOperationResultRows(result.results || []),
     renderSourceOperationSkippedRows(result.skipped || [])
   ].join(''), 'wide');
+}
+
+function renderBatchTaskControls(task) {
+  if (!task) return '';
+  return '<div class="button-group source-op-buttons batch-task-controls">' +
+    renderTaskDetailButtonControl(task, 'Batch task') +
+    renderTaskTraceButtonControl(task, 'Batch trace') +
+    '</div>';
 }
 
 function renderSourceOperationResultRows(results) {
   if (!results || results.length === 0) return '<div class="muted">No source operation results.</div>';
   return '<div class="source-operation-result-list">' + results.map(function (item) {
     const source = item.source || {};
-    const task = item.task || item.ingestTask || {};
+    const task = item.task || {};
+    const ingestTask = item.ingestTask || {};
     const error = item.error || {};
     const cursorDiff = item.cursorDiff || {};
     const semantic = item.semantic || {};
@@ -3372,6 +3392,7 @@ function renderSourceOperationResultRows(results) {
       source.id || source.sourceKey || 'unknown-source',
       item.scheduleReason ? 'reason=' + item.scheduleReason : undefined,
       task.id ? 'task=' + task.id : undefined,
+      ingestTask.id ? 'ingestTask=' + ingestTask.id : undefined,
       cursorDiff.changed === undefined ? undefined : 'changed=' + cursorDiff.changed,
       cursorDiff.newPostCount === undefined ? undefined : 'newPosts=' + cursorDiff.newPostCount,
       semantic.status ? 'semantic=' + semantic.status + (semantic.reason ? '/' + semantic.reason : '') : undefined,
@@ -3382,12 +3403,22 @@ function renderSourceOperationResultRows(results) {
       '<small>' + escapeHtml(details) + '</small>' +
       '</span><span class="button-group source-op-buttons">' +
       renderSourceDrilldownButton(source) +
-      renderTaskDetailButtonControl(task) +
-      renderTaskTraceButtonControl(task) +
+      renderSourceOperationTaskControls(item) +
       statusBadge(item.status || 'unknown', item.status === 'failed' ? 'fail' : 'ok') +
       '</span>' +
       '</div>';
   }).join('') + '</div>';
+}
+
+function renderSourceOperationTaskControls(item) {
+  const task = item && item.task || {};
+  const ingestTask = item && item.ingestTask || {};
+  return [
+    renderTaskDetailButtonControl(task, 'Task'),
+    renderTaskTraceButtonControl(task, 'Trace'),
+    ingestTask.id && ingestTask.id !== task.id ? renderTaskDetailButtonControl(ingestTask, 'Ingest task') : '',
+    ingestTask.id && ingestTask.id !== task.id ? renderTaskTraceButtonControl(ingestTask, 'Ingest trace') : ''
+  ].join('');
 }
 
 function renderSourceOperationSkippedRows(skipped) {
@@ -3404,8 +3435,10 @@ function renderSourceOperationSkippedRows(skipped) {
     return '<div class="action-row ops-row source-operation-result-row"><span>' +
       '<strong>' + escapeHtml(source.displayName || source.id || 'Skipped source') + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
-      '</span>' +
+      '</span><span class="button-group source-op-buttons">' +
+      renderSourceDrilldownButton(source) +
       statusBadge('skipped', 'muted') +
+      '</span>' +
       '</div>';
   }).join('') + '</div>';
 }

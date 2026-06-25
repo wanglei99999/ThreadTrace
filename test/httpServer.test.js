@@ -233,6 +233,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /renderCollectionActionControls/);
     assert.match(webAppJs, /runDueCollectionFromButton/);
     assert.match(webAppJs, /run-due-pipelines/);
+    assert.match(webAppJs, /renderBatchTaskControls/);
+    assert.match(webAppJs, /Batch trace/);
+    assert.match(webAppJs, /Ingest task/);
     assert.match(webAppJs, /renderSourceOperationResultRows/);
     assert.match(webAppJs, /Due source batch run/);
     assert.match(webAppJs, /Source attention/);
