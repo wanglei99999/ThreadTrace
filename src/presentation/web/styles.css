@@ -2924,6 +2924,162 @@ form button[type="submit"]:hover {
   overflow-wrap: anywhere;
 }
 
+.author-review-row,
+.author-signal-row {
+  display: grid;
+  grid-template-columns: minmax(170px, 0.28fr) minmax(0, 1fr) minmax(150px, auto);
+  gap: 14px;
+  align-items: stretch;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgba(205, 218, 214, 0.92);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 250, 248, 0.95));
+  box-shadow: var(--shadow-xs), var(--inner-light);
+}
+
+.author-review-row:hover,
+.author-signal-row:hover {
+  border-color: rgba(159, 192, 183, 0.96);
+  box-shadow: 0 14px 30px rgba(10, 27, 24, 0.08), var(--inner-light);
+}
+
+.author-review-row.is-hot {
+  border-color: rgba(138, 87, 18, 0.28);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 248, 232, 0.88) 58%, rgba(238, 246, 255, 0.84));
+}
+
+.author-review-identity,
+.author-signal-identity,
+.author-review-brief,
+.author-signal-brief {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  min-width: 0;
+}
+
+.author-review-source {
+  width: max-content;
+  max-width: 100%;
+  padding: 5px 8px;
+  border: 1px solid rgba(36, 95, 159, 0.2);
+  border-radius: var(--radius-sm);
+  background: var(--info-soft);
+  color: #154d88;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.author-review-row.is-hot .author-review-source {
+  border-color: rgba(138, 87, 18, 0.28);
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.author-review-identity strong,
+.author-signal-identity strong {
+  color: var(--text-strong);
+  font-size: 15px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.author-review-identity small,
+.author-signal-identity small,
+.author-review-brief small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.author-review-brief p,
+.author-signal-brief p {
+  max-width: 78ch;
+  margin: 0;
+  color: var(--text);
+  line-height: 1.58;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+.author-review-chips,
+.author-signal-metrics,
+.author-signal-focus {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-width: 0;
+}
+
+.author-meta-chip,
+.author-signal-focus span {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  padding: 4px 8px;
+  border: 1px solid rgba(184, 201, 195, 0.82);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--muted-strong);
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.author-meta-chip b {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.author-meta-chip.status-ok {
+  border-color: rgba(19, 116, 95, 0.24);
+  background: var(--ok-soft);
+  color: var(--accent-ink);
+}
+
+.author-meta-chip.status-info,
+.author-signal-focus span {
+  border-color: rgba(36, 95, 159, 0.2);
+  background: var(--info-soft);
+  color: #154d88;
+}
+
+.author-meta-chip.status-warn {
+  border-color: rgba(138, 87, 18, 0.28);
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.author-review-actions,
+.author-signal-actions {
+  align-self: stretch;
+  align-content: start;
+  justify-content: flex-end;
+  min-width: 0;
+  background: rgba(246, 248, 248, 0.78);
+}
+
+.author-review-actions .status-badge,
+.author-signal-actions .status-badge {
+  min-height: 32px;
+}
+
+.durable-review-row {
+  grid-template-columns: minmax(180px, 0.3fr) minmax(0, 1fr) minmax(220px, auto);
+}
+
 .source-ops-hero {
   position: relative;
   grid-column: span 12;
@@ -5399,6 +5555,18 @@ pre {
 
   .author-intel-review {
     gap: 8px;
+  }
+
+  .author-review-row,
+  .author-signal-row,
+  .durable-review-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .author-review-actions,
+  .author-signal-actions {
+    justify-content: flex-start;
   }
 
   .review-queue-hero h3 {

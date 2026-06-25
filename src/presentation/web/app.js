@@ -2740,7 +2740,7 @@ function renderAuthorSourceReviewPressureRows(items) {
   }).join('');
 }
 
-function renderAuthorReviewQueueRows(items) {
+function renderAuthorReviewQueueRowsLegacy(items) {
   if (items.length === 0) return '<div class="muted">暂无审核队列</div>';
   return items.slice(0, 12).map(function (item) {
     const ref = (item.refs || [])[0] || {};
@@ -2891,7 +2891,7 @@ function renderAuthorReviewQueueEventSynthesis(result) {
   ].join('');
 }
 
-function renderDurableAuthorReviewQueueRows(items) {
+function renderDurableAuthorReviewQueueRowsLegacy(items) {
   if (items.length === 0) return '<div class="muted">No durable queue items</div>';
   return items.slice(0, 30).map(function (item) {
     const ref = (item.refs || [])[0] || {};
@@ -2922,7 +2922,7 @@ function renderDurableAuthorReviewQueueRows(items) {
   }).join('');
 }
 
-function renderAuthorIntelligenceRows(authors) {
+function renderAuthorIntelligenceRowsLegacy(authors) {
   if (authors.length === 0) return '<div class="muted">暂无作者情报</div>';
   return authors.slice(0, 12).map(function (item) {
     const author = item.author || {};
@@ -2951,6 +2951,115 @@ function renderAuthorIntelligenceRows(authors) {
       renderSourceDrilldownButtonForScope({ sourceKey }) +
       '</span></div>';
   }).join('');
+}
+
+function renderAuthorReviewQueueRows(items) {
+  if (items.length === 0) return '<div class="muted">No author review queue yet.</div>';
+  return items.slice(0, 12).map(function (item) {
+    const ref = (item.refs || [])[0] || {};
+    const sourceKey = item.sourceKey || ref.sourceKey || (item.thread && item.thread.sourceKey);
+    const threadRef = ref.sourceThreadId ? 'thread ' + ref.sourceThreadId : undefined;
+    const floorRef = ref.floor === undefined ? undefined : '#' + ref.floor;
+    return '<div class="author-review-row ' + (item.priority === 'high' ? 'is-hot' : '') + '">' +
+      '<section class="author-review-identity">' +
+        '<span class="author-review-source">' + escapeHtml(sourceKey || 'all-sources') + '</span>' +
+        '<strong>' + escapeHtml(item.title || item.key || 'review item') + '</strong>' +
+        '<small>' + escapeHtml([item.type, item.reason].filter(Boolean).join(' / ') || 'author signal') + '</small>' +
+      '</section>' +
+      '<section class="author-review-brief">' +
+        '<p>' + escapeHtml(item.summary || item.reason || 'Needs operator review before downstream action.') + '</p>' +
+        '<div class="author-review-chips">' +
+          authorMetaChip('priority', item.priority || 'unknown', item.priority === 'high' ? 'warn' : 'muted') +
+          authorMetaChip('score', item.score === undefined ? undefined : item.score, item.score >= 0.8 ? 'warn' : 'info') +
+          authorMetaChip('thread', threadRef, 'info') +
+          authorMetaChip('floor', floorRef, 'muted') +
+        '</div>' +
+        '<small>' + escapeHtml(item.nextAction || 'Open source scope and validate the evidence chain.') + '</small>' +
+      '</section>' +
+      '<section class="author-review-actions button-group source-op-buttons">' +
+        statusBadge(item.priority || 'unknown', item.priority === 'high' ? 'warn' : 'muted') +
+        renderSourceDrilldownButtonForScope({ sourceKey }) +
+      '</section>' +
+    '</div>';
+  }).join('');
+}
+
+function renderDurableAuthorReviewQueueRows(items) {
+  if (items.length === 0) return '<div class="muted">No durable queue items</div>';
+  return items.slice(0, 30).map(function (item) {
+    const ref = (item.refs || [])[0] || {};
+    const sourceKey = item.sourceKey || ref.sourceKey;
+    const threadRef = item.sourceThreadId || ref.sourceThreadId;
+    const floorRef = item.floor === undefined && ref.floor === undefined ? undefined : '#' + (item.floor === undefined ? ref.floor : item.floor);
+    const controls = '<section class="author-review-actions button-group source-op-buttons">' +
+      renderSourceDrilldownButtonForScope({ sourceKey }) +
+      (item.status === 'open'
+        ? '<button class="inline-button secondary-inline-button" type="button" data-action="set-author-review-status" data-item-id="' + escapeHtml(item.id) + '" data-status="confirmed">Confirm</button><button class="inline-button warning-inline-button" type="button" data-action="set-author-review-status" data-item-id="' + escapeHtml(item.id) + '" data-status="ignored">Ignore</button>'
+        : statusBadge(item.status || 'unknown', item.status === 'confirmed' ? 'ok' : 'muted')) +
+      '</section>';
+    return '<div class="author-review-row durable-review-row ' + (item.priority === 'high' ? 'is-hot' : '') + '">' +
+      '<section class="author-review-identity">' +
+        '<span class="author-review-source">' + escapeHtml(sourceKey || 'unknown-source') + '</span>' +
+        '<strong>' + escapeHtml(item.title || item.id) + '</strong>' +
+        '<small>' + escapeHtml([item.type, item.reason].filter(Boolean).join(' / ') || item.id) + '</small>' +
+      '</section>' +
+      '<section class="author-review-brief">' +
+        '<p>' + escapeHtml(item.summary || 'Open queue item waiting for operator judgement.') + '</p>' +
+        '<div class="author-review-chips">' +
+          authorMetaChip('status', item.status || 'unknown', item.status === 'open' ? 'warn' : 'muted') +
+          authorMetaChip('seen', item.seenCount || 0, (item.seenCount || 0) > 1 ? 'info' : 'muted') +
+          authorMetaChip('thread', threadRef ? 'thread ' + threadRef : undefined, 'info') +
+          authorMetaChip('floor', floorRef, 'muted') +
+        '</div>' +
+        '<small>' + escapeHtml(item.nextAction || 'Confirm, ignore, or drill into the source scope.') + '</small>' +
+      '</section>' +
+      controls +
+      '</div>';
+  }).join('');
+}
+
+function renderAuthorIntelligenceRows(authors) {
+  if (authors.length === 0) return '<div class="muted">No author intelligence yet.</div>';
+  return authors.slice(0, 12).map(function (item) {
+    const author = item.author || {};
+    const intelligence = item.intelligence || {};
+    const sourceKey = item.sourceKey || author.sourceKey;
+    const focusEntities = (item.topFocusEntities || []).slice(0, 4).map(function (entity) {
+      return entity.entity && entity.entity.displayName ? entity.entity.displayName + ' / ' + entity.latestAttitude : entity.key;
+    }).filter(Boolean);
+    const focus = focusEntities.join(' | ');
+    const confidence = item.averageOpinionConfidence === undefined ? undefined : item.averageOpinionConfidence;
+    return '<div class="author-signal-row">' +
+      '<section class="author-signal-identity">' +
+        '<span class="author-review-source">' + escapeHtml(sourceKey || 'unknown-source') + '</span>' +
+        '<strong>' + escapeHtml(author.displayName || author.sourceAuthorId || item.key || 'unknown author') + '</strong>' +
+        '<small>' + escapeHtml([author.sourceAuthorId, item.dominantStance ? 'stance=' + item.dominantStance : undefined].filter(Boolean).join(' / ') || 'author profile') + '</small>' +
+      '</section>' +
+      '<section class="author-signal-brief">' +
+        '<p>' + escapeHtml(intelligence.summary || focus || formatStanceSummary(item.stanceSummary) || 'No summary generated yet.') + '</p>' +
+        '<div class="author-signal-metrics">' +
+          authorMetaChip('posts', item.postCount || 0, 'info') +
+          authorMetaChip('opinions', item.opinionCount || 0, 'ok') +
+          authorMetaChip('threads', item.threadCount || 0, 'muted') +
+          authorMetaChip('confidence', confidence, confidence >= 0.8 ? 'ok' : 'muted') +
+          authorMetaChip('primary', item.primaryThreadCount || 0, 'info') +
+          authorMetaChip('gaps', item.evidenceGapCount || 0, item.evidenceGapCount > 0 ? 'warn' : 'ok') +
+        '</div>' +
+        (focusEntities.length > 0 ? '<div class="author-signal-focus">' + focusEntities.map(function (entry) {
+          return '<span>' + escapeHtml(entry) + '</span>';
+        }).join('') + '</div>' : '') +
+      '</section>' +
+      '<section class="author-signal-actions button-group source-op-buttons">' +
+        statusBadge(intelligence.evidenceStatus || (item.evidenceGapCount > 0 ? 'needs-review' : 'ready'), intelligence.evidenceStatus === 'needs-review' ? 'warn' : 'ok') +
+        renderSourceDrilldownButtonForScope({ sourceKey }) +
+      '</section>' +
+      '</div>';
+  }).join('');
+}
+
+function authorMetaChip(label, value, variant) {
+  if (value === undefined || value === null || value === '') return '';
+  return '<span class="author-meta-chip ' + statusClassName(variant || 'muted') + '"><b>' + escapeHtml(label) + '</b>' + escapeHtml(value) + '</span>';
 }
 
 function renderAuthorEntityRows(entities) {
@@ -6527,6 +6636,7 @@ function statusVariant(status) {
 
 function statusClassName(variant) {
   if (variant === 'ok') return 'status-ok';
+  if (variant === 'info') return 'status-info';
   if (variant === 'warn') return 'status-warn';
   if (variant === 'fail') return 'status-fail';
   return 'status-muted';
