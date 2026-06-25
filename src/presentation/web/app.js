@@ -923,7 +923,7 @@ async function runManifestCheck(options) {
 
 function setLoading(targetId, message) {
   const target = document.getElementById(targetId);
-  if (target) target.innerHTML = '<div class="empty">' + escapeHtml(message || 'Loading...') + '</div>';
+  if (target) target.innerHTML = renderFeedbackState('loading', message || 'Loading...');
 }
 
 async function handleRolloutReadinessAction(event) {
@@ -2447,7 +2447,7 @@ async function synthesizeReviewResultEvents(execute) {
 async function dispatchEvents() {
   const dispatchRequest = buildEventDispatchRequest();
   const target = document.getElementById('eventResult');
-  target.innerHTML = '<div class="empty">Dispatching notification events...</div>';
+  target.innerHTML = renderFeedbackState('loading', 'Dispatching notification events...');
   try {
     const result = await requestJson('/api/events/dispatch', dispatchRequest);
     await loadSystemStatus();
@@ -2463,7 +2463,7 @@ async function acknowledgeVisibleEvents(execute) {
   const request = buildVisibleEventAckRequest(execute);
   if (execute && !window.confirm('Acknowledge up to ' + request.limit + ' open notification events in the current filter?')) return;
   const target = document.getElementById('eventResult');
-  target.innerHTML = '<div class="empty">' + (execute ? 'Acknowledging events...' : 'Previewing acknowledgement candidates...') + '</div>';
+  target.innerHTML = renderFeedbackState('loading', execute ? 'Acknowledging events...' : 'Previewing acknowledgement candidates...');
   try {
     const result = await requestJson('/api/events/ack', request);
     await loadSystemStatus();
@@ -2479,7 +2479,7 @@ async function archiveHandledEvents(execute) {
   const request = buildEventArchiveRequest(execute);
   if (execute && !window.confirm('Archive handled notification events older than 30 days in the current filter?')) return;
   const target = document.getElementById('eventResult');
-  target.innerHTML = '<div class="empty">Checking event archive policy...</div>';
+  target.innerHTML = renderFeedbackState('loading', 'Checking event archive policy...');
   try {
     const result = await requestJson('/api/events/archive', request);
     await loadEvents();
@@ -2492,7 +2492,7 @@ async function archiveHandledEvents(execute) {
 
 async function renderAsync(targetId, task, renderer) {
   const target = document.getElementById(targetId);
-  target.innerHTML = '<div class="empty">分析中...</div>';
+  target.innerHTML = renderFeedbackState('loading', '分析中...');
   try {
     const result = await task();
     target.innerHTML = renderer(result);
@@ -7634,7 +7634,20 @@ async function fetchJson(url, options) {
 }
 
 function renderError(targetId, error) {
-  document.getElementById(targetId).innerHTML = '<div class="error">' + escapeHtml(error.message) + '</div>';
+  document.getElementById(targetId).innerHTML = renderFeedbackState('error', error && error.message ? error.message : error);
+}
+
+function renderFeedbackState(type, message) {
+  const isError = type === 'error';
+  const safeMessage = escapeHtml(message || (isError ? 'Request failed.' : 'Loading...'));
+  const role = isError ? 'alert' : 'status';
+  const label = isError ? 'Blocked' : 'Working';
+  const detail = isError ? '请求未完成。' : '结果准备中。';
+  const skeleton = isError ? '' : '<div class="feedback-skeleton" aria-hidden="true"><span></span><span></span><span></span></div>';
+  return '<div class="' + (isError ? 'error ' : 'empty ') + 'feedback-state feedback-state-' + (isError ? 'error' : 'loading') + '" role="' + role + '" aria-live="polite">' +
+    '<div class="feedback-head"><span>' + label + '</span><strong>' + safeMessage + '</strong><small>' + escapeHtml(detail) + '</small></div>' +
+    skeleton +
+    '</div>';
 }
 
 function escapeHtml(value) {

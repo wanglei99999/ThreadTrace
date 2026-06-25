@@ -3165,6 +3165,157 @@ pre {
   background: var(--warn-soft);
 }
 
+.feedback-state {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  gap: 14px;
+  min-height: 108px;
+  padding: 16px;
+}
+
+.feedback-state::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(20, 114, 95, 0.38), rgba(36, 95, 159, 0.22), transparent);
+  pointer-events: none;
+}
+
+.feedback-state::after {
+  content: "";
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 58px;
+  height: 16px;
+  background:
+    linear-gradient(90deg, rgba(20, 114, 95, 0.22) 0 16px, transparent 16px 21px),
+    linear-gradient(90deg, rgba(36, 95, 159, 0.18) 0 10px, transparent 10px 15px),
+    linear-gradient(90deg, rgba(241, 189, 82, 0.64) 0 16px, transparent 16px);
+  background-position: 0 1px, 25px 5px, 42px 10px;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+.feedback-state-loading {
+  border-color: rgba(20, 114, 95, 0.2);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.99), rgba(242, 250, 247, 0.96) 48%, rgba(238, 246, 255, 0.88)),
+    var(--panel);
+}
+
+.feedback-state-error {
+  border-color: rgba(138, 87, 18, 0.28);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.99), rgba(255, 246, 228, 0.94) 54%, rgba(255, 240, 240, 0.78)),
+    var(--warn-soft);
+  color: var(--warn);
+}
+
+.feedback-state-error::before {
+  background: linear-gradient(90deg, rgba(138, 87, 18, 0.42), rgba(162, 60, 60, 0.22), transparent);
+}
+
+.feedback-state-error::after {
+  background:
+    linear-gradient(90deg, rgba(138, 87, 18, 0.32) 0 16px, transparent 16px 21px),
+    linear-gradient(90deg, rgba(162, 60, 60, 0.22) 0 10px, transparent 10px 15px),
+    linear-gradient(90deg, rgba(241, 189, 82, 0.68) 0 16px, transparent 16px);
+  background-position: 0 1px, 25px 5px, 42px 10px;
+  background-repeat: no-repeat;
+}
+
+.feedback-head {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 6px;
+  max-width: min(68ch, calc(100% - 76px));
+}
+
+.feedback-head span {
+  width: max-content;
+  max-width: 100%;
+  padding: 5px 8px;
+  border: 1px solid rgba(20, 114, 95, 0.24);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.feedback-state-error .feedback-head span {
+  border-color: rgba(138, 87, 18, 0.34);
+  background: var(--gold-soft);
+  color: #765019;
+}
+
+.feedback-head strong {
+  color: var(--text-strong);
+  font-size: 17px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.feedback-head small {
+  color: var(--muted-strong);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.feedback-state-error .feedback-head strong {
+  color: #6c3f07;
+}
+
+.feedback-state-error .feedback-head small {
+  color: #7b5730;
+}
+
+.feedback-skeleton {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 8px;
+  max-width: 680px;
+}
+
+.feedback-skeleton span {
+  height: 10px;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, rgba(20, 114, 95, 0.08), rgba(36, 95, 159, 0.15), rgba(20, 114, 95, 0.08));
+  background-size: 220% 100%;
+  animation: feedback-scan 1100ms ease-in-out infinite;
+}
+
+.feedback-skeleton span:nth-child(1) {
+  width: min(100%, 520px);
+}
+
+.feedback-skeleton span:nth-child(2) {
+  width: min(72%, 420px);
+  animation-delay: 120ms;
+}
+
+.feedback-skeleton span:nth-child(3) {
+  width: min(46%, 280px);
+  animation-delay: 220ms;
+}
+
+@keyframes feedback-scan {
+  0% {
+    background-position: 120% 0;
+  }
+  100% {
+    background-position: -120% 0;
+  }
+}
+
 @media (max-width: 1080px) {
   .app-shell {
     grid-template-columns: 236px minmax(0, 1fr);
@@ -3677,6 +3828,14 @@ pre {
     display: none;
   }
 
+  .feedback-head {
+    max-width: 100%;
+  }
+
+  .feedback-state::after {
+    opacity: 0.82;
+  }
+
   .collection-card .secondary-button,
   .collection-card button[type="submit"] {
     width: 100%;
@@ -3921,5 +4080,10 @@ pre {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+  }
+
+  .feedback-skeleton span {
+    animation: none;
+    background-position: 0 0;
   }
 }
