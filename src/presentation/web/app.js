@@ -3671,6 +3671,7 @@ function renderDueSourceBatchRunResult(result) {
     metric('Checked', result.checkedAt || 'unknown'),
     metric('Finished', result.finishedAt || 'unknown'),
     renderBatchTaskControls(result.task),
+    renderDueBatchEvidence(result.evidence),
     renderSourceOperationResultRows(result.results || []),
     renderSourceOperationSkippedRows(result.skipped || [])
   ].join(''), 'wide');
@@ -3688,9 +3689,36 @@ function renderDueSourcePipelineBatchRunResult(result) {
     metric('Checked', result.checkedAt || 'unknown'),
     metric('Finished', result.finishedAt || 'unknown'),
     renderBatchTaskControls(result.task),
+    renderDueBatchEvidence(result.evidence),
     renderSourceOperationResultRows(result.results || []),
     renderSourceOperationSkippedRows(result.skipped || [])
   ].join(''), 'wide');
+}
+
+function renderDueBatchEvidence(evidence) {
+  if (!evidence) return '';
+  const summary = evidence.summary || {};
+  const batch = evidence.batch || {};
+  const timeline = evidence.timeline || [];
+  return [
+    '<div class="summary-strip">',
+    summaryTile('Evidence', batch.taskId || 'none', batch.taskId ? 'ok' : 'muted'),
+    summaryTile('Replayable', String(summary.replayableCount || 0), (summary.replayableCount || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('Timeline', String(timeline.length), timeline.length > 0 ? 'ok' : 'muted'),
+    summaryTile('Backoff', String(summary.backoffSkippedCount || 0), (summary.backoffSkippedCount || 0) > 0 ? 'warn' : 'ok'),
+    '</div>',
+    timeline.slice(0, 8).map(function (item) {
+      const details = [
+        item.scheduleReason,
+        item.taskId ? 'task=' + item.taskId : undefined,
+        item.changed === undefined ? undefined : 'changed=' + item.changed,
+        item.newPostCount === undefined ? undefined : 'new=' + item.newPostCount,
+        item.semanticStatus ? 'semantic=' + item.semanticStatus : undefined,
+        item.retryAt ? 'retry=' + item.retryAt : undefined
+      ].filter(Boolean).join(' | ');
+      return '<div class="action-row"><span><strong>' + escapeHtml(item.kind || 'evidence') + '</strong><small>' + escapeHtml([item.sourceId, item.sourceKey].filter(Boolean).join(' / ')) + '</small><small>' + escapeHtml(details) + '</small></span>' + statusBadge(item.status || 'unknown', statusVariant(item.status)) + '</div>';
+    }).join('')
+  ].join('');
 }
 
 function renderLlmReadinessProfile(profile) {

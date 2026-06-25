@@ -6,6 +6,7 @@ const { assertAnalysisReportRepository } = require('../ports/analysisReportRepos
 const { assertTaskRepository } = require('../ports/taskRepository');
 const { runTrackedSourceIngestTask } = require('./runTrackedSourceIngestTask');
 const { evaluateSourceRunSchedule } = require('./evaluateSourceRunSchedule');
+const { buildDueSourceBatchEvidence } = require('./buildDueSourceBatchEvidence');
 const {
   createTaskRecord,
   markTaskCompleted,
@@ -116,7 +117,7 @@ async function runDueSourcesIngestTasks(options) {
       }
     }
 
-    const output = summarizeDueBatch(batchTask.startedAt, checkedAt, sources, skipped, results);
+    const output = summarizeDueBatch(batchTask, checkedAt, sources, skipped, results);
     batchTask = markTaskCompleted(batchTask, {
       checkedAt: output.checkedAt,
       sourceCount: output.sourceCount,
@@ -124,6 +125,7 @@ async function runDueSourcesIngestTasks(options) {
       skippedCount: output.skippedCount,
       completedCount: output.completedCount,
       failedCount: output.failedCount,
+      evidence: output.evidence,
       results: output.results.map(function (result) {
         return {
           sourceId: result.source.id,
@@ -183,11 +185,12 @@ async function listCandidateSources(sourceRepository, query) {
   });
 }
 
-function summarizeDueBatch(startedAt, checkedAt, sources, skipped, results) {
-  return {
-    startedAt,
+function summarizeDueBatch(batchTask, checkedAt, sources, skipped, results) {
+  const finishedAt = new Date().toISOString();
+  const output = {
+    startedAt: batchTask.startedAt,
     checkedAt,
-    finishedAt: new Date().toISOString(),
+    finishedAt,
     sourceCount: sources.length,
     dueCount: results.length,
     skippedCount: skipped.length,
@@ -200,6 +203,16 @@ function summarizeDueBatch(startedAt, checkedAt, sources, skipped, results) {
     skipped,
     results
   };
+  output.evidence = buildDueSourceBatchEvidence({
+    batchTask,
+    checkedAt,
+    startedAt: output.startedAt,
+    finishedAt,
+    sourceCount: output.sourceCount,
+    skipped,
+    results
+  });
+  return output;
 }
 
 module.exports = {

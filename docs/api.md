@@ -826,7 +826,7 @@ Set `execute: true` or `dryRun: false` to persist the reset. `retryNow: true` se
 }
 ```
 
-返回：父任务记录、到期数量、跳过数量、成功/失败数量和每个来源的调度原因。父任务类型为 `ingest-due-sources`。
+返回：父任务记录、到期数量、跳过数量、成功/失败数量和每个来源的调度原因。父任务类型为 `ingest-due-sources`。响应和父任务 output 都包含 `evidence`，用于关联 batch task、child ingest task、调度决策、cursor diff、跳过/backoff 原因和可回放来源。
 
 ### `POST /api/sources/tasks/insight-pipeline-due`
 
@@ -843,7 +843,7 @@ Request:
 }
 ```
 
-The response includes the parent `source-insight-pipeline-due-sources` task, due/skipped counts, per-source pipeline results, child ingest task ids, cursor diff, semantic status, and schedule reason.
+The response includes the parent `source-insight-pipeline-due-sources` task, due/skipped counts, per-source pipeline results, child ingest task ids, cursor diff, semantic status, schedule reason, and `evidence` that links the parent batch, child ingest/pipeline tasks, cursor replay data, semantic status, skipped/backoff reasons, and a compact timeline.
 
 批量入口会对每个来源应用同一套重复运行保护；单个来源重复运行会记录为该来源失败，不会中断整个父任务。失败来源默认采用指数退避重试，跳过项会返回 `retryAt`、`backoffMs` 和原始调度原因；将 `sourceFailureRetryBackoffMs` 设为 `0` 可关闭额外失败退避。
 

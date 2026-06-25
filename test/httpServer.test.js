@@ -240,6 +240,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /renderSourceScheduleUpdateResult/);
     assert.match(webAppJs, /renderScheduleSourceControls/);
     assert.match(webAppJs, /renderCollectionActionControls/);
+    assert.match(webAppJs, /renderDueBatchEvidence/);
     assert.match(webAppJs, /runDueCollectionFromButton/);
     assert.match(webAppJs, /run-due-pipelines/);
     assert.match(webAppJs, /renderBatchTaskControls/);
@@ -812,6 +813,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.components.schemas.SourceInsightPipelineTaskResult.properties.semantic.$ref, '#/components/schemas/SourceInsightPipelineSemanticResult');
     assert.equal(openApi.components.schemas.SourceIngestBatchTaskResult.properties.results.items.$ref, '#/components/schemas/SourceBatchTaskItem');
     assert.equal(openApi.components.schemas.SourceDueIngestBatchTaskResult.properties.skipped.items.$ref, '#/components/schemas/SourceDueBatchSkippedItem');
+    assert.equal(openApi.components.schemas.SourceDueIngestBatchTaskResult.properties.evidence.$ref, '#/components/schemas/SourceDueBatchEvidence');
+    assert.equal(openApi.components.schemas.SourceDueInsightPipelineBatchTaskResult.properties.evidence.$ref, '#/components/schemas/SourceDueBatchEvidence');
     assert.equal(openApi.components.schemas.SourceDueInsightPipelineBatchTaskResult.properties.results.items.$ref, '#/components/schemas/SourceBatchTaskItem');
     assert.equal(openApi.components.schemas.SourceBatchTaskItem.properties.source.$ref, '#/components/schemas/TrackedSource');
     assert.equal(openApi.components.schemas.SourceBatchTaskItem.properties.cursorDiff.$ref, '#/components/schemas/SourceCursorDiff');

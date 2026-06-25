@@ -5295,6 +5295,7 @@ function createOpenApiSpec() {
               type: 'array',
               items: { $ref: '#/components/schemas/SourceDueBatchSkippedItem' }
             },
+            evidence: { $ref: '#/components/schemas/SourceDueBatchEvidence' },
             results: {
               type: 'array',
               items: { $ref: '#/components/schemas/SourceBatchTaskItem' }
@@ -5317,9 +5318,44 @@ function createOpenApiSpec() {
               type: 'array',
               items: { $ref: '#/components/schemas/SourceDueBatchSkippedItem' }
             },
+            evidence: { $ref: '#/components/schemas/SourceDueBatchEvidence' },
             results: {
               type: 'array',
               items: { $ref: '#/components/schemas/SourceBatchTaskItem' }
+            }
+          }
+        },
+        SourceDueBatchEvidence: {
+          type: 'object',
+          properties: {
+            batch: {
+              type: 'object',
+              additionalProperties: true
+            },
+            summary: {
+              type: 'object',
+              properties: {
+                sourceCount: { type: 'number', example: 2 },
+                dueCount: { type: 'number', example: 1 },
+                skippedCount: { type: 'number', example: 1 },
+                completedCount: { type: 'number', example: 1 },
+                failedCount: { type: 'number', example: 0 },
+                replayableCount: { type: 'number', example: 1 },
+                backoffSkippedCount: { type: 'number', example: 1 }
+              },
+              additionalProperties: true
+            },
+            due: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true }
+            },
+            skipped: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true }
+            },
+            timeline: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true }
             }
           }
         },

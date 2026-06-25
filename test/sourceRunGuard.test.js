@@ -249,8 +249,15 @@ test('due source batch can recover stale running source state', async function (
   assert.equal(result.completedCount, 1);
   assert.equal(result.failedCount, 0);
   assert.equal(result.results[0].scheduleReason, 'stale-source-running-next-run-at');
+  assert.equal(result.evidence.batch.taskType, 'ingest-due-sources');
+  assert.equal(result.evidence.summary.dueCount, 1);
+  assert.equal(result.evidence.summary.replayableCount, 1);
+  assert.equal(result.evidence.due[0].tasks.childTaskId, 'task-1');
+  assert.equal(result.evidence.due[0].cursor.newPostCount, 0);
+  assert.equal(result.evidence.timeline[0].kind, 'due-source');
   assert.equal(repositories.savedSources[0].runState.status, 'running');
   assert.equal(repositories.savedSources.at(-1).runState.status, 'completed');
+  assert.equal(repositories.savedTasks.at(-1).output.evidence.due[0].tasks.childTaskId, 'task-1');
 });
 
 test('due source batch can target one source by id', async function () {
@@ -363,6 +370,10 @@ test('due source insight pipeline batch can target one source type', async funct
   assert.equal(result.sourceCount, 1);
   assert.equal(result.dueCount, 1);
   assert.equal(result.results[0].source.id, 'source-a');
+  assert.equal(result.evidence.batch.taskType, 'source-insight-pipeline-due-sources');
+  assert.equal(result.evidence.due[0].tasks.ingestTaskId, 'task-1');
+  assert.equal(result.evidence.due[0].semantic.status, 'skipped');
+  assert.equal(result.evidence.timeline[0].semanticStatus, 'skipped');
   assert.equal(repositories.savedTasks[0].input.sourceType, 'custom-source');
 });
 
@@ -403,6 +414,10 @@ test('due source batch waits for failed source retry backoff', async function ()
   assert.equal(result.skipped[0].retryAt, '2026-06-19T10:01:00.000Z');
   assert.equal(result.skipped[0].backoffMs, 120000);
   assert.equal(result.skipped[0].baseReason, 'next-run-at');
+  assert.equal(result.evidence.summary.backoffSkippedCount, 1);
+  assert.equal(result.evidence.skipped[0].schedule.reason, 'waiting-failure-backoff');
+  assert.equal(result.evidence.skipped[0].schedule.retryAt, '2026-06-19T10:01:00.000Z');
+  assert.equal(result.evidence.timeline[0].kind, 'skipped-source');
 });
 
 function createSource(overrides) {

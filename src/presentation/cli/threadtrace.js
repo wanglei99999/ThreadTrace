@@ -2830,6 +2830,7 @@ function main(argv) {
       console.log('Skipped: ' + result.skippedCount);
       console.log('Completed: ' + result.completedCount);
       console.log('Failed: ' + result.failedCount);
+      printDueBatchEvidence(result.evidence);
       result.results.forEach(function (item) {
         console.log(item.status + '\t' + item.scheduleReason + '\t' + item.source.id + '\t' + (item.task ? item.task.id : item.error.message));
       });
@@ -2861,6 +2862,7 @@ function main(argv) {
       console.log('Skipped: ' + result.skippedCount);
       console.log('Completed: ' + result.completedCount);
       console.log('Failed: ' + result.failedCount);
+      printDueBatchEvidence(result.evidence);
       result.results.forEach(function (item) {
         console.log(item.status + '\t' + item.scheduleReason + '\t' + item.source.id + '\t' + (item.task ? item.task.id : item.error.message) + '\tsemantic=' + (item.semantic ? item.semantic.status : 'none'));
       });
@@ -3568,6 +3570,13 @@ function printAutomationRemediation(remediation) {
   (remediation.manualActions || []).slice(0, 5).forEach(function (action) {
     console.log('manual\t' + action.checkKey + '\t' + (action.command || ''));
   });
+}
+
+function printDueBatchEvidence(evidence) {
+  if (!evidence) return;
+  const summary = evidence.summary || {};
+  const batch = evidence.batch || {};
+  console.log('Evidence: task=' + (batch.taskId || 'none') + ', timeline=' + ((evidence.timeline || []).length) + ', replayable=' + (summary.replayableCount || 0) + ', backoffSkipped=' + (summary.backoffSkippedCount || 0));
 }
 
 function isTruthyOption(value) {
