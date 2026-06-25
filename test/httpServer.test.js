@@ -2684,6 +2684,7 @@ test('http server exposes raw page crawl, list, and replay APIs', async function
     assert.match(homeHtml, /name="startPage"/);
     assert.match(homeHtml, /name="pageCount"/);
     assert.match(webAppJs, /crawlThreadUrlWindow/);
+    assert.match(webAppJs, /renderSourceOpsList/);
     assert.equal(pagesResult.pages.length, 1);
     assert.equal(replayResult.task.status, 'completed');
     assert.deepEqual(calls.map(function (call) { return call[0]; }), [

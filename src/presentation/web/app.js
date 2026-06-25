@@ -1347,7 +1347,7 @@ async function loadSources() {
         diagnostics: results[1]
       };
     });
-  }, renderSourceList);
+  }, renderSourceOpsList);
 }
 
 async function loadSourceOperations() {
@@ -5910,6 +5910,54 @@ function renderSourceList(result) {
     const diagnosticLabel = diagnostics ? ' · config ' + diagnostics.status : '';
     return '<div class="action-row"><span>' + escapeHtml(source.displayName) + '<small>' + escapeHtml(source.id + ' · ' + source.sourceType + ' · ' + runLabel + diagnosticLabel + scheduleLabel + cursorLabel + diffLabel + lastTask) + '</small></span><span class="button-group"><button class="inline-button" type="button" data-action="run-source" data-source-id="' + escapeHtml(source.id) + '">运行</button><button class="inline-button secondary-inline-button" type="button" data-action="run-source-pipeline" data-source-id="' + escapeHtml(source.id) + '">洞察</button></span></div>';
   }).join(''), 'wide');
+}
+
+function renderSourceOpsList(result) {
+  const sources = result.sources || [];
+  const sourceDiagnostics = result.diagnostics || {};
+  const diagnosticsBySourceId = sourceDiagnosticMap(sourceDiagnostics);
+  const diagnosticsPanel = renderSourceDiagnostics(sourceDiagnostics);
+  if (sources.length === 0) return diagnosticsPanel + panel('Tracked sources', '<div class="muted">No tracked sources yet.</div>', 'wide');
+  return diagnosticsPanel + panel('Tracked sources', sources.map(function (source) {
+    const runState = source.runState || {};
+    const schedule = source.schedule || {};
+    const cursor = source.cursor || {};
+    const cursorDiff = runState.lastCursorDiff || {};
+    const diagnostics = diagnosticsBySourceId[source.id];
+    const runLabel = runState.status || 'never-run';
+    const details = [
+      source.id,
+      source.sourceType,
+      source.sourceKey ? 'key ' + source.sourceKey : undefined,
+      runLabel,
+      diagnostics ? 'config ' + diagnostics.status : undefined,
+      schedule.intervalMinutes ? 'every ' + schedule.intervalMinutes + 'm' : undefined,
+      formatSourceLocationSummary(source.location || {}),
+      cursor.postCount !== undefined ? 'posts ' + cursor.postCount + ' / #' + cursor.lastFloor : undefined,
+      cursorDiff.newPostCount !== undefined ? '+' + cursorDiff.newPostCount : undefined,
+      runState.lastTaskId || undefined
+    ].filter(Boolean).join(' | ');
+    const controls = '<span class="button-group source-op-buttons">' +
+      renderSourceDrilldownButton(source) +
+      '<button class="inline-button" type="button" data-action="run-source" data-source-id="' + escapeHtml(source.id) + '">Run</button>' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="run-source-pipeline" data-source-id="' + escapeHtml(source.id) + '">Insight</button>' +
+      '</span>';
+    return '<div class="action-row"><span>' + escapeHtml(source.displayName) + '<small>' + escapeHtml(details) + '</small></span>' + controls + '</div>';
+  }).join(''), 'wide');
+}
+
+function formatSourceLocationSummary(location) {
+  if (!location || typeof location !== 'object') return undefined;
+  const parts = [];
+  if (location.startPage || location.pageCount) {
+    const startPage = location.startPage || 1;
+    const pageCount = location.pageCount || 1;
+    parts.push('pages ' + startPage + '-' + (startPage + pageCount - 1));
+  }
+  if (location.url) parts.push('url');
+  if (location.inputDir) parts.push('dir');
+  if (location.inputFile) parts.push('file');
+  return parts.length ? parts.join(' / ') : undefined;
 }
 
 function renderSourceDiagnostics(diagnostics) {
