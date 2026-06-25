@@ -325,6 +325,10 @@ function bindForms() {
       await loadSourceOperationsDrilldownFromButton(button);
       return;
     }
+    if (button.dataset.action === 'load-source-type-drilldown') {
+      await loadSourceTypeOperationsDrilldownFromButton(button);
+      return;
+    }
     if (button.dataset.action === 'run-source' || button.dataset.action === 'run-source-pipeline') {
       await runSourceTaskFromButton(button, 'sourceOperationActionResult');
     }
@@ -1156,6 +1160,19 @@ async function loadSourceOperationsDrilldownFromButton(button) {
       acceptErrorStatus: true
     });
   }, renderSourceOperationsDrilldown);
+}
+
+async function loadSourceTypeOperationsDrilldownFromButton(button) {
+  const query = new URLSearchParams();
+  appendOptionalQuery(query, 'sourceType', button.dataset.sourceType);
+  appendOptionalQuery(query, 'sourceKey', button.dataset.sourceKey);
+  query.set('limit', button.dataset.limit || '50');
+  query.set('scanLimit', button.dataset.scanLimit || '250');
+  await renderAsync('sourceOperationActionResult', function () {
+    return fetchJson('/api/operations/source-type-drilldown?' + query.toString(), {
+      acceptErrorStatus: true
+    });
+  }, renderSourceTypeOperationsDrilldown);
 }
 
 async function synthesizeRunbookEventsFromButton(button, execute) {
@@ -2714,11 +2731,12 @@ function renderSourceTypeOperationsRows(sourceTypes) {
     const commands = (sourceType.recommendedCommands || []).slice(0, 2).map(function (command) {
       return '<small>' + escapeHtml(command) + '</small>';
     }).join('');
+    const actions = '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-type-drilldown" data-source-type="' + escapeHtml(sourceType.sourceType || '') + '" data-limit="50" data-scan-limit="250">Ops</button>';
     return '<div class="action-row ops-row"><span>' +
       '<strong>' + escapeHtml(sourceType.sourceType || 'unknown') + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
       commands +
-      '</span>' + statusBadge(sourceType.status || 'unknown', statusVariant(sourceType.status)) + '</div>';
+      '</span><span class="button-group">' + actions + statusBadge(sourceType.status || 'unknown', statusVariant(sourceType.status)) + '</span></div>';
   }).join('');
 }
 
@@ -3106,6 +3124,67 @@ function renderSourceOperationsDrilldown(report) {
     panel('Recent source events', evidenceList((recent.events || []).map(formatSourceDrilldownEventRow)), 'wide'),
     panel('Recent source workers', evidenceList((recent.workerRuns || []).map(formatWorkerRunRow).concat((recent.workerLeases || []).map(formatWorkerLeaseRow))), 'wide')
   ].join('');
+}
+
+function renderSourceTypeOperationsDrilldown(report) {
+  const health = report.health || {};
+  const sources = health.sources || {};
+  const tasks = health.tasks || {};
+  const events = health.events || {};
+  const workers = health.workers || {};
+  const workerRuns = workers.runs || {};
+  const workerLeases = workers.leases || {};
+  const operations = health.operations || {};
+  const recent = report.recent || {};
+  const scope = report.scope || {};
+  return [
+    panel('Source type ops drill-down', [
+      '<div class="summary-strip">',
+      summaryTile('Status', report.status || 'unknown', statusVariant(report.status)),
+      summaryTile('Type', report.sourceType || 'unknown', statusVariant(report.status)),
+      summaryTile('Sources', String(sources.total || 0), (sources.total || 0) > 0 ? 'ok' : 'muted'),
+      summaryTile('Due', String(sources.due || 0), (sources.due || 0) > 0 ? 'ok' : 'muted'),
+      summaryTile('Failed', String(sources.failed || 0), (sources.failed || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('Tasks failed', String(tasks.failed || 0), (tasks.failed || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('Events failed', String(events.failed || 0), (events.failed || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('Stale runs', String(workerRuns.stale || 0), (workerRuns.stale || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('Expired leases', String(workerLeases.expired || 0), (workerLeases.expired || 0) > 0 ? 'warn' : 'ok'),
+      '</div>',
+      metric('Scope', [
+        'type=' + (scope.sourceType || report.sourceType || 'unknown'),
+        'sources=' + ((scope.sourceIds || []).length),
+        'sourceKeys=' + (scope.sourceKeys || []).join(',')
+      ].join(' | ')),
+      metric('Operations', [
+        'found=' + Boolean(operations.found),
+        'status=' + (operations.status || 'unknown'),
+        'attention=' + (operations.attention && operations.attention.total || 0),
+        'priority=' + (operations.attention && operations.attention.highestPriorityScore || 0)
+      ].join(' | ')),
+      metric('Run statuses', compactCountMap(sources.byRunStatus)),
+      metric('Schedule reasons', compactCountMap(sources.byScheduleReason)),
+      metric('Event types', compactCountMap(events.byType)),
+      metric('Worker types', compactCountMap(workerRuns.byWorkerType))
+    ].join(''), 'wide'),
+    panel('Source type next actions', renderSourceDrilldownActions(report.nextActions || []), 'wide'),
+    panel('Recent source type sources', evidenceList((recent.sources || []).map(formatSourceTypeDrilldownSourceRow)), 'wide'),
+    panel('Recent source type tasks', evidenceList((recent.tasks || []).map(formatSourceDrilldownTaskRow)), 'wide'),
+    panel('Recent source type events', evidenceList((recent.events || []).map(formatSourceDrilldownEventRow)), 'wide'),
+    panel('Recent source type workers', evidenceList((recent.workerRuns || []).map(formatWorkerRunRow).concat((recent.workerLeases || []).map(formatWorkerLeaseRow))), 'wide')
+  ].join('');
+}
+
+function formatSourceTypeDrilldownSourceRow(source) {
+  const schedule = source.schedule || {};
+  const runState = source.runState || {};
+  return [
+    source.id || 'unknown-source',
+    source.sourceKey || 'unknown-key',
+    source.enabled === false ? 'disabled' : 'enabled',
+    'run=' + (runState.status || 'unknown'),
+    'due=' + Boolean(schedule.due),
+    'reason=' + (schedule.reason || 'unknown')
+  ].join(' | ');
 }
 
 function renderSourceDrilldownAttention(attention) {

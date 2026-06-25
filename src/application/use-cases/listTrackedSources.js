@@ -7,6 +7,7 @@ async function listTrackedSources(options) {
   const sourceRepository = assertSourceRepository(safeOptions.sourceRepository);
   return sourceRepository.listSources({
     sourceKey: safeOptions.sourceKey,
+    sourceType: safeOptions.sourceType,
     enabled: safeOptions.enabled,
     limit: safeOptions.limit
   });

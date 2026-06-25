@@ -38,6 +38,7 @@ function createFileSourceRepository(options) {
       for (const filePath of files) {
         const source = JSON.parse(await fs.readFile(filePath, 'utf8'));
         if (safeQuery.sourceKey && source.sourceKey !== safeQuery.sourceKey) continue;
+        if (safeQuery.sourceType && source.sourceType !== safeQuery.sourceType) continue;
         if (typeof safeQuery.enabled === 'boolean' && source.enabled !== safeQuery.enabled) continue;
         sources.push(source);
       }

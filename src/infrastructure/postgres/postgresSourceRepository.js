@@ -57,6 +57,10 @@ function createPostgresSourceRepository(options) {
         params.push(safeQuery.sourceKey);
         where.push('source_key = $' + params.length);
       }
+      if (safeQuery.sourceType) {
+        params.push(safeQuery.sourceType);
+        where.push('source_type = $' + params.length);
+      }
       if (typeof safeQuery.enabled === 'boolean') {
         params.push(safeQuery.enabled);
         where.push('enabled = $' + params.length);

@@ -52,6 +52,7 @@ const { getSourceAttentionReport } = require('../application/use-cases/getSource
 const { getSourceTypeOperationsReport } = require('../application/use-cases/getSourceTypeOperationsReport');
 const { getOperationalOverview } = require('../application/use-cases/getOperationalOverview');
 const { getSourceOperationsDrilldown } = require('../application/use-cases/getSourceOperationsDrilldown');
+const { getSourceTypeOperationsDrilldown } = require('../application/use-cases/getSourceTypeOperationsDrilldown');
 const { getNotificationEventOverview } = require('../application/use-cases/getNotificationEventOverview');
 const { getAuthorIntelligenceDashboard } = require('../application/use-cases/getAuthorIntelligenceDashboard');
 const { syncAuthorReviewQueue } = require('../application/use-cases/syncAuthorReviewQueue');
@@ -1192,6 +1193,57 @@ function createThreadTraceRuntime(options) {
       }));
     },
 
+    async getSourceTypeOperationsDrilldown(request) {
+      const safeRequest = request || {};
+      const storeDir = resolveStoreDir(defaults, safeRequest.storeDir);
+      const repositories = createRepositoriesFor(storeDir);
+      const runtime = this;
+      return Object.assign({
+        storageMode: defaults.storageMode
+      }, await getSourceTypeOperationsDrilldown({
+        sourceRepository: repositories.sourceRepository,
+        taskRepository: repositories.taskRepository,
+        notificationEventRepository: repositories.notificationEventRepository,
+        workerRunRepository: repositories.workerRunRepository,
+        workerLeaseRepository: repositories.workerLeaseRepository,
+        getSourceTypeOperationsReport(reportRequest) {
+          return runtime.getSourceTypeOperationsReport(Object.assign({}, reportRequest, {
+            forum: safeRequest.forum,
+            sourceKey: safeRequest.sourceKey,
+            sourceType: safeRequest.sourceType,
+            enabled: safeRequest.enabled,
+            limit: safeRequest.sourceTypeLimit || safeRequest.limit || 100,
+            attentionLimit: safeRequest.attentionLimit,
+            taskLimit: safeRequest.taskLimit,
+            pipelineLimit: safeRequest.pipelineLimit,
+            eventLimit: safeRequest.eventLimit,
+            maxAttempts: safeRequest.maxAttempts,
+            sourceRunStaleAfterMs: safeRequest.sourceRunStaleAfterMs,
+            sourceFailureRetryBackoffMs: safeRequest.sourceFailureRetryBackoffMs,
+            sourceFailureMaxRetryBackoffMs: safeRequest.sourceFailureMaxRetryBackoffMs,
+            runningStaleAfterMs: safeRequest.runningStaleAfterMs,
+            workerStaleAfterMs: safeRequest.workerStaleAfterMs,
+            modulePath: safeRequest.modulePath || safeRequest.connectorModulePath,
+            now: safeRequest.now,
+            storeDir
+          }));
+        },
+        forum: safeRequest.forum,
+        sourceKey: safeRequest.sourceKey,
+        sourceType: safeRequest.sourceType,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 50,
+        scanLimit: safeRequest.scanLimit,
+        sourceTypeLimit: safeRequest.sourceTypeLimit,
+        sourceRunStaleAfterMs: resolveSourceRunStaleAfterMs(safeRequest, runtimeConfig),
+        sourceFailureRetryBackoffMs: resolveSourceFailureRetryBackoffMs(safeRequest, runtimeConfig),
+        sourceFailureMaxRetryBackoffMs: resolveSourceFailureMaxRetryBackoffMs(safeRequest, runtimeConfig),
+        workerStaleAfterMs: safeRequest.workerStaleAfterMs,
+        includeSourceTypeOperations: safeRequest.includeSourceTypeOperations,
+        now: safeRequest.now
+      }));
+    },
+
     async getSourceLifecycleReport(request) {
       const safeRequest = request || {};
       const repositories = createRepositoriesFor(safeRequest.storeDir);
@@ -1199,6 +1251,7 @@ function createThreadTraceRuntime(options) {
         sourceRepository: repositories.sourceRepository,
         taskRepository: repositories.taskRepository,
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        sourceType: safeRequest.sourceType,
         enabled: safeRequest.enabled,
         limit: safeRequest.limit || 100,
         taskLimit: safeRequest.taskLimit || safeRequest.limit || 100,
@@ -1215,6 +1268,7 @@ function createThreadTraceRuntime(options) {
       return getSourceScheduleReport({
         sourceRepository: repositories.sourceRepository,
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        sourceType: safeRequest.sourceType,
         enabled: safeRequest.enabled,
         limit: safeRequest.limit || 100,
         sourceRunStaleAfterMs: resolveSourceRunStaleAfterMs(safeRequest, runtimeConfig),
@@ -1677,6 +1731,7 @@ function createThreadTraceRuntime(options) {
       return listTrackedSources({
         sourceRepository: repositories.sourceRepository,
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        sourceType: safeRequest.sourceType,
         enabled: safeRequest.enabled,
         limit: safeRequest.limit || 50
       });

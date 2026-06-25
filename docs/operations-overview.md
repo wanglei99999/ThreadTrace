@@ -12,6 +12,7 @@ node src/presentation/cli/threadtrace.js operations-overview --source-key nga
 node src/presentation/cli/threadtrace.js source-attention-report --source-key nga
 node src/presentation/cli/threadtrace.js source-attention-report --source-key nga --json true
 node src/presentation/cli/threadtrace.js source-type-operations-report
+node src/presentation/cli/threadtrace.js source-type-drilldown --source-type saved-html-directory
 node src/presentation/cli/threadtrace.js synthesize-source-type-operations-events --execute true
 ```
 
@@ -23,6 +24,7 @@ GET /api/operations/overview?sourceKey=nga
 GET /api/operations/source-drilldown?sourceId=tracked-source-nga-001
 GET /api/operations/source-attention
 GET /api/operations/source-type-operations
+GET /api/operations/source-type-drilldown?sourceType=saved-html-directory
 GET /api/operations/readiness
 GET /api/operations/trace-context
 GET /api/operations/runbook
@@ -51,6 +53,7 @@ runtime.getOperationalOverview({ limit: 100 })
 runtime.getSourceOperationsDrilldown({ sourceId: 'tracked-source-nga-001' })
 runtime.getSourceAttentionReport({ limit: 100 })
 runtime.getSourceTypeOperationsReport({ limit: 100 })
+runtime.getSourceTypeOperationsDrilldown({ sourceType: 'saved-html-directory' })
 runtime.getOperationalReadiness({ limit: 100 })
 runtime.getOperationsRunbook({ limit: 100 })
 runtime.synthesizeRunbookNotificationEvents({ execute: false })

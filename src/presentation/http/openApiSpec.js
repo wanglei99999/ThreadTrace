@@ -1063,6 +1063,59 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/operations/source-type-drilldown': {
+        get: {
+          summary: 'Get source-type operational drill-down across sources, workers, tasks, events, and source-type operations',
+          parameters: [
+            { name: 'sourceType', in: 'query', required: true, schema: { type: 'string', example: 'saved-html-directory' } },
+            { name: 'forum', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'enabled', in: 'query', required: false, schema: { type: 'boolean' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'scanLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'sourceTypeLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'attentionLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'taskLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'pipelineLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'eventLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'maxAttempts', in: 'query', required: false, schema: { type: 'number', example: 3 } },
+            { name: 'sourceRunStaleAfterMs', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'sourceFailureRetryBackoffMs', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'sourceFailureMaxRetryBackoffMs', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'workerStaleAfterMs', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'runningStaleAfterMs', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'modulePath', in: 'query', required: false, schema: { type: 'string', example: 'D:/connectors/custom-forum.cjs' } },
+            { name: 'includeSourceTypeOperations', in: 'query', required: false, schema: { type: 'boolean' } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Source type drill-down is ok or has warnings',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceTypeOperationsDrilldown'
+                  }
+                }
+              }
+            },
+            400: {
+              $ref: '#/components/responses/BadRequest'
+            },
+            503: {
+              description: 'Source type drill-down contains failing health signals',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceTypeOperationsDrilldown'
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       '/api/operations/readiness': {
         get: {
           summary: 'Get operations readiness status for probes and monitoring',
@@ -2096,6 +2149,8 @@ function createOpenApiSpec() {
           summary: 'List tracked forum sources',
           parameters: [
             { name: 'forum', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceType', in: 'query', required: false, schema: { type: 'string', example: 'saved-html-directory' } },
             { name: 'enabled', in: 'query', required: false, schema: { type: 'boolean' } },
             { name: 'limit', in: 'query', required: false, schema: { type: 'number' } }
           ],
@@ -2323,6 +2378,7 @@ function createOpenApiSpec() {
           parameters: [
             { name: 'forum', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
             { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceType', in: 'query', required: false, schema: { type: 'string', example: 'saved-html-directory' } },
             { name: 'enabled', in: 'query', required: false, schema: { type: 'boolean' } },
             { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
             { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
@@ -2358,6 +2414,7 @@ function createOpenApiSpec() {
           parameters: [
             { name: 'forum', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
             { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceType', in: 'query', required: false, schema: { type: 'string', example: 'saved-html-directory' } },
             { name: 'enabled', in: 'query', required: false, schema: { type: 'boolean' } },
             { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
             { name: 'taskLimit', in: 'query', required: false, schema: { type: 'number' } },
@@ -3922,6 +3979,83 @@ function createOpenApiSpec() {
               }
             }
           }
+        },
+        SourceTypeOperationsDrilldown: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            storageMode: { type: 'string', example: 'file' },
+            sourceType: { type: 'string', example: 'saved-html-directory' },
+            sourceKey: { type: 'string', example: 'nga' },
+            sourceFound: { type: 'boolean', example: true },
+            scope: {
+              type: 'object',
+              properties: {
+                sourceType: { type: 'string', example: 'saved-html-directory' },
+                sourceIds: {
+                  type: 'array',
+                  items: { type: 'string' }
+                },
+                sourceKeys: {
+                  type: 'array',
+                  items: { type: 'string' }
+                }
+              },
+              additionalProperties: true
+            },
+            operations: { $ref: '#/components/schemas/SourceTypeOperationsItem' },
+            health: {
+              type: 'object',
+              properties: {
+                sources: { type: 'object', additionalProperties: true },
+                tasks: { type: 'object', additionalProperties: true },
+                events: { type: 'object', additionalProperties: true },
+                workers: {
+                  type: 'object',
+                  properties: {
+                    runs: { type: 'object', additionalProperties: true },
+                    leases: { type: 'object', additionalProperties: true }
+                  },
+                  additionalProperties: true
+                },
+                operations: { type: 'object', additionalProperties: true }
+              },
+              additionalProperties: true
+            },
+            nextActions: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true }
+            },
+            recent: {
+              type: 'object',
+              properties: {
+                sources: {
+                  type: 'array',
+                  items: { type: 'object', additionalProperties: true }
+                },
+                tasks: {
+                  type: 'array',
+                  items: { type: 'object', additionalProperties: true }
+                },
+                events: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/NotificationEvent' }
+                },
+                workerRuns: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/WorkerRun' }
+                },
+                workerLeases: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/WorkerLease' }
+                }
+              },
+              additionalProperties: true
+            },
+            sourceTypeOperations: { $ref: '#/components/schemas/SourceTypeOperationsReport' }
+          },
+          additionalProperties: true
         },
         SourceCursorDiff: {
           type: 'object',

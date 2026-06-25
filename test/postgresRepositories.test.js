@@ -71,14 +71,16 @@ test('postgres source repository maps rows and writes upserts', async function (
   });
   const sources = await repository.listSources({
     sourceKey: 'nga',
+    sourceType: 'saved-html-directory',
     enabled: true,
     limit: 5
   });
 
   assert.match(queries[0].sql, /insert into tracked_sources/);
   assert.match(queries[1].sql, /source_key = \$1/);
-  assert.match(queries[1].sql, /enabled = \$2/);
-  assert.deepEqual(queries[1].params, ['nga', true, 5]);
+  assert.match(queries[1].sql, /source_type = \$2/);
+  assert.match(queries[1].sql, /enabled = \$3/);
+  assert.deepEqual(queries[1].params, ['nga', 'saved-html-directory', true, 5]);
   assert.equal(sources[0].id, 'source-1');
   assert.equal(sources[0].createdAt, '2026-06-18T10:00:00.000Z');
   assert.equal(sources[0].cursor.postCount, 20);

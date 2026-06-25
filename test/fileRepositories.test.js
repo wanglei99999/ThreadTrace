@@ -90,6 +90,40 @@ test('file source repository atomically acquires source runs', async function ()
   assert.equal(loaded.runState.lastStartedAt, '2026-06-19T10:01:00.000Z');
 });
 
+test('file source repository filters by source type', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-source-filter-'));
+  const repository = createFileSourceRepository({
+    baseDir: path.join(tempDir, 'sources')
+  });
+
+  await repository.saveSource(createTrackedSource({
+    id: 'source-html',
+    sourceKey: 'nga',
+    sourceType: 'saved-html-directory',
+    displayName: 'NGA archive',
+    location: { inputDir: 'example' },
+    createdAt: '2026-06-19T10:00:00.000Z',
+    updatedAt: '2026-06-19T10:00:00.000Z'
+  }));
+  await repository.saveSource(createTrackedSource({
+    id: 'source-json',
+    sourceKey: 'nga',
+    sourceType: 'normalized-thread-json',
+    displayName: 'JSON feed',
+    location: { inputFile: 'thread.json' },
+    createdAt: '2026-06-19T10:00:00.000Z',
+    updatedAt: '2026-06-19T10:00:00.000Z'
+  }));
+
+  const sources = await repository.listSources({
+    sourceKey: 'nga',
+    sourceType: 'normalized-thread-json'
+  });
+
+  assert.equal(sources.length, 1);
+  assert.equal(sources[0].id, 'source-json');
+});
+
 test('file notification event repository filters by source key', async function () {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-events-'));
   const repository = createFileNotificationEventRepository({

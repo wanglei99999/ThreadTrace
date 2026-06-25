@@ -189,9 +189,11 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /renderSourceAttentionRows/);
     assert.match(webAppJs, /operations\/source-attention/);
     assert.match(webAppJs, /operations\/source-type-operations/);
+    assert.match(webAppJs, /operations\/source-type-drilldown/);
     assert.match(webAppJs, /operations\/source-type-operations\/events/);
     assert.match(webAppJs, /synthesize-runbook-events/);
     assert.match(webAppJs, /synthesize-source-type-operations-events/);
+    assert.match(webAppJs, /load-source-type-drilldown/);
     assert.match(webAppJs, /synthesize-author-review-queue-events/);
     assert.match(webAppJs, /operations\/runbook\/events/);
     assert.match(webAppJs, /operations\/readiness/);
@@ -266,6 +268,11 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.paths['/api/operations/source-drilldown'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/SourceOperationsDrilldown');
     assert.ok(openApi.paths['/api/operations/source-drilldown'].get.parameters.find(function (parameter) {
       return parameter.name === 'attentionLimit';
+    }));
+    assert.equal(openApi.paths['/api/operations/source-type-drilldown'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceTypeOperationsDrilldown');
+    assert.equal(openApi.paths['/api/operations/source-type-drilldown'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/SourceTypeOperationsDrilldown');
+    assert.ok(openApi.paths['/api/operations/source-type-drilldown'].get.parameters.find(function (parameter) {
+      return parameter.name === 'sourceType' && parameter.required === true;
     }));
     assert.equal(openApi.paths['/api/operations/source-attention'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceAttentionReport');
     assert.equal(openApi.paths['/api/operations/source-attention'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/SourceAttentionReport');
@@ -1181,6 +1188,67 @@ test('http server synthesizes source type operations notification events', async
     assert.equal(calls[0].sourceTypeLimit, 3);
     assert.equal(calls[0].limit, 10);
     assert.equal(calls[0].resolveStale, true);
+  } finally {
+    await close(server);
+  }
+});
+
+test('http server exposes source type operations drilldown API', async function () {
+  const calls = [];
+  const server = createThreadTraceServer({
+    runtime: {
+      listAdapters() {
+        return [{ sourceKey: 'nga', displayName: 'NGA' }];
+      },
+      async getSourceTypeOperationsDrilldown(request) {
+        calls.push(request);
+        return {
+          generatedAt: request.now || '2026-06-25T10:00:00.000Z',
+          status: 'warn',
+          sourceType: request.sourceType,
+          sourceKey: request.sourceKey,
+          sourceFound: true,
+          scope: {
+            sourceType: request.sourceType,
+            sourceIds: ['source-1'],
+            sourceKeys: ['nga']
+          },
+          health: {
+            sources: { total: 1, enabled: 1, due: 1, running: 0, failed: 0 },
+            tasks: { total: 0, failed: 0 },
+            events: { total: 1, unacknowledged: 1, pending: 1, failed: 0, dueForDelivery: 1 },
+            workers: { runs: { total: 0, stale: 0 }, leases: { total: 0, expired: 0 } },
+            operations: { found: true, status: 'warn' }
+          },
+          nextActions: [
+            { key: 'sourceType.operations', severity: 'warning', summary: 'Inspect source type operations.' }
+          ],
+          recent: {
+            sources: [],
+            tasks: [],
+            events: [],
+            workerRuns: [],
+            workerLeases: []
+          }
+        };
+      }
+    }
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const result = await getJson(baseUrl + '/api/operations/source-type-drilldown?sourceType=saved-html-directory&sourceKey=nga&enabled=true&limit=10&scanLimit=200&includeSourceTypeOperations=true&now=2026-06-25T10:00:00.000Z');
+
+    assert.equal(result.sourceType, 'saved-html-directory');
+    assert.equal(result.health.sources.total, 1);
+    assert.equal(calls[0].sourceType, 'saved-html-directory');
+    assert.equal(calls[0].sourceKey, 'nga');
+    assert.equal(calls[0].enabled, true);
+    assert.equal(calls[0].limit, 10);
+    assert.equal(calls[0].scanLimit, 200);
+    assert.equal(calls[0].includeSourceTypeOperations, true);
   } finally {
     await close(server);
   }

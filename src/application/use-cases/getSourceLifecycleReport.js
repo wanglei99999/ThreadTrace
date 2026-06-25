@@ -22,6 +22,7 @@ async function getSourceLifecycleReport(options) {
 
   const sources = await sourceRepository.listSources({
     sourceKey: safeOptions.sourceKey,
+    sourceType: safeOptions.sourceType,
     enabled: safeOptions.enabled,
     limit
   });

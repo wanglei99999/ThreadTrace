@@ -48,6 +48,14 @@ Aggregates multi-source operations by `sourceType`. It merges source type readin
 
 Use it when deciding whether a whole connector family is healthy: it reports due/running/retry-waiting counts, attention priority, actionable source counts, recommended commands, and per-type status.
 
+### `GET /api/operations/source-type-drilldown`
+
+Returns an operational drill-down for one connector family. Required query parameter: `sourceType`.
+
+Optional filters include `sourceKey` / `forum`, `enabled`, `limit`, `scanLimit`, `sourceTypeLimit`, `attentionLimit`, `taskLimit`, `pipelineLimit`, `eventLimit`, `maxAttempts`, `modulePath`, `includeSourceTypeOperations`, `now`, and `storeDir`.
+
+The response combines matching sources, recent tasks, notification events, source-scoped worker runs and leases, the source type operations matrix row, health summaries, and next actions. Use it after `/api/operations/source-type-operations` points to a connector family that needs attention.
+
 ### `GET /openapi.json`
 
 返回 OpenAPI 3.0 契约，便于前端、测试工具或后续 SDK 生成器消费。
@@ -395,6 +403,7 @@ Reports tracked source lifecycle state, safe disable guard results, failure retr
 Query parameters:
 
 - `forum` / `sourceKey`: optional source key filter.
+- `sourceType`: optional connector-family filter, such as `saved-html-directory`.
 - `enabled`: optional `true` or `false`.
 - `limit`: optional source window, defaults to 100.
 - `taskLimit`: optional lifecycle task audit scan window.
@@ -412,6 +421,7 @@ Previews due-source scheduling decisions without running workers or writing task
 Query parameters:
 
 - `forum` / `sourceKey`: optional source key filter.
+- `sourceType`: optional connector-family filter, such as `saved-html-directory`.
 - `enabled`: optional `true` or `false`.
 - `limit`: optional source window, defaults to 100.
 - `sourceRunStaleAfterMs`: optional stale running-source recovery window.
