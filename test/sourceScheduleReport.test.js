@@ -53,9 +53,13 @@ test('source schedule report previews due and skipped source decisions', async f
   assert.equal(report.summary.byReason['source-disabled'], 1);
   assert.equal(report.dueSources[0].id, 'source-due');
   assert.equal(report.dueSources[0].decision.nextRunAt, '2026-06-19T09:30:00.000Z');
+  assert.equal(report.dueSources[0].collectionPlan.status, 'due');
+  assert.equal(report.dueSources[0].collectionPlan.strategy.mode, 'local-archive');
+  assert.equal(report.dueSources[0].collectionPlan.schedule.decision.reason, 'interval-elapsed');
   assert.equal(report.skippedSources[0].id, 'source-waiting-retry');
   assert.equal(report.skippedSources[0].decision.retryAt, '2026-06-19T10:01:00.000Z');
   assert.equal(report.skippedSources[0].decision.backoffMs, 120000);
+  assert.equal(report.skippedSources[0].collectionPlan.status, 'retry-waiting');
 });
 
 function source(id, overrides) {
@@ -65,6 +69,7 @@ function source(id, overrides) {
     sourceType: 'saved-html-directory',
     displayName: id,
     enabled: true,
+    location: { inputDir: 'example' },
     schedule: undefined,
     runState: {
       status: 'never-run',

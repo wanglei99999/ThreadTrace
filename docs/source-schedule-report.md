@@ -27,3 +27,5 @@ Query parameters:
 - `now`: fixed time for repeatable checks.
 
 The response includes `summary.byReason`, `dueSources`, `skippedSources`, and per-source decisions with `reason`, `nextRunAt`, `retryAt`, `failureCount`, and `backoffMs`.
+
+Each source also includes `collectionPlan`, a stable operator-facing summary of the ingest loop: collection status, source strategy (`local-archive`, `online-thread`, `external-normalized-feed`, or custom), schedule decision, cursor watermark, last cursor diff, last run error/task, replay evidence, and recommended commands. This lets dashboards explain whether a source is due, retry-waiting, unscheduled, or ready to replay without recomputing state from raw source records.

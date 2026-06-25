@@ -21,7 +21,31 @@ test('source operations drilldown aggregates source-scoped health and recent rec
           displayName: 'NGA sample',
           enabled: true,
           schedule: { intervalMinutes: 60 },
-          runState: { status: 'completed', lastFinishedAt: '2026-06-18T08:00:00.000Z' }
+          cursor: {
+            sourceKey: 'nga',
+            sourceThreadId: 'thread-1',
+            title: 'NGA sample',
+            postCount: 20,
+            lastFloor: 19,
+            lastPostId: 'post-20',
+            fingerprint: 'cursor-fingerprint',
+            capturedAt: '2026-06-18T08:00:00.000Z'
+          },
+          runState: {
+            status: 'completed',
+            lastFinishedAt: '2026-06-18T08:00:00.000Z',
+            lastTaskId: 'task-ingest-1',
+            lastCursorDiff: {
+              changed: true,
+              newPostCount: 4,
+              previousPostCount: 16,
+              nextPostCount: 20,
+              previousLastFloor: 15,
+              nextLastFloor: 19,
+              previousLastPostId: 'post-16',
+              nextLastPostId: 'post-20'
+            }
+          }
         };
       },
       async listSources() {
@@ -207,6 +231,13 @@ test('source operations drilldown aggregates source-scoped health and recent rec
     sourceKey: 'nga'
   });
   assert.equal(report.sourceFound, true);
+  assert.equal(report.collectionPlan.status, 'due');
+  assert.equal(report.collectionPlan.cursor.present, true);
+  assert.equal(report.collectionPlan.incremental.newPostCount, 4);
+  assert.equal(report.collectionPlan.replay.taskId, 'task-ingest-1');
+  assert.ok(report.collectionPlan.recommendedCommands.some(function (command) {
+    return /source-drilldown --source-id source-1/.test(command);
+  }));
   assert.equal(report.health.tasks.failed, 1);
   assert.equal(report.health.events.failed, 1);
   assert.equal(report.health.events.dueForDelivery, 1);

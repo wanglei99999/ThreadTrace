@@ -1,6 +1,7 @@
 'use strict';
 
 const { assertSourceRepository } = require('../ports/sourceRepository');
+const { buildSourceCollectionPlan } = require('./buildSourceCollectionPlan');
 const { evaluateSourceRunSchedule } = require('./evaluateSourceRunSchedule');
 
 async function getSourceScheduleReport(options) {
@@ -50,7 +51,8 @@ function summarizeSourceSchedule(source, now, options) {
     enabled: source.enabled !== false,
     schedule: summarizeSchedule(source.schedule),
     runState: summarizeRunState(source.runState),
-    decision: summarizeDecision(decision)
+    decision: summarizeDecision(decision),
+    collectionPlan: buildSourceCollectionPlan(source, decision, { now })
   };
 }
 

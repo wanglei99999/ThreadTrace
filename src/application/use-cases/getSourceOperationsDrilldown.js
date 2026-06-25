@@ -8,6 +8,8 @@ const { assertSourceRepository } = require('../ports/sourceRepository');
 const { assertTaskRepository } = require('../ports/taskRepository');
 const { assertWorkerLeaseRepository } = require('../ports/workerLeaseRepository');
 const { assertWorkerRunRepository } = require('../ports/workerRunRepository');
+const { buildSourceCollectionPlan } = require('./buildSourceCollectionPlan');
+const { evaluateSourceRunSchedule } = require('./evaluateSourceRunSchedule');
 
 async function getSourceOperationsDrilldown(options) {
   const safeOptions = options || {};
@@ -36,6 +38,13 @@ async function getSourceOperationsDrilldown(options) {
   const reviewActions = summarizeReviewActions(safeOptions.reviewActionAuditOverview, safeOptions.reviewActionExecutions);
   const notificationEventActions = summarizeActionExecutions(safeOptions.notificationEventActionExecutions);
   const attention = summarizeSourceAttention(safeOptions.sourceAttentionReport, scope);
+  const collectionDecision = sourceResolution.source
+    ? evaluateSourceRunSchedule(sourceResolution.source, now, {
+      sourceRunStaleAfterMs: safeOptions.sourceRunStaleAfterMs,
+      sourceFailureRetryBackoffMs: safeOptions.sourceFailureRetryBackoffMs,
+      sourceFailureMaxRetryBackoffMs: safeOptions.sourceFailureMaxRetryBackoffMs
+    })
+    : undefined;
   const summaries = {
     source: summarizeSource(sourceResolution.source, now),
     tasks: summarizeTasks(tasks),
@@ -55,6 +64,9 @@ async function getSourceOperationsDrilldown(options) {
     sourceCandidates: sourceResolution.candidates,
     sourceFound: Boolean(sourceResolution.source),
     health: summaries,
+    collectionPlan: sourceResolution.source
+      ? buildSourceCollectionPlan(sourceResolution.source, collectionDecision, { now })
+      : undefined,
     attention,
     nextActions: buildNextActions(sourceResolution, summaries, attention),
     timeline: buildOperationsTimeline({

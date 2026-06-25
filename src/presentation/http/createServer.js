@@ -606,6 +606,7 @@ async function routeRequest(request, response, context) {
       sourceId: url.searchParams.get('sourceId') || undefined,
       sourceKey: url.searchParams.get('sourceKey') || url.searchParams.get('forum') || undefined,
       limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 50,
+      timelineLimit: url.searchParams.get('timelineLimit') ? Number(url.searchParams.get('timelineLimit')) : undefined,
       attentionLimit: url.searchParams.get('attentionLimit') ? Number(url.searchParams.get('attentionLimit')) : undefined,
       taskScanLimit: url.searchParams.get('taskScanLimit') ? Number(url.searchParams.get('taskScanLimit')) : undefined,
       leaseScanLimit: url.searchParams.get('leaseScanLimit') ? Number(url.searchParams.get('leaseScanLimit')) : undefined,

@@ -4153,6 +4153,7 @@ function renderSourceOperationsDrilldown(report) {
   const reviewActions = health.reviewActions || {};
   const reviewExecutions = reviewActions.executions || {};
   const eventActions = health.notificationEventActions || {};
+  const collectionPlan = report.collectionPlan || {};
   const attention = report.attention || {};
   const recent = report.recent || {};
   const scope = report.scope || {};
@@ -4161,6 +4162,7 @@ function renderSourceOperationsDrilldown(report) {
       '<div class="summary-strip">',
       summaryTile('Status', report.status || 'unknown', statusVariant(report.status)),
       summaryTile('Source', sourceHealth.status || (report.sourceFound ? 'found' : 'missing'), statusVariant(report.sourceFound ? report.status : 'warn')),
+      summaryTile('Collection', collectionPlan.status || 'unknown', collectionStatusVariant(collectionPlan.status)),
       summaryTile('Tasks failed', String(tasks.failed || 0), (tasks.failed || 0) > 0 ? 'warn' : 'ok'),
       summaryTile('Events failed', String(events.failed || 0), (events.failed || 0) > 0 ? 'warn' : 'ok'),
       summaryTile('Stale runs', String(workerRuns.stale || 0), (workerRuns.stale || 0) > 0 ? 'warn' : 'ok'),
@@ -4172,6 +4174,9 @@ function renderSourceOperationsDrilldown(report) {
       '</div>',
       metric('Scope', formatEventSourceScope(scope)),
       metric('Source', [source.displayName, source.id, source.sourceKey, source.sourceType].filter(Boolean).join(' | ') || 'not found'),
+      metric('Collection plan', formatCollectionPlanSummary(collectionPlan)),
+      metric('Cursor', formatCollectionCursorSummary(collectionPlan.cursor)),
+      metric('Replay evidence', formatCollectionReplaySummary(collectionPlan.replay)),
       metric('Attention', attention.found ? [(attention.severity || 'info'), 'score ' + (attention.priorityScore || 0), 'signals ' + (attention.signalCount || 0), attention.recommendedNextAction || attention.recommendedCommand].filter(Boolean).join(' | ') : 'none'),
       attention.recommendedCommand ? metric('Attention command', attention.recommendedCommand) : '',
       metric('Schedule', sourceHealth.schedule ? ((sourceHealth.schedule.due ? 'due' : 'skip') + ' | ' + (sourceHealth.schedule.reason || 'unknown')) : 'unknown'),
@@ -4183,6 +4188,7 @@ function renderSourceOperationsDrilldown(report) {
       metric('Event actions', 'executions ' + (eventActions.count || 0) + ' | running ' + (eventActions.running || 0) + ' | failed ' + (eventActions.failed || 0)),
       metric('Author queue', 'open ' + (authorQueue.openCount || 0) + ' | high ' + (authorQueue.highPriorityOpenCount || 0))
     ].join(''), 'wide'),
+    panel('Source collection plan', renderCollectionPlanDetails(collectionPlan), 'wide'),
     panel('Source attention details', renderSourceDrilldownAttention(attention), 'wide'),
     panel('Source next actions', renderSourceDrilldownActions(report.nextActions || []), 'wide'),
     panel('Source operations timeline', evidenceList((report.timeline || []).map(formatSourceTimelineRow)), 'wide'),
@@ -4392,15 +4398,19 @@ function renderScheduleDecisionRows(sources, emptyText, runnable) {
     const decision = source.decision || {};
     const runState = source.runState || {};
     const schedule = source.schedule || {};
+    const collectionPlan = source.collectionPlan || {};
     const details = [
       source.id,
       source.sourceKey + '/' + source.sourceType,
+      collectionPlan.status ? 'plan=' + collectionPlan.status : undefined,
       schedule.intervalMinutes ? 'every=' + schedule.intervalMinutes + 'm' : undefined,
       'run=' + (runState.status || 'unknown'),
       'reason=' + (decision.reason || 'unknown'),
       decision.nextRunAt ? 'next=' + decision.nextRunAt : undefined,
       decision.retryAt ? 'retry=' + decision.retryAt : undefined,
-      decision.backoffMs ? 'backoff=' + formatDurationMs(decision.backoffMs) : undefined
+      decision.backoffMs ? 'backoff=' + formatDurationMs(decision.backoffMs) : undefined,
+      collectionPlan.cursor && collectionPlan.cursor.present ? 'cursor=' + (collectionPlan.cursor.lastFloor || collectionPlan.cursor.lastPostId || collectionPlan.cursor.postCount) : undefined,
+      collectionPlan.replay && collectionPlan.replay.available ? 'replay=' + (collectionPlan.replay.evidenceKinds || []).join(',') : undefined
     ].filter(Boolean).join(' | ');
     return '<div class="action-row ops-row"><span>' +
       '<strong>' + escapeHtml(source.displayName || source.id) + '</strong>' +
@@ -4417,6 +4427,73 @@ function renderScheduleSourceControls(source, runnable) {
     renderSourceDrilldownButton(source) +
     (runnable ? renderSourceRunButtons(source) : '') +
     '</span>';
+}
+
+function renderCollectionPlanDetails(plan) {
+  if (!plan || !plan.status) return '<div class="muted">No collection plan for this source.</div>';
+  const schedule = plan.schedule || {};
+  const decision = schedule.decision || {};
+  const incremental = plan.incremental || {};
+  const commands = (plan.recommendedCommands || []).slice(0, 4).map(function (command) {
+    return '<small>' + escapeHtml(command) + '</small>';
+  }).join('');
+  return '<div class="action-row ops-row"><span>' +
+    '<strong>' + escapeHtml((plan.status || 'unknown') + ' | ' + (plan.strategy && plan.strategy.mode || 'collection')) + '</strong>' +
+    '<small>' + escapeHtml([
+      'reason=' + (decision.reason || 'unknown'),
+      decision.nextRunAt ? 'next=' + decision.nextRunAt : undefined,
+      decision.retryAt ? 'retry=' + decision.retryAt : undefined,
+      decision.backoffMs ? 'backoff=' + formatDurationMs(decision.backoffMs) : undefined,
+      'cursor=' + formatCollectionCursorSummary(plan.cursor),
+      'changed=' + String(incremental.lastChanged),
+      'newPosts=' + (incremental.newPostCount || 0),
+      'replay=' + formatCollectionReplaySummary(plan.replay)
+    ].filter(Boolean).join(' | ')) + '</small>' +
+    commands +
+    '</span>' +
+    statusBadge(plan.status || 'unknown', collectionStatusVariant(plan.status)) +
+    '</div>';
+}
+
+function formatCollectionPlanSummary(plan) {
+  if (!plan || !plan.status) return 'unknown';
+  const schedule = plan.schedule || {};
+  const decision = schedule.decision || {};
+  return [
+    plan.status,
+    plan.strategy && plan.strategy.mode,
+    'reason=' + (decision.reason || 'unknown'),
+    decision.nextRunAt ? 'next=' + decision.nextRunAt : undefined,
+    decision.retryAt ? 'retry=' + decision.retryAt : undefined
+  ].filter(Boolean).join(' | ');
+}
+
+function formatCollectionCursorSummary(cursor) {
+  const safeCursor = cursor || {};
+  if (!safeCursor.present) return 'none';
+  return [
+    'posts=' + (safeCursor.postCount || 0),
+    safeCursor.lastFloor !== undefined ? 'floor=' + safeCursor.lastFloor : undefined,
+    safeCursor.lastPostId ? 'post=' + safeCursor.lastPostId : undefined,
+    safeCursor.capturedAt ? 'captured=' + safeCursor.capturedAt : undefined
+  ].filter(Boolean).join(' | ');
+}
+
+function formatCollectionReplaySummary(replay) {
+  const safeReplay = replay || {};
+  if (!safeReplay.available) return 'none';
+  return [
+    safeReplay.taskId ? 'task=' + safeReplay.taskId : undefined,
+    (safeReplay.evidenceKinds || []).length ? 'evidence=' + safeReplay.evidenceKinds.join(',') : undefined
+  ].filter(Boolean).join(' | ') || 'available';
+}
+
+function collectionStatusVariant(status) {
+  if (status === 'due') return 'ok';
+  if (status === 'retry-waiting' || status === 'failed-waiting') return 'warn';
+  if (status === 'running' || status === 'scheduled') return 'ok';
+  if (status === 'disabled' || status === 'unscheduled') return 'muted';
+  return 'muted';
 }
 
 function renderLifecycleAttentionRows(sources) {

@@ -669,6 +669,7 @@ function main(argv) {
       sourceId: options.sourceId,
       sourceKey: options.sourceKey || options.forum,
       limit: options.limit ? Number(options.limit) : 50,
+      timelineLimit: options.timelineLimit ? Number(options.timelineLimit) : undefined,
       attentionLimit: options.attentionLimit ? Number(options.attentionLimit) : undefined,
       taskScanLimit: options.taskScanLimit ? Number(options.taskScanLimit) : undefined,
       leaseScanLimit: options.leaseScanLimit ? Number(options.leaseScanLimit) : undefined,
@@ -689,7 +690,11 @@ function main(argv) {
       const tasks = health.tasks || {};
       const events = health.events || {};
       const workers = health.workers || { runs: {}, leases: {} };
+      const collectionPlan = report.collectionPlan || {};
+      const cursor = collectionPlan.cursor || {};
+      const incremental = collectionPlan.incremental || {};
       console.log('Source drilldown: ' + report.status + '\t' + (report.scope && (report.scope.sourceId || report.scope.sourceKey) || 'unknown-source'));
+      console.log('Collection: status=' + (collectionPlan.status || 'unknown') + ', strategy=' + (collectionPlan.strategy && collectionPlan.strategy.mode || 'unknown') + ', cursor=' + (cursor.present ? ('posts=' + (cursor.postCount || 0) + ', last=' + (cursor.lastFloor || cursor.lastPostId || 'unknown')) : 'none') + ', newPosts=' + (incremental.newPostCount || 0));
       console.log('Tasks: total=' + (tasks.total || 0) + ', failed=' + (tasks.failed || 0) + ', running=' + (tasks.running || 0));
       console.log('Events: open=' + (events.unacknowledged || 0) + ', pending=' + (events.pending || 0) + ', failed=' + (events.failed || 0));
       console.log('Workers: runs=' + (workers.runs.total || 0) + ', stale=' + (workers.runs.stale || 0) + ', leases=' + (workers.leases.total || 0) + ', expired=' + (workers.leases.expired || 0));

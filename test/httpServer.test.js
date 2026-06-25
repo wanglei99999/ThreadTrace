@@ -319,6 +319,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/operations/source-drilldown'].get.parameters.find(function (parameter) {
       return parameter.name === 'attentionLimit';
     }));
+    assert.ok(openApi.paths['/api/operations/source-drilldown'].get.parameters.find(function (parameter) {
+      return parameter.name === 'timelineLimit';
+    }));
     assert.equal(openApi.paths['/api/operations/source-type-drilldown'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceTypeOperationsDrilldown');
     assert.equal(openApi.paths['/api/operations/source-type-drilldown'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/SourceTypeOperationsDrilldown');
     assert.ok(openApi.paths['/api/operations/source-type-drilldown'].get.parameters.find(function (parameter) {
@@ -351,6 +354,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.components.schemas.SourceTypeOperationsNotificationEventSynthesisItem.properties.event.$ref, '#/components/schemas/NotificationEvent');
     assert.ok(openApi.components.schemas.NotificationEvent.properties.type.enum.includes('source-type-operations'));
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.scope.$ref, '#/components/schemas/SourceScope');
+    assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.collectionPlan.$ref, '#/components/schemas/SourceCollectionPlan');
+    assert.equal(openApi.components.schemas.SourceScheduleItem.properties.collectionPlan.$ref, '#/components/schemas/SourceCollectionPlan');
+    assert.equal(openApi.components.schemas.SourceCollectionPlan.properties.schedule.properties.decision.$ref, '#/components/schemas/SourceScheduleDecision');
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.attention.properties.signals.items.$ref, '#/components/schemas/SourceAttentionSignal');
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.attention.properties.reportSummary.$ref, '#/components/schemas/SourceAttentionSummary');
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.timeline.items.properties.kind.type, 'string');
@@ -1052,7 +1058,7 @@ test('http server exposes source operations drilldown API', async function () {
   const baseUrl = 'http://127.0.0.1:' + address.port;
 
   try {
-    const report = await getJson(baseUrl + '/api/operations/source-drilldown?sourceKey=nga&sourceId=source-1&limit=10&attentionLimit=5&taskScanLimit=20&leaseScanLimit=30&sourceFailureRetryBackoffMs=60000');
+    const report = await getJson(baseUrl + '/api/operations/source-drilldown?sourceKey=nga&sourceId=source-1&limit=10&timelineLimit=7&attentionLimit=5&taskScanLimit=20&leaseScanLimit=30&sourceFailureRetryBackoffMs=60000');
 
     assert.equal(report.status, 'warn');
     assert.equal(report.scope.sourceId, 'source-1');
@@ -1062,6 +1068,7 @@ test('http server exposes source operations drilldown API', async function () {
     assert.equal(calls[0].sourceKey, 'nga');
     assert.equal(calls[0].sourceId, 'source-1');
     assert.equal(calls[0].limit, 10);
+    assert.equal(calls[0].timelineLimit, 7);
     assert.equal(calls[0].attentionLimit, 5);
     assert.equal(calls[0].taskScanLimit, 20);
     assert.equal(calls[0].leaseScanLimit, 30);

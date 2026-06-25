@@ -1082,6 +1082,7 @@ function createOpenApiSpec() {
             { name: 'sourceId', in: 'query', required: false, schema: { type: 'string', example: 'tracked-source-nga-001' } },
             { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
             { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'timelineLimit', in: 'query', required: false, schema: { type: 'number' } },
             { name: 'attentionLimit', in: 'query', required: false, schema: { type: 'number' } },
             { name: 'taskScanLimit', in: 'query', required: false, schema: { type: 'number' } },
             { name: 'leaseScanLimit', in: 'query', required: false, schema: { type: 'number' } },
@@ -4008,6 +4009,34 @@ function createOpenApiSpec() {
             baseReason: { type: 'string', example: 'never-finished' }
           }
         },
+        SourceCollectionPlan: {
+          type: 'object',
+          properties: {
+            status: { type: 'string', example: 'due' },
+            generatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            source: { $ref: '#/components/schemas/SourceScope' },
+            strategy: { type: 'object', additionalProperties: true },
+            schedule: {
+              type: 'object',
+              properties: {
+                enabled: { type: 'boolean' },
+                intervalMinutes: { type: 'number' },
+                nextRunAt: { type: 'string' },
+                decision: { $ref: '#/components/schemas/SourceScheduleDecision' }
+              },
+              additionalProperties: true
+            },
+            cursor: { type: 'object', additionalProperties: true },
+            incremental: { type: 'object', additionalProperties: true },
+            lastRun: { type: 'object', additionalProperties: true },
+            replay: { type: 'object', additionalProperties: true },
+            recommendedCommands: {
+              type: 'array',
+              items: { type: 'string' }
+            }
+          },
+          additionalProperties: true
+        },
         SourceScheduleItem: {
           type: 'object',
           properties: {
@@ -4018,7 +4047,8 @@ function createOpenApiSpec() {
             enabled: { type: 'boolean' },
             schedule: { $ref: '#/components/schemas/SourceScheduleConfig' },
             runState: { $ref: '#/components/schemas/SourceRunState' },
-            decision: { $ref: '#/components/schemas/SourceScheduleDecision' }
+            decision: { $ref: '#/components/schemas/SourceScheduleDecision' },
+            collectionPlan: { $ref: '#/components/schemas/SourceCollectionPlan' }
           }
         },
         SourceScheduleSummary: {
@@ -6115,6 +6145,7 @@ function createOpenApiSpec() {
               type: 'array',
               items: { type: 'object', additionalProperties: true }
             },
+            collectionPlan: { $ref: '#/components/schemas/SourceCollectionPlan' },
             health: {
               type: 'object',
               properties: {
