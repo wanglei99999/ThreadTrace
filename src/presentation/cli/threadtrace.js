@@ -415,6 +415,36 @@ function main(argv) {
     return;
   }
 
+  if (command === 'llm-readiness') {
+    runtime.getLlmReadinessProfile({
+      provider: options.provider || defaultLlmProvider,
+      llmReadinessMode: options.llmReadinessMode,
+      traceId: options.traceId,
+      now: options.now,
+      storeDir: options.storeDir || defaultStoreDir
+    }).then(function (profile) {
+      if (isTruthyOption(options.json)) {
+        console.log(JSON.stringify(profile, null, 2));
+      } else {
+        const readiness = profile.readiness || {};
+        console.log('LLM readiness: ' + profile.status);
+        console.log('Provider: ' + profile.provider);
+        console.log('Mode: ' + profile.mode);
+        console.log('Ready: realProvider=' + Boolean(readiness.realProviderCandidate) + ', preflight=' + Boolean(readiness.preflightPassed) + ', evaluation=' + Boolean(readiness.evaluationPassed));
+        profile.checks.forEach(function (check) {
+          console.log(check.status + '\t' + check.area + '\t' + check.key + '\t' + check.summary);
+        });
+        profile.nextActions.forEach(printActionWithDetails);
+      }
+      if (profile.status === 'fail') process.exitCode = 2;
+      if (profile.status === 'warn') process.exitCode = 1;
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'operations-overview') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.getOperationalOverview({
@@ -3430,6 +3460,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js set-author-review-queue-status --item-id id --status open|confirmed|ignored [--reviewed-by id] [--note text] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js llm-preflight [--provider mock|openai-compatible] [--trace-id id] [--json true] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js llm-evaluate [--provider mock|openai-compatible] [--trace-id id] [--json true] [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js llm-readiness [--llm-readiness-mode configuration|preflight|evaluation] [--provider mock|openai-compatible] [--json true] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js run-semantic-enrichment-task --source-thread-id id [--source-key nga] [--provider mock] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js task-detail --task-id id [--json true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js operations-overview [--forum nga] [--source-key key] [--source-id id] [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');

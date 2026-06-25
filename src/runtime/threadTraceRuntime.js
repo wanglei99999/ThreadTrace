@@ -50,6 +50,7 @@ const {
   runLlmProviderPreflight
 } = require('../application/use-cases/runLlmProviderPreflight');
 const { runLlmProviderEvaluation } = require('../application/use-cases/runLlmProviderEvaluation');
+const { getLlmReadinessProfile } = require('../application/use-cases/getLlmReadinessProfile');
 const { runRolloutManifestApplyTask } = require('../application/use-cases/runRolloutManifestApplyTask');
 const { disableTrackedSource } = require('../application/use-cases/disableTrackedSource');
 const { runDisableTrackedSourceTask } = require('../application/use-cases/runDisableTrackedSourceTask');
@@ -1244,6 +1245,38 @@ function createThreadTraceRuntime(options) {
           providerCreationError: error
         });
       }
+    },
+
+    async getLlmReadinessProfile(request) {
+      const safeRequest = request || {};
+      const providerKey = safeRequest.provider || runtimeConfig.llm.provider || 'mock';
+      const llmReadinessMode = normalizeLlmReadinessMode(safeRequest.llmReadinessMode);
+      const preflight = llmReadinessMode === 'preflight' || llmReadinessMode === 'evaluation'
+        ? await this.runLlmProviderPreflight({
+          provider: providerKey,
+          traceId: safeRequest.traceId,
+          input: safeRequest.input,
+          now: safeRequest.now,
+          storeDir: safeRequest.storeDir
+        })
+        : undefined;
+      const evaluation = llmReadinessMode === 'evaluation'
+        ? await this.runLlmProviderEvaluation({
+          provider: providerKey,
+          traceId: safeRequest.traceId,
+          samples: safeRequest.samples,
+          now: safeRequest.now,
+          storeDir: safeRequest.storeDir
+        })
+        : undefined;
+      return getLlmReadinessProfile({
+        config: runtimeConfig,
+        provider: providerKey,
+        llmReadinessMode,
+        preflight,
+        evaluation,
+        now: safeRequest.now
+      });
     },
 
     async getOperationalOverview(request) {

@@ -847,6 +847,11 @@ test('http server exposes semantic enrichment API', async function () {
       traceId: 'http-llm-evaluation',
       now: '2026-06-25T10:00:00.000Z'
     });
+    const readiness = await postJson(baseUrl + '/api/llm/readiness', {
+      provider: 'mock',
+      llmReadinessMode: 'configuration',
+      now: '2026-06-25T10:00:00.000Z'
+    });
     const openApi = await getJson(baseUrl + '/openapi.json');
     const homeHtml = await getText(baseUrl + '/', 'text/html');
     const webAppJs = await getText(baseUrl + '/app.js', 'text/javascript');
@@ -861,14 +866,22 @@ test('http server exposes semantic enrichment API', async function () {
     assert.equal(evaluation.status, 'ok');
     assert.equal(evaluation.provider, 'mock');
     assert.equal(evaluation.sampleCount, 2);
+    assert.equal(readiness.status, 'warn');
+    assert.equal(readiness.readiness.mockMode, true);
+    assert.equal(readiness.configuration.apiKeyConfigured, false);
     assert.ok(openApi.paths['/api/llm/preflight']);
     assert.equal(openApi.paths['/api/llm/preflight'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/LlmProviderPreflightReport');
     assert.ok(openApi.paths['/api/llm/evaluate']);
     assert.equal(openApi.paths['/api/llm/evaluate'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/LlmProviderEvaluationReport');
+    assert.ok(openApi.paths['/api/llm/readiness']);
+    assert.equal(openApi.paths['/api/llm/readiness'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/LlmReadinessProfile');
     assert.ok(openApi.components.schemas.LlmProviderPreflightReport);
     assert.ok(openApi.components.schemas.LlmProviderEvaluationReport);
+    assert.ok(openApi.components.schemas.LlmReadinessProfile);
+    assert.match(homeHtml, /runLlmReadinessButton/);
     assert.match(homeHtml, /runLlmPreflightButton/);
     assert.match(homeHtml, /runLlmEvaluationButton/);
+    assert.match(webAppJs, /renderLlmReadinessProfile/);
     assert.match(webAppJs, /renderLlmPreflightReport/);
     assert.match(webAppJs, /renderLlmEvaluationReport/);
   } finally {

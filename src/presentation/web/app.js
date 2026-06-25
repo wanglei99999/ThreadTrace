@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshTasksButton').addEventListener('click', loadTasks);
   document.getElementById('refreshSourcesButton').addEventListener('click', loadSources);
   document.getElementById('refreshSourceOperationsButton').addEventListener('click', loadSourceOperations);
+  document.getElementById('runLlmReadinessButton').addEventListener('click', runLlmReadiness);
   document.getElementById('runLlmPreflightButton').addEventListener('click', runLlmPreflight);
   document.getElementById('runLlmEvaluationButton').addEventListener('click', runLlmEvaluation);
   document.getElementById('runDemoCycleButton').addEventListener('click', runDemoCycle);
@@ -1811,6 +1812,17 @@ async function runLlmPreflight() {
   await renderAsync('sourceOperationActionResult', function () {
     return requestJson('/api/llm/preflight', {});
   }, renderLlmPreflightReport);
+  await loadSystemStatus();
+}
+
+async function runLlmReadiness() {
+  await renderAsync('sourceOperationActionResult', function () {
+    return requestJson('/api/llm/readiness', {
+      llmReadinessMode: 'configuration'
+    }, {
+      acceptErrorStatus: true
+    });
+  }, renderLlmReadinessProfile);
   await loadSystemStatus();
 }
 
@@ -3593,6 +3605,33 @@ function renderDueSourcePipelineBatchRunResult(result) {
     renderSourceOperationResultRows(result.results || []),
     renderSourceOperationSkippedRows(result.skipped || [])
   ].join(''), 'wide');
+}
+
+function renderLlmReadinessProfile(profile) {
+  const readiness = profile.readiness || {};
+  const configuration = profile.configuration || {};
+  return [
+    panel('LLM readiness profile', [
+      '<div class="summary-strip">',
+      summaryTile('Status', profile.status || 'unknown', statusVariant(profile.status)),
+      summaryTile('Mode', profile.mode || 'configuration'),
+      summaryTile('Provider', profile.provider || 'unknown', readiness.mockMode ? 'warn' : 'ok'),
+      summaryTile('Real', readiness.realProviderCandidate ? 'yes' : 'no', readiness.realProviderCandidate ? 'ok' : 'warn'),
+      summaryTile('Preflight', readiness.preflightPassed ? 'ok' : 'not run', readiness.preflightPassed ? 'ok' : 'muted'),
+      summaryTile('Evaluation', readiness.evaluationPassed ? 'ok' : 'not run', readiness.evaluationPassed ? 'ok' : 'muted'),
+      '</div>',
+      metric('API key', configuration.apiKeyConfigured ? 'configured' : 'not configured'),
+      metric('Model', configuration.modelConfigured ? 'configured' : 'not configured'),
+      metric('Base URL', configuration.baseUrlConfigured ? 'configured' : 'default'),
+      metric('Timeout', configuration.timeoutMs || 'default')
+    ].join(''), 'wide'),
+    panel('LLM readiness checks', evidenceList((profile.checks || []).map(function (check) {
+      return check.status + ' | ' + check.area + ' | ' + check.key + ' | ' + check.summary;
+    })), 'wide'),
+    panel('LLM readiness actions', evidenceList((profile.nextActions || []).map(function (action) {
+      return (action.severity || 'info') + ' | ' + (action.key || 'action') + ' | ' + (action.summary || '') + ' | ' + (action.commands || []).join(' | ');
+    })), 'wide')
+  ].join('');
 }
 
 function renderLlmPreflightReport(report) {

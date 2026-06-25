@@ -439,6 +439,21 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/llm/readiness') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.getLlmReadinessProfile({
+      provider: body.provider,
+      llmReadinessMode: body.llmReadinessMode,
+      traceId: body.traceId,
+      input: body.input,
+      samples: body.samples,
+      now: body.now,
+      storeDir: body.storeDir || context.storeDir
+    });
+    writeJson(response, result.status === 'fail' ? 503 : 200, result);
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/interpret-text') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     if (!body.text) {

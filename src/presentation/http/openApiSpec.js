@@ -702,6 +702,50 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/llm/readiness': {
+        post: {
+          summary: 'Summarize LLM configuration, optional preflight, and optional evaluation readiness',
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    provider: { type: 'string', example: 'mock' },
+                    llmReadinessMode: { type: 'string', enum: ['configuration', 'preflight', 'evaluation'] },
+                    traceId: { type: 'string', example: 'manual-llm-readiness' },
+                    now: { type: 'string', example: '2026-06-25T10:00:00.000Z' },
+                    input: { type: 'object', additionalProperties: true },
+                    samples: {
+                      type: 'array',
+                      items: { type: 'object', additionalProperties: true }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'LLM readiness profile is available, with optional warnings',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/LlmReadinessProfile' }
+                }
+              }
+            },
+            503: {
+              description: 'LLM readiness profile has failing preflight or evaluation checks',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/LlmReadinessProfile' }
+                }
+              }
+            }
+          }
+        }
+      },
       '/api/interpret-text': {
         post: {
           summary: 'Restore context for a new post text',
@@ -3421,6 +3465,58 @@ function createOpenApiSpec() {
                 additionalProperties: true
               }
             },
+            nextActions: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true }
+            }
+          }
+        },
+        LlmReadinessProfile: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-25T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            provider: { type: 'string', example: 'openai-compatible' },
+            mode: { type: 'string', enum: ['configuration', 'preflight', 'evaluation'] },
+            configuration: {
+              type: 'object',
+              properties: {
+                provider: { type: 'string', example: 'openai-compatible' },
+                selectedProvider: { type: 'string', example: 'openai-compatible' },
+                remoteProvider: { type: 'boolean', example: true },
+                baseUrlConfigured: { type: 'boolean', example: true },
+                modelConfigured: { type: 'boolean', example: true },
+                apiKeyConfigured: { type: 'boolean', example: true },
+                timeoutMs: { type: 'number', example: 30000 }
+              },
+              additionalProperties: true
+            },
+            readiness: {
+              type: 'object',
+              properties: {
+                mockMode: { type: 'boolean', example: false },
+                realProviderCandidate: { type: 'boolean', example: true },
+                preflightPassed: { type: 'boolean', example: true },
+                evaluationPassed: { type: 'boolean', example: true }
+              },
+              additionalProperties: true
+            },
+            checks: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  key: { type: 'string', example: 'llm.provider.model' },
+                  area: { type: 'string', example: 'configuration' },
+                  status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+                  value: { type: 'string', example: 'configured' },
+                  summary: { type: 'string' }
+                },
+                additionalProperties: true
+              }
+            },
+            preflight: { $ref: '#/components/schemas/LlmProviderPreflightReport' },
+            evaluation: { $ref: '#/components/schemas/LlmProviderEvaluationReport' },
             nextActions: {
               type: 'array',
               items: { type: 'object', additionalProperties: true }

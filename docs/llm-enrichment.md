@@ -14,8 +14,10 @@ CLI:
 
 ```powershell
 node src/presentation/cli/threadtrace.js enrich-html-dir --forum nga --input example --provider mock
+node src/presentation/cli/threadtrace.js llm-readiness --llm-readiness-mode configuration --provider mock
 node src/presentation/cli/threadtrace.js llm-preflight --provider mock
 node src/presentation/cli/threadtrace.js llm-evaluate --provider mock
+node src/presentation/cli/threadtrace.js llm-readiness --llm-readiness-mode evaluation --provider openai-compatible
 node src/presentation/cli/threadtrace.js deployment-checklist --llm-readiness-mode evaluation --provider mock
 node src/presentation/cli/threadtrace.js run-semantic-enrichment-task --source-key nga --source-thread-id 45974302 --provider mock
 node src/presentation/cli/threadtrace.js run-source-insight-pipeline --source-id nga-saved-html-directory-d940bb6e68 --provider mock
@@ -26,6 +28,7 @@ HTTP:
 
 ```text
 POST /api/enrich-directory
+POST /api/llm/readiness
 POST /api/llm/preflight
 POST /api/llm/evaluate
 GET /api/deployment/checklist?llmReadinessMode=evaluation&provider=mock
@@ -38,8 +41,10 @@ Runtime:
 
 ```js
 runtime.enrichDirectory({ forum: 'nga', inputDir: 'example', provider: 'mock' })
+runtime.getLlmReadinessProfile({ llmReadinessMode: 'configuration', provider: 'mock' })
 runtime.runLlmProviderPreflight({ provider: 'mock' })
 runtime.runLlmProviderEvaluation({ provider: 'mock' })
+runtime.getLlmReadinessProfile({ llmReadinessMode: 'evaluation', provider: 'openai-compatible' })
 runtime.getDeploymentChecklist({ llmReadinessMode: 'evaluation', provider: 'mock' })
 runtime.runSemanticEnrichmentTask({ sourceKey: 'nga', sourceThreadId: '45974302', provider: 'mock' })
 runtime.runSourceInsightPipelineTask({ sourceId: 'nga-saved-html-directory-d940bb6e68', provider: 'mock' })
@@ -47,6 +52,8 @@ runtime.listAnalysisReports({ sourceKey: 'nga', sourceThreadId: '45974302', repo
 ```
 
 `enrichDirectory` is useful for immediate previews. `runSemanticEnrichmentTask` reads a stored `basic-history` report, writes a `semantic-enrichment` report, and records a durable `semantic-enrichment` task.
+
+`llm-readiness`, `POST /api/llm/readiness`, and `runtime.getLlmReadinessProfile` summarize the selected provider, redacted configuration state, optional preflight/evaluation evidence, readiness booleans, checks, and next actions. The default `configuration` mode does not spend model calls; `preflight` and `evaluation` modes reuse the existing provider checks below. Mock mode returns a warning because it is deterministic and useful for tests, but not proof of production semantic quality.
 
 `llm-preflight`, `POST /api/llm/preflight`, and `runtime.runLlmProviderPreflight` run a tiny semantic-enrichment sample through the configured provider and the same structured output validator used by real tasks. The report includes `status`, `provider`, `traceId`, `checks`, `validation`, `usage`, `outputPreview`, `error`, and `nextActions`. Use it after setting provider environment variables and before enabling real source insight workers.
 

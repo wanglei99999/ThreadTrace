@@ -206,6 +206,19 @@ Dry-runs or executes synthesis of open durable author review queue items into no
 
 Optional filters: `sourceKey` / `forum`, `sourceThreadId`, `status`, `type`, `priority`, `limit`, `staleLimit`, `resolveStale`, `now`, and `storeDir`. By default, stale `author-review-queue` events in the same filter scope are marked `resolved` when the underlying queue item is no longer open. Operator-acknowledged or already delivered events are skipped for audit safety.
 
+### `POST /api/llm/readiness`
+
+Summarizes LLM provider readiness across redacted configuration, optional preflight evidence, and optional evaluation evidence. The default `llmReadinessMode: "configuration"` does not call the model; `preflight` runs the structured preflight sample; `evaluation` runs both preflight and semantic evaluation samples. Mock mode returns `warn` because it proves wiring, not production semantic quality.
+
+Request body:
+- `provider`: optional, defaults to the runtime LLM provider.
+- `llmReadinessMode`: optional, one of `configuration`, `preflight`, or `evaluation`.
+- `traceId`: optional audit trace id shared by preflight/evaluation calls.
+- `now`: optional fixed timestamp for repeatable reports.
+- `input` / `samples`: optional custom preflight input or evaluation samples.
+
+The response includes `status`, `provider`, `mode`, redacted `configuration`, readiness booleans, `checks`, optional `preflight`, optional `evaluation`, and `nextActions`. Failing preflight/evaluation checks return HTTP `503`; configuration or mock warnings return HTTP `200`.
+
 ### `POST /api/llm/preflight`
 
 Runs a tiny semantic-enrichment sample through the selected LLM provider and validates the returned JSON with the same `semantic-enrichment.v1` contract used by stored semantic reports.
