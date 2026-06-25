@@ -152,6 +152,10 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /renderRolloutApplyExecutionGate/);
     assert.match(webAppJs, /Checking deployment gate before execute/);
     assert.match(webAppJs, /Apply execution gate/);
+    assert.match(webAppJs, /renderRolloutApplyOperationButtons/);
+    assert.match(webAppJs, /renderRolloutRollbackButtons/);
+    assert.match(webAppJs, /Rollback check/);
+    assert.match(webAppJs, /Rollback disable/);
     assert.match(webAppJs, /run-rollout-apply-dry-run/);
     assert.match(webAppJs, /Apply dry-run/);
     assert.match(webAppJs, /copy-lifecycle-command/);

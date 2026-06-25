@@ -55,6 +55,10 @@ Request body:
 
 The manifest can also be supplied directly as the request body. Set `execute: true` or `dryRun: false` to register the source.
 
+## Web
+
+The Web system view can run rollout checks, launch an apply dry-run from the readiness card, and submit the apply form. When `execute=true` is selected, the Web UI runs the deployment gate first, blocks failing gates, and asks for confirmation on warning gates before calling the apply endpoint. After execution registers a source, the apply report includes `Ops`, `Rollback check`, and `Rollback disable` controls. `Rollback check` calls the source disable endpoint in dry-run mode, while `Rollback disable` uses the same confirmation and task-audit path as other source lifecycle actions.
+
 ## Result
 
 The report includes:

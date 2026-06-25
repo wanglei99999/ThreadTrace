@@ -334,6 +334,18 @@ function bindForms() {
     }
   });
 
+  document.getElementById('rolloutApplyResult').addEventListener('click', async function (event) {
+    const button = event.target.closest('button[data-action]');
+    if (!button) return;
+    if (button.dataset.action === 'load-source-drilldown') {
+      await loadSourceOperationsDrilldownFromButton(button);
+      return;
+    }
+    if (button.dataset.action === 'set-source-enabled') {
+      await setSourceEnabledFromButton(button);
+    }
+  });
+
   document.getElementById('rawPageResult').addEventListener('click', async function (event) {
     const button = event.target.closest('button[data-action="replay-raw-page"]');
     if (!button) return;
@@ -3062,7 +3074,8 @@ function renderRolloutManifestApply(result) {
     panels.push(panel('Registered source', [
       metric('Source ID', report.registration.source.id),
       metric('Created', report.registration.created ? 'yes' : 'no'),
-      metric('Name', report.registration.source.displayName)
+      metric('Name', report.registration.source.displayName),
+      renderRolloutApplyOperationButtons(report)
     ].join('')));
   }
   if (report.rollbackPlan) {
@@ -3071,6 +3084,7 @@ function renderRolloutManifestApply(result) {
       metric('Mode', report.rollbackPlan.mode || 'unknown'),
       metric('Source ID', report.rollbackPlan.sourceId || 'after execute'),
       metric('Summary', report.rollbackPlan.summary || ''),
+      renderRolloutRollbackButtons(report),
       evidenceList(report.rollbackPlan.commands || [])
     ].join(''), 'wide'));
   }
@@ -3083,6 +3097,28 @@ function renderRolloutManifestApply(result) {
     })), 'wide'));
   }
   return panels.join('');
+}
+
+function renderRolloutApplyOperationButtons(report) {
+  const source = report && report.registration && report.registration.source || {};
+  const sourceId = source.id || report && report.rollbackPlan && report.rollbackPlan.sourceId;
+  const sourceKey = source.sourceKey || report && report.sourceDraft && (report.sourceDraft.sourceKey || report.sourceDraft.forum);
+  if (!sourceId && !sourceKey) return '';
+  return '<div class="button-group source-op-buttons">' +
+    renderSourceDrilldownButtonForScope({
+      sourceId,
+      sourceKey
+    }) +
+    '</div>';
+}
+
+function renderRolloutRollbackButtons(report) {
+  const rollbackPlan = report && report.rollbackPlan || {};
+  const sourceId = rollbackPlan.sourceId || report && report.registration && report.registration.source && report.registration.source.id;
+  if (!rollbackPlan.available || !sourceId) return '';
+  const safeSourceId = escapeHtml(sourceId);
+  return '<button class="inline-button secondary-inline-button" type="button" data-action="set-source-enabled" data-source-id="' + safeSourceId + '" data-enabled="false" data-execute="false">Rollback check</button>' +
+    '<button class="inline-button warning-inline-button" type="button" data-action="set-source-enabled" data-source-id="' + safeSourceId + '" data-enabled="false" data-execute="true">Rollback disable</button>';
 }
 
 function renderSourceTaskRunResult(result) {
