@@ -4436,6 +4436,7 @@ function renderSourceOperationsDrilldown(report) {
       metric('Event actions', 'executions ' + (eventActions.count || 0) + ' | running ' + (eventActions.running || 0) + ' | failed ' + (eventActions.failed || 0)),
       metric('Author queue', 'open ' + (authorQueue.openCount || 0) + ' | high ' + (authorQueue.highPriorityOpenCount || 0))
     ].join(''), 'wide'),
+    panel('Source health brief', renderSourceHealthBrief(report), 'wide'),
     panel('Source collection plan', renderCollectionPlanDetails(collectionPlan), 'wide'),
     panel('Source attention details', renderSourceDrilldownAttention(attention), 'wide'),
     panel('Source next actions', renderSourceDrilldownActions(report.nextActions || []), 'wide'),
@@ -4492,6 +4493,124 @@ function renderSourceTypeOperationsDrilldown(report) {
     panel('Recent source type events', evidenceList((recent.events || []).map(formatSourceDrilldownEventRow)), 'wide'),
     panel('Recent source type workers', evidenceList((recent.workerRuns || []).map(formatWorkerRunRow).concat((recent.workerLeases || []).map(formatWorkerLeaseRow))), 'wide')
   ].join('');
+}
+
+function renderSourceHealthBrief(report) {
+  const health = report.health || {};
+  const sourceHealth = health.source || {};
+  const workers = health.workers || {};
+  const workerRuns = workers.runs || {};
+  const workerLeases = workers.leases || {};
+  const collectionPlan = report.collectionPlan || {};
+  const recent = report.recent || {};
+  const topAction = (report.nextActions || [])[0];
+  const latestTask = firstValue(health.tasks && health.tasks.latest, (recent.tasks || [])[0]);
+  const latestEvent = firstValue(health.events && health.events.latest, (recent.events || [])[0]);
+  const latestWorkerRun = firstValue(workerRuns.latest, (recent.workerRuns || [])[0]);
+  const latestLease = firstValue(workerLeases.latest, (recent.workerLeases || [])[0]);
+  const schedule = sourceHealth.schedule || collectionPlan.schedule && collectionPlan.schedule.decision || {};
+  const briefRows = [
+    renderSourceBriefRow('Why', sourceProblemSummary(report), report.status),
+    renderSourceBriefRow('Next action', topAction ? ((topAction.summary || topAction.key || 'Review source') + (topAction.recommendedCommand ? ' | ' + topAction.recommendedCommand : '')) : 'No source-specific action.', topAction && topAction.severity || 'ok'),
+    renderSourceBriefRow('Schedule', formatSourceScheduleBrief(schedule), schedule.due ? 'ok' : 'muted'),
+    renderSourceBriefRow('Latest task', formatLatestTaskBrief(latestTask), latestTask && latestTask.status),
+    renderSourceBriefRow('Latest event', formatLatestEventBrief(latestEvent), latestEvent && (latestEvent.deliveryStatus || latestEvent.severity)),
+    renderSourceBriefRow('Latest worker', formatLatestWorkerBrief(latestWorkerRun, latestLease), latestWorkerRun && latestWorkerRun.status || latestLease && (latestLease.expired ? 'warning' : 'ok'))
+  ];
+  return briefRows.join('');
+}
+
+function renderSourceBriefRow(label, value, status) {
+  return '<div class="action-row ops-row"><span>' +
+    '<strong>' + escapeHtml(label) + '</strong>' +
+    '<small>' + escapeHtml(value || 'none') + '</small>' +
+    '</span>' +
+    statusBadge(status || 'info', sourceBriefStatusVariant(status)) +
+    '</div>';
+}
+
+function sourceProblemSummary(report) {
+  const health = report.health || {};
+  const tasks = health.tasks || {};
+  const events = health.events || {};
+  const workers = health.workers || {};
+  const workerRuns = workers.runs || {};
+  const workerLeases = workers.leases || {};
+  const authorQueue = health.authorReviewQueue || {};
+  const eventActions = health.notificationEventActions || {};
+  const action = (report.nextActions || [])[0];
+  if (!report.sourceFound) return 'Source registration is missing or ambiguous.';
+  if (action && action.summary) return action.summary;
+  if ((workerRuns.stale || 0) > 0) return 'Source-scoped worker runs are stale.';
+  if ((workerLeases.expired || 0) > 0) return 'Source-scoped worker leases are expired.';
+  if ((tasks.failed || 0) > 0) return 'Recent source tasks failed.';
+  if ((events.failed || 0) > 0) return 'Recent notification events failed.';
+  if ((eventActions.failed || 0) > 0 || (eventActions.staleRunning || 0) > 0) return 'Notification event actions need attention.';
+  if ((authorQueue.highPriorityOpenCount || 0) > 0) return 'High-priority author review items are open.';
+  if (report.status === 'ok') return 'Source is healthy in the current window.';
+  return 'Review source health details.';
+}
+
+function formatSourceScheduleBrief(schedule) {
+  const safeSchedule = schedule || {};
+  const parts = [
+    safeSchedule.due ? 'due now' : 'not due',
+    safeSchedule.reason || safeSchedule.baseReason,
+    safeSchedule.nextRunAt ? 'next=' + safeSchedule.nextRunAt : undefined,
+    safeSchedule.retryAt ? 'retry=' + safeSchedule.retryAt : undefined,
+    safeSchedule.failureCount ? 'failures=' + safeSchedule.failureCount : undefined,
+    safeSchedule.backoffMs ? 'backoff=' + formatDurationMs(safeSchedule.backoffMs) : undefined
+  ];
+  return parts.filter(Boolean).join(' | ') || 'unknown schedule';
+}
+
+function formatLatestTaskBrief(task) {
+  if (!task) return 'No recent source task.';
+  return [
+    task.status || 'unknown',
+    task.type || 'task',
+    task.finishedAt || task.updatedAt || task.createdAt || 'unknown-time',
+    task.error && task.error.message || task.id
+  ].filter(Boolean).join(' | ');
+}
+
+function formatLatestEventBrief(event) {
+  if (!event) return 'No recent source event.';
+  return [
+    event.deliveryStatus || event.severity || 'unknown',
+    event.type || 'event',
+    event.nextDeliveryAt || event.createdAt || 'unknown-time',
+    event.title || event.summary || event.id
+  ].filter(Boolean).join(' | ');
+}
+
+function formatLatestWorkerBrief(run, lease) {
+  const runPart = run ? [
+    'run=' + (run.status || 'unknown'),
+    run.workerType || 'worker',
+    run.heartbeatAt || run.finishedAt || run.updatedAt || run.startedAt
+  ].filter(Boolean).join('/') : 'run=none';
+  const leasePart = lease ? [
+    'lease=' + (lease.expired ? 'expired' : 'active'),
+    lease.workerType || 'worker',
+    lease.expiresAt || lease.updatedAt || lease.acquiredAt
+  ].filter(Boolean).join('/') : 'lease=none';
+  return runPart + ' | ' + leasePart;
+}
+
+function sourceBriefStatusVariant(status) {
+  if (status === 'critical' || status === 'failed' || status === 'fail') return 'fail';
+  if (status === 'warning' || status === 'warn' || status === 'stale' || status === 'expired') return 'warn';
+  if (status === 'ok' || status === 'completed' || status === 'delivered' || status === true) return 'ok';
+  if (status === 'running' || status === 'pending' || status === 'due') return 'warn';
+  return statusVariant(status);
+}
+
+function firstValue() {
+  for (let index = 0; index < arguments.length; index += 1) {
+    if (arguments[index]) return arguments[index];
+  }
+  return undefined;
 }
 
 function formatSourceTypeDrilldownSourceRow(source) {

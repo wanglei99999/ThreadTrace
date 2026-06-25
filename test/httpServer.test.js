@@ -302,6 +302,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /renderContextReviewResultEventSynthesis/);
     assert.match(webAppJs, /renderAuthorReviewQueueEventSynthesis/);
     assert.match(webAppJs, /renderSourceOperationsDrilldown/);
+    assert.match(webAppJs, /renderSourceHealthBrief/);
+    assert.match(webAppJs, /Source health brief/);
     assert.match(webAppJs, /renderCollectionStatusOverview/);
     assert.match(webAppJs, /api\/context-review-results/);
     assert.ok(openApi.paths['/api/events/dispatch'].post.requestBody.content['application/json'].schema.properties.sourceId);
