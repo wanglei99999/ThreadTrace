@@ -398,111 +398,136 @@
           <strong>连接器、资源和部署门禁</strong>
         </div>
         <div class="rollout-workbench">
-        <form id="connectorModuleValidationForm" class="control-strip rollout-card rollout-card-module" data-title="Module scan">
-          <label class="grow">
-            <span>Connector 模块路径</span>
-            <input name="modulePath" placeholder="D:/connectors/custom-forum.cjs" autocomplete="off">
-          </label>
-          <button type="submit">验证模块</button>
-        </form>
-        <form id="sourceDryRunForm" class="control-strip rollout-card rollout-card-dryrun" data-title="Source rehearsal">
-          <label>
-            <span>Dry-run forum</span>
-            <input name="forum" id="dryRunForum" list="forumSuggestions" value="nga" autocomplete="off">
-          </label>
-          <label>
-            <span>Source type</span>
-            <input name="sourceType" list="sourceTypeSuggestions" value="saved-html-directory" autocomplete="off">
-          </label>
-          <label class="grow">
-            <span>Name</span>
-            <input name="displayName" value="Dry-run source" autocomplete="off">
-          </label>
-          <label class="grow">
-            <span>Module path</span>
-            <input name="modulePath" placeholder="D:/connectors/custom-forum.cjs" autocomplete="off">
-          </label>
-          <label class="grow">
-            <span>Input dir</span>
-            <input name="inputDir" value="example" autocomplete="off">
-          </label>
-          <label class="grow">
-            <span>JSON file / URL</span>
-            <input name="locationValue" placeholder="D:/feeds/thread.json or https://..." autocomplete="off">
-          </label>
-          <label class="full">
-            <span>Location JSON</span>
-            <textarea name="locationJson" rows="3" placeholder='{"feedUrl":"https://example.test/feed"}'></textarea>
-          </label>
-          <button type="submit">Source dry-run</button>
-        </form>
-        <form id="connectorRolloutForm" class="control-strip rollout-card rollout-card-plan" data-title="Rollout graph">
-          <label>
-            <span>Rollout forum</span>
-            <input name="forum" id="rolloutForum" list="forumSuggestions" value="nga" autocomplete="off">
-          </label>
-          <label>
-            <span>Source type</span>
-            <input name="sourceType" list="sourceTypeSuggestions" value="saved-html-directory" autocomplete="off">
-          </label>
-          <label class="grow">
-            <span>Name</span>
-            <input name="displayName" value="Rollout source" autocomplete="off">
-          </label>
-          <label class="grow">
-            <span>Module path</span>
-            <input name="modulePath" placeholder="D:/connectors/custom-forum.cjs" autocomplete="off">
-          </label>
-          <label class="grow">
-            <span>Input dir</span>
-            <input name="inputDir" value="example" autocomplete="off">
-          </label>
-          <label class="grow">
-            <span>JSON file / URL</span>
-            <input name="locationValue" placeholder="D:/feeds/thread.json or https://..." autocomplete="off">
-          </label>
-          <label class="compact">
-            <span>Dry-run</span>
-            <select name="dryRunIngest">
-              <option value="true">true</option>
-              <option value="false">false</option>
-            </select>
-          </label>
-          <label class="full">
-            <span>Location JSON</span>
-            <textarea name="locationJson" rows="3" placeholder='{"feedUrl":"https://example.test/feed"}'></textarea>
-          </label>
-          <button type="submit">Rollout plan</button>
-        </form>
-        <form id="workerTopologyForm" class="control-strip rollout-card rollout-card-worker" data-title="Worker topology">
-          <label>
-            <span>Topology</span>
-            <select name="topology">
-              <option value="operations-worker">operations-worker</option>
-              <option value="split-workers">split-workers</option>
-            </select>
-          </label>
-          <label>
-            <span>Source mode</span>
-            <select name="sourceTaskMode">
-              <option value="ingest">ingest</option>
-              <option value="insight-pipeline">insight-pipeline</option>
-            </select>
-          </label>
-          <label>
-            <span>Source key</span>
-            <input name="sourceKey" value="nga" autocomplete="off">
-          </label>
-          <label>
-            <span>Source ID</span>
-            <input name="sourceId" placeholder="optional tracked source id" autocomplete="off">
-          </label>
-          <button type="submit">Worker plan</button>
-        </form>
-        <form id="rolloutManifestForm" class="control-strip rollout-card rollout-card-manifest" data-title="Manifest plan">
-          <label class="full">
-            <span>Rollout manifest JSON</span>
-            <textarea name="manifestJson" rows="9" spellcheck="false">{
+          <section class="rollout-stage rollout-stage-intake" data-stage="01">
+            <div class="rollout-stage-head">
+              <span>Validate</span>
+              <strong>connector intake</strong>
+            </div>
+            <form id="connectorModuleValidationForm" class="control-strip rollout-card rollout-card-module" data-title="Module scan">
+              <label class="grow">
+                <span>Connector 模块路径</span>
+                <input name="modulePath" placeholder="D:/connectors/custom-forum.cjs" autocomplete="off">
+              </label>
+              <div class="rollout-command-shelf" data-label="Module">
+                <button type="submit">验证模块</button>
+              </div>
+            </form>
+            <form id="sourceDryRunForm" class="control-strip rollout-card rollout-card-dryrun" data-title="Source rehearsal">
+              <label>
+                <span>Dry-run forum</span>
+                <input name="forum" id="dryRunForum" list="forumSuggestions" value="nga" autocomplete="off">
+              </label>
+              <label>
+                <span>Source type</span>
+                <input name="sourceType" list="sourceTypeSuggestions" value="saved-html-directory" autocomplete="off">
+              </label>
+              <label class="grow">
+                <span>Name</span>
+                <input name="displayName" value="Dry-run source" autocomplete="off">
+              </label>
+              <label class="grow">
+                <span>Module path</span>
+                <input name="modulePath" placeholder="D:/connectors/custom-forum.cjs" autocomplete="off">
+              </label>
+              <label class="grow">
+                <span>Input dir</span>
+                <input name="inputDir" value="example" autocomplete="off">
+              </label>
+              <label class="grow">
+                <span>JSON file / URL</span>
+                <input name="locationValue" placeholder="D:/feeds/thread.json or https://..." autocomplete="off">
+              </label>
+              <label class="full rollout-json-field">
+                <span>Location JSON</span>
+                <textarea name="locationJson" rows="3" placeholder='{"feedUrl":"https://example.test/feed"}'></textarea>
+              </label>
+              <div class="rollout-command-shelf" data-label="Rehearsal">
+                <button type="submit">Source dry-run</button>
+              </div>
+            </form>
+            <form id="connectorRolloutForm" class="control-strip rollout-card rollout-card-plan" data-title="Rollout graph">
+              <label>
+                <span>Rollout forum</span>
+                <input name="forum" id="rolloutForum" list="forumSuggestions" value="nga" autocomplete="off">
+              </label>
+              <label>
+                <span>Source type</span>
+                <input name="sourceType" list="sourceTypeSuggestions" value="saved-html-directory" autocomplete="off">
+              </label>
+              <label class="grow">
+                <span>Name</span>
+                <input name="displayName" value="Rollout source" autocomplete="off">
+              </label>
+              <label class="grow">
+                <span>Module path</span>
+                <input name="modulePath" placeholder="D:/connectors/custom-forum.cjs" autocomplete="off">
+              </label>
+              <label class="grow">
+                <span>Input dir</span>
+                <input name="inputDir" value="example" autocomplete="off">
+              </label>
+              <label class="grow">
+                <span>JSON file / URL</span>
+                <input name="locationValue" placeholder="D:/feeds/thread.json or https://..." autocomplete="off">
+              </label>
+              <label class="compact">
+                <span>Dry-run</span>
+                <select name="dryRunIngest">
+                  <option value="true">true</option>
+                  <option value="false">false</option>
+                </select>
+              </label>
+              <label class="full rollout-json-field">
+                <span>Location JSON</span>
+                <textarea name="locationJson" rows="3" placeholder='{"feedUrl":"https://example.test/feed"}'></textarea>
+              </label>
+              <div class="rollout-command-shelf" data-label="Graph">
+                <button type="submit">Rollout plan</button>
+              </div>
+            </form>
+          </section>
+          <section class="rollout-stage rollout-stage-runtime" data-stage="02">
+            <div class="rollout-stage-head">
+              <span>Runtime</span>
+              <strong>worker route</strong>
+            </div>
+            <form id="workerTopologyForm" class="control-strip rollout-card rollout-card-worker" data-title="Worker topology">
+              <label>
+                <span>Topology</span>
+                <select name="topology">
+                  <option value="operations-worker">operations-worker</option>
+                  <option value="split-workers">split-workers</option>
+                </select>
+              </label>
+              <label>
+                <span>Source mode</span>
+                <select name="sourceTaskMode">
+                  <option value="ingest">ingest</option>
+                  <option value="insight-pipeline">insight-pipeline</option>
+                </select>
+              </label>
+              <label>
+                <span>Source key</span>
+                <input name="sourceKey" value="nga" autocomplete="off">
+              </label>
+              <label>
+                <span>Source ID</span>
+                <input name="sourceId" placeholder="optional tracked source id" autocomplete="off">
+              </label>
+              <div class="rollout-command-shelf" data-label="Worker">
+                <button type="submit">Worker plan</button>
+              </div>
+            </form>
+          </section>
+          <section class="rollout-stage rollout-stage-manifest" data-stage="03">
+            <div class="rollout-stage-head">
+              <span>Gate</span>
+              <strong>manifest checks</strong>
+            </div>
+            <form id="rolloutManifestForm" class="control-strip rollout-card rollout-card-manifest" data-title="Manifest plan">
+              <label class="full rollout-json-field">
+                <span>Rollout manifest JSON</span>
+                <textarea name="manifestJson" rows="9" spellcheck="false">{
   "version": "1.0",
   "name": "nga-sample-rollout",
   "source": {
@@ -519,13 +544,15 @@
     "sourceTaskMode": "ingest"
   }
 }</textarea>
-          </label>
-          <button type="submit">Manifest plan</button>
-        </form>
-        <form id="resourceProvisioningForm" class="control-strip rollout-card rollout-card-resource" data-title="Resource map">
-          <label class="full">
-            <span>Resource manifest JSON</span>
-            <textarea name="manifestJson" rows="9" spellcheck="false">{
+              </label>
+              <div class="rollout-command-shelf" data-label="Manifest">
+                <button type="submit">Manifest plan</button>
+              </div>
+            </form>
+            <form id="resourceProvisioningForm" class="control-strip rollout-card rollout-card-resource" data-title="Resource map">
+              <label class="full rollout-json-field">
+                <span>Resource manifest JSON</span>
+                <textarea name="manifestJson" rows="9" spellcheck="false">{
   "version": "1.0",
   "name": "nga-sample-rollout",
   "source": {
@@ -542,13 +569,15 @@
     "sourceTaskMode": "ingest"
   }
 }</textarea>
-          </label>
-          <button type="submit">Resource plan</button>
-        </form>
-        <form id="deploymentGateForm" class="control-strip rollout-card rollout-card-gate" data-title="Deployment gate">
-          <label class="full">
-            <span>Deployment gate manifest JSON</span>
-            <textarea name="manifestJson" rows="9" spellcheck="false">{
+              </label>
+              <div class="rollout-command-shelf" data-label="Resource">
+                <button type="submit">Resource plan</button>
+              </div>
+            </form>
+            <form id="deploymentGateForm" class="control-strip rollout-card rollout-card-gate" data-title="Deployment gate">
+              <label class="full rollout-json-field">
+                <span>Deployment gate manifest JSON</span>
+                <textarea name="manifestJson" rows="9" spellcheck="false">{
   "version": "1.0",
   "name": "nga-sample-rollout",
   "source": {
@@ -565,29 +594,39 @@
     "sourceTaskMode": "ingest"
   }
 }</textarea>
-          </label>
-          <label class="compact">
-            <span>LLM mode</span>
-            <select name="llmReadinessMode">
-              <option value="configuration">configuration</option>
-              <option value="preflight">preflight</option>
-              <option value="evaluation">evaluation</option>
-            </select>
-          </label>
-          <label class="compact">
-            <span>LLM provider</span>
-            <select name="provider">
-              <option value="mock">mock</option>
-              <option value="openai-compatible">openai-compatible</option>
-            </select>
-          </label>
-          <button type="submit">Deployment gate</button>
-          <button id="runRolloutReadinessButton" class="secondary-button" type="button">Run rollout checks</button>
-        </form>
-        <form id="rolloutApplyForm" class="control-strip rollout-card rollout-card-apply" data-title="Apply audit">
-          <label class="full">
-            <span>Apply manifest JSON</span>
-            <textarea name="manifestJson" rows="9" spellcheck="false">{
+              </label>
+              <div class="rollout-gate-controls">
+                <label class="compact">
+                  <span>LLM mode</span>
+                  <select name="llmReadinessMode">
+                    <option value="configuration">configuration</option>
+                    <option value="preflight">preflight</option>
+                    <option value="evaluation">evaluation</option>
+                  </select>
+                </label>
+                <label class="compact">
+                  <span>LLM provider</span>
+                  <select name="provider">
+                    <option value="mock">mock</option>
+                    <option value="openai-compatible">openai-compatible</option>
+                  </select>
+                </label>
+                <div class="rollout-command-shelf" data-label="Gate">
+                  <button type="submit">Deployment gate</button>
+                  <button id="runRolloutReadinessButton" class="secondary-button" type="button">Run rollout checks</button>
+                </div>
+              </div>
+            </form>
+          </section>
+          <section class="rollout-stage rollout-stage-apply" data-stage="04">
+            <div class="rollout-stage-head">
+              <span>Apply</span>
+              <strong>audited execution</strong>
+            </div>
+            <form id="rolloutApplyForm" class="control-strip rollout-card rollout-card-apply" data-title="Apply audit">
+              <label class="full rollout-json-field">
+                <span>Apply manifest JSON</span>
+                <textarea name="manifestJson" rows="9" spellcheck="false">{
   "version": "1.0",
   "name": "nga-sample-rollout",
   "source": {
@@ -604,16 +643,21 @@
     "sourceTaskMode": "ingest"
   }
 }</textarea>
-          </label>
-          <label class="compact">
-            <span>Execute</span>
-            <select name="execute">
-              <option value="false">false</option>
-              <option value="true">true</option>
-            </select>
-          </label>
-          <button type="submit">Apply manifest</button>
-        </form>
+              </label>
+              <div class="rollout-gate-controls">
+                <label class="compact">
+                  <span>Execute</span>
+                  <select name="execute">
+                    <option value="false">false</option>
+                    <option value="true">true</option>
+                  </select>
+                </label>
+                <div class="rollout-command-shelf" data-label="Audit">
+                  <button type="submit">Apply manifest</button>
+                </div>
+              </div>
+            </form>
+          </section>
         </div>
         <div class="result-grid task-grid" id="onboardingResult"></div>
         <div class="result-grid task-grid" id="connectorModuleResult"></div>
