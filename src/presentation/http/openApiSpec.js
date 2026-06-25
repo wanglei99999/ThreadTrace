@@ -3148,6 +3148,53 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/sources/{sourceId}/schedule': {
+        post: {
+          summary: 'Dry-run or execute a tracked source schedule configuration update with task audit record',
+          parameters: [
+            { name: 'sourceId', in: 'path', required: true, schema: { type: 'string' } }
+          ],
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    execute: { type: 'boolean', example: false },
+                    dryRun: { type: 'boolean', example: true },
+                    intervalMinutes: { type: 'number', example: 60 },
+                    nextRunAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+                    scheduleEnabled: { type: 'boolean', example: true },
+                    runNow: { type: 'boolean', example: true },
+                    clearSchedule: { type: 'boolean', example: false },
+                    now: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+                    storeDir: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Source schedule update dry-run or execution result with task audit record',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceScheduleUpdateTaskResult'
+                  }
+                }
+              }
+            },
+            400: {
+              $ref: '#/components/responses/BadRequest'
+            },
+            404: {
+              $ref: '#/components/responses/NotFound'
+            }
+          }
+        }
+      },
       '/api/sources/{sourceId}/tasks/ingest': {
         post: {
           summary: 'Run an ingest task from a tracked source',
@@ -4424,6 +4471,43 @@ function createOpenApiSpec() {
           properties: {
             task: { $ref: '#/components/schemas/TaskRecord' },
             result: { $ref: '#/components/schemas/SourceFailureResetResult' },
+            idempotency: {
+              type: 'object',
+              additionalProperties: true
+            }
+          }
+        },
+        SourceScheduleUpdateSourceSummary: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            sourceKey: { type: 'string', example: 'nga' },
+            sourceType: { type: 'string', example: 'thread-url' },
+            displayName: { type: 'string' },
+            enabled: { type: 'boolean' },
+            updatedAt: { type: 'string' },
+            schedule: { $ref: '#/components/schemas/SourceScheduleConfig' }
+          }
+        },
+        SourceScheduleUpdateResult: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok'] },
+            dryRun: { type: 'boolean', example: true },
+            executed: { type: 'boolean', example: false },
+            changed: { type: 'boolean', example: true },
+            clearSchedule: { type: 'boolean', example: false },
+            runNow: { type: 'boolean', example: true },
+            sourceBefore: { $ref: '#/components/schemas/SourceScheduleUpdateSourceSummary' },
+            sourceAfter: { $ref: '#/components/schemas/SourceScheduleUpdateSourceSummary' }
+          }
+        },
+        SourceScheduleUpdateTaskResult: {
+          type: 'object',
+          properties: {
+            task: { $ref: '#/components/schemas/TaskRecord' },
+            result: { $ref: '#/components/schemas/SourceScheduleUpdateResult' },
             idempotency: {
               type: 'object',
               additionalProperties: true

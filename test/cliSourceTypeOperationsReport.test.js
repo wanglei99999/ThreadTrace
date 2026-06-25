@@ -275,6 +275,62 @@ test('CLI prints source collection health profile as JSON', async function () {
   });
 });
 
+test('CLI configures a source schedule as an audited JSON task', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-cli-source-schedule-'));
+  const root = path.resolve(__dirname, '..');
+  const scriptPath = path.join(root, 'src', 'presentation', 'cli', 'threadtrace.js');
+
+  const registerResult = await execFileAsync(process.execPath, [
+    scriptPath,
+    'register-source',
+    '--source-id',
+    'cli-source-1',
+    '--forum',
+    'nga',
+    '--name',
+    'CLI schedule source',
+    '--input',
+    path.join(root, 'example'),
+    '--store-dir',
+    tempDir
+  ], {
+    cwd: root,
+    timeout: 20000
+  });
+  const scheduleResult = await execFileAsync(process.execPath, [
+    scriptPath,
+    'configure-source-schedule',
+    '--source-id',
+    'cli-source-1',
+    '--interval-minutes',
+    '20',
+    '--run-now',
+    'true',
+    '--execute',
+    'true',
+    '--json',
+    'true',
+    '--now',
+    '2026-06-26T10:00:00.000Z',
+    '--store-dir',
+    tempDir
+  ], {
+    cwd: root,
+    timeout: 20000
+  });
+
+  const task = JSON.parse(scheduleResult.stdout);
+  assert.match(registerResult.stdout, /Created source: cli-source-1/);
+  assert.equal(registerResult.stderr, '');
+  assert.equal(task.task.type, 'configure-source-schedule');
+  assert.equal(task.task.status, 'completed');
+  assert.equal(task.result.executed, true);
+  assert.equal(task.result.changed, true);
+  assert.equal(task.result.sourceAfter.schedule.intervalMinutes, 20);
+  assert.equal(task.result.sourceAfter.schedule.nextRunAt, '2026-06-26T10:00:00.000Z');
+  assert.equal(scheduleResult.stderr, '');
+});
+
 test('CLI prints automation readiness plan as JSON', async function () {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-cli-automation-readiness-'));
   const root = path.resolve(__dirname, '..');

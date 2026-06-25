@@ -2037,6 +2037,49 @@ function main(argv) {
     return;
   }
 
+  if (command === 'configure-source-schedule') {
+    if (!options.sourceId) {
+      throw new Error('configure-source-schedule requires --source-id.');
+    }
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.runSetSourceScheduleTask({
+      sourceId: options.sourceId,
+      intervalMinutes: options.intervalMinutes === undefined ? undefined : Number(options.intervalMinutes),
+      nextRunAt: options.nextRunAt,
+      scheduleEnabled: parseOptionalBoolean(options.scheduleEnabled),
+      runNow: options.runNow === 'true',
+      clearSchedule: options.clearSchedule === 'true',
+      execute: options.execute === 'true' || options.dryRun === 'false',
+      now: options.now,
+      storeDir,
+      requestId: options.requestId,
+      traceId: options.traceId,
+      idempotencyKey: options.idempotencyKey
+    }).then(function (result) {
+      const update = result.result;
+      if (isTruthyOption(options.json)) {
+        console.log(JSON.stringify(result, null, 2));
+        return;
+      }
+      const before = update.sourceBefore || {};
+      const after = update.sourceAfter || {};
+      console.log('Configure source schedule: ' + update.status);
+      console.log('Task: ' + result.task.id + '\t' + result.task.status);
+      if (result.idempotency) {
+        console.log('Idempotency: reused=' + result.idempotency.reused + '\ttask=' + result.idempotency.taskId);
+      }
+      console.log('Mode: ' + (update.dryRun ? 'dry-run' : 'execute'));
+      console.log('Changed: ' + update.changed);
+      console.log('Source: ' + before.id + '\t' + before.displayName);
+      console.log('Before: ' + formatScheduleSummary(before.schedule));
+      console.log('After: ' + formatScheduleSummary(after.schedule));
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'validate-source') {
     const sourceType = options.sourceType || 'saved-html-directory';
     const inputDir = options.input || (sourceType === 'saved-html-directory' ? defaultInputDir : undefined);
@@ -3246,6 +3289,20 @@ function parseArgs(args) {
     } else if (item === '--schedule-enabled') {
       options.scheduleEnabled = args[index + 1];
       index += 1;
+    } else if (item === '--run-now') {
+      if (args[index + 1] && !String(args[index + 1]).startsWith('--')) {
+        options.runNow = args[index + 1];
+        index += 1;
+      } else {
+        options.runNow = 'true';
+      }
+    } else if (item === '--clear-schedule') {
+      if (args[index + 1] && !String(args[index + 1]).startsWith('--')) {
+        options.clearSchedule = args[index + 1];
+        index += 1;
+      } else {
+        options.clearSchedule = 'true';
+      }
     } else if (item === '--now') {
       options.now = args[index + 1];
       index += 1;
@@ -3491,6 +3548,16 @@ function formatCountSummary(summary) {
   }).join(', ');
 }
 
+function formatScheduleSummary(schedule) {
+  const safeSchedule = schedule || {};
+  const parts = [
+    'enabled=' + (safeSchedule.enabled === undefined ? 'default' : safeSchedule.enabled),
+    'interval=' + (safeSchedule.intervalMinutes || 'none'),
+    'next=' + (safeSchedule.nextRunAt || 'none')
+  ];
+  return parts.join(', ');
+}
+
 function isTruthyOption(value) {
   return value === true || value === 'true' || value === '1' || value === 'yes';
 }
@@ -3627,6 +3694,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js disable-source --source-id id [--execute true] [--force true] [--source-run-stale-after-ms ms] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js enable-source --source-id id [--execute true] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js reset-source-failure --source-id id [--execute true] [--retry-now true] [--next-run-at iso] [--reset-by user] [--store-dir dir] [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js configure-source-schedule --source-id id [--interval-minutes n] [--next-run-at iso] [--run-now true] [--schedule-enabled true|false] [--clear-schedule true] [--execute true] [--json true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-diagnostics [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-type-readiness [--forum nga] [--source-type type] [--module-path file] [--json true] [--enabled true] [--store-dir dir] [--limit n]');

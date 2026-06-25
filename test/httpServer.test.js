@@ -235,6 +235,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /run-source-pipeline/);
     assert.match(webAppJs, /reset-source-failure/);
     assert.match(webAppJs, /failure\/reset/);
+    assert.match(webAppJs, /set-source-schedule/);
+    assert.match(webAppJs, /Schedule now/);
+    assert.match(webAppJs, /renderSourceScheduleUpdateResult/);
     assert.match(webAppJs, /renderScheduleSourceControls/);
     assert.match(webAppJs, /renderCollectionActionControls/);
     assert.match(webAppJs, /runDueCollectionFromButton/);
@@ -2700,6 +2703,18 @@ test('http server can register sources and run source ingest tasks', async funct
     const sourcesAfterDisableDryRun = await getJson(baseUrl + '/api/sources');
     const dueResult = await postJson(baseUrl + '/api/sources/tasks/ingest-due', {});
     const skippedDueResult = await postJson(baseUrl + '/api/sources/tasks/ingest-due', {});
+    const scheduleDryRun = await postJson(baseUrl + '/api/sources/' + encodeURIComponent(registerResult.source.id) + '/schedule', {
+      intervalMinutes: 30,
+      runNow: true,
+      now: '2026-06-19T10:00:00.000Z'
+    });
+    const scheduleExecute = await postJson(baseUrl + '/api/sources/' + encodeURIComponent(registerResult.source.id) + '/schedule', {
+      intervalMinutes: 30,
+      runNow: true,
+      execute: true,
+      now: '2026-06-19T10:00:00.000Z'
+    });
+    const sourcesAfterScheduleExecute = await getJson(baseUrl + '/api/sources');
     const eventsResult = await getJson(baseUrl + '/api/events');
     const eventDetail = await getJson(baseUrl + '/api/events/' + encodeURIComponent(eventsResult.events[0].id));
     const eventActionIntent = await postJson(baseUrl + '/api/events/' + encodeURIComponent(eventsResult.events[0].id) + '/actions/intent', {
@@ -2782,6 +2797,15 @@ test('http server can register sources and run source ingest tasks', async funct
     assert.deepEqual(dueSchedule.collectionStatus, ['due']);
     assert.equal(dueSchedule.summary.total, 1);
     assert.equal(dueSchedule.unfilteredSummary.total, 1);
+    assert.equal(scheduleDryRun.task.type, 'configure-source-schedule');
+    assert.equal(scheduleDryRun.result.dryRun, true);
+    assert.equal(scheduleDryRun.result.changed, true);
+    assert.equal(scheduleDryRun.result.sourceAfter.schedule.intervalMinutes, 30);
+    assert.equal(scheduleExecute.task.type, 'configure-source-schedule');
+    assert.equal(scheduleExecute.result.executed, true);
+    assert.equal(scheduleExecute.result.sourceAfter.schedule.nextRunAt, '2026-06-19T10:00:00.000Z');
+    assert.equal(sourcesAfterScheduleExecute.sources[0].schedule.intervalMinutes, 30);
+    assert.equal(sourcesAfterScheduleExecute.sources[0].schedule.nextRunAt, '2026-06-19T10:00:00.000Z');
     assert.equal(sourcesAfterDisableDryRun.sources[0].enabled, true);
     assert.equal(dueResult.task.type, 'ingest-due-sources');
     assert.equal(dueResult.dueCount, 1);
@@ -2886,6 +2910,10 @@ test('http server exposes tracked source diagnostics', async function () {
     assert.equal(openApi.components.schemas.SourceDiagnosticItem.properties.checks.items.$ref, '#/components/schemas/SourceDiagnosticCheck');
     assert.equal(openApi.components.schemas.SourceDiagnosticAction.properties.evidence.$ref, '#/components/schemas/SourceDiagnosticActionEvidence');
     assert.equal(openApi.components.schemas.SourceDiagnosticAction.properties.commands.items.type, 'string');
+    assert.ok(openApi.paths['/api/sources/{sourceId}/schedule']);
+    assert.equal(openApi.paths['/api/sources/{sourceId}/schedule'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceScheduleUpdateTaskResult');
+    assert.equal(openApi.components.schemas.SourceScheduleUpdateTaskResult.properties.result.$ref, '#/components/schemas/SourceScheduleUpdateResult');
+    assert.equal(openApi.components.schemas.SourceScheduleUpdateResult.properties.sourceAfter.$ref, '#/components/schemas/SourceScheduleUpdateSourceSummary');
   } finally {
     await close(server);
   }

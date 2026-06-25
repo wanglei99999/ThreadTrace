@@ -1658,6 +1658,26 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  const sourceScheduleMatch = url.pathname.match(/^\/api\/sources\/([^/]+)\/schedule$/);
+  if (request.method === 'POST' && sourceScheduleMatch) {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.runSetSourceScheduleTask({
+      sourceId: decodeURIComponent(sourceScheduleMatch[1]),
+      intervalMinutes: body.intervalMinutes,
+      nextRunAt: body.nextRunAt,
+      scheduleEnabled: body.scheduleEnabled,
+      runNow: body.runNow === true,
+      clearSchedule: body.clearSchedule === true,
+      execute: body.execute === true || body.dryRun === false,
+      now: body.now,
+      storeDir: body.storeDir || context.storeDir,
+      requestId: context.requestId,
+      idempotencyKey: context.idempotencyKey
+    });
+    writeJson(response, 200, result);
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/sources/tasks/ingest') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     const result = await context.runtime.runEnabledSourcesIngestTasks({

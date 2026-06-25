@@ -184,6 +184,9 @@ function commandForCheck(checkItem, input) {
     return 'node src/presentation/cli/threadtrace.js register-source --forum <source-key> --input <path> --interval-minutes 60';
   }
   if (checkItem.key === 'automation.sources.scheduled') {
+    if (input.scope && input.scope.sourceId) {
+      return scopedCommand('configure-source-schedule', input.scope) + ' --interval-minutes 60 --run-now true --execute true';
+    }
     return 'node src/presentation/cli/threadtrace.js source-schedule-report --json true';
   }
   if (checkItem.key === 'automation.source.collectionHealth') {

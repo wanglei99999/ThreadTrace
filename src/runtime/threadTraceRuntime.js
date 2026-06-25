@@ -58,6 +58,8 @@ const { enableTrackedSource } = require('../application/use-cases/enableTrackedS
 const { runEnableTrackedSourceTask } = require('../application/use-cases/runEnableTrackedSourceTask');
 const { resetTrackedSourceFailure } = require('../application/use-cases/resetTrackedSourceFailure');
 const { runResetTrackedSourceFailureTask } = require('../application/use-cases/runResetTrackedSourceFailureTask');
+const { setTrackedSourceSchedule } = require('../application/use-cases/setTrackedSourceSchedule');
+const { runSetTrackedSourceScheduleTask } = require('../application/use-cases/runSetTrackedSourceScheduleTask');
 const { getSourceLifecycleReport } = require('../application/use-cases/getSourceLifecycleReport');
 const { getSourceScheduleReport } = require('../application/use-cases/getSourceScheduleReport');
 const { getSourceAttentionReport } = require('../application/use-cases/getSourceAttentionReport');
@@ -2174,6 +2176,46 @@ function createThreadTraceRuntime(options) {
         retryNow: safeRequest.retryNow,
         nextRunAt: safeRequest.nextRunAt,
         resetBy: safeRequest.resetBy || safeRequest.acknowledgedBy,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir,
+        requestId: safeRequest.requestId,
+        traceId: safeRequest.traceId,
+        idempotencyKey: safeRequest.idempotencyKey
+      });
+    },
+
+    async setSourceSchedule(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return setTrackedSourceSchedule({
+        sourceRepository: repositories.sourceRepository,
+        sourceId: safeRequest.sourceId,
+        intervalMinutes: safeRequest.intervalMinutes,
+        nextRunAt: safeRequest.nextRunAt,
+        scheduleEnabled: safeRequest.scheduleEnabled,
+        runNow: safeRequest.runNow,
+        clearSchedule: safeRequest.clearSchedule,
+        execute: safeRequest.execute,
+        now: safeRequest.now
+      });
+    },
+
+    async runSetSourceScheduleTask(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      const runtime = this;
+      return runSetTrackedSourceScheduleTask({
+        taskRepository: repositories.taskRepository,
+        setTrackedSourceSchedule(requestForSchedule) {
+          return runtime.setSourceSchedule(requestForSchedule);
+        },
+        sourceId: safeRequest.sourceId,
+        intervalMinutes: safeRequest.intervalMinutes,
+        nextRunAt: safeRequest.nextRunAt,
+        scheduleEnabled: safeRequest.scheduleEnabled,
+        runNow: safeRequest.runNow,
+        clearSchedule: safeRequest.clearSchedule,
+        execute: safeRequest.execute,
         now: safeRequest.now,
         storeDir: safeRequest.storeDir,
         requestId: safeRequest.requestId,

@@ -341,6 +341,12 @@ function bindForms() {
       await setSourceEnabledFromButton(button);
       return;
     }
+    if (button.dataset.action === 'set-source-schedule') {
+      const execute = button.dataset.execute === 'true';
+      if (execute && !window.confirm('Configure this source schedule?')) return;
+      await setSourceScheduleFromButton(button, execute);
+      return;
+    }
     if (button.dataset.action === 'load-source-drilldown') {
       await loadSourceOperationsDrilldownFromButton(button);
       return;
@@ -405,6 +411,12 @@ function bindForms() {
     }
     if (button.dataset.action === 'set-source-enabled') {
       await setSourceEnabledFromButton(button);
+      return;
+    }
+    if (button.dataset.action === 'set-source-schedule') {
+      const execute = button.dataset.execute === 'true';
+      if (execute && !window.confirm('Configure this source schedule?')) return;
+      await setSourceScheduleFromButton(button, execute);
       return;
     }
     if (button.dataset.action === 'synthesize-source-attention-events') {
@@ -1970,6 +1982,22 @@ async function resetSourceFailureFromButton(button, execute) {
       resetBy: 'web'
     });
   }, renderSourceFailureResetResult);
+  await loadSystemStatus();
+  await loadTasks();
+  await loadSources();
+  await loadSourceOperations();
+}
+
+async function setSourceScheduleFromButton(button, execute) {
+  const sourceId = button.dataset.sourceId;
+  await renderAsync('sourceOperationActionResult', function () {
+    return requestJson('/api/sources/' + encodeURIComponent(sourceId) + '/schedule', {
+      execute,
+      intervalMinutes: Number(button.dataset.intervalMinutes) || 60,
+      runNow: button.dataset.runNow !== 'false',
+      scheduleEnabled: button.dataset.scheduleEnabled === 'false' ? false : true
+    });
+  }, renderSourceScheduleUpdateResult);
   await loadSystemStatus();
   await loadTasks();
   await loadSources();
@@ -5420,6 +5448,7 @@ function renderScheduleSourceControls(source, runnable) {
   return '<span class="button-group source-op-buttons schedule-op-buttons">' +
     statusBadge(runnable ? 'due' : 'skip', runnable ? 'ok' : 'muted') +
     renderSourceDrilldownButton(source) +
+    renderSourceScheduleButtons(source) +
     (runnable ? renderSourceRunButtons(source) : '') +
     '</span>';
 }
@@ -5526,6 +5555,7 @@ function renderLifecycleSourceRow(source) {
     statusBadge(label, variant) +
     renderSourceDrilldownButton(source) +
     renderSourceRunButtons(source) +
+    renderSourceScheduleButtons(source) +
     renderSourceEnablementButtons(source) +
     renderSourceFailureResetButtons(source) +
     '</span>';
@@ -5576,6 +5606,15 @@ function renderSourceRunButtons(source) {
   ].join('');
 }
 
+function renderSourceScheduleButtons(source) {
+  const sourceId = escapeHtml(source.id);
+  if (!sourceId) return '';
+  return [
+    '<button class="inline-button secondary-inline-button" type="button" data-action="set-source-schedule" data-source-id="' + sourceId + '" data-interval-minutes="60" data-run-now="true" data-execute="false">Schedule check</button>',
+    '<button class="inline-button" type="button" data-action="set-source-schedule" data-source-id="' + sourceId + '" data-interval-minutes="60" data-run-now="true" data-execute="true">Schedule now</button>'
+  ].join('');
+}
+
 function renderSourceEnablementButtons(source) {
   const sourceId = escapeHtml(source.id);
   if (source.enabled === false) {
@@ -5618,6 +5657,32 @@ function renderSourceLifecycleUpdateResult(result) {
     metric('Guard', guard.running ? 'running=' + guard.running + ' blocked=' + guard.blocked + ' stale=' + guard.stale : 'not-running'),
     renderTaskTraceButton(task)
   ].join(''), 'wide');
+}
+
+function renderSourceScheduleUpdateResult(result) {
+  const update = result.result || result;
+  const task = result.task || {};
+  const before = update.sourceBefore || {};
+  const after = update.sourceAfter || {};
+  return panel('Source schedule', [
+    metric('Status', update.status || 'unknown'),
+    metric('Task', task.id || 'none'),
+    metric('Mode', update.dryRun ? 'dry-run' : 'execute'),
+    metric('Changed', update.changed ? 'yes' : 'no'),
+    metric('Source', (before.id || after.id || 'unknown') + ' / ' + (after.displayName || before.displayName || 'unknown')),
+    metric('Before', formatScheduleBrief(before.schedule)),
+    metric('After', formatScheduleBrief(after.schedule)),
+    renderTaskTraceButton(task)
+  ].join(''), 'wide');
+}
+
+function formatScheduleBrief(schedule) {
+  const safeSchedule = schedule || {};
+  return [
+    'enabled=' + (safeSchedule.enabled === undefined ? 'default' : safeSchedule.enabled),
+    'interval=' + (safeSchedule.intervalMinutes || 'none'),
+    'next=' + (safeSchedule.nextRunAt || 'none')
+  ].join(' | ');
 }
 
 function renderSourceFailureResetResult(result) {

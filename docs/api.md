@@ -574,6 +574,24 @@ Query parameters:
 
 Returns `summary.byReason`, `dueSources`, `skippedSources`, and per-source schedule decisions.
 
+### `POST /api/sources/{sourceId}/schedule`
+
+Dry-runs or executes a tracked source schedule update through the same task audit path as lifecycle mutations.
+
+Request:
+
+```json
+{
+  "intervalMinutes": 60,
+  "runNow": true,
+  "scheduleEnabled": true,
+  "execute": false,
+  "now": "2026-06-26T10:00:00.000Z"
+}
+```
+
+The endpoint defaults to dry-run. Set `execute: true` or `dryRun: false` to persist the source schedule. Use `runNow: true` to set `schedule.nextRunAt` to `now`, `nextRunAt` for a controlled window, `scheduleEnabled: false` to keep the schedule present but disabled, or `clearSchedule: true` to remove schedule configuration. The response includes the `configure-source-schedule` task, dry-run/execution flags, change status, and before/after source schedule summaries.
+
 ### `POST /api/sources/validate`
 
 Validates a tracked source draft without saving it. The response includes `valid`, readiness `status`, normalized `source`, diagnostic `checks`, optional `error`, and `nextActions`. Failed location checks include structured `evidence` and compact `evidenceSummary`, such as `missingRequiredFields=inputFile`, so operators and rollout automation can show the exact source input that must be supplied.
