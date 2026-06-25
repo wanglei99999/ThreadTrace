@@ -128,7 +128,8 @@
           <span>Collection</span>
           <strong>来源采集与接入</strong>
         </div>
-        <form id="taskForm" class="control-strip">
+        <div class="collection-workflow">
+        <form id="taskForm" class="control-strip collection-card collection-card-archive" data-title="Archive ingest">
           <label class="grow">
             <span>保存页目录</span>
             <input name="inputDir" value="example" autocomplete="off">
@@ -136,7 +137,7 @@
           <button type="submit">运行导入任务</button>
           <button id="refreshTasksButton" class="secondary-button" type="button">刷新任务</button>
         </form>
-        <form id="sourceForm" class="control-strip">
+        <form id="sourceForm" class="control-strip collection-card collection-card-source" data-title="Tracked source">
           <label>
             <span>论坛</span>
             <select name="forum" id="sourceForum"></select>
@@ -167,7 +168,7 @@
           <button id="refreshEventsButton" class="secondary-button" type="button">刷新事件</button>
           <button id="dispatchEventsButton" class="secondary-button" type="button">投递事件</button>
         </form>
-        <form id="threadUrlForm" class="control-strip">
+        <form id="threadUrlForm" class="control-strip collection-card collection-card-url" data-title="Thread URL">
           <label>
             <span>论坛</span>
             <select name="forum" id="threadUrlForum"></select>
@@ -196,7 +197,7 @@
           <button id="crawlUrlButton" class="secondary-button" type="button">抓取页面</button>
           <button id="refreshRawPagesButton" class="secondary-button" type="button">刷新原始页</button>
         </form>
-        <form id="sourceOnboardingForm" class="control-strip">
+        <form id="sourceOnboardingForm" class="control-strip collection-card collection-card-onboarding" data-title="Connector preflight">
           <label>
             <span>接入论坛</span>
             <input name="forum" id="onboardingForum" list="forumSuggestions" value="nga" autocomplete="off">
@@ -228,6 +229,7 @@
           </label>
           <button type="submit">接入预检</button>
         </form>
+        </div>
         <div class="result-grid task-grid" id="sourceOnboardingRecipe"></div>
         <div class="system-zone-title" id="system-operations">
           <span>Operations</span>
@@ -240,7 +242,8 @@
           <span>Events</span>
           <strong>通知事件与人工审查</strong>
         </div>
-        <form id="eventFilterForm" class="control-strip">
+        <div class="event-review-workflow">
+        <form id="eventFilterForm" class="control-strip event-card event-card-filter" data-title="Event triage">
           <label class="compact">
             <span>事件范围</span>
             <select name="acknowledged">
@@ -289,7 +292,7 @@
           <button type="button" class="secondary-button" id="archiveEventsButton">Archive handled</button>
           <button type="submit">筛选事件</button>
         </form>
-        <form id="contextReviewResultForm" class="control-strip">
+        <form id="contextReviewResultForm" class="control-strip event-card event-card-review" data-title="Human decision">
           <label class="full">
             <span>Context review result JSON</span>
             <textarea name="resultJson" rows="10" spellcheck="false">{
@@ -334,6 +337,7 @@
           <button id="synthesizeReviewResultEventsButton" class="secondary-button" type="button">Review alert check</button>
           <button id="createReviewResultEventsButton" class="secondary-button" type="button">Create review alerts</button>
         </form>
+        </div>
         <div class="system-zone-title" id="system-rollout">
           <span>Rollout</span>
           <strong>连接器、资源和部署门禁</strong>

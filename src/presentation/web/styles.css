@@ -620,12 +620,311 @@ textarea:focus-visible {
   min-height: 116px;
 }
 
+.collection-workflow {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.72fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.collection-card {
+  position: relative;
+  align-content: start;
+  gap: 10px;
+  overflow: hidden;
+  min-width: 0;
+  padding: 46px 14px 14px;
+}
+
+.collection-card::before {
+  content: attr(data-title);
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  max-width: calc(100% - 28px);
+  padding: 5px 8px;
+  border: 1px solid rgba(20, 114, 95, 0.24);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collection-card::after {
+  content: "";
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--gold), rgba(20, 114, 95, 0.32));
+  opacity: 0.82;
+  pointer-events: none;
+}
+
+.collection-card-archive {
+  grid-column: 1;
+  min-height: 148px;
+  background:
+    linear-gradient(135deg, rgba(12, 23, 21, 0.96), rgba(13, 56, 49, 0.94) 58%, rgba(36, 95, 159, 0.82)),
+    var(--sidebar);
+  border-color: rgba(8, 56, 48, 0.2);
+  color: #f8fbfa;
+  box-shadow: 0 20px 44px rgba(10, 27, 24, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.collection-card-archive::before {
+  border-color: rgba(241, 189, 82, 0.35);
+  background: rgba(241, 189, 82, 0.12);
+  color: #ffe4a3;
+}
+
+.collection-card-archive label span {
+  color: #a8c3bc;
+}
+
+.collection-card-archive input {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.collection-card-archive input:focus {
+  border-color: rgba(241, 189, 82, 0.52);
+  box-shadow: 0 0 0 3px rgba(241, 189, 82, 0.13);
+}
+
+.collection-card-archive .secondary-button {
+  color: #f8fbfa;
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.collection-card-source {
+  grid-column: 2;
+  grid-row: span 2;
+  border-color: rgba(20, 114, 95, 0.24);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.99), rgba(241, 250, 247, 0.97) 52%, rgba(238, 246, 255, 0.9)),
+    var(--panel);
+}
+
+.collection-card-url {
+  grid-column: 1;
+}
+
+.collection-card-onboarding {
+  grid-column: 1 / -1;
+  border-color: rgba(36, 95, 159, 0.18);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.99), rgba(238, 246, 255, 0.94) 52%, rgba(255, 247, 226, 0.72)),
+    var(--panel);
+}
+
+.collection-card .secondary-button {
+  min-height: 34px;
+  padding: 0 11px;
+  font-size: 13px;
+}
+
+.collection-card-source .secondary-button,
+.collection-card-onboarding .secondary-button {
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.collection-card-source button[type="submit"],
+.collection-card-url button[type="submit"],
+.collection-card-onboarding button[type="submit"] {
+  min-width: 126px;
+}
+
+.collection-card-source .secondary-button:nth-of-type(n+4) {
+  color: var(--muted-strong);
+  background: rgba(246, 248, 248, 0.8);
+}
+
+.event-review-workflow {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.62fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.event-card {
+  position: relative;
+  align-content: start;
+  gap: 10px;
+  overflow: hidden;
+  min-width: 0;
+  padding: 48px 14px 14px;
+}
+
+.event-card::before {
+  content: attr(data-title);
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  max-width: calc(100% - 28px);
+  padding: 5px 8px;
+  border: 1px solid rgba(36, 95, 159, 0.22);
+  border-radius: var(--radius-sm);
+  background: var(--info-soft);
+  color: #154d88;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-card::after {
+  content: "";
+  position: absolute;
+  top: 16px;
+  right: 14px;
+  width: 62px;
+  height: 18px;
+  background:
+    linear-gradient(90deg, rgba(36, 95, 159, 0.16) 0 10px, transparent 10px 15px),
+    linear-gradient(90deg, rgba(20, 114, 95, 0.22) 0 18px, transparent 18px 23px),
+    linear-gradient(90deg, rgba(241, 189, 82, 0.68) 0 12px, transparent 12px);
+  background-position: 0 2px, 22px 7px, 47px 12px;
+  background-repeat: no-repeat;
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.event-card-filter {
+  border-color: rgba(36, 95, 159, 0.24);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.99), rgba(238, 246, 255, 0.95) 48%, rgba(242, 250, 247, 0.9)),
+    var(--panel);
+}
+
+.event-card-review {
+  border-color: rgba(12, 23, 21, 0.18);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.99), rgba(247, 249, 250, 0.98) 46%, rgba(255, 247, 226, 0.58)),
+    var(--panel);
+}
+
+.event-card-review::before {
+  border-color: rgba(241, 189, 82, 0.38);
+  background: var(--gold-soft);
+  color: #765019;
+}
+
+.event-card label.compact {
+  flex: 1 1 132px;
+  max-width: none;
+}
+
+.event-card button[type="button"],
+.event-card button[type="submit"] {
+  flex: 1 1 142px;
+  min-width: 0;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.event-card-filter button[type="submit"] {
+  flex-basis: 100%;
+}
+
+.event-card-review button[type="submit"] {
+  flex-basis: 184px;
+}
+
+.event-card-review textarea {
+  min-height: 286px;
+  border-color: rgba(12, 23, 21, 0.16);
+  background:
+    linear-gradient(90deg, rgba(20, 114, 95, 0.05) 1px, transparent 1px),
+    linear-gradient(180deg, #ffffff, #fbfcfc);
+  background-size: 32px 100%, 100% 100%;
+  color: #14201e;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.56;
+}
+
+.event-card-review textarea:focus {
+  border-color: rgba(36, 95, 159, 0.58);
+  box-shadow:
+    0 0 0 3px rgba(36, 95, 159, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+#previewAckEventsButton,
+#previewEventArchiveButton,
+#refreshReviewActionPlanButton,
+#refreshReviewActionGateButton,
+#synthesizeReviewResultEventsButton {
+  color: #154d88;
+  border-color: rgba(36, 95, 159, 0.22);
+  background: linear-gradient(180deg, #ffffff, var(--info-soft));
+}
+
+#ackVisibleEventsButton,
+#archiveEventsButton,
+#runReviewActionApplyButton,
+#createReviewResultEventsButton {
+  color: var(--warn);
+  border-color: #e4c58f;
+  background: linear-gradient(180deg, #ffffff, var(--warn-soft));
+}
+
+#ackVisibleEventsButton:hover,
+#archiveEventsButton:hover,
+#runReviewActionApplyButton:hover,
+#createReviewResultEventsButton:hover {
+  color: #6c3f07;
+  background: #ffedc7;
+}
+
 #sourceForm,
 #eventFilterForm,
 #deploymentGateForm {
   border-color: rgba(159, 192, 183, 0.98);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(242, 250, 247, 0.95));
+}
+
+#systemView .collection-card {
+  gap: 10px;
+  padding: 46px 14px 14px;
+}
+
+#systemView .collection-card-source {
+  border-color: rgba(20, 114, 95, 0.24);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.99), rgba(241, 250, 247, 0.97) 52%, rgba(238, 246, 255, 0.9)),
+    var(--panel);
+}
+
+#systemView .collection-card-archive {
+  border-color: rgba(8, 56, 48, 0.2);
+  background:
+    linear-gradient(135deg, rgba(12, 23, 21, 0.96), rgba(13, 56, 49, 0.94) 58%, rgba(36, 95, 159, 0.82)),
+    var(--sidebar);
+}
+
+#systemView .event-card-filter {
+  border-color: rgba(36, 95, 159, 0.24);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.99), rgba(238, 246, 255, 0.95) 48%, rgba(242, 250, 247, 0.9)),
+    var(--panel);
 }
 
 .control-strip,
@@ -2541,6 +2840,22 @@ pre {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .collection-workflow {
+    grid-template-columns: 1fr;
+  }
+
+  .event-review-workflow {
+    grid-template-columns: 1fr;
+  }
+
+  .collection-card-archive,
+  .collection-card-source,
+  .collection-card-url,
+  .collection-card-onboarding {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
   .cockpit-hero,
   .cockpit-queue-card {
     grid-column: span 12;
@@ -2707,6 +3022,26 @@ pre {
     flex-direction: column;
   }
 
+  .collection-workflow {
+    gap: 12px;
+  }
+
+  #systemView .collection-card {
+    padding: 44px 12px 12px;
+  }
+
+  #systemView .event-card {
+    padding: 44px 12px 12px;
+  }
+
+  .collection-card::after {
+    width: 26px;
+  }
+
+  .event-card::after {
+    width: 48px;
+  }
+
   .cockpit-grid {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
@@ -2744,6 +3079,42 @@ pre {
     flex: 1 1 auto;
     max-width: none;
     min-width: 0;
+  }
+
+  #systemView .collection-card {
+    flex-direction: row;
+    align-items: end;
+  }
+
+  #systemView .collection-card label {
+    flex: 1 1 180px;
+    min-width: 0;
+  }
+
+  #systemView .collection-card label.grow {
+    flex-basis: 260px;
+  }
+
+  #systemView .collection-card label.full {
+    flex-basis: 100%;
+  }
+
+  #systemView .event-card {
+    flex-direction: row;
+    align-items: end;
+  }
+
+  #systemView .event-card label {
+    flex: 1 1 180px;
+    min-width: 0;
+  }
+
+  #systemView .event-card label.compact {
+    flex-basis: 132px;
+  }
+
+  #systemView .event-card label.full {
+    flex-basis: 100%;
   }
 
   .action-row,
@@ -2842,6 +3213,16 @@ pre {
 
   .system-runtime-mini:nth-of-type(n+6) {
     display: none;
+  }
+
+  .collection-card .secondary-button,
+  .collection-card button[type="submit"] {
+    width: 100%;
+  }
+
+  .event-card .secondary-button,
+  .event-card button[type="submit"] {
+    width: 100%;
   }
 
   .system-zone-title {
@@ -2992,6 +3373,35 @@ pre {
     white-space: normal;
     text-align: center;
     line-height: 1.15;
+  }
+
+  .collection-card button[type="submit"],
+  .collection-card .secondary-button {
+    flex: 1 1 136px;
+    width: auto;
+    min-width: 0;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.15;
+  }
+
+  .collection-card-archive button,
+  .collection-card-url button {
+    flex-basis: 150px;
+  }
+
+  .event-card button[type="submit"],
+  .event-card .secondary-button {
+    flex: 1 1 142px;
+    width: auto;
+    min-width: 0;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.15;
+  }
+
+  .event-card-filter button[type="submit"] {
+    flex-basis: 100%;
   }
 }
 
