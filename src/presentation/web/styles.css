@@ -893,6 +893,162 @@ textarea:focus-visible {
   background: #ffedc7;
 }
 
+.rollout-workbench {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 14px;
+  align-items: stretch;
+}
+
+.rollout-card {
+  position: relative;
+  align-content: start;
+  gap: 10px;
+  overflow: hidden;
+  min-width: 0;
+  padding: 48px 14px 14px;
+}
+
+.rollout-card::before {
+  content: attr(data-title);
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  max-width: calc(100% - 28px);
+  padding: 5px 8px;
+  border: 1px solid rgba(20, 114, 95, 0.24);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rollout-card::after {
+  content: "";
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 76px;
+  height: 22px;
+  background:
+    linear-gradient(90deg, rgba(20, 114, 95, 0.18) 0 18px, transparent 18px 23px),
+    linear-gradient(90deg, rgba(36, 95, 159, 0.18) 0 12px, transparent 12px 17px),
+    linear-gradient(90deg, rgba(241, 189, 82, 0.62) 0 22px, transparent 22px);
+  background-position: 0 3px, 28px 8px, 51px 13px;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+.rollout-card-module {
+  grid-column: 1 / -1;
+  min-height: 108px;
+  border-color: rgba(8, 56, 48, 0.2);
+  background:
+    linear-gradient(135deg, rgba(12, 23, 21, 0.96), rgba(13, 56, 49, 0.94) 58%, rgba(36, 95, 159, 0.82)),
+    var(--sidebar);
+  color: #f8fbfa;
+  box-shadow: 0 20px 44px rgba(10, 27, 24, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.rollout-card-module::before {
+  border-color: rgba(241, 189, 82, 0.35);
+  background: rgba(241, 189, 82, 0.12);
+  color: #ffe4a3;
+}
+
+.rollout-card-module label span {
+  color: #a8c3bc;
+}
+
+.rollout-card-module input {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.rollout-card-dryrun,
+.rollout-card-plan {
+  grid-column: span 6;
+}
+
+.rollout-card-worker {
+  grid-column: span 5;
+  border-color: rgba(36, 95, 159, 0.22);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.99), rgba(238, 246, 255, 0.95) 58%, rgba(242, 250, 247, 0.9)),
+    var(--panel);
+}
+
+.rollout-card-manifest {
+  grid-column: span 7;
+}
+
+.rollout-card-resource,
+.rollout-card-gate {
+  grid-column: span 6;
+}
+
+.rollout-card-apply {
+  grid-column: 1 / -1;
+  border-color: rgba(138, 87, 18, 0.24);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.99), rgba(255, 246, 228, 0.9) 54%, rgba(238, 246, 255, 0.7)),
+    var(--panel);
+}
+
+.rollout-card-apply::before,
+.rollout-card-gate::before {
+  border-color: rgba(241, 189, 82, 0.38);
+  background: var(--gold-soft);
+  color: #765019;
+}
+
+.rollout-card textarea {
+  min-height: 188px;
+  border-color: rgba(12, 23, 21, 0.14);
+  background:
+    linear-gradient(90deg, rgba(20, 114, 95, 0.045) 1px, transparent 1px),
+    linear-gradient(180deg, #ffffff, #fbfcfc);
+  background-size: 32px 100%, 100% 100%;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.56;
+}
+
+.rollout-card button[type="button"],
+.rollout-card button[type="submit"] {
+  flex: 1 1 148px;
+  min-width: 0;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.rollout-card-module button[type="submit"] {
+  flex: 0 1 148px;
+}
+
+#runRolloutReadinessButton {
+  color: #154d88;
+  border-color: rgba(36, 95, 159, 0.22);
+  background: linear-gradient(180deg, #ffffff, var(--info-soft));
+}
+
+.rollout-card-apply button[type="submit"] {
+  color: #ffffff;
+  border-color: rgba(106, 63, 7, 0.2);
+  background: linear-gradient(180deg, #9d681f, #704608);
+  box-shadow:
+    0 12px 24px rgba(138, 87, 18, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
 #sourceForm,
 #eventFilterForm,
 #deploymentGateForm {
@@ -943,6 +1099,15 @@ textarea:focus-visible {
   flex-wrap: wrap;
   gap: 12px;
   padding: 14px;
+}
+
+#systemView .collection-card {
+  padding: 46px 14px 14px;
+}
+
+#systemView .event-card,
+#systemView .rollout-card {
+  padding: 48px 14px 14px;
 }
 
 .stacked-form {
@@ -2848,6 +3013,15 @@ pre {
     grid-template-columns: 1fr;
   }
 
+  .rollout-card-dryrun,
+  .rollout-card-plan,
+  .rollout-card-worker,
+  .rollout-card-manifest,
+  .rollout-card-resource,
+  .rollout-card-gate {
+    grid-column: 1 / -1;
+  }
+
   .collection-card-archive,
   .collection-card-source,
   .collection-card-url,
@@ -3034,12 +3208,20 @@ pre {
     padding: 44px 12px 12px;
   }
 
+  #systemView .rollout-card {
+    padding: 44px 12px 12px;
+  }
+
   .collection-card::after {
     width: 26px;
   }
 
   .event-card::after {
     width: 48px;
+  }
+
+  .rollout-card::after {
+    width: 54px;
   }
 
   .cockpit-grid {
@@ -3114,6 +3296,24 @@ pre {
   }
 
   #systemView .event-card label.full {
+    flex-basis: 100%;
+  }
+
+  #systemView .rollout-card {
+    flex-direction: row;
+    align-items: end;
+  }
+
+  #systemView .rollout-card label {
+    flex: 1 1 180px;
+    min-width: 0;
+  }
+
+  #systemView .rollout-card label.compact {
+    flex-basis: 132px;
+  }
+
+  #systemView .rollout-card label.full {
     flex-basis: 100%;
   }
 
@@ -3222,6 +3422,11 @@ pre {
 
   .event-card .secondary-button,
   .event-card button[type="submit"] {
+    width: 100%;
+  }
+
+  .rollout-card .secondary-button,
+  .rollout-card button[type="submit"] {
     width: 100%;
   }
 
@@ -3402,6 +3607,20 @@ pre {
 
   .event-card-filter button[type="submit"] {
     flex-basis: 100%;
+  }
+
+  .rollout-card button[type="submit"],
+  .rollout-card .secondary-button {
+    flex: 1 1 142px;
+    width: auto;
+    min-width: 0;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.15;
+  }
+
+  .rollout-card-module button[type="submit"] {
+    flex-basis: 142px;
   }
 }
 

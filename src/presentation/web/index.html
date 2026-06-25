@@ -342,14 +342,15 @@
           <span>Rollout</span>
           <strong>连接器、资源和部署门禁</strong>
         </div>
-        <form id="connectorModuleValidationForm" class="control-strip">
+        <div class="rollout-workbench">
+        <form id="connectorModuleValidationForm" class="control-strip rollout-card rollout-card-module" data-title="Module scan">
           <label class="grow">
             <span>Connector 模块路径</span>
             <input name="modulePath" placeholder="D:/connectors/custom-forum.cjs" autocomplete="off">
           </label>
           <button type="submit">验证模块</button>
         </form>
-        <form id="sourceDryRunForm" class="control-strip">
+        <form id="sourceDryRunForm" class="control-strip rollout-card rollout-card-dryrun" data-title="Source rehearsal">
           <label>
             <span>Dry-run forum</span>
             <input name="forum" id="dryRunForum" list="forumSuggestions" value="nga" autocomplete="off">
@@ -380,7 +381,7 @@
           </label>
           <button type="submit">Source dry-run</button>
         </form>
-        <form id="connectorRolloutForm" class="control-strip">
+        <form id="connectorRolloutForm" class="control-strip rollout-card rollout-card-plan" data-title="Rollout graph">
           <label>
             <span>Rollout forum</span>
             <input name="forum" id="rolloutForum" list="forumSuggestions" value="nga" autocomplete="off">
@@ -418,7 +419,7 @@
           </label>
           <button type="submit">Rollout plan</button>
         </form>
-        <form id="workerTopologyForm" class="control-strip">
+        <form id="workerTopologyForm" class="control-strip rollout-card rollout-card-worker" data-title="Worker topology">
           <label>
             <span>Topology</span>
             <select name="topology">
@@ -443,7 +444,7 @@
           </label>
           <button type="submit">Worker plan</button>
         </form>
-        <form id="rolloutManifestForm" class="control-strip">
+        <form id="rolloutManifestForm" class="control-strip rollout-card rollout-card-manifest" data-title="Manifest plan">
           <label class="full">
             <span>Rollout manifest JSON</span>
             <textarea name="manifestJson" rows="9" spellcheck="false">{
@@ -466,7 +467,7 @@
           </label>
           <button type="submit">Manifest plan</button>
         </form>
-        <form id="resourceProvisioningForm" class="control-strip">
+        <form id="resourceProvisioningForm" class="control-strip rollout-card rollout-card-resource" data-title="Resource map">
           <label class="full">
             <span>Resource manifest JSON</span>
             <textarea name="manifestJson" rows="9" spellcheck="false">{
@@ -489,7 +490,7 @@
           </label>
           <button type="submit">Resource plan</button>
         </form>
-        <form id="deploymentGateForm" class="control-strip">
+        <form id="deploymentGateForm" class="control-strip rollout-card rollout-card-gate" data-title="Deployment gate">
           <label class="full">
             <span>Deployment gate manifest JSON</span>
             <textarea name="manifestJson" rows="9" spellcheck="false">{
@@ -528,7 +529,7 @@
           <button type="submit">Deployment gate</button>
           <button id="runRolloutReadinessButton" class="secondary-button" type="button">Run rollout checks</button>
         </form>
-        <form id="rolloutApplyForm" class="control-strip">
+        <form id="rolloutApplyForm" class="control-strip rollout-card rollout-card-apply" data-title="Apply audit">
           <label class="full">
             <span>Apply manifest JSON</span>
             <textarea name="manifestJson" rows="9" spellcheck="false">{
@@ -558,6 +559,7 @@
           </label>
           <button type="submit">Apply manifest</button>
         </form>
+        </div>
         <div class="result-grid task-grid" id="onboardingResult"></div>
         <div class="result-grid task-grid" id="connectorModuleResult"></div>
         <div class="result-grid task-grid" id="sourceDryRunResult"></div>
