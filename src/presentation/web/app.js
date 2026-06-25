@@ -7462,7 +7462,10 @@ function sourceDiagnosticMap(diagnostics) {
 }
 
 function panel(title, content, className) {
-  return '<article class="panel ' + (className || '') + '"><h3>' + escapeHtml(title) + '</h3>' + content + '</article>';
+  return '<article class="panel ' + (className || '') + '">' +
+    '<div class="panel-head"><h3>' + escapeHtml(title) + '</h3><span class="panel-mark" aria-hidden="true"></span></div>' +
+    '<div class="panel-body">' + content + '</div>' +
+    '</article>';
 }
 
 function metric(label, value) {
