@@ -578,6 +578,23 @@ function fillSourceOnboardingFromConnectorPackage(selection) {
   if (state.onboardingRecipeManifestDraft) fillRolloutManifestForms(state.onboardingRecipeManifestDraft);
 }
 
+function fillSourceOnboardingFromManifest(manifest, fallbackModulePath) {
+  const form = document.getElementById('sourceOnboardingForm');
+  const source = manifest && manifest.source || {};
+  if (!form || !source) return;
+  if (form.elements.forum && source.sourceKey) form.elements.forum.value = source.sourceKey;
+  if (form.elements.sourceType && source.sourceType) form.elements.sourceType.value = source.sourceType;
+  if (form.elements.displayName && source.displayName) form.elements.displayName.value = source.displayName;
+  const modulePath = manifest && manifest.connector && manifest.connector.modulePath || fallbackModulePath;
+  if (form.elements.modulePath && modulePath) form.elements.modulePath.value = modulePath;
+  const location = source.location || legacySourceLocation(source);
+  if (location && typeof location === 'object' && !Array.isArray(location)) {
+    if (form.elements.locationJson) form.elements.locationJson.value = JSON.stringify(location, null, 2);
+    if (form.elements.inputDir && location.inputDir) form.elements.inputDir.value = location.inputDir;
+    if (form.elements.locationValue) form.elements.locationValue.value = preferredLocationValue(location);
+  }
+}
+
 async function loadConnectorPackageRecommendedManifest(selection) {
   const safeSelection = selection || {};
   fillSourceOnboardingFromConnectorPackage(safeSelection);
@@ -597,6 +614,8 @@ async function loadConnectorPackageRecommendedManifest(selection) {
     acceptErrorStatus: true
   });
   if (result.error) throw new Error(result.error.message || 'Recommended manifest could not be loaded.');
+  fillSourceOnboardingFromManifest(result.manifest, modulePath);
+  renderSourceOnboardingRecipeFromForm();
   state.onboardingRecipeManifestDraft = result.manifest;
   fillRolloutManifestForms(result.manifest);
   document.getElementById('onboardingResult').innerHTML = panel('Recommended manifest loaded', [
@@ -604,6 +623,26 @@ async function loadConnectorPackageRecommendedManifest(selection) {
     metric('Source type', result.sourceType || 'unknown'),
     metric('Manifest path', result.manifestPath || result.recommendedManifest || 'unknown')
   ].join(''), 'wide');
+}
+
+function legacySourceLocation(source) {
+  const result = {};
+  ['inputDir', 'inputFile', 'url'].forEach(function (field) {
+    if (source && source[field]) result[field] = source[field];
+  });
+  return Object.keys(result).length > 0 ? result : undefined;
+}
+
+function preferredLocationValue(location) {
+  const preferredFields = ['inputFile', 'url', 'feedUrl', 'inputDir'];
+  for (let index = 0; index < preferredFields.length; index += 1) {
+    const value = location[preferredFields[index]];
+    if (typeof value === 'string' && value.trim()) return value;
+  }
+  const firstStringField = Object.keys(location).find(function (field) {
+    return typeof location[field] === 'string' && location[field].trim();
+  });
+  return firstStringField ? location[firstStringField] : '';
 }
 
 function parseOptionalLocationJson(value) {
