@@ -185,6 +185,33 @@ function main(argv) {
     return;
   }
 
+  if (command === 'task-detail') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    const taskId = options.taskId || options.id;
+    runtime.getTaskDetail({
+      taskId,
+      traceLimit: options.traceLimit ? Number(options.traceLimit) : undefined,
+      now: options.now,
+      storeDir
+    }).then(function (result) {
+      if (options.json === 'true') {
+        console.log(JSON.stringify(result, null, 2));
+        return;
+      }
+      console.log('Task detail: ' + result.task.id);
+      console.log('Status: ' + result.task.status + ', type=' + result.task.type);
+      console.log('Source: ' + [result.sourceScope.sourceKey, result.sourceScope.sourceId, result.sourceScope.sourceType].filter(Boolean).join(' / '));
+      console.log('Trace context: tasks=' + (result.traceContext && result.traceContext.taskCount || 0));
+      result.nextActions.forEach(function (action) {
+        console.log(action.severity + '\t' + action.key + '\t' + action.summary + (action.command ? '\t' + action.command : ''));
+      });
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'list-reports') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.listAnalysisReports({
@@ -629,6 +656,48 @@ function main(argv) {
       } else if (report.status === 'warn') {
         process.exitCode = 1;
       }
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
+  if (command === 'source-drilldown') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.getSourceOperationsDrilldown({
+      sourceId: options.sourceId,
+      sourceKey: options.sourceKey || options.forum,
+      limit: options.limit ? Number(options.limit) : 50,
+      attentionLimit: options.attentionLimit ? Number(options.attentionLimit) : undefined,
+      taskScanLimit: options.taskScanLimit ? Number(options.taskScanLimit) : undefined,
+      leaseScanLimit: options.leaseScanLimit ? Number(options.leaseScanLimit) : undefined,
+      sourceRunStaleAfterMs: options.sourceRunStaleAfterMs ? Number(options.sourceRunStaleAfterMs) : undefined,
+      sourceFailureRetryBackoffMs: options.sourceFailureRetryBackoffMs ? Number(options.sourceFailureRetryBackoffMs) : undefined,
+      sourceFailureMaxRetryBackoffMs: options.sourceFailureMaxRetryBackoffMs ? Number(options.sourceFailureMaxRetryBackoffMs) : undefined,
+      workerStaleAfterMs: options.workerStaleAfterMs ? Number(options.workerStaleAfterMs) : undefined,
+      runningStaleAfterMs: options.runningStaleAfterMs ? Number(options.runningStaleAfterMs) : undefined,
+      now: options.now,
+      storeDir
+    }).then(function (report) {
+      if (isTruthyOption(options.json)) {
+        console.log(JSON.stringify(report, null, 2));
+        if (report.status === 'fail') process.exitCode = 2;
+        return;
+      }
+      const health = report.health || {};
+      const tasks = health.tasks || {};
+      const events = health.events || {};
+      const workers = health.workers || { runs: {}, leases: {} };
+      console.log('Source drilldown: ' + report.status + '\t' + (report.scope && (report.scope.sourceId || report.scope.sourceKey) || 'unknown-source'));
+      console.log('Tasks: total=' + (tasks.total || 0) + ', failed=' + (tasks.failed || 0) + ', running=' + (tasks.running || 0));
+      console.log('Events: open=' + (events.unacknowledged || 0) + ', pending=' + (events.pending || 0) + ', failed=' + (events.failed || 0));
+      console.log('Workers: runs=' + (workers.runs.total || 0) + ', stale=' + (workers.runs.stale || 0) + ', leases=' + (workers.leases.total || 0) + ', expired=' + (workers.leases.expired || 0));
+      (report.nextActions || []).slice(0, 5).forEach(function (action) {
+        console.log(action.severity + '\t' + action.key + '\t' + action.summary);
+        if (action.recommendedCommand) console.log('  command: ' + action.recommendedCommand);
+      });
+      if (report.status === 'fail') process.exitCode = 2;
     }).catch(function (error) {
       console.error(error && error.stack ? error.stack : error);
       process.exitCode = 1;
@@ -2985,12 +3054,14 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js list-author-review-queue [--status open|confirmed|ignored] [--source-key key] [--type type] [--priority high|medium|low] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js set-author-review-queue-status --item-id id --status open|confirmed|ignored [--reviewed-by id] [--note text] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-semantic-enrichment-task --source-thread-id id [--source-key nga] [--provider mock] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js task-detail --task-id id [--json true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js operations-overview [--forum nga] [--source-key key] [--source-id id] [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-readiness [--forum nga] [--source-key key] [--source-id id] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-lifecycle-report [--forum nga] [--source-type type] [--enabled true] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-schedule-report [--forum nga] [--source-type type] [--enabled true] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-attention-report [--forum nga] [--source-key key] [--source-id id] [--source-failure-retry-backoff-ms ms] [--running-stale-after-ms ms] [--json true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-type-operations-report [--forum nga] [--source-type type] [--module-path file] [--json true] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js source-drilldown [--source-id id | --source-key key] [--json true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-type-drilldown --source-type type [--forum nga] [--json true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js trace-context [--task-id id | --request-id id | --trace-id id | --idempotency-key key] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-runbook [--forum nga] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--running-stale-after-ms ms] [--event-limit n] [--store-dir dir] [--limit n]');

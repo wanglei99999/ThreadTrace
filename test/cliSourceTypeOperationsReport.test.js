@@ -99,3 +99,34 @@ test('CLI prints source type operations drilldown as JSON', async function () {
     return true;
   });
 });
+
+test('CLI prints source operations drilldown as JSON', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-cli-source-drilldown-'));
+  const root = path.resolve(__dirname, '..');
+  const scriptPath = path.join(root, 'src', 'presentation', 'cli', 'threadtrace.js');
+
+  const result = await execFileAsync(process.execPath, [
+    scriptPath,
+    'source-drilldown',
+    '--source-key',
+    'missing-source',
+    '--store-dir',
+    tempDir,
+    '--json',
+    'true',
+    '--now',
+    '2026-06-25T10:00:00.000Z'
+  ], {
+    cwd: root,
+    timeout: 20000
+  });
+
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.status, 'warn');
+  assert.equal(report.scope.sourceKey, 'missing-source');
+  assert.equal(report.sourceFound, false);
+  assert.ok(report.nextActions.some(function (action) {
+    return action.key === 'source.resolve';
+  }));
+  assert.equal(result.stderr, '');
+});

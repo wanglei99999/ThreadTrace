@@ -157,6 +157,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /Rollback check/);
     assert.match(webAppJs, /Rollback disable/);
     assert.match(webAppJs, /loadTaskTraceContextFromButton/);
+    assert.match(webAppJs, /loadTaskDetailFromButton/);
+    assert.match(webAppJs, /renderTaskDetail/);
+    assert.match(webAppJs, /load-task-detail/);
     assert.match(webAppJs, /renderTaskTraceButton/);
     assert.match(webAppJs, /renderTaskTraceContext/);
     assert.match(webAppJs, /load-trace-context/);
@@ -672,6 +675,10 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.components.schemas.SourceRolloutManifestDraft.properties.ingest.properties.dryRun.type, 'boolean');
     assert.ok(openApi.paths['/api/runtime/diagnostics']);
     assert.ok(openApi.paths['/api/sources/validate']);
+    assert.ok(openApi.paths['/api/tasks/{taskId}']);
+    assert.equal(openApi.paths['/api/tasks/{taskId}'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/TaskDetail');
+    assert.equal(openApi.components.schemas.TaskDetail.properties.task.$ref, '#/components/schemas/TaskRecord');
+    assert.equal(openApi.components.schemas.TaskDetail.properties.traceContext.$ref, '#/components/schemas/TaskTraceContext');
     assert.ok(openApi.paths['/api/operations/trace-context']);
     assert.ok(openApi.paths['/api/operations/trace-context'].get.parameters.some(function (parameter) {
       return parameter.name === 'taskId';
@@ -2087,6 +2094,9 @@ test('http server can run and list ingest tasks', async function () {
     const tasksResult = await getJson(baseUrl + '/api/tasks');
     const tasksByRequestId = await getJson(baseUrl + '/api/tasks?requestId=http-task-request-1');
     const tasksByIdempotencyKey = await getJson(baseUrl + '/api/tasks?idempotencyKey=http-task-idem-1');
+    const taskDetail = await getJson(baseUrl + '/api/tasks/' + encodeURIComponent(taskResult.task.id));
+    const missingTaskDetail = await fetch(baseUrl + '/api/tasks/missing-task');
+    const missingTaskDetailBody = await missingTaskDetail.json();
     const traceContext = await getJson(baseUrl + '/api/operations/trace-context?requestId=http-task-request-1');
     const traceContextByTaskId = await getJson(baseUrl + '/api/operations/trace-context?taskId=' + encodeURIComponent(taskResult.task.id));
     const missingTraceTask = await fetch(baseUrl + '/api/operations/trace-context?taskId=missing-task');
@@ -2109,6 +2119,17 @@ test('http server can run and list ingest tasks', async function () {
     assert.equal(tasksByRequestId.tasks[0].id, taskResult.task.id);
     assert.equal(tasksByIdempotencyKey.tasks.length, 1);
     assert.equal(tasksByIdempotencyKey.tasks[0].id, taskResult.task.id);
+    assert.equal(taskDetail.task.id, taskResult.task.id);
+    assert.equal(taskDetail.traceContext.query.taskId, taskResult.task.id);
+    assert.equal(taskDetail.traceContext.taskCount, 1);
+    assert.ok(taskDetail.links.find(function (link) {
+      return link.rel === 'trace-context';
+    }));
+    assert.ok(taskDetail.nextActions.find(function (action) {
+      return action.key === 'task.trace-context';
+    }));
+    assert.equal(missingTaskDetail.status, 404);
+    assert.equal(missingTaskDetailBody.error.code, 'task_not_found');
     assert.equal(traceContext.taskCount, 1);
     assert.equal(traceContext.summary.byStatus.completed, 1);
     assert.equal(traceContext.tasks[0].id, taskResult.task.id);

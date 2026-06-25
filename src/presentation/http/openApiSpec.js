@@ -696,6 +696,35 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/tasks/{taskId}': {
+        get: {
+          summary: 'Get task detail with trace context and operations links',
+          parameters: [
+            { name: 'taskId', in: 'path', required: true, schema: { type: 'string' } },
+            { name: 'traceLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Task detail, correlated trace context, and recommended operations',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/TaskDetail'
+                  }
+                }
+              }
+            },
+            400: {
+              $ref: '#/components/responses/BadRequest'
+            },
+            404: {
+              $ref: '#/components/responses/NotFound'
+            }
+          }
+        }
+      },
       '/api/sources/tasks/insight-pipeline-runs': {
         get: {
           summary: 'List recent source insight pipeline runs',
@@ -4937,6 +4966,75 @@ function createOpenApiSpec() {
             updatedAt: { type: 'string' },
             startedAt: { type: 'string' },
             finishedAt: { type: 'string' }
+          }
+        },
+        TaskDetail: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string' },
+            task: { $ref: '#/components/schemas/TaskRecord' },
+            sourceScope: { $ref: '#/components/schemas/TaskSourceScope' },
+            traceContext: { $ref: '#/components/schemas/TaskTraceContext' },
+            links: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/TaskDetailLink' }
+            },
+            nextActions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/TaskDetailAction' }
+            }
+          }
+        },
+        TaskSourceScope: {
+          type: 'object',
+          properties: {
+            sourceId: { type: 'string' },
+            sourceKey: { type: 'string', example: 'nga' },
+            sourceType: { type: 'string', example: 'saved-html-directory' },
+            sourceThreadId: { type: 'string' }
+          }
+        },
+        TaskTraceContext: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string' },
+            query: {
+              type: 'object',
+              additionalProperties: true
+            },
+            taskCount: { type: 'number' },
+            summary: {
+              type: 'object',
+              additionalProperties: true
+            },
+            tasks: {
+              type: 'array',
+              items: {
+                type: 'object',
+                additionalProperties: true
+              }
+            }
+          }
+        },
+        TaskDetailLink: {
+          type: 'object',
+          properties: {
+            rel: { type: 'string', example: 'trace-context' },
+            method: { type: 'string', example: 'GET' },
+            href: { type: 'string' }
+          }
+        },
+        TaskDetailAction: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', example: 'task.trace-context' },
+            severity: { type: 'string', enum: ['info', 'warning', 'critical'] },
+            summary: { type: 'string' },
+            command: { type: 'string' },
+            evidence: {
+              type: 'object',
+              additionalProperties: true
+            }
           }
         },
         RolloutManifestRollbackPlan: {

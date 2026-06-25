@@ -287,9 +287,15 @@ function bindForms() {
   });
 
   document.getElementById('taskResult').addEventListener('click', async function (event) {
-    const button = event.target.closest('button[data-action="load-trace-context"]');
+    const button = event.target.closest('button[data-action]');
     if (!button) return;
-    await loadTaskTraceContextFromButton(button);
+    if (button.dataset.action === 'load-trace-context') {
+      await loadTaskTraceContextFromButton(button);
+      return;
+    }
+    if (button.dataset.action === 'load-task-detail') {
+      await loadTaskDetailFromButton(button);
+    }
   });
 
   document.getElementById('sourceOperationsResult').addEventListener('click', async function (event) {
@@ -1472,6 +1478,19 @@ async function loadTaskTraceContextFromButton(button) {
       acceptErrorStatus: true
     });
   }, renderTaskTraceContext);
+}
+
+async function loadTaskDetailFromButton(button) {
+  const taskId = button.dataset.taskId;
+  if (!taskId) {
+    renderError('taskResult', new Error('No task id is available.'));
+    return;
+  }
+  await renderAsync('taskResult', function () {
+    return fetchJson('/api/tasks/' + encodeURIComponent(taskId) + '?traceLimit=' + encodeURIComponent(button.dataset.traceLimit || '20'), {
+      acceptErrorStatus: true
+    });
+  }, renderTaskDetail);
 }
 
 function eventFilterFormData() {
@@ -3157,17 +3176,31 @@ function renderRolloutRollbackButtons(report) {
 }
 
 function renderTaskTraceButton(task) {
+  const button = renderTaskTraceButtonControl(task);
+  return button ? '<div class="button-group source-op-buttons">' + button + '</div>' : '';
+}
+
+function renderTaskTraceButtonControl(task) {
   const trace = taskTraceMetadata(task);
   if (!task || (!task.id && !trace.requestId && !trace.traceId && !trace.idempotencyKey)) return '';
-  return '<div class="button-group source-op-buttons">' +
-    '<button class="inline-button secondary-inline-button" type="button" data-action="load-trace-context"' +
+  return '<button class="inline-button secondary-inline-button" type="button" data-action="load-trace-context"' +
     ' data-task-id="' + escapeHtml(task && task.id || '') + '"' +
     ' data-task-type="' + escapeHtml(task && task.type || '') + '"' +
     ' data-request-id="' + escapeHtml(trace.requestId || '') + '"' +
     ' data-trace-id="' + escapeHtml(trace.traceId || '') + '"' +
     ' data-idempotency-key="' + escapeHtml(trace.idempotencyKey || '') + '"' +
-    ' data-limit="20">Trace</button>' +
-    '</div>';
+    ' data-limit="20">Trace</button>';
+}
+
+function renderTaskDetailButton(task) {
+  const button = renderTaskDetailButtonControl(task);
+  return button ? '<div class="button-group source-op-buttons">' + button + '</div>' : '';
+}
+
+function renderTaskDetailButtonControl(task) {
+  if (!task || !task.id) return '';
+  return '<button class="inline-button secondary-inline-button" type="button" data-action="load-task-detail" data-task-id="' +
+    escapeHtml(task.id) + '" data-trace-limit="20">Detail</button>';
 }
 
 function taskTraceMetadata(task) {
@@ -3274,7 +3307,7 @@ function renderSourceOperationSkippedRows(skipped) {
   }).join('') + '</div>';
 }
 
-function renderTaskList(result) {
+function renderLegacyTaskList(result) {
   const tasks = result.tasks || [];
   const pipelineRuns = result.pipelineRuns || [];
   return [
@@ -3284,6 +3317,102 @@ function renderTaskList(result) {
       return task.status + ' · ' + task.type + ' · ' + (output.title || task.id);
     })), 'wide')
   ].join('');
+}
+
+function renderTaskList(result) {
+  const tasks = result.tasks || [];
+  const pipelineRuns = result.pipelineRuns || [];
+  return [
+    panel('鏈€杩戞礊瀵熸祦姘寸嚎', evidenceList(pipelineRuns.map(renderPipelineRunSummary)), 'wide'),
+    panel('Recent tasks', renderTaskRows(tasks), 'wide')
+  ].join('');
+}
+
+function renderTaskRows(tasks) {
+  if (!tasks || tasks.length === 0) return '<div class="muted">No tasks.</div>';
+  return '<div class="source-operation-result-list">' + tasks.map(function (task) {
+    const output = task.output || {};
+    const trace = taskTraceMetadata(task);
+    const details = [
+      task.id,
+      output.title,
+      task.updatedAt || task.createdAt,
+      trace.requestId ? 'request=' + trace.requestId : undefined,
+      trace.traceId ? 'trace=' + trace.traceId : undefined,
+      trace.idempotencyKey ? 'idempotency=' + trace.idempotencyKey : undefined
+    ].filter(Boolean).join(' | ');
+    return '<div class="action-row ops-row source-operation-result-row"><span>' +
+      '<strong>' + escapeHtml((task.status || 'unknown') + ' | ' + (task.type || 'task')) + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '</span><span class="button-group source-op-buttons">' +
+      renderTaskDetailButtonControl(task) +
+      renderTaskTraceButtonControl(task) +
+      '</span></div>';
+  }).join('') + '</div>';
+}
+
+function renderTaskDetail(result) {
+  const task = result.task || {};
+  const sourceScope = result.sourceScope || {};
+  const traceContext = result.traceContext || {};
+  return [
+    panel('Task detail', [
+      '<div class="summary-strip">' + [
+        summaryTile('Status', task.status || 'unknown', statusVariant(task.status)),
+        summaryTile('Type', task.type || 'unknown'),
+        summaryTile('Trace tasks', String(traceContext.taskCount || 0)),
+        summaryTile('Source', sourceScope.sourceId || sourceScope.sourceKey || 'none', sourceScope.sourceId || sourceScope.sourceKey ? 'ok' : 'muted')
+      ].join('') + '</div>',
+      metric('Task ID', task.id || 'none'),
+      metric('Created', task.createdAt || 'unknown'),
+      metric('Updated', task.updatedAt || 'unknown'),
+      metric('Finished', task.finishedAt || 'not finished'),
+      metric('Source scope', formatTaskSourceScope(sourceScope)),
+      metric('Trace request', traceContext.query && traceContext.query.requestId || 'none'),
+      metric('Trace id', traceContext.query && traceContext.query.traceId || 'none'),
+      metric('Idempotency', traceContext.query && traceContext.query.idempotencyKey || 'none'),
+      renderTaskDetailButtons(result)
+    ].join(''), 'wide'),
+    panel('Task actions', renderTaskDetailActions(result.nextActions || []), 'wide'),
+    panel('Task payload', '<pre>' + escapeHtml(JSON.stringify({
+      input: task.input,
+      output: task.output,
+      error: task.error
+    }, null, 2)) + '</pre>', 'wide'),
+    panel('Correlated tasks', renderTraceContextTaskRows(traceContext.tasks || []), 'wide')
+  ].join('');
+}
+
+function renderTaskDetailButtons(result) {
+  const task = result.task || {};
+  const sourceScope = result.sourceScope || {};
+  return '<div class="button-group source-op-buttons">' +
+    renderTaskTraceButtonControl(task) +
+    renderSourceDrilldownButtonForScope(sourceScope) +
+    '</div>';
+}
+
+function renderTaskDetailActions(actions) {
+  if (!actions.length) return '<div class="muted">No recommended task actions.</div>';
+  return actions.map(function (action) {
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml((action.severity || 'info') + ' | ' + (action.key || 'task.action')) + '</strong>' +
+      '<small>' + escapeHtml(action.summary || '') + '</small>' +
+      (action.command ? '<small>' + escapeHtml(action.command) + '</small>' : '') +
+      '</span>' +
+      statusBadge(action.severity || 'info', action.severity === 'warning' ? 'warn' : statusVariant(action.severity)) +
+      '</div>';
+  }).join('');
+}
+
+function formatTaskSourceScope(sourceScope) {
+  const scope = sourceScope || {};
+  return [
+    scope.sourceKey ? 'source=' + scope.sourceKey : undefined,
+    scope.sourceId ? 'sourceId=' + scope.sourceId : undefined,
+    scope.sourceType ? 'type=' + scope.sourceType : undefined,
+    scope.sourceThreadId ? 'thread=' + scope.sourceThreadId : undefined
+  ].filter(Boolean).join(' | ') || 'none';
 }
 
 function renderTaskTraceContext(result) {

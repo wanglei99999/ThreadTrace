@@ -236,6 +236,17 @@ Optional filters: `sourceKey` / `forum`, `sourceThreadId`, `status`, `type`, `pr
 - `type`: 可选，如 `ingest-saved-thread-directory`。
 - `limit`: 可选，默认 20。
 
+### `GET /api/tasks/{taskId}`
+
+Returns a task operations detail document for one durable task record.
+
+The response includes the raw `task`, derived `sourceScope`, a `traceContext` anchored by the task id, stable API `links`, and recommended `nextActions` such as trace-context inspection, source drilldown, and idempotency duplicate review. Use this endpoint when a Web console, runbook, or external monitor starts from a concrete task id and needs the surrounding operational context without hand-composing multiple calls.
+
+Optional query parameters:
+
+- `traceLimit`: maximum number of correlated trace tasks to include; defaults to 20.
+- `storeDir`: alternate file store root for local development or migration verification.
+
 ### `GET /api/sources/tasks/insight-pipeline-runs`
 
 List recent source insight pipeline run summaries derived from durable task records.

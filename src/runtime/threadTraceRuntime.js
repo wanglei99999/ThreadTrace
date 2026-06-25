@@ -60,6 +60,7 @@ const { listAuthorReviewQueue } = require('../application/use-cases/listAuthorRe
 const { updateAuthorReviewQueueItemStatus } = require('../application/use-cases/updateAuthorReviewQueueItemStatus');
 const { getOperationalReadiness } = require('../application/use-cases/getOperationalReadiness');
 const { getTaskTraceContext } = require('../application/use-cases/getTaskTraceContext');
+const { getTaskDetail } = require('../application/use-cases/getTaskDetail');
 const { getRuntimeDiagnostics } = require('../application/use-cases/getRuntimeDiagnostics');
 const { getDeploymentChecklist } = require('../application/use-cases/getDeploymentChecklist');
 const { getOperationsRunbook } = require('../application/use-cases/getOperationsRunbook');
@@ -986,6 +987,17 @@ function createThreadTraceRuntime(options) {
         traceId: safeRequest.traceId,
         idempotencyKey: safeRequest.idempotencyKey,
         limit: safeRequest.limit || 20
+      });
+    },
+
+    async getTaskDetail(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return getTaskDetail({
+        taskRepository: repositories.taskRepository,
+        taskId: safeRequest.taskId,
+        traceLimit: safeRequest.traceLimit || safeRequest.limit || 20,
+        now: safeRequest.now
       });
     },
 

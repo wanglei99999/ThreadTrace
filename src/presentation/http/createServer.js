@@ -460,6 +460,19 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  const taskDetailMatch = url.pathname.match(/^\/api\/tasks\/([^/]+)$/);
+  if (request.method === 'GET' && taskDetailMatch) {
+    const result = await context.runtime.getTaskDetail({
+      taskId: decodeURIComponent(taskDetailMatch[1]),
+      traceLimit: url.searchParams.get('traceLimit') ? Number(url.searchParams.get('traceLimit')) : undefined,
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : undefined,
+      now: url.searchParams.get('now') || undefined,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, 200, result);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/sources/tasks/insight-pipeline-runs') {
     const result = await context.runtime.listSourceInsightPipelineRuns({
       sourceId: url.searchParams.get('sourceId') || undefined,
