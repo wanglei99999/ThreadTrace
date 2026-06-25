@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshSourcesButton').addEventListener('click', loadSources);
   document.getElementById('refreshSourceOperationsButton').addEventListener('click', loadSourceOperations);
   document.getElementById('runLlmPreflightButton').addEventListener('click', runLlmPreflight);
+  document.getElementById('runLlmEvaluationButton').addEventListener('click', runLlmEvaluation);
   document.getElementById('runDemoCycleButton').addEventListener('click', runDemoCycle);
   document.getElementById('loadConnectorModuleCatalogButton').addEventListener('click', loadConnectorModuleCatalogFromOnboardingForm);
   document.getElementById('onboardingResult').addEventListener('click', handleOnboardingAction);
@@ -1731,6 +1732,13 @@ async function runLlmPreflight() {
   await renderAsync('sourceOperationActionResult', function () {
     return requestJson('/api/llm/preflight', {});
   }, renderLlmPreflightReport);
+  await loadSystemStatus();
+}
+
+async function runLlmEvaluation() {
+  await renderAsync('sourceOperationActionResult', function () {
+    return requestJson('/api/llm/evaluate', {});
+  }, renderLlmEvaluationReport);
   await loadSystemStatus();
 }
 
@@ -3459,6 +3467,48 @@ function renderLlmPreflightReport(report) {
       return (action.severity || 'info') + ' | ' + (action.key || 'action') + ' | ' + (action.summary || '') + ' | ' + (action.commands || []).join(' | ');
     })), 'wide')
   ].join('');
+}
+
+function renderLlmEvaluationReport(report) {
+  const summary = report.summary || {};
+  return [
+    panel('LLM evaluation', [
+      '<div class="summary-strip">',
+      summaryTile('Status', report.status || 'unknown', statusVariant(report.status)),
+      summaryTile('Provider', report.provider || 'unknown', report.provider === 'mock' ? 'muted' : 'ok'),
+      summaryTile('Samples', String(report.sampleCount || 0)),
+      summaryTile('Warn', String(summary.warn || 0), (summary.warn || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('Fail', String(summary.fail || 0), (summary.fail || 0) > 0 ? 'fail' : 'ok'),
+      '</div>',
+      metric('Trace', report.traceId || 'none'),
+      metric('Task', report.task || 'unknown'),
+      metric('Schema', report.schemaVersion || 'unknown')
+    ].join(''), 'wide'),
+    panel('LLM evaluation samples', evidenceList((report.results || []).map(formatLlmEvaluationSampleRow)), 'wide'),
+    panel('LLM evaluation actions', evidenceList((report.nextActions || []).map(function (action) {
+      return (action.severity || 'info') + ' | ' + (action.key || 'action') + ' | ' + (action.summary || '') + ' | ' + (action.commands || []).join(' | ');
+    })), 'wide')
+  ].join('');
+}
+
+function formatLlmEvaluationSampleRow(result) {
+  const preview = result.outputPreview || {};
+  const warnings = (result.qualityChecks || []).filter(function (check) {
+    return check.status !== 'ok';
+  }).map(function (check) {
+    return check.key + '=' + check.status;
+  }).join(', ');
+  return [
+    result.status || 'unknown',
+    result.id || 'sample',
+    result.title || '',
+    result.validation ? 'validation=' + result.validation.status : 'validation=not-run',
+    'refs=' + (preview.evidenceRefCount || 0),
+    'entities=' + (preview.entityInsightCount || 0),
+    'opinions=' + (preview.opinionInsightCount || 0),
+    formatLlmUsage(result.usage || {}),
+    warnings || result.error && result.error.message || ''
+  ].filter(Boolean).join(' | ');
 }
 
 function renderSourceDemoCycleReport(report) {

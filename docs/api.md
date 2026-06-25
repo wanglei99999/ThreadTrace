@@ -204,6 +204,18 @@ Request body:
 
 The response includes `status`, `provider`, `traceId`, `checks`, `validation`, `usage`, `outputPreview`, `error`, and `nextActions`. A failing provider configuration, provider call, or output validation returns HTTP `503` with the same report shape.
 
+### `POST /api/llm/evaluate`
+
+Runs semantic-enrichment evaluation samples through the selected LLM provider. It validates each output against `semantic-enrichment.v1` and adds quality checks for non-empty summaries, limitations, evidence references, and at least one entity or opinion insight.
+
+Request body:
+- `provider`: optional, defaults to the runtime LLM provider.
+- `traceId`: optional audit trace id.
+- `now`: optional fixed timestamp for repeatable reports.
+- `samples`: optional custom evaluation samples. Omit to use the built-in smoke and implicit-context samples.
+
+The response includes `status`, `provider`, `traceId`, `sampleCount`, `summary`, per-sample `results`, quality checks, usage, output previews, and `nextActions`. Contract failures return HTTP `503`; weak but valid outputs return `warn` with HTTP `200` so operators can tune prompts before enabling scheduled real-provider workers.
+
 ### `POST /api/demo/source-cycle`
 
 Runs the v0.2 demo loop for one source scope: due source insight pipeline, semantic enrichment, generated `source-changed` notification evidence, source operations drill-down, and optional acknowledgement preview/execution.

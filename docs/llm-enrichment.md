@@ -15,6 +15,7 @@ CLI:
 ```powershell
 node src/presentation/cli/threadtrace.js enrich-html-dir --forum nga --input example --provider mock
 node src/presentation/cli/threadtrace.js llm-preflight --provider mock
+node src/presentation/cli/threadtrace.js llm-evaluate --provider mock
 node src/presentation/cli/threadtrace.js run-semantic-enrichment-task --source-key nga --source-thread-id 45974302 --provider mock
 node src/presentation/cli/threadtrace.js run-source-insight-pipeline --source-id nga-saved-html-directory-d940bb6e68 --provider mock
 node src/presentation/cli/threadtrace.js list-reports --source-key nga --source-thread-id 45974302 --report-type semantic-enrichment
@@ -25,6 +26,7 @@ HTTP:
 ```text
 POST /api/enrich-directory
 POST /api/llm/preflight
+POST /api/llm/evaluate
 POST /api/reports/tasks/semantic-enrichment
 POST /api/sources/{sourceId}/tasks/insight-pipeline
 GET /api/reports?sourceKey=nga&sourceThreadId=45974302&reportType=semantic-enrichment
@@ -35,6 +37,7 @@ Runtime:
 ```js
 runtime.enrichDirectory({ forum: 'nga', inputDir: 'example', provider: 'mock' })
 runtime.runLlmProviderPreflight({ provider: 'mock' })
+runtime.runLlmProviderEvaluation({ provider: 'mock' })
 runtime.runSemanticEnrichmentTask({ sourceKey: 'nga', sourceThreadId: '45974302', provider: 'mock' })
 runtime.runSourceInsightPipelineTask({ sourceId: 'nga-saved-html-directory-d940bb6e68', provider: 'mock' })
 runtime.listAnalysisReports({ sourceKey: 'nga', sourceThreadId: '45974302', reportType: 'semantic-enrichment' })
@@ -43,6 +46,8 @@ runtime.listAnalysisReports({ sourceKey: 'nga', sourceThreadId: '45974302', repo
 `enrichDirectory` is useful for immediate previews. `runSemanticEnrichmentTask` reads a stored `basic-history` report, writes a `semantic-enrichment` report, and records a durable `semantic-enrichment` task.
 
 `llm-preflight`, `POST /api/llm/preflight`, and `runtime.runLlmProviderPreflight` run a tiny semantic-enrichment sample through the configured provider and the same structured output validator used by real tasks. The report includes `status`, `provider`, `traceId`, `checks`, `validation`, `usage`, `outputPreview`, `error`, and `nextActions`. Use it after setting provider environment variables and before enabling real source insight workers.
+
+`llm-evaluate`, `POST /api/llm/evaluate`, and `runtime.runLlmProviderEvaluation` run multiple semantic samples and add quality checks on top of the contract validator. The first built-in samples check for non-empty summaries, limitations, evidence references, and at least one entity or opinion insight. This is a lightweight gate for comparing `mock` against a real OpenAI-compatible provider before using the provider in scheduled source insight workers.
 
 ## Output Shape
 

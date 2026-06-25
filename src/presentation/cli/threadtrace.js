@@ -385,6 +385,36 @@ function main(argv) {
     return;
   }
 
+  if (command === 'llm-evaluate') {
+    runtime.runLlmProviderEvaluation({
+      provider: options.provider || defaultLlmProvider,
+      traceId: options.traceId,
+      now: options.now
+    }).then(function (report) {
+      if (isTruthyOption(options.json)) {
+        console.log(JSON.stringify(report, null, 2));
+      } else {
+        console.log('LLM evaluation: ' + report.status);
+        console.log('Provider: ' + report.provider);
+        console.log('Trace: ' + report.traceId);
+        console.log('Samples: ' + report.sampleCount + ' ok=' + report.summary.ok + ' warn=' + report.summary.warn + ' fail=' + report.summary.fail);
+        report.results.forEach(function (result) {
+          console.log(result.status + '\t' + result.id + '\t' + (result.title || 'sample'));
+          (result.qualityChecks || []).forEach(function (check) {
+            console.log('  ' + check.status + '\t' + check.key + '\t' + check.summary);
+          });
+          if (result.error) console.log('  error\t' + result.error.message);
+        });
+        report.nextActions.forEach(printActionWithDetails);
+      }
+      if (report.status === 'fail') process.exitCode = 1;
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'operations-overview') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.getOperationalOverview({
@@ -3330,6 +3360,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js list-author-review-queue [--status open|confirmed|ignored] [--source-key key] [--type type] [--priority high|medium|low] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js set-author-review-queue-status --item-id id --status open|confirmed|ignored [--reviewed-by id] [--note text] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js llm-preflight [--provider mock|openai-compatible] [--trace-id id] [--json true] [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js llm-evaluate [--provider mock|openai-compatible] [--trace-id id] [--json true] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js run-semantic-enrichment-task --source-thread-id id [--source-key nga] [--provider mock] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js task-detail --task-id id [--json true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js operations-overview [--forum nga] [--source-key key] [--source-id id] [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');

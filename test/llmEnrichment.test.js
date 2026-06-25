@@ -18,6 +18,7 @@ const {
   buildLlmProviderPreflightFailure,
   runLlmProviderPreflight
 } = require('../src/application/use-cases/runLlmProviderPreflight');
+const { runLlmProviderEvaluation } = require('../src/application/use-cases/runLlmProviderEvaluation');
 const { createThreadTraceRuntime } = require('../src/runtime/threadTraceRuntime');
 
 test('mock LLM provider enriches reports with evidence-grounded insights', async function () {
@@ -253,6 +254,58 @@ test('LLM provider preflight validates the mock provider sample', async function
   }).status, 'ok');
 });
 
+test('LLM provider evaluation runs quality checks across samples', async function () {
+  const report = await runLlmProviderEvaluation({
+    llmProvider: createMockLlmProvider(),
+    providerKey: 'mock',
+    now: '2026-06-25T10:00:00.000Z',
+    traceId: 'evaluation-test'
+  });
+
+  assert.equal(report.status, 'ok');
+  assert.equal(report.provider, 'mock');
+  assert.equal(report.sampleCount, 2);
+  assert.equal(report.summary.ok, 2);
+  assert.ok(report.results.every(function (result) {
+    return result.validation.status === 'ok' &&
+      result.outputPreview.evidenceRefCount >= 1 &&
+      result.qualityChecks.every(function (check) { return check.status === 'ok'; });
+  }));
+});
+
+test('LLM provider evaluation warns on weak but valid semantic output', async function () {
+  const report = await runLlmProviderEvaluation({
+    providerKey: 'weak',
+    llmProvider: {
+      async completeStructured() {
+        return {
+          provider: 'weak',
+          output: {
+            summary: '',
+            entityInsights: [],
+            opinionInsights: [],
+            evidenceQuestions: [],
+            limitations: []
+          }
+        };
+      }
+    },
+    samples: [{
+      id: 'weak-sample',
+      input: { thread: { title: 'weak sample' } },
+      expected: { minEvidenceRefs: 1 }
+    }],
+    now: '2026-06-25T10:00:00.000Z'
+  });
+
+  assert.equal(report.status, 'warn');
+  assert.equal(report.summary.warn, 1);
+  assert.equal(report.results[0].validation.status, 'ok');
+  assert.ok(report.results[0].qualityChecks.some(function (check) {
+    return check.key === 'llm.output.evidenceRefs.present' && check.status === 'warn';
+  }));
+});
+
 test('runtime exposes LLM provider preflight', async function () {
   const runtime = createThreadTraceRuntime({
     llmProvider: createMockLlmProvider()
@@ -266,6 +319,21 @@ test('runtime exposes LLM provider preflight', async function () {
   assert.equal(report.status, 'ok');
   assert.equal(report.provider, 'mock');
   assert.equal(report.validation.status, 'ok');
+});
+
+test('runtime exposes LLM provider evaluation', async function () {
+  const runtime = createThreadTraceRuntime({
+    llmProvider: createMockLlmProvider()
+  });
+
+  const report = await runtime.runLlmProviderEvaluation({
+    provider: 'mock',
+    now: '2026-06-25T10:00:00.000Z'
+  });
+
+  assert.equal(report.status, 'ok');
+  assert.equal(report.provider, 'mock');
+  assert.equal(report.sampleCount, 2);
 });
 
 test('LLM provider preflight reports invalid structured output', async function () {

@@ -49,6 +49,7 @@ const {
   buildLlmProviderPreflightFailure,
   runLlmProviderPreflight
 } = require('../application/use-cases/runLlmProviderPreflight');
+const { runLlmProviderEvaluation } = require('../application/use-cases/runLlmProviderEvaluation');
 const { runRolloutManifestApplyTask } = require('../application/use-cases/runRolloutManifestApplyTask');
 const { disableTrackedSource } = require('../application/use-cases/disableTrackedSource');
 const { runDisableTrackedSourceTask } = require('../application/use-cases/runDisableTrackedSourceTask');
@@ -1193,6 +1194,31 @@ function createThreadTraceRuntime(options) {
           traceId: safeRequest.traceId,
           now: safeRequest.now,
           error
+        });
+      }
+    },
+
+    async runLlmProviderEvaluation(request) {
+      const safeRequest = request || {};
+      const providerKey = safeRequest.provider || runtimeConfig.llm.provider || 'mock';
+      try {
+        return runLlmProviderEvaluation({
+          llmProvider: createLlmProviderFor(Object.assign({}, safeRequest, {
+            provider: providerKey
+          })),
+          providerKey,
+          traceId: safeRequest.traceId,
+          samples: safeRequest.samples,
+          now: safeRequest.now
+        });
+      } catch (error) {
+        return runLlmProviderEvaluation({
+          providerKey,
+          traceId: safeRequest.traceId,
+          samples: safeRequest.samples,
+          now: safeRequest.now,
+          llmProvider: undefined,
+          providerCreationError: error
         });
       }
     },
