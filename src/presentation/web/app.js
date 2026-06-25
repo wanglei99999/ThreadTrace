@@ -5121,6 +5121,7 @@ function renderNotificationEventActionIntent(result) {
   const intent = result.intent || {};
   const api = intent.api || {};
   const gate = result.readinessGate || {};
+  const ledger = result.ledger || {};
   return [
     panel('Event action dry-run', [
       '<div class="summary-strip event-summary-strip">' + [
@@ -5133,12 +5134,14 @@ function renderNotificationEventActionIntent(result) {
       metric('Event ID', result.event && result.event.id || intent.eventId || 'none'),
       metric('Actor', intent.actor || 'operator'),
       metric('Reason', intent.reason || 'none'),
+      metric('Ledger', ledger.recorded ? ledger.recordId || 'recorded' : ledger.reason || 'not recorded'),
       metric('API plan', [api.method, api.path].filter(Boolean).join(' ') || 'manual'),
       metric('Command', intent.command || 'none'),
       metric('Gate', gate.key ? gate.status + ' | ' + gate.key + ' | ' + gate.summary : 'none')
     ].join(''), 'wide'),
     panel('Intent evidence', '<pre>' + escapeHtml(JSON.stringify({
       api: intent.api,
+      ledger: result.ledger,
       audit: intent.audit,
       evidence: intent.evidence,
       actionReadiness: result.actionReadiness

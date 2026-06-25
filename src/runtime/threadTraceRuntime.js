@@ -32,6 +32,7 @@ const { archiveNotificationEvents } = require('../application/use-cases/archiveN
 const { dispatchPendingNotificationEvents } = require('../application/use-cases/dispatchPendingNotificationEvents');
 const { getNotificationEventDetail } = require('../application/use-cases/getNotificationEventDetail');
 const { prepareNotificationEventActionIntent } = require('../application/use-cases/prepareNotificationEventActionIntent');
+const { listNotificationEventActionIntents } = require('../application/use-cases/listNotificationEventActionIntents');
 const { synthesizeRunbookNotificationEvents } = require('../application/use-cases/synthesizeRunbookNotificationEvents');
 const { synthesizeContextReviewResultNotificationEvents } = require('../application/use-cases/synthesizeContextReviewResultNotificationEvents');
 const { synthesizeAuthorReviewQueueNotificationEvents } = require('../application/use-cases/synthesizeAuthorReviewQueueNotificationEvents');
@@ -110,6 +111,7 @@ const { createFileWorkerLeaseRepository } = require('../infrastructure/storage/f
 const { createFileContextReviewResultRepository } = require('../infrastructure/storage/fileContextReviewResultRepository');
 const { createFileContextReviewActionAuditRepository } = require('../infrastructure/storage/fileContextReviewActionAuditRepository');
 const { createFileContextReviewActionExecutionRepository } = require('../infrastructure/storage/fileContextReviewActionExecutionRepository');
+const { createFileNotificationEventActionIntentRepository } = require('../infrastructure/storage/fileNotificationEventActionIntentRepository');
 const { createFileAuthorReviewQueueRepository } = require('../infrastructure/storage/fileAuthorReviewQueueRepository');
 const { createFileNotificationChannel } = require('../infrastructure/notifications/fileNotificationChannel');
 const { createWebhookNotificationChannel } = require('../infrastructure/notifications/webhookNotificationChannel');
@@ -2069,12 +2071,30 @@ function createThreadTraceRuntime(options) {
       return prepareNotificationEventActionIntent({
         notificationEventRepository: repositories.notificationEventRepository,
         taskRepository: repositories.taskRepository,
+        notificationEventActionIntentRepository: repositories.notificationEventActionIntentRepository,
         eventId: safeRequest.eventId,
         actionKey: safeRequest.actionKey,
         actor: safeRequest.actor,
         requestedBy: safeRequest.requestedBy,
         reason: safeRequest.reason,
         note: safeRequest.note,
+        now: safeRequest.now
+      });
+    },
+
+    async listNotificationEventActionIntents(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return listNotificationEventActionIntents({
+        notificationEventActionIntentRepository: repositories.notificationEventActionIntentRepository,
+        eventId: safeRequest.eventId,
+        actionKey: safeRequest.actionKey,
+        action: safeRequest.action,
+        status: safeRequest.status,
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        actor: safeRequest.actor,
+        limit: safeRequest.limit || 50,
         now: safeRequest.now
       });
     },
@@ -2373,6 +2393,9 @@ function createFileRepositories(storeDir) {
     }),
     contextReviewActionExecutionRepository: createFileContextReviewActionExecutionRepository({
       baseDir: path.join(storeDir, 'review-action-executions')
+    }),
+    notificationEventActionIntentRepository: createFileNotificationEventActionIntentRepository({
+      baseDir: path.join(storeDir, 'event-action-intents')
     }),
     authorReviewQueueRepository: createFileAuthorReviewQueueRepository({
       baseDir: path.join(storeDir, 'author-review-queue')

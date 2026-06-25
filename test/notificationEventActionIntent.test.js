@@ -5,6 +5,7 @@ const test = require('node:test');
 const { prepareNotificationEventActionIntent } = require('../src/application/use-cases/prepareNotificationEventActionIntent');
 
 test('notification event action intent builds dry-run acknowledge plan', async function () {
+  const savedRecords = [];
   const intent = await prepareNotificationEventActionIntent({
     eventId: 'event-1',
     actionKey: 'event.acknowledge',
@@ -17,6 +18,7 @@ test('notification event action intent builds dry-run acknowledge plan', async f
       sourceKey: 'nga',
       taskId: 'task-1'
     })]),
+    notificationEventActionIntentRepository: intentRepository(savedRecords),
     taskRepository: taskRepository([{
       id: 'task-1',
       type: 'source-ingest',
@@ -40,6 +42,11 @@ test('notification event action intent builds dry-run acknowledge plan', async f
   assert.equal(intent.intent.audit.required, true);
   assert.equal(intent.intent.audit.dryRunOnly, true);
   assert.equal(intent.readinessGate.key, 'event.acknowledge');
+  assert.equal(intent.ledger.recorded, true);
+  assert.equal(intent.ledger.recordId, savedRecords[0].id);
+  assert.equal(savedRecords.length, 1);
+  assert.equal(savedRecords[0].eventId, 'event-1');
+  assert.equal(savedRecords[0].actionKey, 'event.acknowledge');
 });
 
 test('notification event action intent rejects unavailable actions', async function () {
@@ -84,6 +91,26 @@ function taskRepository(tasks) {
     },
     async listTasks() {
       return tasks;
+    }
+  };
+}
+
+function intentRepository(savedRecords) {
+  return {
+    async saveIntent(record) {
+      const savedRecord = Object.assign({
+        id: 'intent-record-1'
+      }, record);
+      savedRecords.push(savedRecord);
+      return savedRecord;
+    },
+    async findIntent(id) {
+      return savedRecords.find(function (record) {
+        return record.id === id;
+      });
+    },
+    async listIntents() {
+      return savedRecords;
     }
   };
 }

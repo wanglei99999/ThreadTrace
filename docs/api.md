@@ -289,7 +289,21 @@ Request body:
 - `actor`, `requestedBy`, `reason`, `note`: optional operator/audit metadata.
 - `now`, `storeDir`: optional runtime overrides.
 
-The response includes `mode: "dry-run"`, `executed: false`, the selected `action`, its readiness gate, an `intent` with CLI/API plan and audit metadata, plus the full event `actionReadiness`. This endpoint is the reviewable handoff point before future executor-backed event actions.
+The response includes `mode: "dry-run"`, `executed: false`, the selected `action`, its readiness gate, an `intent` with CLI/API plan and audit metadata, plus the full event `actionReadiness`. When the runtime has a store directory, the generated intent is also persisted to the `event-action-intents` ledger and returned as `ledger.recorded: true`. This endpoint is the reviewable handoff point before future executor-backed event actions.
+
+### `GET /api/events/action-intents`
+
+Lists persisted dry-run event action intents from the ledger.
+
+Optional filters:
+- `eventId`
+- `actionKey`
+- `status`
+- `sourceId`, `sourceKey` / `forum`
+- `actor`
+- `limit`
+
+Use this endpoint to replay operator intent history, audit dry-run plans before execution, and build Web console views for event action review.
 
 ### `GET /api/events/overview`
 

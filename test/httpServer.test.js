@@ -167,6 +167,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /renderNotificationEventActionIntent/);
     assert.match(webAppJs, /prepare-event-action-intent/);
     assert.match(webAppJs, /Event action dry-run/);
+    assert.match(webAppJs, /Ledger/);
     assert.match(webAppJs, /Action readiness/);
     assert.match(webAppJs, /load-event-detail/);
     assert.match(webAppJs, /renderTaskTraceButton/);
@@ -576,6 +577,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.paths['/api/events/{eventId}'].get.responses[404].$ref, '#/components/responses/NotFound');
     assert.equal(openApi.paths['/api/events/{eventId}/actions/intent'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/NotificationEventActionIntentResult');
     assert.equal(openApi.paths['/api/events/{eventId}/actions/intent'].post.responses[409].$ref, '#/components/responses/Conflict');
+    assert.equal(openApi.paths['/api/events/action-intents'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/NotificationEventActionIntentListResult');
     assert.equal(openApi.paths['/api/events/overview'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/NotificationEventOverview');
     assert.equal(openApi.paths['/api/events/dispatch'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/NotificationEventDispatchResult');
     assert.equal(openApi.paths['/api/events/ack'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/NotificationEventAckResult');
@@ -587,7 +589,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.components.schemas.NotificationEventDetail.properties.actionReadiness.$ref, '#/components/schemas/NotificationEventActionReadiness');
     assert.equal(openApi.components.schemas.NotificationEventActionReadiness.properties.gates.items.$ref, '#/components/schemas/NotificationEventActionReadinessGate');
     assert.equal(openApi.components.schemas.NotificationEventActionIntentResult.properties.intent.$ref, '#/components/schemas/NotificationEventActionIntent');
+    assert.equal(openApi.components.schemas.NotificationEventActionIntentResult.properties.ledger.$ref, '#/components/schemas/NotificationEventActionIntentLedger');
     assert.equal(openApi.components.schemas.NotificationEventActionIntent.properties.api.$ref, '#/components/schemas/NotificationEventActionIntentApiPlan');
+    assert.equal(openApi.components.schemas.NotificationEventActionIntentListResult.properties.intents.items.$ref, '#/components/schemas/NotificationEventActionIntentRecord');
     assert.equal(openApi.components.schemas.NotificationEventDetail.properties.links.items.$ref, '#/components/schemas/TaskDetailLink');
     assert.equal(openApi.components.schemas.NotificationEventDetail.properties.nextActions.items.$ref, '#/components/schemas/TaskDetailAction');
     assert.equal(openApi.components.schemas.NotificationEvent.properties.lastDeliveryError.type, 'object');
@@ -2244,6 +2248,7 @@ test('http server can register sources and run source ingest tasks', async funct
       actor: 'test',
       reason: 'http-workflow'
     });
+    const eventActionIntentLedger = await getJson(baseUrl + '/api/events/action-intents?eventId=' + encodeURIComponent(eventsResult.events[0].id));
     const unavailableEventActionIntent = await fetch(baseUrl + '/api/events/' + encodeURIComponent(eventsResult.events[0].id) + '/actions/intent', {
       method: 'POST',
       headers: {
@@ -2325,6 +2330,10 @@ test('http server can register sources and run source ingest tasks', async funct
     assert.equal(eventActionIntent.action.key, 'event.acknowledge');
     assert.equal(eventActionIntent.intent.api.path, '/api/events/' + encodeURIComponent(eventsResult.events[0].id) + '/ack');
     assert.equal(eventActionIntent.intent.actor, 'test');
+    assert.equal(eventActionIntent.ledger.recorded, true);
+    assert.equal(eventActionIntentLedger.count, 1);
+    assert.equal(eventActionIntentLedger.intents[0].id, eventActionIntent.ledger.recordId);
+    assert.equal(eventActionIntentLedger.intents[0].actor, 'test');
     assert.equal(unavailableEventActionIntent.status, 409);
     assert.equal(unavailableEventActionIntentBody.error.code, 'event_action_not_available');
     assert.ok(eventDetail.links.some(function (link) {

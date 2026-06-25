@@ -116,6 +116,21 @@ test('CLI prints notification event action intent as JSON', async function () {
   });
 
   const intent = JSON.parse(result.stdout);
+  const listResult = await execFileAsync(process.execPath, [
+    scriptPath,
+    'event-action-intents',
+    '--event-id',
+    'event-1',
+    '--store-dir',
+    tempDir,
+    '--json',
+    'true'
+  ], {
+    cwd: root,
+    timeout: 20000
+  });
+  const intentList = JSON.parse(listResult.stdout);
+
   assert.equal(intent.mode, 'dry-run');
   assert.equal(intent.dryRun, true);
   assert.equal(intent.executed, false);
@@ -123,5 +138,10 @@ test('CLI prints notification event action intent as JSON', async function () {
   assert.equal(intent.intent.actor, 'cli-test');
   assert.equal(intent.intent.reason, 'reviewed');
   assert.equal(intent.intent.api.path, '/api/events/event-1/ack');
+  assert.equal(intent.ledger.recorded, true);
+  assert.equal(intentList.count, 1);
+  assert.equal(intentList.intents[0].id, intent.ledger.recordId);
+  assert.equal(intentList.intents[0].actor, 'cli-test');
   assert.equal(result.stderr, '');
+  assert.equal(listResult.stderr, '');
 });

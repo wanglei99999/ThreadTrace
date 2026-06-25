@@ -1031,6 +1031,22 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/events/action-intents') {
+    const result = await context.runtime.listNotificationEventActionIntents({
+      eventId: url.searchParams.get('eventId') || undefined,
+      actionKey: url.searchParams.get('actionKey') || url.searchParams.get('action') || undefined,
+      status: url.searchParams.get('status') || undefined,
+      sourceId: url.searchParams.get('sourceId') || undefined,
+      sourceKey: url.searchParams.get('sourceKey') || url.searchParams.get('forum') || undefined,
+      actor: url.searchParams.get('actor') || undefined,
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 50,
+      now: url.searchParams.get('now') || undefined,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, 200, result);
+    return;
+  }
+
   const eventDetailMatch = url.pathname.match(/^\/api\/events\/([^/]+)$/);
   if (request.method === 'GET' && eventDetailMatch) {
     const result = await context.runtime.getNotificationEventDetail({

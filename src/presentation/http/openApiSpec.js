@@ -1967,6 +1967,33 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/events/action-intents': {
+        get: {
+          summary: 'List persisted notification event action intents',
+          parameters: [
+            { name: 'eventId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'actionKey', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'status', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'sourceId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'actor', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Persisted notification event action intents',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/NotificationEventActionIntentListResult'
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       '/api/events/overview': {
         get: {
           summary: 'Summarize notification outbox health and backlog distribution',
@@ -5377,6 +5404,36 @@ function createOpenApiSpec() {
           },
           additionalProperties: true
         },
+        NotificationEventActionIntentLedger: {
+          type: 'object',
+          properties: {
+            recorded: { type: 'boolean' },
+            recordId: { type: 'string' },
+            filePath: { type: 'string' },
+            reason: { type: 'string' }
+          },
+          additionalProperties: true
+        },
+        NotificationEventActionIntentRecord: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            type: { type: 'string', example: 'notification-event-action-intent' },
+            generatedAt: { type: 'string' },
+            mode: { type: 'string', enum: ['dry-run'] },
+            dryRun: { type: 'boolean' },
+            executed: { type: 'boolean' },
+            status: { type: 'string' },
+            eventId: { type: 'string' },
+            actionKey: { type: 'string' },
+            actor: { type: 'string' },
+            sourceScope: { $ref: '#/components/schemas/TaskSourceScope' },
+            intent: { $ref: '#/components/schemas/NotificationEventActionIntent' },
+            readinessGate: { $ref: '#/components/schemas/NotificationEventActionReadinessGate' },
+            filePath: { type: 'string' }
+          },
+          additionalProperties: true
+        },
         NotificationEventActionIntentResult: {
           type: 'object',
           properties: {
@@ -5391,10 +5448,28 @@ function createOpenApiSpec() {
             action: { $ref: '#/components/schemas/TaskDetailAction' },
             readinessGate: { $ref: '#/components/schemas/NotificationEventActionReadinessGate' },
             intent: { $ref: '#/components/schemas/NotificationEventActionIntent' },
+            ledger: { $ref: '#/components/schemas/NotificationEventActionIntentLedger' },
             actionReadiness: { $ref: '#/components/schemas/NotificationEventActionReadiness' },
             nextActions: {
               type: 'array',
               items: { $ref: '#/components/schemas/TaskDetailAction' }
+            }
+          }
+        },
+        NotificationEventActionIntentListResult: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string' },
+            status: { type: 'string' },
+            eventId: { type: 'string' },
+            actionKey: { type: 'string' },
+            sourceId: { type: 'string' },
+            sourceKey: { type: 'string' },
+            actor: { type: 'string' },
+            count: { type: 'number' },
+            intents: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/NotificationEventActionIntentRecord' }
             }
           }
         },

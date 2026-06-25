@@ -1,6 +1,9 @@
 'use strict';
 
 const { createApplicationError } = require('../errors/applicationError');
+const {
+  assertNotificationEventActionIntentRepository
+} = require('../ports/notificationEventActionIntentRepository');
 const { getNotificationEventDetail } = require('./getNotificationEventDetail');
 
 async function prepareNotificationEventActionIntent(options) {
@@ -30,9 +33,9 @@ async function prepareNotificationEventActionIntent(options) {
   const readinessGate = findReadinessGate(detail.actionReadiness, actionKey);
   const executable = !readinessGate || readinessGate.executable !== false;
   const intent = eventActionIntent(detail, action, readinessGate, safeOptions);
-
-  return {
-    generatedAt: safeOptions.now || new Date().toISOString(),
+  const generatedAt = safeOptions.now || new Date().toISOString();
+  const result = {
+    generatedAt,
     mode: 'dry-run',
     dryRun: true,
     executed: false,
@@ -45,6 +48,40 @@ async function prepareNotificationEventActionIntent(options) {
     intent,
     actionReadiness: detail.actionReadiness,
     nextActions: detail.nextActions
+  };
+  result.ledger = await saveIntentLedgerRecord(result, safeOptions.notificationEventActionIntentRepository);
+  return result;
+}
+
+async function saveIntentLedgerRecord(result, repository) {
+  const intentRepository = assertNotificationEventActionIntentRepository(repository);
+  if (!intentRepository) {
+    return {
+      recorded: false,
+      reason: 'notification_event_action_intent_repository_not_configured'
+    };
+  }
+  const record = await intentRepository.saveIntent({
+    generatedAt: result.generatedAt,
+    mode: result.mode,
+    dryRun: result.dryRun,
+    executed: result.executed,
+    status: result.status,
+    eventId: result.event && result.event.id,
+    actionKey: result.action && result.action.key,
+    actor: result.intent && result.intent.actor,
+    event: result.event,
+    sourceScope: result.sourceScope,
+    relatedTask: result.relatedTask,
+    action: result.action,
+    readinessGate: result.readinessGate,
+    intent: result.intent,
+    actionReadiness: result.actionReadiness
+  });
+  return {
+    recorded: true,
+    recordId: record.id,
+    filePath: record.filePath
   };
 }
 
@@ -195,5 +232,6 @@ function compactObject(value) {
 module.exports = {
   prepareNotificationEventActionIntent,
   apiPlanForAction,
-  findReadinessGate
+  findReadinessGate,
+  saveIntentLedgerRecord
 };
