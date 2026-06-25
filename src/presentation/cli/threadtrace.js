@@ -1338,6 +1338,9 @@ function main(argv) {
       console.log('Event detail: ' + event.id);
       console.log('Status: ' + (event.deliveryStatus || 'pending') + ', type=' + event.type + ', severity=' + event.severity);
       console.log('Source: ' + [result.sourceScope.sourceKey, result.sourceScope.sourceId, result.sourceScope.sourceType].filter(Boolean).join(' / '));
+      if (result.actionReadiness) {
+        console.log('Action readiness: ' + result.actionReadiness.status + ', gates=' + result.actionReadiness.gateCount + ', warnings=' + result.actionReadiness.warningCount);
+      }
       if (result.relatedTask && result.relatedTask.id) {
         console.log('Task: ' + result.relatedTask.id + (result.relatedTask.missing ? ' (missing)' : ' ' + result.relatedTask.status + '/' + result.relatedTask.type));
       }

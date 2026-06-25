@@ -5263,6 +5263,7 @@ function createOpenApiSpec() {
               },
               additionalProperties: true
             },
+            actionReadiness: { $ref: '#/components/schemas/NotificationEventActionReadiness' },
             links: {
               type: 'array',
               items: { $ref: '#/components/schemas/TaskDetailLink' }
@@ -5270,6 +5271,33 @@ function createOpenApiSpec() {
             nextActions: {
               type: 'array',
               items: { $ref: '#/components/schemas/TaskDetailAction' }
+            }
+          }
+        },
+        NotificationEventActionReadinessGate: {
+          type: 'object',
+          properties: {
+            key: { type: 'string' },
+            status: { type: 'string', enum: ['ok', 'warn', 'skipped', 'blocked'] },
+            executable: { type: 'boolean' },
+            blocking: { type: 'boolean' },
+            summary: { type: 'string' }
+          },
+          additionalProperties: true
+        },
+        NotificationEventActionReadiness: {
+          type: 'object',
+          properties: {
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            gateCount: { type: 'number' },
+            warningCount: { type: 'number' },
+            executableActionKeys: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            gates: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/NotificationEventActionReadinessGate' }
             }
           }
         },

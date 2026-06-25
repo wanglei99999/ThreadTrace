@@ -162,6 +162,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /load-task-detail/);
     assert.match(webAppJs, /loadEventDetailFromButton/);
     assert.match(webAppJs, /renderNotificationEventDetail/);
+    assert.match(webAppJs, /renderNotificationEventActionReadiness/);
+    assert.match(webAppJs, /Action readiness/);
     assert.match(webAppJs, /load-event-detail/);
     assert.match(webAppJs, /renderTaskTraceButton/);
     assert.match(webAppJs, /renderTaskTraceContext/);
@@ -576,6 +578,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.components.schemas.NotificationEventListResult.properties.events.items.$ref, '#/components/schemas/NotificationEvent');
     assert.equal(openApi.components.schemas.NotificationEventDetail.properties.event.$ref, '#/components/schemas/NotificationEvent');
     assert.equal(openApi.components.schemas.NotificationEventDetail.properties.sourceScope.$ref, '#/components/schemas/TaskSourceScope');
+    assert.equal(openApi.components.schemas.NotificationEventDetail.properties.actionReadiness.$ref, '#/components/schemas/NotificationEventActionReadiness');
+    assert.equal(openApi.components.schemas.NotificationEventActionReadiness.properties.gates.items.$ref, '#/components/schemas/NotificationEventActionReadinessGate');
     assert.equal(openApi.components.schemas.NotificationEventDetail.properties.links.items.$ref, '#/components/schemas/TaskDetailLink');
     assert.equal(openApi.components.schemas.NotificationEventDetail.properties.nextActions.items.$ref, '#/components/schemas/TaskDetailAction');
     assert.equal(openApi.components.schemas.NotificationEvent.properties.lastDeliveryError.type, 'object');
@@ -2289,6 +2293,10 @@ test('http server can register sources and run source ingest tasks', async funct
     assert.equal(eventsResult.events.length, 1);
     assert.equal(eventDetail.event.id, eventsResult.events[0].id);
     assert.equal(eventDetail.sourceScope.sourceKey, 'nga');
+    assert.equal(eventDetail.actionReadiness.status, 'ok');
+    assert.ok(eventDetail.actionReadiness.gates.some(function (gate) {
+      return gate.key === 'event.acknowledge' && gate.executable === true;
+    }));
     assert.ok(eventDetail.links.some(function (link) {
       return link.rel === 'self';
     }));

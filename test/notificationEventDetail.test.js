@@ -4,7 +4,8 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 const {
   getNotificationEventDetail,
-  eventSourceScope
+  eventSourceScope,
+  eventActionReadiness
 } = require('../src/application/use-cases/getNotificationEventDetail');
 
 test('notification event detail returns source scope related task links and actions', async function () {
@@ -34,6 +35,12 @@ test('notification event detail returns source scope related task links and acti
   assert.equal(detail.sourceScope.sourceKey, 'nga');
   assert.equal(detail.relatedTask.id, 'task-1');
   assert.equal(detail.relatedTask.status, 'completed');
+  assert.equal(detail.actionReadiness.status, 'warn');
+  assert.equal(detail.actionReadiness.gateCount, 7);
+  assert.ok(detail.actionReadiness.executableActionKeys.includes('event.dispatch'));
+  assert.ok(detail.actionReadiness.gates.find(function (gate) {
+    return gate.key === 'event.delivery-state' && gate.status === 'warn';
+  }));
   assert.ok(detail.links.find(function (link) {
     return link.rel === 'source-drilldown' && /sourceId=source-1/.test(link.href);
   }));
@@ -83,6 +90,24 @@ test('notification event source scope falls back to payload action evidence', fu
     sourceType: 'thread-url',
     sourceThreadId: 'thread-1'
   });
+});
+
+test('notification event action readiness warns when source scope and task are missing', function () {
+  const readiness = eventActionReadiness(notificationEvent({
+    deliveryStatus: 'pending'
+  }), {}, undefined, [{
+    key: 'event.acknowledge'
+  }]);
+
+  assert.equal(readiness.status, 'warn');
+  assert.equal(readiness.warningCount, 1);
+  assert.deepEqual(readiness.executableActionKeys, ['event.acknowledge']);
+  assert.ok(readiness.gates.find(function (gate) {
+    return gate.key === 'event.source-scope' && gate.status === 'warn';
+  }));
+  assert.ok(readiness.gates.find(function (gate) {
+    return gate.key === 'event.task-detail' && gate.status === 'skipped';
+  }));
 });
 
 function eventRepository(events) {

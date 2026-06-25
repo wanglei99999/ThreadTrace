@@ -25,6 +25,7 @@ async function getNotificationEventDetail(options) {
 
   const sourceScope = eventSourceScope(event);
   const relatedTask = await findRelatedTask(event, safeOptions.taskRepository);
+  const nextActions = eventDetailActions(event, sourceScope, relatedTask);
 
   return {
     generatedAt: safeOptions.now || new Date().toISOString(),
@@ -32,7 +33,8 @@ async function getNotificationEventDetail(options) {
     sourceScope,
     relatedTask,
     links: eventDetailLinks(event, sourceScope, relatedTask),
-    nextActions: eventDetailActions(event, sourceScope, relatedTask)
+    actionReadiness: eventActionReadiness(event, sourceScope, relatedTask, nextActions),
+    nextActions
   };
 }
 
@@ -148,6 +150,74 @@ function eventDetailActions(event, sourceScope, relatedTask) {
   return actions;
 }
 
+function eventActionReadiness(event, sourceScope, relatedTask, nextActions) {
+  const deliveryStatus = event.deliveryStatus || 'pending';
+  const hasSourceScope = Boolean(sourceScope.sourceId || sourceScope.sourceKey);
+  const acknowledged = Boolean(event.acknowledgedAt);
+  const dispatchable = deliveryStatus === 'pending' || deliveryStatus === 'failed';
+  const archivable = acknowledged && (deliveryStatus === 'delivered' || deliveryStatus === 'resolved');
+  const gates = [
+    {
+      key: 'event.present',
+      status: 'ok',
+      blocking: false,
+      summary: 'The notification event exists in the current outbox store.'
+    },
+    {
+      key: 'event.source-scope',
+      status: hasSourceScope ? 'ok' : 'warn',
+      blocking: false,
+      summary: hasSourceScope ? 'Source-scoped operations can target this event context.' : 'No source scope was found; source-scoped actions will fall back to global filters.'
+    },
+    {
+      key: 'event.delivery-state',
+      status: deliveryStatus === 'failed' ? 'warn' : 'ok',
+      blocking: false,
+      summary: 'Delivery status is ' + deliveryStatus + '.'
+    },
+    {
+      key: 'event.acknowledge',
+      status: acknowledged ? 'skipped' : 'ok',
+      executable: !acknowledged,
+      blocking: false,
+      summary: acknowledged ? 'The event is already acknowledged.' : 'The event can be acknowledged after operator review.'
+    },
+    {
+      key: 'event.dispatch',
+      status: dispatchable ? 'ok' : 'skipped',
+      executable: dispatchable,
+      blocking: false,
+      summary: dispatchable ? 'Pending or failed delivery can be dispatched.' : 'Dispatch is not needed for the current delivery status.'
+    },
+    {
+      key: 'event.task-detail',
+      status: !relatedTask ? 'skipped' : relatedTask.missing ? 'warn' : 'ok',
+      executable: Boolean(relatedTask && relatedTask.id),
+      blocking: false,
+      summary: !relatedTask ? 'No related task id is attached to this event.' : relatedTask.missing ? 'The related task id is referenced but not present in the current task store.' : 'The related task can be inspected.'
+    },
+    {
+      key: 'event.archive',
+      status: archivable ? 'ok' : 'skipped',
+      executable: archivable,
+      blocking: false,
+      summary: archivable ? 'The handled delivered or resolved event is eligible for archive workflow.' : 'Archive is only recommended after acknowledgement and delivered/resolved status.'
+    }
+  ];
+  const warningCount = gates.filter(function (gate) {
+    return gate.status === 'warn';
+  }).length;
+  return {
+    status: warningCount > 0 ? 'warn' : 'ok',
+    gateCount: gates.length,
+    warningCount,
+    executableActionKeys: (nextActions || []).map(function (action) {
+      return action.key;
+    }),
+    gates
+  };
+}
+
 function sourceDrilldownQuery(sourceScope) {
   const query = new URLSearchParams();
   if (sourceScope.sourceId) query.set('sourceId', sourceScope.sourceId);
@@ -199,5 +269,6 @@ module.exports = {
   getNotificationEventDetail,
   eventSourceScope,
   eventDetailLinks,
-  eventDetailActions
+  eventDetailActions,
+  eventActionReadiness
 };

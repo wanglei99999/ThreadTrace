@@ -61,6 +61,8 @@ test('CLI prints notification event detail as JSON', async function () {
   assert.equal(detail.sourceScope.sourceKey, 'nga');
   assert.equal(detail.sourceScope.sourceId, 'source-1');
   assert.equal(detail.relatedTask.id, 'task-1');
+  assert.equal(detail.actionReadiness.status, 'warn');
+  assert.ok(detail.actionReadiness.executableActionKeys.includes('event.dispatch'));
   assert.ok(detail.links.some(function (link) {
     return link.rel === 'source-drilldown';
   }));

@@ -5023,6 +5023,7 @@ function renderNotificationEventDetail(result) {
       metric('Related task', relatedTask.id ? relatedTask.id + (relatedTask.missing ? ' (missing)' : ' | ' + [relatedTask.status, relatedTask.type].filter(Boolean).join('/')) : 'none'),
       renderNotificationEventDetailButtons(result)
     ].join(''), 'wide'),
+    panel('Action readiness', renderNotificationEventActionReadiness(result.actionReadiness), 'wide'),
     panel('Event actions', renderNotificationEventDetailActions(result.nextActions || []), 'wide'),
     panel('Event payload', '<pre>' + escapeHtml(JSON.stringify({
       title: event.title,
@@ -5031,6 +5032,27 @@ function renderNotificationEventDetail(result) {
       deliveryResult: event.deliveryResult,
       lastDeliveryError: event.lastDeliveryError
     }, null, 2)) + '</pre>', 'wide')
+  ].join('');
+}
+
+function renderNotificationEventActionReadiness(readiness) {
+  if (!readiness) return '<div class="muted">No action readiness report.</div>';
+  const gates = readiness.gates || [];
+  return [
+    '<div class="summary-strip event-summary-strip">' + [
+      summaryTile('Status', readiness.status || 'unknown', statusVariant(readiness.status)),
+      summaryTile('Gates', readiness.gateCount || gates.length),
+      summaryTile('Warnings', readiness.warningCount || 0, readiness.warningCount ? 'warn' : 'ok'),
+      summaryTile('Executable', (readiness.executableActionKeys || []).length)
+    ].join('') + '</div>',
+    gates.map(function (gate) {
+      return '<div class="action-row ops-row"><span>' +
+        '<strong>' + escapeHtml((gate.status || 'unknown') + ' | ' + (gate.key || 'gate')) + '</strong>' +
+        '<small>' + escapeHtml(gate.summary || '') + '</small>' +
+        '</span>' +
+        statusBadge(gate.status || 'unknown', gate.status === 'warn' ? 'warn' : statusVariant(gate.status)) +
+        '</div>';
+    }).join('')
   ].join('');
 }
 
