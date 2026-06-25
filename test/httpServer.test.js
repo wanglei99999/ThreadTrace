@@ -248,7 +248,10 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /buildSourceAttention/);
     assert.match(webAppJs, /renderSourceAttentionRows/);
     assert.match(webAppJs, /operations\/source-cockpit/);
+    assert.match(webAppJs, /operations\/source-cockpit\/action-plan/);
     assert.match(webAppJs, /renderSourceOperationsCockpit/);
+    assert.match(webAppJs, /renderSourceCockpitActionPlan/);
+    assert.match(webAppJs, /load-source-cockpit-action-plan/);
     assert.match(webAppJs, /Operator queue/);
     assert.match(webAppJs, /operations\/source-attention/);
     assert.match(webAppJs, /operations\/source-type-operations/);
@@ -342,9 +345,14 @@ test('http server exposes health, adapters, and context APIs', async function ()
     }));
     assert.equal(openApi.paths['/api/operations/source-cockpit'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceOperationsCockpit');
     assert.equal(openApi.paths['/api/operations/source-cockpit'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/SourceOperationsCockpit');
+    assert.equal(openApi.paths['/api/operations/source-cockpit/action-plan'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceOperationsCockpitActionPlan');
     assert.equal(openApi.components.schemas.SourceOperationsCockpit.properties.queue.items.$ref, '#/components/schemas/SourceOperationsCockpitItem');
+    assert.equal(openApi.components.schemas.SourceOperationsCockpitActionPlan.properties.actions.items.$ref, '#/components/schemas/SourceOperationsCockpitAction');
     assert.equal(openApi.components.schemas.SourceOperationsCockpitItem.properties.priorityScore.type, 'number');
     assert.equal(openApi.components.schemas.SourceOperationsCockpitSummary.properties.byKind.additionalProperties.type, 'number');
+    assert.equal(openApi.paths['/api/sources/tasks/ingest'].post.requestBody.content['application/json'].schema.properties.sourceType.type, 'string');
+    assert.equal(openApi.paths['/api/sources/tasks/ingest-due'].post.requestBody.content['application/json'].schema.properties.sourceId.type, 'string');
+    assert.equal(openApi.paths['/api/sources/tasks/insight-pipeline-due'].post.requestBody.content['application/json'].schema.properties.sourceType.type, 'string');
     assert.equal(openApi.paths['/api/operations/source-type-drilldown'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceTypeOperationsDrilldown');
     assert.equal(openApi.paths['/api/operations/source-type-drilldown'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/SourceTypeOperationsDrilldown');
     assert.ok(openApi.paths['/api/operations/source-type-drilldown'].get.parameters.find(function (parameter) {
@@ -1292,6 +1300,161 @@ test('http server exposes source operations cockpit API', async function () {
     assert.equal(calls[0].sourceTypeLimit, 3);
     assert.equal(calls[0].sourceFailureRetryBackoffMs, 60000);
     assert.equal(calls[0].modulePath, 'D:/connectors/custom-forum.cjs');
+  } finally {
+    await close(server);
+  }
+});
+
+test('http server exposes source operations cockpit action plan API', async function () {
+  const calls = [];
+  const server = createThreadTraceServer({
+    runtime: {
+      listAdapters() {
+        return [{ sourceKey: 'nga', displayName: 'NGA' }];
+      },
+      async getSourceOperationsCockpitActionPlan(request) {
+        calls.push(request);
+        return {
+          generatedAt: request.now || '2026-06-25T10:00:00.000Z',
+          status: 'actionable',
+          selectedItem: {
+            id: request.itemId || 'source-attention:sourceId:source-1',
+            rank: request.rank,
+            kind: 'source-attention',
+            source: {
+              id: request.sourceId,
+              sourceKey: request.sourceKey
+            }
+          },
+          summary: {
+            actionCount: 1,
+            viewCount: 1,
+            dryRunCount: 0,
+            executeCount: 0,
+            destructiveCount: 0
+          },
+          actions: [
+            {
+              key: 'source.drilldown',
+              label: 'Open source drill-down',
+              mode: 'view',
+              api: {
+                method: 'GET',
+                path: '/api/operations/source-drilldown?sourceId=' + request.sourceId
+              }
+            }
+          ],
+          recommendedNextAction: 'Open the source drill-down.'
+        };
+      }
+    }
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const result = await getJson(baseUrl + '/api/operations/source-cockpit/action-plan?rank=2&itemId=source-attention%3AsourceId%3Asource-1&provider=mock&sourceId=source-1&sourceKey=nga&sourceType=saved-html-directory&limit=10&cockpitLimit=5&attentionLimit=7&sourceTypeLimit=3&now=2026-06-25T10:00:00.000Z');
+
+    assert.equal(result.status, 'actionable');
+    assert.equal(result.actions[0].key, 'source.drilldown');
+    assert.equal(calls[0].rank, 2);
+    assert.equal(calls[0].itemId, 'source-attention:sourceId:source-1');
+    assert.equal(calls[0].provider, 'mock');
+    assert.equal(calls[0].sourceId, 'source-1');
+    assert.equal(calls[0].sourceKey, 'nga');
+    assert.equal(calls[0].sourceType, 'saved-html-directory');
+    assert.equal(calls[0].limit, 10);
+    assert.equal(calls[0].cockpitLimit, 5);
+    assert.equal(calls[0].attentionLimit, 7);
+    assert.equal(calls[0].sourceTypeLimit, 3);
+  } finally {
+    await close(server);
+  }
+});
+
+test('http server forwards scoped source batch task filters', async function () {
+  const calls = [];
+  const runtime = {
+    listAdapters() {
+      return [{ sourceKey: 'nga', displayName: 'NGA' }];
+    },
+    async runEnabledSourcesIngestTasks(request) {
+      calls.push(['enabled', request]);
+      return {
+        task: { id: 'enabled-task', status: 'completed', type: 'ingest-enabled-sources' },
+        sourceCount: 0,
+        completedCount: 0,
+        failedCount: 0,
+        results: []
+      };
+    },
+    async runDueSourcesIngestTasks(request) {
+      calls.push(['due-ingest', request]);
+      return {
+        task: { id: 'due-ingest-task', status: 'completed', type: 'ingest-due-sources' },
+        sourceCount: 0,
+        dueCount: 0,
+        skippedCount: 0,
+        completedCount: 0,
+        failedCount: 0,
+        skipped: [],
+        results: []
+      };
+    },
+    async runDueSourceInsightPipelineTasks(request) {
+      calls.push(['due-insight', request]);
+      return {
+        task: { id: 'due-insight-task', status: 'completed', type: 'source-insight-pipeline-due-sources' },
+        sourceCount: 0,
+        dueCount: 0,
+        skippedCount: 0,
+        completedCount: 0,
+        failedCount: 0,
+        skipped: [],
+        results: []
+      };
+    }
+  };
+  const server = createThreadTraceServer({ runtime });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    await postJson(baseUrl + '/api/sources/tasks/ingest', {
+      sourceId: 'source-1',
+      sourceKey: 'nga',
+      sourceType: 'saved-html-directory',
+      limit: 3
+    });
+    await postJson(baseUrl + '/api/sources/tasks/ingest-due', {
+      sourceId: 'source-1',
+      sourceKey: 'nga',
+      sourceType: 'saved-html-directory',
+      limit: 4
+    });
+    await postJson(baseUrl + '/api/sources/tasks/insight-pipeline-due', {
+      sourceId: 'source-1',
+      sourceKey: 'nga',
+      sourceType: 'saved-html-directory',
+      limit: 5,
+      provider: 'mock'
+    });
+
+    assert.deepEqual(calls.map(function (item) { return item[0]; }), ['enabled', 'due-ingest', 'due-insight']);
+    assert.equal(calls[0][1].sourceId, 'source-1');
+    assert.equal(calls[0][1].sourceKey, 'nga');
+    assert.equal(calls[0][1].sourceType, 'saved-html-directory');
+    assert.equal(calls[0][1].limit, 3);
+    assert.equal(calls[1][1].sourceId, 'source-1');
+    assert.equal(calls[1][1].sourceKey, 'nga');
+    assert.equal(calls[1][1].sourceType, 'saved-html-directory');
+    assert.equal(calls[1][1].limit, 4);
+    assert.equal(calls[2][1].sourceId, 'source-1');
+    assert.equal(calls[2][1].sourceKey, 'nga');
+    assert.equal(calls[2][1].sourceType, 'saved-html-directory');
+    assert.equal(calls[2][1].limit, 5);
   } finally {
     await close(server);
   }

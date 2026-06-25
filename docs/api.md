@@ -66,6 +66,12 @@ Optional filters include `sourceId`, `sourceKey` / `forum`, `sourceType`, `enabl
 
 The response includes queue totals, severity counts, runnable item counts, highest priority score, queue item kind distribution, ranked queue rows, and recommended next actions. Queue rows keep source or source-type scope plus suggested commands so Web dashboards, generated clients, or monitoring jobs can decide the next source to inspect without rejoining the lower-level reports. HTTP `503` means at least one cockpit item is critical; warnings return `200`.
 
+### `GET /api/operations/source-cockpit/action-plan`
+
+Returns a side-effect-free action plan for one cockpit queue item. Select the item with `rank` or `itemId`; optional filters mirror `/api/operations/source-cockpit`, and `provider` controls generated semantic pipeline plans.
+
+The response includes the selected queue item, counts by action mode, and action rows with API plan, CLI command, destructive/confirmation flags, and Web-compatible action keys. Use this endpoint before triggering source runs, failure resets, alert synthesis, or source-type due pipelines from an operations dashboard.
+
 ### `GET /api/operations/source-type-drilldown`
 
 Returns an operational drill-down for one connector family. Required query parameter: `sourceType`.
@@ -756,13 +762,14 @@ Set `execute: true` or `dryRun: false` to persist the reset. `retryNow: true` se
 
 ### `POST /api/sources/tasks/ingest`
 
-批量运行所有启用来源的导入任务，可按 `forum` 过滤。这个接口是未来 Scheduler / Worker 的最小执行入口。
+批量运行所有启用来源的导入任务，可按 `sourceId`、`sourceKey` / `forum` 或 `sourceType` 过滤。这个接口是未来 Scheduler / Worker 的最小执行入口。
 
 请求：
 
 ```json
 {
   "forum": "nga",
+  "sourceType": "saved-html-directory",
   "limit": 50,
   "sourceRunStaleAfterMs": 600000
 }
@@ -772,13 +779,14 @@ Set `execute: true` or `dryRun: false` to persist the reset. `retryNow: true` se
 
 ### `POST /api/sources/tasks/ingest-due`
 
-只运行已启用且调度到期的来源。调度规则来自来源的 `schedule.intervalMinutes` 或 `schedule.nextRunAt`；未过期的运行中来源会被跳过，超过恢复窗口的 `running` 状态会重新按调度规则评估，未设置调度的来源不会自动运行。
+只运行已启用且调度到期的来源，可按 `sourceId`、`sourceKey` / `forum` 或 `sourceType` 过滤。调度规则来自来源的 `schedule.intervalMinutes` 或 `schedule.nextRunAt`；未过期的运行中来源会被跳过，超过恢复窗口的 `running` 状态会重新按调度规则评估，未设置调度的来源不会自动运行。
 
 请求：
 
 ```json
 {
   "forum": "nga",
+  "sourceType": "saved-html-directory",
   "limit": 50,
   "now": "2026-06-18T10:00:00.000Z",
   "sourceRunStaleAfterMs": 600000,
@@ -788,6 +796,23 @@ Set `execute: true` or `dryRun: false` to persist the reset. `retryNow: true` se
 ```
 
 返回：父任务记录、到期数量、跳过数量、成功/失败数量和每个来源的调度原因。父任务类型为 `ingest-due-sources`。
+
+### `POST /api/sources/tasks/insight-pipeline-due`
+
+Runs due source insight pipelines for enabled sources. It supports the same `sourceId`, `sourceKey` / `forum`, and `sourceType` filters as `ingest-due`, then performs ingest, analysis, optional semantic enrichment, cursor updates, notification event generation, and durable parent/child task recording for each due source.
+
+Request:
+
+```json
+{
+  "sourceType": "saved-html-directory",
+  "provider": "mock",
+  "limit": 50,
+  "now": "2026-06-18T10:00:00.000Z"
+}
+```
+
+The response includes the parent `source-insight-pipeline-due-sources` task, due/skipped counts, per-source pipeline results, child ingest task ids, cursor diff, semantic status, and schedule reason.
 
 批量入口会对每个来源应用同一套重复运行保护；单个来源重复运行会记录为该来源失败，不会中断整个父任务。失败来源默认采用指数退避重试，跳过项会返回 `retryAt`、`backoffMs` 和原始调度原因；将 `sourceFailureRetryBackoffMs` 设为 `0` 可关闭额外失败退避。
 

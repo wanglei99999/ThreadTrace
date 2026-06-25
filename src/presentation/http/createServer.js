@@ -659,6 +659,37 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/operations/source-cockpit/action-plan') {
+    const enabledParam = url.searchParams.get('enabled');
+    const report = await context.runtime.getSourceOperationsCockpitActionPlan({
+      rank: url.searchParams.get('rank') ? Number(url.searchParams.get('rank')) : undefined,
+      itemId: url.searchParams.get('itemId') || undefined,
+      provider: url.searchParams.get('provider') || undefined,
+      sourceId: url.searchParams.get('sourceId') || undefined,
+      sourceKey: url.searchParams.get('sourceKey') || url.searchParams.get('forum') || undefined,
+      sourceType: url.searchParams.get('sourceType') || undefined,
+      enabled: enabledParam === null ? undefined : enabledParam === 'true',
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 25,
+      cockpitLimit: url.searchParams.get('cockpitLimit') ? Number(url.searchParams.get('cockpitLimit')) : undefined,
+      attentionLimit: url.searchParams.get('attentionLimit') ? Number(url.searchParams.get('attentionLimit')) : undefined,
+      sourceTypeLimit: url.searchParams.get('sourceTypeLimit') ? Number(url.searchParams.get('sourceTypeLimit')) : undefined,
+      pipelineLimit: url.searchParams.get('pipelineLimit') ? Number(url.searchParams.get('pipelineLimit')) : 20,
+      eventLimit: url.searchParams.get('eventLimit') ? Number(url.searchParams.get('eventLimit')) : undefined,
+      maxAttempts: url.searchParams.get('maxAttempts') ? Number(url.searchParams.get('maxAttempts')) : undefined,
+      taskLimit: url.searchParams.get('taskLimit') ? Number(url.searchParams.get('taskLimit')) : undefined,
+      sourceRunStaleAfterMs: url.searchParams.get('sourceRunStaleAfterMs') ? Number(url.searchParams.get('sourceRunStaleAfterMs')) : undefined,
+      sourceFailureRetryBackoffMs: url.searchParams.get('sourceFailureRetryBackoffMs') ? Number(url.searchParams.get('sourceFailureRetryBackoffMs')) : undefined,
+      sourceFailureMaxRetryBackoffMs: url.searchParams.get('sourceFailureMaxRetryBackoffMs') ? Number(url.searchParams.get('sourceFailureMaxRetryBackoffMs')) : undefined,
+      runningStaleAfterMs: url.searchParams.get('runningStaleAfterMs') ? Number(url.searchParams.get('runningStaleAfterMs')) : undefined,
+      workerStaleAfterMs: url.searchParams.get('workerStaleAfterMs') ? Number(url.searchParams.get('workerStaleAfterMs')) : undefined,
+      modulePath: url.searchParams.get('modulePath') || url.searchParams.get('connectorModulePath') || undefined,
+      now: url.searchParams.get('now') || undefined,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, 200, report);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/operations/source-drilldown') {
     const report = await context.runtime.getSourceOperationsDrilldown({
       sourceId: url.searchParams.get('sourceId') || undefined,
@@ -1558,6 +1589,9 @@ async function routeRequest(request, response, context) {
     const body = await readJsonBody(request, context.maxBodyBytes);
     const result = await context.runtime.runEnabledSourcesIngestTasks({
       forum: body.forum,
+      sourceId: body.sourceId,
+      sourceKey: body.sourceKey,
+      sourceType: body.sourceType,
       limit: body.limit,
       sourceRunStaleAfterMs: body.sourceRunStaleAfterMs,
       now: body.now,
@@ -1573,6 +1607,9 @@ async function routeRequest(request, response, context) {
     const body = await readJsonBody(request, context.maxBodyBytes);
     const result = await context.runtime.runDueSourcesIngestTasks({
       forum: body.forum,
+      sourceId: body.sourceId,
+      sourceKey: body.sourceKey,
+      sourceType: body.sourceType,
       limit: body.limit,
       now: body.now,
       sourceRunStaleAfterMs: body.sourceRunStaleAfterMs,
@@ -1590,6 +1627,9 @@ async function routeRequest(request, response, context) {
     const body = await readJsonBody(request, context.maxBodyBytes);
     const result = await context.runtime.runDueSourceInsightPipelineTasks({
       forum: body.forum,
+      sourceId: body.sourceId,
+      sourceKey: body.sourceKey,
+      sourceType: body.sourceType,
       limit: body.limit,
       now: body.now,
       sourceRunStaleAfterMs: body.sourceRunStaleAfterMs,

@@ -62,6 +62,7 @@ const { getSourceScheduleReport } = require('../application/use-cases/getSourceS
 const { getSourceAttentionReport } = require('../application/use-cases/getSourceAttentionReport');
 const { getSourceTypeOperationsReport } = require('../application/use-cases/getSourceTypeOperationsReport');
 const { getSourceOperationsCockpit } = require('../application/use-cases/getSourceOperationsCockpit');
+const { getSourceOperationsCockpitActionPlan } = require('../application/use-cases/getSourceOperationsCockpitActionPlan');
 const { getOperationalOverview } = require('../application/use-cases/getOperationalOverview');
 const { getSourceOperationsDrilldown } = require('../application/use-cases/getSourceOperationsDrilldown');
 const { getSourceTypeOperationsDrilldown } = require('../application/use-cases/getSourceTypeOperationsDrilldown');
@@ -1638,6 +1639,40 @@ function createThreadTraceRuntime(options) {
       });
     },
 
+    async getSourceOperationsCockpitActionPlan(request) {
+      const safeRequest = request || {};
+      const cockpit = await this.getSourceOperationsCockpit({
+        forum: safeRequest.forum,
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey,
+        sourceType: safeRequest.sourceType,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 100,
+        cockpitLimit: safeRequest.cockpitLimit || safeRequest.limit || 25,
+        attentionLimit: safeRequest.attentionLimit,
+        sourceTypeLimit: safeRequest.sourceTypeLimit,
+        pipelineLimit: safeRequest.pipelineLimit,
+        eventLimit: safeRequest.eventLimit,
+        maxAttempts: safeRequest.maxAttempts,
+        taskLimit: safeRequest.taskLimit,
+        sourceRunStaleAfterMs: safeRequest.sourceRunStaleAfterMs,
+        sourceFailureRetryBackoffMs: safeRequest.sourceFailureRetryBackoffMs,
+        sourceFailureMaxRetryBackoffMs: safeRequest.sourceFailureMaxRetryBackoffMs,
+        runningStaleAfterMs: safeRequest.runningStaleAfterMs,
+        workerStaleAfterMs: safeRequest.workerStaleAfterMs,
+        modulePath: safeRequest.modulePath || safeRequest.connectorModulePath,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir
+      });
+      return getSourceOperationsCockpitActionPlan({
+        cockpit,
+        rank: safeRequest.rank,
+        itemId: safeRequest.itemId,
+        provider: safeRequest.provider || 'mock',
+        now: safeRequest.now
+      });
+    },
+
     async getOperationalReadiness(request) {
       const safeRequest = request || {};
       return getOperationalReadiness({
@@ -2125,6 +2160,7 @@ function createThreadTraceRuntime(options) {
         crawler: safeOptions.crawler || createHttpForumCrawler(safeOptions.crawlerOptions),
         sourceId: safeRequest.sourceId,
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        sourceType: safeRequest.sourceType,
         limit: safeRequest.limit || 50,
         now: safeRequest.now,
         sourceRunStaleAfterMs: resolveSourceRunStaleAfterMs(safeRequest, runtimeConfig),
@@ -2147,7 +2183,9 @@ function createThreadTraceRuntime(options) {
         notificationEventRepository: repositories.notificationEventRepository,
         rawThreadPageRepository: repositories.rawThreadPageRepository,
         crawler: safeOptions.crawler || createHttpForumCrawler(safeOptions.crawlerOptions),
+        sourceId: safeRequest.sourceId,
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        sourceType: safeRequest.sourceType,
         limit: safeRequest.limit || 50,
         now: safeRequest.now,
         sourceRunStaleAfterMs: resolveSourceRunStaleAfterMs(safeRequest, runtimeConfig),
@@ -2186,6 +2224,7 @@ function createThreadTraceRuntime(options) {
       return runDueSourceInsightPipelineTasks({
         sourceId: safeRequest.sourceId,
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        sourceType: safeRequest.sourceType,
         limit: safeRequest.limit,
         now: safeRequest.now,
         sourceRunStaleAfterMs: resolveSourceRunStaleAfterMs(safeRequest, runtimeConfig),

@@ -343,6 +343,10 @@ function bindForms() {
       await loadSourceOperationsDrilldownFromButton(button);
       return;
     }
+    if (button.dataset.action === 'load-source-cockpit-action-plan') {
+      await loadSourceCockpitActionPlanFromButton(button);
+      return;
+    }
     if (button.dataset.action === 'load-source-type-drilldown') {
       await loadSourceTypeOperationsDrilldownFromButton(button);
       return;
@@ -365,6 +369,50 @@ function bindForms() {
     }
     if (button.dataset.action === 'load-task-detail') {
       await loadTaskDetailFromButton(button);
+      return;
+    }
+    if (button.dataset.action === 'load-source-drilldown') {
+      await loadSourceOperationsDrilldownFromButton(button);
+      return;
+    }
+    if (button.dataset.action === 'load-source-type-drilldown') {
+      await loadSourceTypeOperationsDrilldownFromButton(button);
+      return;
+    }
+    if (button.dataset.action === 'run-due-sources' || button.dataset.action === 'run-due-pipelines') {
+      await runDueCollectionFromButton(button);
+      return;
+    }
+    if (button.dataset.action === 'run-source' || button.dataset.action === 'run-source-pipeline') {
+      await runSourceTaskFromButton(button, 'sourceOperationActionResult');
+      return;
+    }
+    if (button.dataset.action === 'reset-source-failure') {
+      const execute = button.dataset.execute === 'true';
+      if (execute && !window.confirm('Reset this source failure state and retry now?')) return;
+      await resetSourceFailureFromButton(button, execute);
+      return;
+    }
+    if (button.dataset.action === 'set-source-enabled') {
+      await setSourceEnabledFromButton(button);
+      return;
+    }
+    if (button.dataset.action === 'synthesize-source-attention-events') {
+      const execute = button.dataset.execute === 'true';
+      if (execute && !window.confirm('Create notification events from this source attention item?')) return;
+      await synthesizeSourceAttentionEventsFromButton(button, execute);
+      return;
+    }
+    if (button.dataset.action === 'synthesize-source-type-operations-events') {
+      const execute = button.dataset.execute === 'true';
+      if (execute && !window.confirm('Create notification events from this source type operations item?')) return;
+      await synthesizeSourceTypeOperationsEventsFromButton(button, execute);
+      return;
+    }
+    if (button.dataset.action === 'synthesize-runbook-events') {
+      const execute = button.dataset.execute === 'true';
+      if (execute && !window.confirm('Create notification events from runbook actions?')) return;
+      await synthesizeRunbookEventsFromButton(button, execute);
     }
   });
 
@@ -1799,6 +1847,9 @@ async function runDueCollectionFromButton(button) {
   const limit = Number(button.dataset.limit);
   const request = {};
   if (Number.isFinite(limit) && limit > 0) request.limit = Math.floor(limit);
+  if (button.dataset.sourceId) request.sourceId = button.dataset.sourceId;
+  if (button.dataset.sourceKey) request.sourceKey = button.dataset.sourceKey;
+  if (button.dataset.sourceType) request.sourceType = button.dataset.sourceType;
   if (isPipeline) request.provider = button.dataset.provider || 'mock';
   await renderAsync('sourceOperationActionResult', function () {
     return requestJson(isPipeline ? '/api/sources/tasks/insight-pipeline-due' : '/api/sources/tasks/ingest-due', request, {
@@ -1811,6 +1862,23 @@ async function runDueCollectionFromButton(button) {
   await loadSourceOperations();
   await loadEvents();
   await loadRawPages();
+}
+
+async function loadSourceCockpitActionPlanFromButton(button) {
+  const query = new URLSearchParams();
+  if (button.dataset.rank) query.set('rank', button.dataset.rank);
+  if (button.dataset.itemId) query.set('itemId', button.dataset.itemId);
+  if (button.dataset.sourceId) query.set('sourceId', button.dataset.sourceId);
+  if (button.dataset.sourceKey) query.set('sourceKey', button.dataset.sourceKey);
+  if (button.dataset.sourceType) query.set('sourceType', button.dataset.sourceType);
+  query.set('limit', button.dataset.limit || '100');
+  query.set('cockpitLimit', button.dataset.cockpitLimit || '12');
+  query.set('provider', button.dataset.provider || 'mock');
+  await renderAsync('sourceOperationActionResult', function () {
+    return fetchJson('/api/operations/source-cockpit/action-plan?' + query.toString(), {
+      acceptErrorStatus: true
+    });
+  }, renderSourceCockpitActionPlan);
 }
 
 async function runSourceTaskFromButton(button, targetId) {
@@ -1890,7 +1958,9 @@ async function synthesizeRunbookEventsFromButton(button, execute) {
   await renderAsync('sourceOperationActionResult', function () {
     return requestJson('/api/operations/runbook/events', {
       execute,
-      limit: Number(button.dataset.limit) || 100
+      limit: Number(button.dataset.limit) || 100,
+      sourceId: button.dataset.sourceId || undefined,
+      sourceKey: button.dataset.sourceKey || undefined
     });
   }, renderRunbookNotificationEventResult);
   await loadSystemStatus();
@@ -1904,7 +1974,9 @@ async function synthesizeSourceAttentionEventsFromButton(button, execute) {
       execute,
       limit: Number(button.dataset.limit) || 100,
       attentionLimit: Number(button.dataset.attentionLimit) || 100,
-      priorityScoreThreshold: Number(button.dataset.priorityScoreThreshold) || 70
+      priorityScoreThreshold: Number(button.dataset.priorityScoreThreshold) || 70,
+      sourceId: button.dataset.sourceId || undefined,
+      sourceKey: button.dataset.sourceKey || undefined
     });
   }, renderSourceAttentionNotificationEventResult);
   await loadSystemStatus();
@@ -1920,7 +1992,9 @@ async function synthesizeSourceTypeOperationsEventsFromButton(button, execute) {
       sourceTypeLimit: Number(button.dataset.sourceTypeLimit) || 100,
       attentionLimit: Number(button.dataset.attentionLimit) || 100,
       priorityScoreThreshold: Number(button.dataset.priorityScoreThreshold) || 70,
-      includeReadinessWarnings: button.dataset.includeReadinessWarnings === 'true'
+      includeReadinessWarnings: button.dataset.includeReadinessWarnings === 'true',
+      sourceType: button.dataset.sourceType || undefined,
+      sourceKey: button.dataset.sourceKey || undefined
     });
   }, renderSourceTypeOperationsNotificationEventResult);
   await loadSystemStatus();
@@ -4183,12 +4257,14 @@ function renderSourceOperationsCockpitRows(queue) {
 }
 
 function renderSourceOperationsCockpitControls(item, source) {
+  const planButton = '<button class="inline-button" type="button" data-action="load-source-cockpit-action-plan" data-rank="' + escapeHtml(item.rank || '') + '" data-item-id="' + escapeHtml(item.id || '') + '" data-source-id="' + escapeHtml(source && source.id || '') + '" data-source-key="' + escapeHtml(source && source.sourceKey || '') + '" data-source-type="' + escapeHtml(item.sourceType || source && source.sourceType || '') + '" data-limit="100" data-cockpit-limit="12">Plan</button>';
   if (item.scope === 'source-type' || item.sourceType) {
-    return '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-type-drilldown" data-source-type="' + escapeHtml(item.sourceType || '') + '" data-limit="50" data-scan-limit="250">Ops</button>';
+    return planButton + '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-type-drilldown" data-source-type="' + escapeHtml(item.sourceType || '') + '" data-limit="50" data-scan-limit="250">Ops</button>';
   }
   const hasSourceId = Boolean(source && source.id);
   const hasSourceScope = Boolean(source && (source.id || source.sourceKey));
   return [
+    planButton,
     hasSourceScope ? renderSourceDrilldownButton(source || {}) : '',
     item.runnable && hasSourceId ? renderSourceRunButtons(source) : '',
     hasSourceId ? renderSourceFailureResetButtons(source) : ''
@@ -4200,6 +4276,94 @@ function renderSourceOperationsCockpitNextActions(actions) {
   return '<div class="tag-list reason-tags">' + evidenceList(actions.slice(0, 5).map(function (action) {
     return [action.severity || 'info', action.summary || action.key, action.recommendedCommand].filter(Boolean).join(' | ');
   })) + '</div>';
+}
+
+function renderSourceCockpitActionPlan(plan) {
+  const summary = plan.summary || {};
+  const item = plan.selectedItem || {};
+  return [
+    panel('Cockpit action plan', [
+      '<div class="summary-strip">',
+      summaryTile('Status', plan.status || 'unknown', statusVariant(plan.status === 'actionable' ? 'warn' : 'ok')),
+      summaryTile('Actions', String(summary.actionCount || 0), (summary.actionCount || 0) > 0 ? 'ok' : 'muted'),
+      summaryTile('Dry-run', String(summary.dryRunCount || 0), (summary.dryRunCount || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('Execute', String(summary.executeCount || 0), (summary.executeCount || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('Destructive', String(summary.destructiveCount || 0), (summary.destructiveCount || 0) > 0 ? 'fail' : 'ok'),
+      '</div>',
+      metric('Queue item', '#' + (item.rank || '?') + ' ' + (item.title || item.id || 'unknown')),
+      metric('Kind', item.kind || 'unknown'),
+      metric('Priority', item.priorityScore || 0),
+      metric('Next', plan.recommendedNextAction || 'none')
+    ].join(''), 'wide'),
+    panel('Plan actions', renderSourceCockpitActionRows(plan.actions || [], item), 'wide')
+  ].join('');
+}
+
+function renderSourceCockpitActionRows(actions, item) {
+  if (!actions.length) return '<div class="muted">No cockpit actions are available.</div>';
+  return actions.map(function (action) {
+    const api = action.api || {};
+    const details = [
+      action.mode || 'manual',
+      action.key || 'unknown',
+      api.method && api.path ? api.method + ' ' + api.path : undefined,
+      action.destructive ? 'destructive' : undefined,
+      action.confirmationRequired ? 'confirmation' : undefined
+    ].filter(Boolean).join(' | ');
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(action.label || action.key || 'Action') + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '<small>' + escapeHtml(action.summary || '') + '</small>' +
+      (action.command ? '<small>' + escapeHtml(action.command) + '</small>' : '') +
+      '</span><span class="button-group source-op-buttons">' +
+      renderSourceCockpitActionButton(action, item) +
+      statusBadge(action.mode || 'manual', action.destructive ? 'fail' : (action.mode === 'execute' ? 'warn' : 'ok')) +
+      '</span></div>';
+  }).join('');
+}
+
+function renderSourceCockpitActionButton(action, item) {
+  const source = item.source || {};
+  const sourceId = escapeHtml(source.id || '');
+  const sourceKey = escapeHtml(source.sourceKey || '');
+  const sourceType = escapeHtml(item.sourceType || source.sourceType || '');
+  if (action.key === 'source.drilldown') {
+    return '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-drilldown" data-source-id="' + sourceId + '" data-source-key="' + sourceKey + '" data-limit="50">Open</button>';
+  }
+  if (action.key === 'source.run-ingest') {
+    return '<button class="inline-button" type="button" data-action="run-source" data-source-id="' + sourceId + '">Run</button>';
+  }
+  if (action.key === 'source.run-insight') {
+    return '<button class="inline-button" type="button" data-action="run-source-pipeline" data-source-id="' + sourceId + '">Insight</button>';
+  }
+  if (action.key === 'source.failure-reset.preview') {
+    return '<button class="inline-button secondary-inline-button" type="button" data-action="reset-source-failure" data-source-id="' + sourceId + '" data-execute="false" data-retry-now="true">Preview</button>';
+  }
+  if (action.key === 'source.failure-reset.execute') {
+    return '<button class="inline-button warning-inline-button" type="button" data-action="reset-source-failure" data-source-id="' + sourceId + '" data-execute="true" data-retry-now="true">Retry now</button>';
+  }
+  if (action.key === 'source.enable.preview') {
+    return '<button class="inline-button secondary-inline-button" type="button" data-action="set-source-enabled" data-source-id="' + sourceId + '" data-enabled="true" data-execute="false">Preview</button>';
+  }
+  if (action.key === 'source.enable.execute') {
+    return '<button class="inline-button" type="button" data-action="set-source-enabled" data-source-id="' + sourceId + '" data-enabled="true" data-execute="true">Enable</button>';
+  }
+  if (action.key === 'source-attention.events.preview') {
+    return '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-source-attention-events" data-execute="false" data-source-id="' + sourceId + '" data-source-key="' + sourceKey + '" data-limit="100" data-attention-limit="100" data-priority-score-threshold="70">Preview</button>';
+  }
+  if (action.key === 'runbook.events.preview') {
+    return '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-runbook-events" data-execute="false" data-source-id="' + sourceId + '" data-source-key="' + sourceKey + '" data-limit="100">Preview</button>';
+  }
+  if (action.key === 'source-type.drilldown') {
+    return '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-type-drilldown" data-source-type="' + sourceType + '" data-limit="50" data-scan-limit="250">Open</button>';
+  }
+  if (action.key === 'source-type-operations.events.preview') {
+    return '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-source-type-operations-events" data-execute="false" data-source-type="' + sourceType + '" data-limit="100" data-source-type-limit="100" data-attention-limit="100" data-priority-score-threshold="70">Preview</button>';
+  }
+  if (action.key === 'source-type.run-due-insight') {
+    return '<button class="inline-button" type="button" data-action="run-due-pipelines" data-source-type="' + sourceType + '" data-limit="50" data-provider="mock">Run due</button>';
+  }
+  return '';
 }
 
 function renderSourceTypeOperations(report) {

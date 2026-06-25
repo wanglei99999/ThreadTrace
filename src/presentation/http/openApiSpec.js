@@ -1206,6 +1206,41 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/operations/source-cockpit/action-plan': {
+        get: {
+          summary: 'Get a dry-run action plan for a ranked source operations cockpit queue item',
+          parameters: [
+            { name: 'rank', in: 'query', required: false, schema: { type: 'number', example: 1 } },
+            { name: 'itemId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'provider', in: 'query', required: false, schema: { type: 'string', example: 'mock' } },
+            { name: 'sourceId', in: 'query', required: false, schema: { type: 'string', example: 'tracked-source-nga-001' } },
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceType', in: 'query', required: false, schema: { type: 'string', example: 'saved-html-directory' } },
+            { name: 'enabled', in: 'query', required: false, schema: { type: 'boolean' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'cockpitLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'attentionLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'sourceTypeLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Side-effect-free cockpit action plan',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceOperationsCockpitActionPlan'
+                  }
+                }
+              }
+            },
+            404: {
+              $ref: '#/components/responses/NotFound'
+            }
+          }
+        }
+      },
       '/api/operations/source-drilldown': {
         get: {
           summary: 'Get source-scoped operational drill-down across workers, tasks, events, and review queues',
@@ -3091,6 +3126,9 @@ function createOpenApiSpec() {
                   type: 'object',
                   properties: {
                     forum: { type: 'string', example: 'nga' },
+                    sourceId: { type: 'string', example: 'tracked-source-nga-001' },
+                    sourceKey: { type: 'string', example: 'nga' },
+                    sourceType: { type: 'string', example: 'saved-html-directory' },
                     limit: { type: 'number', example: 50 },
                     sourceRunStaleAfterMs: { type: 'number', example: 600000 },
                     now: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
@@ -3125,6 +3163,9 @@ function createOpenApiSpec() {
                   type: 'object',
                   properties: {
                     forum: { type: 'string', example: 'nga' },
+                    sourceId: { type: 'string', example: 'tracked-source-nga-001' },
+                    sourceKey: { type: 'string', example: 'nga' },
+                    sourceType: { type: 'string', example: 'saved-html-directory' },
                     limit: { type: 'number', example: 50 },
                     now: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
                     sourceRunStaleAfterMs: { type: 'number', example: 600000 },
@@ -3161,6 +3202,9 @@ function createOpenApiSpec() {
                   type: 'object',
                   properties: {
                     forum: { type: 'string', example: 'nga' },
+                    sourceId: { type: 'string', example: 'tracked-source-nga-001' },
+                    sourceKey: { type: 'string', example: 'nga' },
+                    sourceType: { type: 'string', example: 'saved-html-directory' },
                     limit: { type: 'number', example: 50 },
                     now: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
                     sourceRunStaleAfterMs: { type: 'number', example: 600000 },
@@ -4558,6 +4602,54 @@ function createOpenApiSpec() {
               type: 'array',
               items: { type: 'object', additionalProperties: true }
             },
+            inputs: {
+              type: 'object',
+              additionalProperties: true
+            }
+          }
+        },
+        SourceOperationsCockpitAction: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', example: 'source.drilldown' },
+            label: { type: 'string', example: 'Open source drill-down' },
+            mode: { type: 'string', enum: ['view', 'dry-run', 'execute', 'manual'] },
+            severity: { type: 'string', example: 'warning' },
+            summary: { type: 'string' },
+            api: {
+              type: 'object',
+              properties: {
+                method: { type: 'string', example: 'GET' },
+                path: { type: 'string', example: '/api/operations/source-drilldown?sourceId=source-1' },
+                body: { type: 'object', additionalProperties: true }
+              }
+            },
+            command: { type: 'string' },
+            destructive: { type: 'boolean' },
+            confirmationRequired: { type: 'boolean' }
+          }
+        },
+        SourceOperationsCockpitActionPlan: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            status: { type: 'string', enum: ['review', 'actionable'] },
+            selectedItem: { $ref: '#/components/schemas/SourceOperationsCockpitItem' },
+            summary: {
+              type: 'object',
+              properties: {
+                actionCount: { type: 'number', example: 4 },
+                viewCount: { type: 'number', example: 1 },
+                dryRunCount: { type: 'number', example: 1 },
+                executeCount: { type: 'number', example: 2 },
+                destructiveCount: { type: 'number', example: 1 }
+              }
+            },
+            actions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceOperationsCockpitAction' }
+            },
+            recommendedNextAction: { type: 'string' },
             inputs: {
               type: 'object',
               additionalProperties: true

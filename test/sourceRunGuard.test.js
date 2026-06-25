@@ -9,6 +9,7 @@ const {
 } = require('../src/application/use-cases/runTrackedSourceIngestTask');
 const { runEnabledSourcesIngestTasks } = require('../src/application/use-cases/runEnabledSourcesIngestTasks');
 const { runDueSourcesIngestTasks } = require('../src/application/use-cases/runDueSourcesIngestTasks');
+const { runDueSourceInsightPipelineTasks } = require('../src/application/use-cases/runDueSourceInsightPipelineTasks');
 
 test('tracked source ingest rejects active duplicate runs', async function () {
   let handlerCalls = 0;
@@ -289,6 +290,80 @@ test('due source batch can target one source by id', async function () {
   assert.equal(result.dueCount, 1);
   assert.equal(result.results[0].source.id, 'source-b');
   assert.equal(repositories.savedTasks[0].input.sourceId, 'source-b');
+});
+
+test('enabled source batch can target one source type', async function () {
+  const handledSources = [];
+  const sourceA = createSource({
+    id: 'source-a',
+    sourceType: 'custom-source'
+  });
+  const sourceB = createSource({
+    id: 'source-b',
+    sourceType: 'other-source'
+  });
+  const repositories = createRepositoriesForSources([sourceA, sourceB]);
+
+  const result = await runEnabledSourcesIngestTasks({
+    sourceRepository: repositories.sourceRepository,
+    threadRepository: repositories.threadRepository,
+    reportRepository: repositories.reportRepository,
+    taskRepository: repositories.taskRepository,
+    sourceIngestHandlerRegistry: createHandlerRegistry(function (context) {
+      handledSources.push(context.source.id);
+      return createHandlerResult();
+    }),
+    sourceType: 'custom-source',
+    getAdapter() {},
+    now: '2026-06-19T10:00:00.000Z'
+  });
+
+  assert.deepEqual(handledSources, ['source-a']);
+  assert.equal(result.sourceCount, 1);
+  assert.equal(result.results[0].source.id, 'source-a');
+  assert.equal(repositories.savedTasks[0].input.sourceType, 'custom-source');
+});
+
+test('due source insight pipeline batch can target one source type', async function () {
+  const handledSources = [];
+  const sourceA = createSource({
+    id: 'source-a',
+    sourceType: 'custom-source',
+    schedule: {
+      enabled: true,
+      nextRunAt: '2026-06-19T09:00:00.000Z'
+    }
+  });
+  const sourceB = createSource({
+    id: 'source-b',
+    sourceType: 'other-source',
+    schedule: {
+      enabled: true,
+      nextRunAt: '2026-06-19T09:00:00.000Z'
+    }
+  });
+  const repositories = createRepositoriesForSources([sourceA, sourceB]);
+
+  const result = await runDueSourceInsightPipelineTasks({
+    sourceRepository: repositories.sourceRepository,
+    threadRepository: repositories.threadRepository,
+    reportRepository: repositories.reportRepository,
+    taskRepository: repositories.taskRepository,
+    sourceIngestHandlerRegistry: createHandlerRegistry(function (context) {
+      handledSources.push(context.source.id);
+      return createHandlerResult();
+    }),
+    sourceType: 'custom-source',
+    getAdapter() {},
+    now: '2026-06-19T10:00:00.000Z',
+    semanticEnrichmentEnabled: false
+  });
+
+  assert.deepEqual(handledSources, ['source-a']);
+  assert.equal(result.sourceCount, 1);
+  assert.equal(result.dueCount, 1);
+  assert.equal(result.results[0].source.id, 'source-a');
+  assert.equal(repositories.savedTasks[0].input.sourceType, 'custom-source');
 });
 
 test('due source batch waits for failed source retry backoff', async function () {

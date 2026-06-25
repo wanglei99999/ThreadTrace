@@ -25,7 +25,9 @@ async function runEnabledSourcesIngestTasks(options) {
   }
 
   let batchTask = createTaskRecord('ingest-enabled-sources', {
+    sourceId: safeOptions.sourceId,
     sourceKey: safeOptions.sourceKey,
+    sourceType: safeOptions.sourceType,
     limit: safeOptions.limit || 50
   }, safeOptions);
   await taskRepository.saveTask(batchTask);
@@ -35,8 +37,10 @@ async function runEnabledSourcesIngestTasks(options) {
 
   try {
     const startedAt = batchTask.startedAt;
-    const sources = await sourceRepository.listSources({
+    const sources = await listCandidateSources(sourceRepository, {
+      sourceId: safeOptions.sourceId,
       sourceKey: safeOptions.sourceKey,
+      sourceType: safeOptions.sourceType,
       enabled: true,
       limit: safeOptions.limit || 50
     });
@@ -106,6 +110,28 @@ async function runEnabledSourcesIngestTasks(options) {
   }
 }
 
+async function listCandidateSources(sourceRepository, query) {
+  const safeQuery = query || {};
+  if (safeQuery.sourceId) {
+    const source = await sourceRepository.findSource(safeQuery.sourceId);
+    if (!source) return [];
+    if (safeQuery.sourceKey && source.sourceKey !== safeQuery.sourceKey) return [];
+    if (safeQuery.sourceType && source.sourceType !== safeQuery.sourceType) return [];
+    if (safeQuery.enabled === true && source.enabled !== true) return [];
+    if (safeQuery.enabled === false && source.enabled !== false) return [];
+    return [source];
+  }
+  const sources = await sourceRepository.listSources({
+    sourceKey: safeQuery.sourceKey,
+    enabled: safeQuery.enabled,
+    limit: safeQuery.limit
+  });
+  if (!safeQuery.sourceType) return sources;
+  return sources.filter(function (source) {
+    return source.sourceType === safeQuery.sourceType;
+  });
+}
+
 function summarizeBatch(startedAt, sources, results) {
   return {
     startedAt,
@@ -122,5 +148,6 @@ function summarizeBatch(startedAt, sources, results) {
 }
 
 module.exports = {
+  listCandidateSources,
   runEnabledSourcesIngestTasks
 };

@@ -30,6 +30,7 @@ async function runDueSourceInsightPipelineTasks(options) {
   let batchTask = createTaskRecord('source-insight-pipeline-due-sources', {
     sourceId: safeOptions.sourceId,
     sourceKey: safeOptions.sourceKey,
+    sourceType: safeOptions.sourceType,
     limit: safeOptions.limit || 50,
     checkedAt,
     semanticEnrichment,
@@ -46,6 +47,7 @@ async function runDueSourceInsightPipelineTasks(options) {
     const sources = await listCandidateSources(sourceRepository, {
       sourceId: safeOptions.sourceId,
       sourceKey: safeOptions.sourceKey,
+      sourceType: safeOptions.sourceType,
       enabled: true,
       limit: safeOptions.limit || 50
     });
@@ -172,14 +174,19 @@ async function listCandidateSources(sourceRepository, query) {
     const source = await sourceRepository.findSource(safeQuery.sourceId);
     if (!source) return [];
     if (safeQuery.sourceKey && source.sourceKey !== safeQuery.sourceKey) return [];
+    if (safeQuery.sourceType && source.sourceType !== safeQuery.sourceType) return [];
     if (safeQuery.enabled === true && source.enabled !== true) return [];
     if (safeQuery.enabled === false && source.enabled !== false) return [];
     return [source];
   }
-  return sourceRepository.listSources({
+  const sources = await sourceRepository.listSources({
     sourceKey: safeQuery.sourceKey,
     enabled: safeQuery.enabled,
     limit: safeQuery.limit
+  });
+  if (!safeQuery.sourceType) return sources;
+  return sources.filter(function (source) {
+    return source.sourceType === safeQuery.sourceType;
   });
 }
 
