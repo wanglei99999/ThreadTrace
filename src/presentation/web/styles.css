@@ -1255,22 +1255,68 @@ form button[type="submit"]:hover {
 
 .metric-row strong,
 .status-row strong {
+  max-width: 68%;
   color: var(--text-strong);
   text-align: right;
   overflow-wrap: anywhere;
 }
 
 .evidence-row {
+  position: relative;
+  align-items: flex-start;
   justify-content: flex-start;
+  gap: 9px;
+  margin-top: 8px;
+  padding: 10px 11px;
+  border: 1px solid rgba(212, 221, 218, 0.82);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76);
+}
+
+.evidence-row:first-of-type {
+  margin-top: 0;
+  border-top: 1px solid rgba(212, 221, 218, 0.82);
+}
+
+.evidence-row::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  margin-top: 8px;
+  border-radius: 999px;
+  background: var(--info);
+  box-shadow: 0 0 0 3px rgba(36, 95, 159, 0.1);
 }
 
 .evidence-row span {
   min-width: 0;
+  color: var(--text);
   overflow-wrap: anywhere;
 }
 
 .action-row {
+  position: relative;
   align-items: center;
+  margin-top: 8px;
+  padding: 11px;
+  border: 1px solid rgba(212, 221, 218, 0.82);
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(248, 251, 250, 0.78));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.action-row:first-of-type {
+  margin-top: 0;
+  border-top: 1px solid rgba(212, 221, 218, 0.82);
+}
+
+.evidence-row:hover,
+.action-row:hover {
+  border-color: #b8c9c3;
+  background: rgba(255, 255, 255, 0.95);
 }
 
 .action-row span {
@@ -1287,20 +1333,22 @@ form button[type="submit"]:hover {
 }
 
 .inline-button {
-  min-height: 32px;
+  min-height: 34px;
   padding: 0 12px;
   border-radius: var(--radius-sm);
   color: #ffffff;
   background:
     linear-gradient(180deg, #19816c, var(--accent-strong));
+  border: 1px solid rgba(5, 74, 62, 0.18);
   white-space: nowrap;
   font-weight: 820;
-  box-shadow: 0 8px 16px rgba(20, 114, 95, 0.18);
+  box-shadow: 0 8px 16px rgba(20, 114, 95, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .inline-button:hover {
   background:
     linear-gradient(180deg, #177762, #084b3e);
+  box-shadow: 0 10px 20px rgba(20, 114, 95, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
 .inline-button:disabled {
@@ -1323,9 +1371,10 @@ form button[type="submit"]:hover {
 
 .secondary-inline-button {
   color: var(--accent-ink);
-  background: #ffffff;
+  background:
+    linear-gradient(180deg, #ffffff, #f7faf9);
   border: 1px solid var(--line);
-  box-shadow: none;
+  box-shadow: var(--inner-light);
 }
 
 .secondary-inline-button:hover {
