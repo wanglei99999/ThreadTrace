@@ -4,7 +4,8 @@ const state = {
   adapters: [],
   sourceTypes: [],
   currentView: 'history',
-  rolloutManifestDraft: undefined
+  rolloutManifestDraft: undefined,
+  onboardingRecipeManifestDraft: undefined
 };
 
 const views = {
@@ -37,6 +38,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshSourcesButton').addEventListener('click', loadSources);
   document.getElementById('refreshSourceOperationsButton').addEventListener('click', loadSourceOperations);
   document.getElementById('onboardingResult').addEventListener('click', handleOnboardingAction);
+  document.getElementById('sourceOnboardingRecipe').addEventListener('click', handleOnboardingAction);
   document.getElementById('refreshEventsButton').addEventListener('click', loadEvents);
   document.getElementById('refreshReviewResultsButton').addEventListener('click', loadContextReviewResults);
   document.getElementById('refreshReviewActionPlanButton').addEventListener('click', loadContextReviewResultActionPlan);
@@ -73,6 +75,7 @@ document.addEventListener('DOMContentLoaded', function () {
   loadAdapters();
   loadConnectorCatalog();
   loadSystemStatus();
+  bindSourceOnboardingRecipePreview();
 });
 
 function bindNavigation() {
@@ -500,6 +503,9 @@ function handleOnboardingAction(event) {
   if (button.dataset.action === 'load-rollout-manifest-draft') {
     fillRolloutManifestForms(state.rolloutManifestDraft);
   }
+  if (button.dataset.action === 'load-onboarding-recipe-manifest') {
+    fillRolloutManifestForms(state.onboardingRecipeManifestDraft);
+  }
 }
 
 function fillRolloutManifestForms(manifest) {
@@ -544,6 +550,33 @@ function findSourceTypeSpec(sourceType) {
   return (state.sourceTypes || []).find(function (item) {
     return item.sourceType === sourceType;
   });
+}
+
+function bindSourceOnboardingRecipePreview() {
+  const form = document.getElementById('sourceOnboardingForm');
+  if (!form) return;
+  ['forum', 'sourceType'].forEach(function (name) {
+    const field = form.elements[name];
+    if (!field) return;
+    field.addEventListener('input', renderSourceOnboardingRecipeFromForm);
+    field.addEventListener('change', renderSourceOnboardingRecipeFromForm);
+  });
+  renderSourceOnboardingRecipeFromForm();
+}
+
+function renderSourceOnboardingRecipeFromForm() {
+  const target = document.getElementById('sourceOnboardingRecipe');
+  const form = document.getElementById('sourceOnboardingForm');
+  if (!target || !form) return;
+  const sourceType = String(form.elements.sourceType && form.elements.sourceType.value || '').trim();
+  const sourceKey = String(form.elements.forum && form.elements.forum.value || '').trim();
+  const sourceTypeSpec = findSourceTypeSpec(sourceType);
+  if (!sourceTypeSpec || !sourceTypeSpec.onboardingRecipe) {
+    state.onboardingRecipeManifestDraft = undefined;
+    target.innerHTML = panel('Source onboarding recipe', '<div class="muted">Select a registered source type.</div>', 'wide');
+    return;
+  }
+  target.innerHTML = renderSourceOnboardingRecipe(sourceTypeSpec, sourceKey);
 }
 
 function parseManifestJson(value) {
@@ -602,6 +635,7 @@ async function loadAdapters() {
     fillAdapterSelect('onboardingForum');
     fillAdapterSelect('dryRunForum');
     fillAdapterSelect('rolloutForum');
+    renderSourceOnboardingRecipeFromForm();
   } catch (error) {
     renderError('historyResult', error);
   }
@@ -614,8 +648,10 @@ async function loadConnectorCatalog() {
     });
     state.sourceTypes = mergeSourceTypeLists(state.sourceTypes, result.sourceTypes || []);
     fillSuggestionLists();
+    renderSourceOnboardingRecipeFromForm();
   } catch (error) {
     state.sourceTypes = state.sourceTypes || [];
+    renderSourceOnboardingRecipeFromForm();
   }
 }
 
@@ -1757,6 +1793,96 @@ function renderSourceSaveResult(result) {
     metric('类型', result.source.sourceType),
     metric('名称', result.source.displayName)
   ].join(''), 'wide');
+}
+
+function renderSourceOnboardingRecipe(sourceTypeSpec, selectedSourceKey) {
+  const recipe = sourceTypeSpec.onboardingRecipe || {};
+  const compatibleSourceKeys = recipe.compatibleSourceKeys || [];
+  const sourceKey = selectedSourceKey || compatibleSourceKeys[0] || '<source-key>';
+  const manifest = buildOnboardingRecipeManifest(recipe.rolloutManifestTemplate, sourceKey);
+  state.onboardingRecipeManifestDraft = manifest;
+  const requiredFields = recipe.requiredLocationFields || [];
+  const optionalFields = recipe.optionalLocationFields || [];
+  const adapterSummary = recipe.adapterGuidance && recipe.adapterGuidance.summary || (recipe.requiresAdapter ? 'Adapter required.' : 'Adapter not required.');
+  const compatibleLabel = compatibleSourceKeys.length > 0 ? compatibleSourceKeys.join(', ') : 'none';
+  return [
+    panel('Source onboarding recipe', [
+      metric('Source type', sourceTypeSpec.sourceType),
+      metric('Adapter', recipe.requiresAdapter ? 'required' : 'not required'),
+      metric('Location fields', requiredFields.length + ' required / ' + optionalFields.length + ' optional'),
+      metric('Compatible keys', compatibleLabel)
+    ].join('')),
+    panel('Adapter guidance', [
+      '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(recipe.requiresAdapter ? 'Forum adapter' : 'Canonical source') + '</strong>' +
+      '<small>' + escapeHtml(adapterSummary) + '</small>' +
+      '</span>' + statusBadge(recipe.requiresAdapter ? 'adapter' : 'direct', recipe.requiresAdapter && compatibleSourceKeys.length === 0 ? 'warning' : 'ok') + '</div>'
+    ].join('')),
+    panel('Location fields', renderRecipeLocationRows(sourceTypeSpec, requiredFields, optionalFields), 'wide'),
+    panel('Recommended flow', renderRecipeFlowRows(recipe.recommendedFlow || []), 'wide'),
+    panel('Rollout manifest template', [
+      '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(manifest.name || 'manifest') + '</strong>' +
+      '<small>' + escapeHtml((manifest.source && manifest.source.sourceKey || 'unknown') + ' | ' + (manifest.source && manifest.source.sourceType || 'unknown')) + '</small>' +
+      '</span><span class="button-group source-op-buttons">' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="load-onboarding-recipe-manifest">Use template</button>' +
+      '</span></div>',
+      '<pre>' + escapeHtml(JSON.stringify(manifest, null, 2)) + '</pre>'
+    ].join(''), 'wide')
+  ].join('');
+}
+
+function buildOnboardingRecipeManifest(template, sourceKey) {
+  const manifest = clonePlainObject(template || {});
+  manifest.version = manifest.version || '1.0';
+  manifest.source = manifest.source || {};
+  manifest.source.sourceKey = sourceKey || manifest.source.sourceKey || '<source-key>';
+  manifest.source.displayName = manifest.source.displayName || '<display-name>';
+  if (manifest.name) {
+    manifest.name = manifest.name.replace(/^<source-key>/, manifest.source.sourceKey);
+  } else {
+    manifest.name = manifest.source.sourceKey + '-' + (manifest.source.sourceType || 'source') + '-rollout';
+  }
+  manifest.ingest = manifest.ingest || { dryRun: true };
+  manifest.workers = manifest.workers || {
+    topology: 'operations-worker',
+    sourceTaskMode: 'ingest'
+  };
+  return manifest;
+}
+
+function clonePlainObject(value) {
+  return JSON.parse(JSON.stringify(value || {}));
+}
+
+function renderRecipeLocationRows(sourceTypeSpec, requiredFields, optionalFields) {
+  const fields = requiredFields.concat(optionalFields);
+  const properties = sourceTypeSpec.locationSchema && sourceTypeSpec.locationSchema.properties || {};
+  if (fields.length === 0) return '<div class="muted">No location fields</div>';
+  return fields.map(function (field) {
+    const property = properties[field] || {};
+    const required = requiredFields.includes(field);
+    const detail = [
+      property.type,
+      property.format,
+      property.description
+    ].filter(Boolean).join(' | ');
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(field) + '</strong>' +
+      '<small>' + escapeHtml(detail || 'location value') + '</small>' +
+      '</span>' + statusBadge(required ? 'required' : 'optional', required ? 'warning' : 'muted') + '</div>';
+  }).join('');
+}
+
+function renderRecipeFlowRows(flow) {
+  if (!flow.length) return '<div class="muted">No recommended flow</div>';
+  return flow.map(function (step) {
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml((step.phase || 'step') + ' | ' + (step.key || 'unknown')) + '</strong>' +
+      '<small>' + escapeHtml(step.summary || '') + '</small>' +
+      '<small>' + escapeHtml([step.cli, step.api].filter(Boolean).join(' | ')) + '</small>' +
+      '</span>' + statusBadge(step.key || 'step', 'muted') + '</div>';
+  }).join('');
 }
 
 function renderSourceOnboardingPreflight(result) {

@@ -125,9 +125,13 @@ test('http server exposes health, adapters, and context APIs', async function ()
     const webAppJs = await webApp.text();
     assert.match(homeHtml, /ThreadTrace/);
     assert.match(homeHtml, /sourceOnboardingForm/);
+    assert.match(homeHtml, /sourceOnboardingRecipe/);
     assert.match(homeHtml, /onboardingResult/);
     assert.match(webAppJs, /rolloutManifestDraft/);
+    assert.match(webAppJs, /onboardingRecipeManifestDraft/);
+    assert.match(webAppJs, /renderSourceOnboardingRecipe/);
     assert.match(webAppJs, /load-rollout-manifest-draft/);
+    assert.match(webAppJs, /load-onboarding-recipe-manifest/);
     assert.match(homeHtml, /modulePath/);
     assert.match(homeHtml, /locationJson/);
     assert.match(homeHtml, /connectorModuleValidationForm/);
