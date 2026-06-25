@@ -54,7 +54,7 @@
 
       <section class="view-panel hidden" id="contextView">
         <form id="contextForm" class="stacked-form entry-card context-entry-card" data-title="Context restore">
-          <div class="control-strip">
+          <div class="control-strip context-source-strip">
             <label>
               <span>论坛</span>
               <select name="forum" id="contextForum"></select>
@@ -64,7 +64,7 @@
               <input name="inputDir" value="example" autocomplete="off">
             </label>
           </div>
-          <div class="control-strip">
+          <div class="control-strip context-author-strip">
             <label>
               <span>作者 ID</span>
               <input name="authorId" value="150058" autocomplete="off">
@@ -74,11 +74,13 @@
               <input name="author" value="-阿狼-" autocomplete="off">
             </label>
           </div>
-          <label class="full">
+          <label class="full context-text-field">
             <span>新发言</span>
             <textarea name="text" rows="4">科技后面看量确认</textarea>
           </label>
-          <button type="submit">还原语境</button>
+          <div class="context-command-shelf" data-label="Restore">
+            <button type="submit">还原语境</button>
+          </div>
         </form>
         <div id="contextResult" class="result-grid"></div>
       </section>

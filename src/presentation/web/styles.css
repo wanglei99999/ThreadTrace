@@ -453,30 +453,153 @@ textarea:focus-visible {
   gap: 13px;
 }
 
+.stacked-form.context-entry-card {
+  grid-template-columns: minmax(260px, 0.44fr) minmax(0, 1fr);
+  align-items: stretch;
+  gap: 14px;
+}
+
 .context-entry-card::before {
   border-color: rgba(36, 95, 159, 0.24);
   background: var(--info-soft);
   color: #154d88;
 }
 
-.context-entry-card > label.full {
-  padding-top: 2px;
+.context-source-strip,
+.context-author-strip {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 11px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid rgba(205, 218, 214, 0.86);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(238, 246, 255, 0.48));
+  box-shadow: var(--inner-light);
+}
+
+.context-source-strip {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.context-author-strip {
+  grid-column: 1;
+  grid-row: 2;
+  border-color: rgba(241, 189, 82, 0.24);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(255, 245, 220, 0.48));
+}
+
+.context-source-strip::before,
+.context-author-strip::before {
+  width: max-content;
+  max-width: 100%;
+  padding: 4px 7px;
+  border-radius: var(--radius-sm);
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.1;
+}
+
+.context-source-strip::before {
+  content: "Source";
+  border: 1px solid rgba(36, 95, 159, 0.18);
+  background: rgba(238, 246, 255, 0.8);
+  color: #154d88;
+}
+
+.context-author-strip::before {
+  content: "Author";
+  border: 1px solid rgba(241, 189, 82, 0.28);
+  background: rgba(255, 245, 220, 0.84);
+  color: #73501b;
+}
+
+.context-source-strip label,
+.context-author-strip label {
+  flex: none;
+  min-width: 0;
+}
+
+.context-entry-card > label.full.context-text-field {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: start;
+  min-width: 0;
+  padding-top: 0;
+}
+
+.context-text-field > span {
+  width: max-content;
+  max-width: 100%;
+  margin-bottom: 2px;
+  padding: 5px 8px;
+  border: 1px solid rgba(36, 95, 159, 0.2);
+  border-radius: var(--radius-sm);
+  background: rgba(238, 246, 255, 0.78);
+  color: #154d88;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.2;
+  align-self: start;
 }
 
 .context-entry-card textarea {
-  min-height: 132px;
+  min-height: 278px;
   border-color: rgba(36, 95, 159, 0.16);
   background:
+    linear-gradient(180deg, rgba(238, 246, 255, 0.44), rgba(238, 246, 255, 0) 96px),
     linear-gradient(90deg, rgba(36, 95, 159, 0.045) 1px, transparent 1px),
     linear-gradient(180deg, #ffffff, #fbfcfc);
-  background-size: 32px 100%, 100% 100%;
+  background-size: 100% 100%, 32px 100%, 100% 100%;
   font-size: 17px;
   line-height: 1.65;
+  align-self: stretch;
 }
 
-.context-entry-card button[type="submit"] {
-  justify-self: start;
-  min-width: 154px;
+.context-command-shelf {
+  position: relative;
+  grid-column: 1;
+  grid-row: 3;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 25px 12px 12px;
+  border: 1px solid rgba(184, 201, 195, 0.78);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(242, 250, 247, 0.72));
+  box-shadow: var(--inner-light);
+}
+
+.context-command-shelf::before {
+  content: attr(data-label);
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  width: max-content;
+  max-width: calc(100% - 20px);
+  padding: 4px 7px;
+  border: 1px solid rgba(20, 114, 95, 0.22);
+  border-radius: var(--radius-sm);
+  background: rgba(226, 243, 238, 0.82);
+  color: var(--accent-ink);
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.1;
+}
+
+.context-command-shelf button[type="submit"] {
+  width: 100%;
+  min-width: 0;
 }
 
 .search-workbench {
@@ -1565,6 +1688,21 @@ textarea:focus-visible {
   border: 0;
   background: transparent;
   box-shadow: none;
+}
+
+.stacked-form .control-strip.context-source-strip,
+.stacked-form .control-strip.context-author-strip {
+  padding: 14px;
+  border: 1px solid rgba(205, 218, 214, 0.86);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(238, 246, 255, 0.48));
+  box-shadow: var(--inner-light);
+}
+
+.stacked-form .control-strip.context-author-strip {
+  border-color: rgba(241, 189, 82, 0.24);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(255, 245, 220, 0.48));
 }
 
 label {
@@ -3981,6 +4119,22 @@ pre {
     padding: 44px 12px 12px;
   }
 
+  .stacked-form.context-entry-card {
+    grid-template-columns: 1fr;
+  }
+
+  .context-source-strip,
+  .context-author-strip,
+  .context-entry-card > label.full.context-text-field,
+  .context-command-shelf {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .context-entry-card textarea {
+    min-height: 220px;
+  }
+
   .entry-card::after {
     width: 48px;
   }
@@ -4320,6 +4474,22 @@ pre {
 
   .feedback-state::after {
     opacity: 0.82;
+  }
+
+  .context-source-strip,
+  .context-author-strip,
+  .context-command-shelf {
+    padding-inline: 10px;
+  }
+
+  .stacked-form .control-strip.context-source-strip,
+  .stacked-form .control-strip.context-author-strip {
+    padding-inline: 10px;
+  }
+
+  .context-entry-card textarea {
+    min-height: 188px;
+    font-size: 16px;
   }
 
   .collection-card .secondary-button,
