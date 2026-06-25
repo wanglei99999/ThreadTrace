@@ -76,6 +76,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('runSourcesButton').addEventListener('click', runAllSources);
   document.getElementById('runDueSourcesButton').addEventListener('click', runDueSources);
   document.getElementById('runDuePipelinesButton').addEventListener('click', runDuePipelines);
+  document.getElementById('runRolloutReadinessButton').addEventListener('click', runVisibleRolloutReadinessChecks);
   document.getElementById('crawlUrlButton').addEventListener('click', crawlThreadUrl);
   loadAdapters();
   loadConnectorCatalog();
@@ -536,6 +537,10 @@ async function handleOnboardingAction(event) {
       await preflightSourceOnboardingManifest(state.rolloutManifestDraft);
       return;
     }
+    if (button.dataset.action === 'run-rollout-readiness-checks') {
+      await runRolloutReadinessChecks(resolveRolloutChecksManifest(button));
+      return;
+    }
     if (button.dataset.action === 'use-connector-package') {
       fillSourceOnboardingFromConnectorPackage({
         packageName: button.dataset.packageName,
@@ -596,6 +601,89 @@ function getRolloutManifestFormManifest() {
   const textarea = document.querySelector('#rolloutManifestForm textarea[name="manifestJson"]');
   if (!textarea || !String(textarea.value || '').trim()) return undefined;
   return parseManifestJson(textarea.value);
+}
+
+function resolveRolloutChecksManifest(button) {
+  if (button && button.closest('#sourceOnboardingRecipe')) return getCurrentOnboardingRecipeManifest();
+  if (button && button.closest('#onboardingResult') && state.rolloutManifestDraft) return state.rolloutManifestDraft;
+  return getRolloutManifestFormManifest() || state.rolloutManifestDraft || state.loadedConnectorPackageManifestDraft;
+}
+
+async function runVisibleRolloutReadinessChecks() {
+  try {
+    await runRolloutReadinessChecks(getRolloutManifestFormManifest());
+  } catch (error) {
+    renderError('rolloutReadinessResult', error);
+  }
+}
+
+async function runRolloutReadinessChecks(manifest) {
+  if (!manifest) {
+    renderError('rolloutReadinessResult', new Error('Rollout manifest JSON is required.'));
+    return;
+  }
+  fillRolloutManifestForms(manifest);
+  setLoading('rolloutReadinessResult', 'Running rollout checks...');
+  const checks = await Promise.all([
+    runManifestCheck({
+      key: 'manifestPlan',
+      title: 'Manifest plan',
+      url: '/api/operations/rollout-manifest-plan',
+      targetId: 'rolloutManifestResult',
+      renderer: renderRolloutManifestPlan,
+      manifest
+    }),
+    runManifestCheck({
+      key: 'resourceProvisioning',
+      title: 'Resource provisioning',
+      url: '/api/operations/resource-provisioning-plan',
+      targetId: 'resourceProvisioningResult',
+      renderer: renderResourceProvisioningPlan,
+      manifest
+    }),
+    runManifestCheck({
+      key: 'deploymentGate',
+      title: 'Deployment gate',
+      url: '/api/deployment/gate',
+      targetId: 'deploymentGateResult',
+      renderer: renderDeploymentGateReport,
+      manifest
+    })
+  ]);
+  document.getElementById('rolloutReadinessResult').innerHTML = renderRolloutReadinessChecks({
+    manifest,
+    checks
+  });
+}
+
+async function runManifestCheck(options) {
+  const target = document.getElementById(options.targetId);
+  if (target) setLoading(options.targetId, 'Running ' + options.title + '...');
+  try {
+    const result = await requestJson(options.url, options.manifest, {
+      acceptErrorStatus: true
+    });
+    if (target) target.innerHTML = options.renderer(result);
+    return {
+      key: options.key,
+      title: options.title,
+      status: result.status || 'ok',
+      result
+    };
+  } catch (error) {
+    if (target) renderError(options.targetId, error);
+    return {
+      key: options.key,
+      title: options.title,
+      status: 'fail',
+      error
+    };
+  }
+}
+
+function setLoading(targetId, message) {
+  const target = document.getElementById(targetId);
+  if (target) target.innerHTML = '<div class="empty">' + escapeHtml(message || 'Loading...') + '</div>';
 }
 
 function fillRolloutManifestForms(manifest) {
@@ -686,6 +774,7 @@ async function loadConnectorPackageRecommendedManifest(selection) {
     metric('Manifest path', result.manifestPath || result.recommendedManifest || 'unknown'),
     '<div class="button-group source-op-buttons">' +
       '<button class="inline-button secondary-inline-button" type="button" data-action="preflight-loaded-connector-package-manifest">Preflight manifest</button>' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="run-rollout-readiness-checks">Run rollout checks</button>' +
     '</div>'
   ].join(''), 'wide');
   const preflightButton = target.querySelector('button[data-action="preflight-loaded-connector-package-manifest"]');
@@ -697,6 +786,18 @@ async function loadConnectorPackageRecommendedManifest(selection) {
         await preflightSourceOnboardingManifest(getRolloutManifestFormManifest() || result.manifest);
       } catch (error) {
         renderError('onboardingResult', error);
+      }
+    });
+  }
+  const rolloutChecksButton = target.querySelector('button[data-action="run-rollout-readiness-checks"]');
+  if (rolloutChecksButton) {
+    rolloutChecksButton.addEventListener('click', async function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      try {
+        await runRolloutReadinessChecks(getRolloutManifestFormManifest() || result.manifest);
+      } catch (error) {
+        renderError('rolloutReadinessResult', error);
       }
     });
   }
@@ -2124,6 +2225,7 @@ function renderSourceOnboardingRecipe(sourceTypeSpec, selectedSourceKey) {
       '</span><span class="button-group source-op-buttons">' +
       '<button class="inline-button secondary-inline-button" type="button" data-action="load-onboarding-recipe-manifest">Use template</button>' +
       '<button class="inline-button secondary-inline-button" type="button" data-action="preflight-onboarding-recipe-manifest">Preflight template</button>' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="run-rollout-readiness-checks">Run rollout checks</button>' +
       '</span></div>',
       '<pre>' + escapeHtml(JSON.stringify(manifest, null, 2)) + '</pre>'
     ].join(''), 'wide')
@@ -2315,6 +2417,7 @@ function renderSourceOnboardingPreflight(result) {
       '</span><span class="button-group source-op-buttons">' +
       '<button class="inline-button secondary-inline-button" type="button" data-action="load-rollout-manifest-draft">Use draft</button>' +
       '<button class="inline-button secondary-inline-button" type="button" data-action="preflight-rollout-manifest-draft">Preflight draft</button>' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="run-rollout-readiness-checks">Run rollout checks</button>' +
       '</span></div>',
       '<pre>' + escapeHtml(JSON.stringify(result.rolloutManifestDraft, null, 2)) + '</pre>'
     ].join(''), 'wide'));
@@ -2720,6 +2823,52 @@ function renderDeploymentGateReport(result) {
     })), 'wide'));
   }
   return panels.join('');
+}
+
+function renderRolloutReadinessChecks(result) {
+  const manifest = result.manifest || {};
+  const source = manifest.source || {};
+  const connector = manifest.connector || {};
+  const checks = result.checks || [];
+  const status = aggregateCheckStatus(checks);
+  const nextActionCount = checks.reduce(function (count, check) {
+    return count + ((check.result && check.result.nextActions || []).length);
+  }, 0);
+  const panels = [
+    panel('Rollout readiness', [
+      '<div class="summary-strip event-summary-strip">' + [
+        summaryTile('Status', status, statusVariant(status)),
+        summaryTile('Checks', String(checks.length)),
+        summaryTile('Actions', String(nextActionCount), nextActionCount > 0 ? 'warn' : 'ok'),
+        summaryTile('Source', source.sourceType || 'unknown', statusVariant(status))
+      ].join('') + '</div>',
+      metric('Manifest', manifest.name || 'unnamed'),
+      metric('Source', (source.sourceKey || source.forum || 'unknown') + ' / ' + (source.sourceType || 'unknown')),
+      metric('Module', connector.modulePath || source.modulePath || 'not provided')
+    ].join(''), 'wide'),
+    panel('Readiness checks', evidenceList(checks.map(function (check) {
+      const actionCount = check.result && check.result.nextActions ? check.result.nextActions.length : 0;
+      const detail = check.error ? check.error.message : ('actions=' + actionCount);
+      return check.status + ' | ' + check.key + ' | ' + check.title + ' | ' + detail;
+    })), 'wide')
+  ];
+  const actionRows = checks.flatMap(function (check) {
+    return (check.result && check.result.nextActions || []).map(function (action) {
+      const commands = action.commands || (action.command ? [action.command] : []);
+      return check.key + ' | ' + (action.severity || 'info') + ' | ' + (action.key || 'action') + ' | ' + (action.summary || action.command || '') + ' | ' + commands.join(' | ');
+    });
+  });
+  if (actionRows.length > 0) {
+    panels.push(panel('Readiness next actions', evidenceList(actionRows), 'wide'));
+  }
+  return panels.join('');
+}
+
+function aggregateCheckStatus(checks) {
+  if ((checks || []).some(function (check) { return check.status === 'fail' || check.status === 'critical'; })) return 'fail';
+  if ((checks || []).some(function (check) { return check.status === 'warn' || check.status === 'warning'; })) return 'warn';
+  if ((checks || []).some(function (check) { return check.status !== 'ok'; })) return 'warn';
+  return 'ok';
 }
 
 function renderRolloutManifestApply(result) {

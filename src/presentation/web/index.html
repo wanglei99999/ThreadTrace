@@ -464,6 +464,7 @@
 }</textarea>
           </label>
           <button type="submit">Deployment gate</button>
+          <button id="runRolloutReadinessButton" class="secondary-button" type="button">Run rollout checks</button>
         </form>
         <form id="rolloutApplyForm" class="control-strip">
           <label class="full">
@@ -503,6 +504,7 @@
         <div class="result-grid task-grid" id="rolloutManifestResult"></div>
         <div class="result-grid task-grid" id="resourceProvisioningResult"></div>
         <div class="result-grid task-grid" id="deploymentGateResult"></div>
+        <div class="result-grid task-grid" id="rolloutReadinessResult"></div>
         <div class="result-grid task-grid" id="rolloutApplyResult"></div>
         <div class="result-grid task-grid" id="sourceResult"></div>
         <div class="result-grid task-grid" id="rawPageResult"></div>
@@ -515,6 +517,6 @@
   </div>
   <datalist id="forumSuggestions"></datalist>
   <datalist id="sourceTypeSuggestions"></datalist>
-  <script src="/app.js?v=manifest-preflight-bound-button"></script>
+  <script src="/app.js?v=rollout-readiness-workbench"></script>
 </body>
 </html>

@@ -141,6 +141,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /preflight-onboarding-recipe-manifest/);
     assert.match(webAppJs, /preflight-loaded-connector-package-manifest/);
     assert.match(webAppJs, /preflight-rollout-manifest-draft/);
+    assert.match(webAppJs, /run-rollout-readiness-checks/);
+    assert.match(webAppJs, /renderRolloutReadinessChecks/);
     assert.match(homeHtml, /modulePath/);
     assert.match(homeHtml, /locationJson/);
     assert.match(homeHtml, /connectorModuleValidationForm/);
@@ -153,6 +155,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(homeHtml, /rolloutManifestForm/);
     assert.match(homeHtml, /resourceProvisioningForm/);
     assert.match(homeHtml, /deploymentGateForm/);
+    assert.match(homeHtml, /runRolloutReadinessButton/);
     assert.match(homeHtml, /rolloutApplyForm/);
     assert.match(homeHtml, /sourceDryRunResult/);
     assert.match(homeHtml, /connectorRolloutResult/);
@@ -160,6 +163,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(homeHtml, /rolloutManifestResult/);
     assert.match(homeHtml, /resourceProvisioningResult/);
     assert.match(homeHtml, /deploymentGateResult/);
+    assert.match(homeHtml, /rolloutReadinessResult/);
     assert.match(homeHtml, /rolloutApplyResult/);
     assert.match(homeHtml, /runbookResult/);
     assert.match(homeHtml, /eventFilterForm/);
