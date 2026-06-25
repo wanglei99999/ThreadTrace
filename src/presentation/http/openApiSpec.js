@@ -1045,6 +1045,8 @@ function createOpenApiSpec() {
                     inputDir: { type: 'string' },
                     inputFile: { type: 'string' },
                     url: { type: 'string' },
+                    startPage: { type: 'number', example: 1 },
+                    pageCount: { type: 'number', example: 2 },
                     location: { type: 'object' },
                     intervalMinutes: { type: 'number', example: 60 },
                     nextRunAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
@@ -2475,6 +2477,8 @@ function createOpenApiSpec() {
                     inputDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/example' },
                     inputFile: { type: 'string', example: 'D:/feeds/threadtrace/thread.json' },
                     url: { type: 'string' },
+                    startPage: { type: 'number', example: 1 },
+                    pageCount: { type: 'number', example: 2 },
                     intervalMinutes: { type: 'number', example: 60 },
                     nextRunAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
                     scheduleEnabled: { type: 'boolean' },
@@ -2532,6 +2536,8 @@ function createOpenApiSpec() {
                     inputDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/example' },
                     inputFile: { type: 'string', example: 'D:/feeds/threadtrace/thread.json' },
                     url: { type: 'string' },
+                    startPage: { type: 'number', example: 1 },
+                    pageCount: { type: 'number', example: 2 },
                     location: { type: 'object' },
                     intervalMinutes: { type: 'number', example: 60 },
                     nextRunAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
@@ -2586,6 +2592,8 @@ function createOpenApiSpec() {
                     inputDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/example' },
                     inputFile: { type: 'string', example: 'D:/feeds/threadtrace/thread.json' },
                     url: { type: 'string' },
+                    startPage: { type: 'number', example: 1 },
+                    pageCount: { type: 'number', example: 2 },
                     location: { type: 'object' },
                     intervalMinutes: { type: 'number', example: 60 },
                     nextRunAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
@@ -2646,6 +2654,8 @@ function createOpenApiSpec() {
                     inputDir: { type: 'string' },
                     inputFile: { type: 'string', example: 'D:/feeds/threadtrace/thread.json' },
                     url: { type: 'string' },
+                    startPage: { type: 'number', example: 1 },
+                    pageCount: { type: 'number', example: 2 },
                     location: { type: 'object' },
                     allowRemoteFetch: { type: 'boolean', example: false },
                     allowUnknownSourceType: { type: 'boolean', example: false },
@@ -4183,7 +4193,30 @@ function createOpenApiSpec() {
             cursor: { type: 'object', additionalProperties: true },
             incremental: { type: 'object', additionalProperties: true },
             lastRun: { type: 'object', additionalProperties: true },
-            replay: { type: 'object', additionalProperties: true },
+            replay: {
+              type: 'object',
+              properties: {
+                evidenceKinds: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  example: ['raw-pages']
+                },
+                rawPageHashes: {
+                  type: 'array',
+                  items: { type: 'string' }
+                },
+                pageNumbers: {
+                  type: 'array',
+                  items: { type: 'number' },
+                  example: [1, 2]
+                },
+                sourceUrls: {
+                  type: 'array',
+                  items: { type: 'string' }
+                }
+              },
+              additionalProperties: true
+            },
             recommendedCommands: {
               type: 'array',
               items: { type: 'string' }

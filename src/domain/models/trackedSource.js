@@ -17,7 +17,9 @@ function createTrackedSource(input) {
   const location = normalizeLocation(sourceType, safeInput.location || {
     inputDir: safeInput.inputDir,
     inputFile: safeInput.inputFile,
-    url: safeInput.url
+    url: safeInput.url,
+    startPage: safeInput.startPage,
+    pageCount: safeInput.pageCount
   });
   const now = safeInput.updatedAt || new Date().toISOString();
 
@@ -109,9 +111,11 @@ function normalizeLocation(sourceType, location) {
     if (!safeLocation.url) {
       throw new Error('thread-url source requires url.');
     }
-    return {
-      url: safeLocation.url
-    };
+    return removeUndefined({
+      url: safeLocation.url,
+      startPage: positiveInteger(safeLocation.startPage || safeLocation.pageStart),
+      pageCount: positiveInteger(safeLocation.pageCount || safeLocation.maxPages)
+    });
   }
 
   if (Object.keys(safeLocation).length === 0) {
@@ -136,6 +140,19 @@ function defaultDisplayName(sourceKey, sourceType, location) {
 
 function safeSegment(value) {
   return String(value || 'source').replace(/[^a-zA-Z0-9_.-]/g, '_');
+}
+
+function positiveInteger(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < 1) return undefined;
+  return Math.floor(number);
+}
+
+function removeUndefined(input) {
+  return Object.keys(input).reduce(function (result, key) {
+    if (input[key] !== undefined) result[key] = input[key];
+    return result;
+  }, {});
 }
 
 module.exports = {

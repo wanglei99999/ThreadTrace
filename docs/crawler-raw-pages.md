@@ -47,4 +47,6 @@ Registered `thread-url` sources can now run through the tracked source ingestion
 
 This keeps online collection, parsing, analysis, and notifications independently replaceable.
 
+`thread-url` sources may also configure a page window with `startPage` and `pageCount`, either as top-level registration fields or inside `location`. The ingest task fetches each page in order, stores every raw HTML page by SHA-1, parses each page, merges duplicate posts into one `ThreadSnapshot`, and records `rawPageHashes`, `pageNumbers`, and raw page summaries in the task output and cursor replay evidence. Without these fields, ThreadTrace keeps the legacy single-page behavior.
+
 Stored raw pages can also be replayed by `contentSha1`. Replay does not fetch the network again; it reuses preserved evidence to regenerate snapshots and reports after parser or analyzer changes.

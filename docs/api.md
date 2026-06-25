@@ -447,7 +447,7 @@ Returns a retention plan with `candidateCount`, `archivedCount`, `cutoffAt`, `ba
 
 ### `POST /api/sources`
 
-注册或更新一个可跟踪来源。当前可直接落地的是 `saved-html-directory`，后续 `thread-url` 会接入在线采集器。
+注册或更新一个可跟踪来源。当前可直接落地的是 `saved-html-directory`、`thread-url` 和 `normalized-thread-json`。`thread-url` 支持在线采集，并可通过 `startPage` / `pageCount` 配置连续分页窗口。
 
 请求：
 
@@ -720,7 +720,7 @@ Set `execute: true` or `dryRun: false` to persist the reset. `retryNow: true` se
 
 ### `POST /api/sources/{sourceId}/tasks/ingest`
 
-按已注册来源触发一次导入任务。当前支持 `saved-html-directory` 来源，后续会扩展到在线主题 URL、批量来源和定时计划。
+按已注册来源触发一次导入任务。当前支持 `saved-html-directory`、`thread-url` 和 `normalized-thread-json` 来源；`thread-url` 会保存 raw page 证据并更新 cursor，批量和定时入口复用同一套来源运行保护。
 
 请求：
 

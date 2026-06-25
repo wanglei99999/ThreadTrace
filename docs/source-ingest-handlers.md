@@ -32,7 +32,7 @@ SourceIngestHandler
 Built-in handlers:
 
 - `saved-html-directory`: reads saved forum HTML from local disk.
-- `thread-url`: fetches a thread URL, stores raw HTML, parses it, and writes reports.
+- `thread-url`: fetches one thread URL page or a configured `startPage` / `pageCount` window, stores raw HTML, parses and merges pages, and writes reports.
 - `normalized-thread-json`: reads a canonical `ThreadSnapshot` JSON file and writes the same durable snapshot/report records without requiring a forum adapter.
 
 Future handlers can be injected through:

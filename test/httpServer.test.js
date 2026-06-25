@@ -364,6 +364,10 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.collectionPlan.$ref, '#/components/schemas/SourceCollectionPlan');
     assert.equal(openApi.components.schemas.SourceScheduleItem.properties.collectionPlan.$ref, '#/components/schemas/SourceCollectionPlan');
     assert.equal(openApi.components.schemas.SourceCollectionPlan.properties.schedule.properties.decision.$ref, '#/components/schemas/SourceScheduleDecision');
+    assert.equal(openApi.components.schemas.SourceCollectionPlan.properties.replay.properties.rawPageHashes.items.type, 'string');
+    assert.equal(openApi.components.schemas.SourceCollectionPlan.properties.replay.properties.pageNumbers.items.type, 'number');
+    assert.equal(openApi.components.schemas.SourceCollectionPlan.properties.replay.properties.sourceUrls.items.type, 'string');
+    assert.equal(openApi.components.schemas.SourceCollectionPlan.properties.replay.properties.evidenceKinds.items.type, 'string');
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.attention.properties.signals.items.$ref, '#/components/schemas/SourceAttentionSignal');
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.attention.properties.reportSummary.$ref, '#/components/schemas/SourceAttentionSummary');
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.timeline.items.properties.kind.type, 'string');
@@ -377,6 +381,12 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.components.schemas.AuthorReviewQueueListResult.properties.items.items.$ref, '#/components/schemas/AuthorReviewQueueItem');
     assert.equal(openApi.components.schemas.WorkerLease.properties.scope.$ref, '#/components/schemas/SourceScope');
     assert.equal(openApi.components.schemas.WorkerLeaseSummary.properties.sourceScoped.type, 'number');
+    assert.equal(openApi.paths['/api/sources'].post.requestBody.content['application/json'].schema.properties.startPage.type, 'number');
+    assert.equal(openApi.paths['/api/sources'].post.requestBody.content['application/json'].schema.properties.pageCount.type, 'number');
+    assert.equal(openApi.paths['/api/sources/validate'].post.requestBody.content['application/json'].schema.properties.startPage.type, 'number');
+    assert.equal(openApi.paths['/api/sources/onboarding/preflight'].post.requestBody.content['application/json'].schema.properties.pageCount.type, 'number');
+    assert.equal(openApi.paths['/api/sources/ingest/dry-run'].post.requestBody.content['application/json'].schema.properties.startPage.type, 'number');
+    assert.equal(openApi.paths['/api/connectors/rollout-plan'].post.requestBody.content['application/json'].schema.properties.pageCount.type, 'number');
     assert.equal(adapters.adapters[0].sourceKey, 'nga');
     assert.equal(adapterDiagnostics.status, 'ok');
     assert.equal(adapterDiagnostics.adapterCount, 1);

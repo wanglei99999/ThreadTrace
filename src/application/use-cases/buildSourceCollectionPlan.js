@@ -118,6 +118,9 @@ function buildReplayEvidence(source, runState) {
     available: Boolean(runState.lastTaskId || source.cursor && source.cursor.fingerprint || location.inputDir || location.inputFile || location.url),
     taskId: runState.lastTaskId,
     cursorFingerprint: source.cursor && source.cursor.fingerprint,
+    rawPageHashes: source.cursor && source.cursor.rawPageHashes,
+    pageNumbers: source.cursor && source.cursor.pageNumbers,
+    sourceUrls: source.cursor && source.cursor.sourceUrls,
     location,
     evidenceKinds: replayEvidenceKinds(source, runState, location)
   };
@@ -127,6 +130,7 @@ function replayEvidenceKinds(source, runState, location) {
   const kinds = [];
   if (runState.lastTaskId) kinds.push('task');
   if (source.cursor && source.cursor.fingerprint) kinds.push('cursor');
+  if (source.cursor && Array.isArray(source.cursor.rawPageHashes) && source.cursor.rawPageHashes.length > 0) kinds.push('raw-pages');
   if (location.inputDir) kinds.push('saved-html-directory');
   if (location.inputFile) kinds.push('normalized-json-file');
   if (location.url) kinds.push('source-url');

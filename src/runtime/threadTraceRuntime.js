@@ -2656,6 +2656,8 @@ function buildSourceRegistrationInput(request) {
     inputDir: safeRequest.inputDir,
     inputFile: safeRequest.inputFile,
     url: safeRequest.url,
+    startPage: safeRequest.startPage,
+    pageCount: safeRequest.pageCount,
     location: safeRequest.location,
     enabled: safeRequest.enabled,
     tags: safeRequest.tags,

@@ -1699,6 +1699,8 @@ function main(argv) {
       inputDir,
       inputFile: options.inputFile,
       url: options.url,
+      startPage: options.startPage,
+      pageCount: options.pageCount,
       location: parseLocationOption(options),
       enabled: options.enabled !== 'false',
       allowUnknownSourceType: options.allowUnknownSourceType === 'true',
@@ -1823,6 +1825,8 @@ function main(argv) {
       inputDir,
       inputFile: options.inputFile,
       url: options.url,
+      startPage: options.startPage,
+      pageCount: options.pageCount,
       location: parseLocationOption(options),
       enabled: options.enabled === undefined ? undefined : options.enabled !== 'false',
       allowUnknownSourceType: options.allowUnknownSourceType === 'true',
@@ -1897,6 +1901,8 @@ function main(argv) {
       inputDir,
       inputFile: options.inputFile,
       url: options.url,
+      startPage: options.startPage,
+      pageCount: options.pageCount,
       location: parseLocationOption(options),
       enabled: options.enabled === undefined ? undefined : options.enabled !== 'false',
       allowUnknownSourceType: options.allowUnknownSourceType === 'true',
@@ -1942,6 +1948,8 @@ function main(argv) {
       inputDir,
       inputFile: options.inputFile,
       url: options.url,
+      startPage: options.startPage,
+      pageCount: options.pageCount,
       location: parseLocationOption(options),
       enabled: options.enabled === undefined ? undefined : options.enabled !== 'false',
       allowUnknownSourceType: options.allowUnknownSourceType === 'true',
@@ -1990,6 +1998,8 @@ function main(argv) {
       inputDir: options.input,
       inputFile: options.inputFile,
       url: options.url,
+      startPage: options.startPage,
+      pageCount: options.pageCount,
       location: parseLocationOption(options),
       enabled: options.enabled === undefined ? undefined : options.enabled !== 'false',
       allowUnknownSourceType: options.allowUnknownSourceType === 'true',
@@ -2940,6 +2950,12 @@ function parseArgs(args) {
     } else if (item === '--url') {
       options.url = args[index + 1];
       index += 1;
+    } else if (item === '--start-page') {
+      options.startPage = args[index + 1];
+      index += 1;
+    } else if (item === '--page-count') {
+      options.pageCount = args[index + 1];
+      index += 1;
     } else if (item === '--location-json') {
       options.locationJson = args[index + 1];
       index += 1;
@@ -3358,7 +3374,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js ack-event --event-id id [--by user] [--note text] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js ack-events [--event-ids id1,id2] [--source-key key] [--type type] [--acknowledged true|false] [--delivery-status status] [--dry-run true] [--execute true] [--by user] [--note text] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js archive-events [--execute true] [--source-key key] [--delivery-statuses delivered,resolved] [--older-than-days n] [--by user] [--store-dir dir] [--limit n]');
-  console.log('  node src/presentation/cli/threadtrace.js validate-source [--forum nga] [--source-type type] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js validate-source [--forum nga] [--source-type type] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--start-page n] [--page-count n] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js validate-thread-json --input-file file [--forum sourceKey] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js source-onboarding-preflight [--manifest-file file] [--forum nga] [--source-type type] [--module-path file] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js source-ingest-dry-run [--forum nga] [--source-type type] [--module-path file] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--allow-remote-fetch true] [--now iso]');
@@ -3367,7 +3383,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js resource-provisioning-plan [--manifest-file file] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js deployment-gate [--manifest-file file] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js rollout-manifest-apply --manifest-file file [--execute true] [--store-dir dir] [--now iso]');
-  console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--source-type type] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--source-type type] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--start-page n] [--page-count n] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js disable-source --source-id id [--execute true] [--force true] [--source-run-stale-after-ms ms] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js enable-source --source-id id [--execute true] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js reset-source-failure --source-id id [--execute true] [--retry-now true] [--next-run-at iso] [--reset-by user] [--store-dir dir] [--now iso]');

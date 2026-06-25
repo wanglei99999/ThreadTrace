@@ -19,6 +19,9 @@ function buildThreadSnapshotCursor(threadSnapshot) {
     lastFloor: lastPost ? lastPost.floor : undefined,
     lastPostId: lastPost ? lastPost.sourcePostId : undefined,
     lastPublishedAt: lastPost ? lastPost.publishedAt : undefined,
+    rawPageHashes: arrayValue(threadSnapshot.metadata && threadSnapshot.metadata.rawPageHashes),
+    sourceUrls: arrayValue(threadSnapshot.metadata && threadSnapshot.metadata.sourceUrls),
+    pageNumbers: arrayValue(threadSnapshot.metadata && threadSnapshot.metadata.pageNumbers),
     fingerprint: buildFingerprint(threadSnapshot, posts, lastPost),
     capturedAt: new Date().toISOString()
   };
@@ -59,6 +62,10 @@ function buildFingerprint(threadSnapshot, posts, lastPost) {
   hash.update('|');
   hash.update(String(lastPost && lastPost.contentText || '').slice(0, 500));
   return hash.digest('hex');
+}
+
+function arrayValue(value) {
+  return Array.isArray(value) ? value.slice() : undefined;
 }
 
 module.exports = {

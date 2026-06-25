@@ -4745,6 +4745,8 @@ function formatCollectionReplaySummary(replay) {
   if (!safeReplay.available) return 'none';
   return [
     safeReplay.taskId ? 'task=' + safeReplay.taskId : undefined,
+    (safeReplay.rawPageHashes || []).length ? 'rawPages=' + safeReplay.rawPageHashes.length : undefined,
+    (safeReplay.pageNumbers || []).length ? 'pages=' + safeReplay.pageNumbers.join(',') : undefined,
     (safeReplay.evidenceKinds || []).length ? 'evidence=' + safeReplay.evidenceKinds.join(',') : undefined
   ].filter(Boolean).join(' | ') || 'available';
 }

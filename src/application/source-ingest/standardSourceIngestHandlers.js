@@ -68,6 +68,14 @@ function createThreadUrlIngestHandler() {
           type: 'string',
           format: 'uri',
           description: 'Forum thread URL to fetch and ingest.'
+        },
+        startPage: {
+          type: 'number',
+          description: 'First forum page number to fetch. Defaults to 1.'
+        },
+        pageCount: {
+          type: 'number',
+          description: 'Number of consecutive forum pages to fetch. Defaults to 1.'
         }
       }
     },
