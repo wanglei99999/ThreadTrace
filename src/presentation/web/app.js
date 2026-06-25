@@ -38,11 +38,13 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('enrichHistoryButton').addEventListener('click', enrichHistoryDirectory);
   document.getElementById('refreshAuthorIntelligenceButton').addEventListener('click', loadAuthorIntelligence);
   document.getElementById('authorIntelligenceResult').addEventListener('click', handleAuthorIntelligenceAction);
+  document.getElementById('historyCockpit').addEventListener('click', handleHistoryCockpitAction);
   document.getElementById('refreshTasksButton').addEventListener('click', loadTasks);
   document.getElementById('refreshSourcesButton').addEventListener('click', loadSources);
   document.getElementById('refreshSourceOperationsButton').addEventListener('click', loadSourceOperations);
   document.getElementById('refreshAutomationReadinessButton').addEventListener('click', loadAutomationReadiness);
-  document.getElementById('automationReadinessResult').addEventListener('click', handleAutomationReadinessAction);
+  const automationReadinessResult = document.getElementById('automationReadinessResult');
+  if (automationReadinessResult) automationReadinessResult.addEventListener('click', handleAutomationReadinessAction);
   document.getElementById('runLlmReadinessButton').addEventListener('click', runLlmReadiness);
   document.getElementById('runLlmPreflightButton').addEventListener('click', runLlmPreflight);
   document.getElementById('runLlmEvaluationButton').addEventListener('click', runLlmEvaluation);
@@ -88,6 +90,7 @@ document.addEventListener('DOMContentLoaded', function () {
   loadAdapters();
   loadConnectorCatalog();
   loadSystemStatus();
+  loadHistoryCockpit();
   bindSourceOnboardingRecipePreview();
 });
 
@@ -1232,6 +1235,7 @@ function setView(viewName) {
   document.getElementById(viewName + 'View').classList.remove('hidden');
   document.getElementById('viewTitle').textContent = views[viewName].title;
   document.getElementById('viewSubtitle').textContent = views[viewName].subtitle;
+  if (viewName === 'history') loadHistoryCockpit();
   if (viewName === 'system') loadSystemStatus();
   if (viewName === 'system') loadSources();
   if (viewName === 'system') loadSourceOperations();
@@ -1421,6 +1425,198 @@ async function loadSystemStatus() {
   } catch (error) {
     target.innerHTML = '<div class="error">' + escapeHtml(error.message) + '</div>';
   }
+}
+
+async function loadHistoryCockpit() {
+  const target = document.getElementById('historyCockpit');
+  if (!target) return;
+  await renderAsync('historyCockpit', function () {
+    return Promise.all([
+      fetchJson('/api/operations/overview?limit=100', {
+        acceptErrorStatus: true
+      }),
+      fetchJson('/api/operations/source-cockpit?limit=100&cockpitLimit=5', {
+        acceptErrorStatus: true
+      }),
+      fetchJson('/api/events/overview?limit=50', {
+        acceptErrorStatus: true
+      }),
+      fetchJson('/api/runtime/diagnostics', {
+        acceptErrorStatus: true
+      }),
+      fetchJson('/api/deployment/checklist?limit=100', {
+        acceptErrorStatus: true
+      })
+    ]).then(function (results) {
+      return {
+        overview: results[0] || {},
+        cockpit: results[1] || {},
+        eventOverview: results[2] || {},
+        diagnostics: results[3] || {},
+        deploymentChecklist: results[4] || {}
+      };
+    });
+  }, renderHistoryCockpit);
+}
+
+function handleHistoryCockpitAction(event) {
+  const button = event.target.closest('button[data-action],button[data-view]');
+  if (!button) return;
+  if (button.dataset.action === 'refresh-history-cockpit') {
+    loadHistoryCockpit();
+    return;
+  }
+  if (button.dataset.view) setView(button.dataset.view);
+}
+
+function renderHistoryCockpit(report) {
+  const overview = report.overview || {};
+  const cockpit = report.cockpit || {};
+  const diagnostics = report.diagnostics || {};
+  const deploymentChecklist = report.deploymentChecklist || {};
+  const eventOverview = report.eventOverview || {};
+  const sources = overview.sources || {};
+  const tasks = overview.tasks || {};
+  const events = overview.events || {};
+  const workers = overview.workers || {};
+  const rawPages = overview.rawPages || {};
+  const authorQueue = overview.authorReviewQueue || {};
+  const variant = historyCockpitVariant(report);
+  const generatedAt = overview.generatedAt || cockpit.generatedAt || diagnostics.generatedAt || deploymentChecklist.generatedAt || 'not generated yet';
+  const nextAction = historyCockpitNextAction(cockpit, eventOverview, deploymentChecklist);
+  return [
+    '<section class="cockpit-hero ' + cockpitClassName(variant) + '">',
+    '<div class="cockpit-hero-copy">',
+    '<span class="cockpit-kicker">ThreadTrace cockpit</span>',
+    '<h3>今日情报驾驶舱</h3>',
+    '<p>打开后先看采集、提醒和任务压力；每个异常都应该能继续钻到来源、证据和审计记录。</p>',
+    '</div>',
+    '<div class="cockpit-hero-status">',
+    '<span>当前判断</span>',
+    '<strong>' + escapeHtml(historyCockpitLabel(variant)) + '</strong>',
+    '<small>' + escapeHtml(nextAction) + '</small>',
+    '</div>',
+    '<div class="cockpit-command-row">',
+    '<button class="inline-button" type="button" data-action="refresh-history-cockpit">刷新驾驶舱</button>',
+    '<button class="inline-button secondary-inline-button" type="button" data-view="system">进入系统台</button>',
+    '</div>',
+    '<small class="cockpit-generated">Updated ' + escapeHtml(generatedAt) + '</small>',
+    '</section>',
+    cockpitQueueCard(cockpit, deploymentChecklist, eventOverview),
+    cockpitCard('Sources', String(sources.enabled || 0) + '/' + String(sources.total || 0), 'due ' + String(sources.due || 0) + ' | failed ' + String(sources.failed || 0), sourcePressureVariant(sources)),
+    cockpitCard('Tasks', 'running ' + String(tasks.running || 0), 'failed ' + String(tasks.failed || 0) + ' | total ' + String(tasks.total || 0), taskPressureVariant(tasks)),
+    cockpitCard('Outbox', 'pending ' + String(events.pending || eventOverview.pendingCount || 0), 'failed ' + String(events.failed || eventOverview.failedCount || 0) + ' | open ' + String(events.unacknowledged || eventOverview.unacknowledgedCount || 0), eventPressureVariant(events, eventOverview)),
+    cockpitCard('Workers', 'running ' + String(workers.running || 0), 'stale ' + String(workers.stale || 0) + ' | leases ' + String(workers.leases && workers.leases.active || 0), workerPressureVariant(workers)),
+    cockpitCard('Evidence', String(rawPages.total || 0), 'raw pages | latest ' + (rawPages.latestFetchedAt || 'none'), (rawPages.total || 0) > 0 ? 'ok' : 'muted'),
+    cockpitCard('LLM', diagnostics.configuration && diagnostics.configuration.llm ? diagnostics.configuration.llm.provider : 'unknown', 'storage ' + (overview.storageMode || diagnostics.configuration && diagnostics.configuration.storageMode || 'unknown'), statusVariant(diagnostics.status)),
+    cockpitCard('Review', 'open ' + String(authorQueue.openCount || 0), 'high ' + String(authorQueue.highPriorityOpenCount || 0) + ' | sources ' + compactCountMap(authorQueue.openBySourceKey), (authorQueue.highPriorityOpenCount || 0) > 0 ? 'warn' : 'muted')
+  ].join('');
+}
+
+function cockpitCard(title, value, detail, variant) {
+  return '<article class="cockpit-card ' + cockpitClassName(variant) + '">' +
+    '<span>' + escapeHtml(title) + '</span>' +
+    '<strong>' + escapeHtml(value) + '</strong>' +
+    '<small>' + escapeHtml(detail || '') + '</small>' +
+    '</article>';
+}
+
+function cockpitQueueCard(cockpit, deploymentChecklist, eventOverview) {
+  const queue = cockpit.queue || [];
+  const checklistItems = (deploymentChecklist.items || []).filter(function (item) {
+    return item.status === 'fail' || item.status === 'warn';
+  });
+  const rows = queue.slice(0, 4).map(function (item) {
+    return cockpitQueueRow(
+      '#' + (item.rank || '?') + ' ' + (item.title || item.id || 'Queue item'),
+      [item.kind, item.scope, item.recommendedNextAction].filter(Boolean).join(' | '),
+      attentionStatusVariant(item.severity)
+    );
+  }).concat(checklistItems.slice(0, Math.max(0, 4 - queue.length)).map(function (item) {
+    return cockpitQueueRow(item.key || 'deployment check', item.summary || item.status || 'needs attention', statusVariant(item.status));
+  }));
+  if (rows.length === 0 && eventOverview.recommendedNextAction) {
+    rows.push(cockpitQueueRow('Outbox recommendation', eventOverview.recommendedNextAction, statusVariant(eventOverview.status)));
+  }
+  return '<article class="cockpit-card cockpit-queue-card ' + cockpitClassName(statusVariant(cockpit.status || deploymentChecklist.status || eventOverview.status)) + '">' +
+    '<div class="cockpit-card-head"><span>Operator queue</span>' + statusBadge(cockpit.status || deploymentChecklist.status || eventOverview.status || 'quiet', statusVariant(cockpit.status || deploymentChecklist.status || eventOverview.status)) + '</div>' +
+    (rows.length ? rows.join('') : '<div class="cockpit-queue-empty">队列平稳。可以继续做历史分析或接入新来源。</div>') +
+    '</article>';
+}
+
+function cockpitQueueRow(title, detail, variant) {
+  return '<div class="cockpit-queue-row">' +
+    '<span>' + escapeHtml(title) + '</span>' +
+    '<small>' + escapeHtml(detail || '') + '</small>' +
+    '<i class="' + cockpitClassName(variant) + '"></i>' +
+    '</div>';
+}
+
+function cockpitClassName(variant) {
+  if (variant === 'ok') return 'cockpit-ok';
+  if (variant === 'warn') return 'cockpit-warn';
+  if (variant === 'fail') return 'cockpit-fail';
+  return 'cockpit-muted';
+}
+
+function historyCockpitVariant(report) {
+  const overview = report.overview || {};
+  const statuses = [
+    report.deploymentChecklist && report.deploymentChecklist.status,
+    report.cockpit && report.cockpit.status,
+    report.diagnostics && report.diagnostics.status,
+    report.eventOverview && report.eventOverview.status
+  ];
+  if ((overview.tasks && overview.tasks.failed || 0) > 0) statuses.push('warn');
+  if ((overview.events && overview.events.failed || 0) > 0) statuses.push('warn');
+  if ((overview.workers && overview.workers.stale || 0) > 0) statuses.push('warn');
+  if ((overview.sources && overview.sources.total || 0) === 0) statuses.push('warn');
+  if (statuses.some(function (status) { return statusVariant(status) === 'fail'; })) return 'fail';
+  if (statuses.some(function (status) { return statusVariant(status) === 'warn'; })) return 'warn';
+  if (statuses.some(Boolean)) return 'ok';
+  return 'muted';
+}
+
+function historyCockpitLabel(variant) {
+  if (variant === 'fail') return '需要处理';
+  if (variant === 'warn') return '有信号待看';
+  if (variant === 'ok') return '系统平稳';
+  return '等待数据';
+}
+
+function historyCockpitNextAction(cockpit, eventOverview, deploymentChecklist) {
+  const next = (cockpit.nextActions || [])[0];
+  if (next && next.summary) return next.summary;
+  const checklistAttention = (deploymentChecklist.items || []).find(function (item) {
+    return item.status === 'fail' || item.status === 'warn';
+  });
+  if (checklistAttention) return checklistAttention.summary || checklistAttention.key;
+  if (eventOverview && eventOverview.recommendedNextAction) return eventOverview.recommendedNextAction;
+  return '先分析 example，建立今天的证据面。';
+}
+
+function sourcePressureVariant(sources) {
+  if ((sources.failed || 0) > 0) return 'fail';
+  if ((sources.due || 0) > 0 || (sources.total || 0) === 0) return 'warn';
+  return 'ok';
+}
+
+function taskPressureVariant(tasks) {
+  if ((tasks.failed || 0) > 0) return 'warn';
+  if ((tasks.running || 0) > 0) return 'ok';
+  return 'muted';
+}
+
+function eventPressureVariant(events, eventOverview) {
+  if ((events.failed || eventOverview.failedCount || 0) > 0) return 'fail';
+  if ((events.pending || eventOverview.pendingCount || eventOverview.unacknowledgedCount || 0) > 0) return 'warn';
+  return 'ok';
+}
+
+function workerPressureVariant(workers) {
+  if ((workers.stale || 0) > 0) return 'warn';
+  if ((workers.running || 0) > 0) return 'ok';
+  return 'muted';
 }
 
 function diagnosticStatus(diagnostics, key) {
