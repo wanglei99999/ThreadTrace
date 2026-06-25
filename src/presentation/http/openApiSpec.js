@@ -1194,6 +1194,53 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/operations/source-type-operations': {
+        get: {
+          summary: 'Get source-type operations matrix merged from readiness, schedule, lifecycle, and attention signals',
+          parameters: [
+            { name: 'forum', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceType', in: 'query', required: false, schema: { type: 'string', example: 'saved-html-directory' } },
+            { name: 'enabled', in: 'query', required: false, schema: { type: 'boolean' } },
+            { name: 'modulePath', in: 'query', required: false, schema: { type: 'string', example: 'D:/connectors/custom-forum.cjs' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'sourceTypeLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'attentionLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'pipelineLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'eventLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'maxAttempts', in: 'query', required: false, schema: { type: 'number', example: 3 } },
+            { name: 'taskLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'sourceRunStaleAfterMs', in: 'query', required: false, schema: { type: 'number', example: 600000 } },
+            { name: 'sourceFailureRetryBackoffMs', in: 'query', required: false, schema: { type: 'number', example: 60000 } },
+            { name: 'sourceFailureMaxRetryBackoffMs', in: 'query', required: false, schema: { type: 'number', example: 3600000 } },
+            { name: 'runningStaleAfterMs', in: 'query', required: false, schema: { type: 'number', example: 600000 } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Source type operations report has no failing source type operations signals',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceTypeOperationsReport'
+                  }
+                }
+              }
+            },
+            503: {
+              description: 'Source type operations report contains failing source type operations signals',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceTypeOperationsReport'
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       '/api/operations/runbook/events': {
         post: {
           summary: 'Dry-run or execute synthesis of operations runbook actions into notification outbox events',
@@ -3739,6 +3786,84 @@ function createOpenApiSpec() {
                 scheduleGeneratedAt: { type: 'string' },
                 lifecycleGeneratedAt: { type: 'string' },
                 runbookGeneratedAt: { type: 'string' }
+              }
+            }
+          }
+        },
+        SourceTypeOperationsSummary: {
+          type: 'object',
+          properties: {
+            sourceTypeCount: { type: 'number', example: 3 },
+            okSourceTypeCount: { type: 'number', example: 1 },
+            warnSourceTypeCount: { type: 'number', example: 2 },
+            failSourceTypeCount: { type: 'number', example: 0 },
+            sourceCount: { type: 'number', example: 5 },
+            enabledSourceCount: { type: 'number', example: 4 },
+            dueSourceCount: { type: 'number', example: 1 },
+            runningSourceCount: { type: 'number', example: 1 },
+            staleRunningSourceCount: { type: 'number', example: 0 },
+            failureRetryWaitingSourceCount: { type: 'number', example: 1 },
+            attentionSourceCount: { type: 'number', example: 2 },
+            criticalAttentionSourceCount: { type: 'number', example: 0 },
+            warningAttentionSourceCount: { type: 'number', example: 1 },
+            actionableSourceCount: { type: 'number', example: 1 },
+            highestPriorityScore: { type: 'number', example: 110 }
+          }
+        },
+        SourceTypeOperationsItem: {
+          type: 'object',
+          properties: {
+            sourceType: { type: 'string', example: 'saved-html-directory' },
+            description: { type: 'string' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            readiness: {
+              type: 'object',
+              additionalProperties: true
+            },
+            schedule: {
+              type: 'object',
+              additionalProperties: true
+            },
+            lifecycle: {
+              type: 'object',
+              additionalProperties: true
+            },
+            attention: {
+              type: 'object',
+              additionalProperties: true
+            },
+            nextActions: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true }
+            },
+            recommendedCommands: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            topAttention: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true }
+            }
+          }
+        },
+        SourceTypeOperationsReport: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            windowLimit: { type: 'number', example: 100 },
+            summary: { $ref: '#/components/schemas/SourceTypeOperationsSummary' },
+            sourceTypes: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceTypeOperationsItem' }
+            },
+            inputs: {
+              type: 'object',
+              properties: {
+                readinessGeneratedAt: { type: 'string' },
+                scheduleGeneratedAt: { type: 'string' },
+                lifecycleGeneratedAt: { type: 'string' },
+                attentionGeneratedAt: { type: 'string' }
               }
             }
           }

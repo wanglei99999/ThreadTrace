@@ -837,6 +837,9 @@ async function loadSourceOperations() {
       fetchJson('/api/operations/source-attention?limit=100', {
         acceptErrorStatus: true
       }),
+      fetchJson('/api/operations/source-type-operations?limit=100', {
+        acceptErrorStatus: true
+      }),
       fetchJson('/api/connectors/source-type-readiness?limit=200', {
         acceptErrorStatus: true
       })
@@ -846,7 +849,8 @@ async function loadSourceOperations() {
         schedule: results[1],
         runbook: results[2],
         attention: results[3],
-        sourceTypeReadiness: results[4]
+        sourceTypeOperations: results[4],
+        sourceTypeReadiness: results[5]
       };
     });
   }, renderSourceOperations);
@@ -2604,6 +2608,7 @@ function renderSourceOperations(result) {
   const schedule = result.schedule || {};
   const runbook = result.runbook || {};
   const attention = result.attention || {};
+  const sourceTypeOperations = result.sourceTypeOperations || {};
   const sourceTypeReadiness = result.sourceTypeReadiness || {};
   const lifecycleSummary = lifecycle.summary || {};
   const scheduleSummary = schedule.summary || {};
@@ -2635,6 +2640,7 @@ function renderSourceOperations(result) {
       renderSourceAttentionEventControls(sourceAttentionAlertableCount)
     ].join(''), 'wide'),
     panel('Source attention', renderSourceAttentionRows(attentionItems), 'wide'),
+    panel('Source type operations', renderSourceTypeOperations(sourceTypeOperations), 'wide'),
     panel('Source type readiness', renderSourceTypeReadiness(sourceTypeReadiness), 'wide'),
     panel('Due sources', renderScheduleDecisionRows(schedule.dueSources || [], 'No due sources.', true), 'wide'),
     panel('Skipped sources', renderScheduleDecisionRows((schedule.skippedSources || []).slice(0, 10), 'No skipped sources.', false), 'wide'),
@@ -2644,6 +2650,52 @@ function renderSourceOperations(result) {
     panels.push(panel('Source runbook actions', renderRunbookActionRows(sourceActions), 'wide'));
   }
   return panels.join('');
+}
+
+function renderSourceTypeOperations(report) {
+  const summary = report.summary || {};
+  return [
+    '<div class="summary-strip">',
+    summaryTile('Types', String(summary.sourceTypeCount || 0), (summary.failSourceTypeCount || 0) > 0 ? 'fail' : ((summary.warnSourceTypeCount || 0) > 0 ? 'warn' : 'ok')),
+    summaryTile('Sources', String(summary.sourceCount || 0), (summary.sourceCount || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('Due', String(summary.dueSourceCount || 0), (summary.dueSourceCount || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('Running', String(summary.runningSourceCount || 0), (summary.runningSourceCount || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('Retry wait', String(summary.failureRetryWaitingSourceCount || 0), (summary.failureRetryWaitingSourceCount || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('Attention', String(summary.attentionSourceCount || 0), (summary.warningAttentionSourceCount || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('Actionable', String(summary.actionableSourceCount || 0), (summary.actionableSourceCount || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('Top priority', String(summary.highestPriorityScore || 0), (summary.highestPriorityScore || 0) >= 100 ? 'warn' : 'ok'),
+    '</div>',
+    renderSourceTypeOperationsRows(report.sourceTypes || [])
+  ].join('');
+}
+
+function renderSourceTypeOperationsRows(sourceTypes) {
+  if (!sourceTypes.length) return '<div class="muted">No source type operations yet.</div>';
+  return sourceTypes.map(function (sourceType) {
+    const readiness = sourceType.readiness || {};
+    const schedule = sourceType.schedule || {};
+    const lifecycle = sourceType.lifecycle || {};
+    const attention = sourceType.attention || {};
+    const details = [
+      'readiness=' + (readiness.status || 'unknown'),
+      'sources=' + (readiness.sourceCount || lifecycle.total || schedule.total || 0),
+      'enabled=' + (readiness.enabledSourceCount || lifecycle.enabled || 0),
+      'due=' + (schedule.due || 0),
+      'running=' + (lifecycle.running || 0),
+      'retry=' + (lifecycle.failureRetryWaiting || 0),
+      'attention=' + (attention.total || 0),
+      'actionable=' + (attention.actionable || 0),
+      'priority=' + (attention.highestPriorityScore || 0)
+    ].join(' | ');
+    const commands = (sourceType.recommendedCommands || []).slice(0, 2).map(function (command) {
+      return '<small>' + escapeHtml(command) + '</small>';
+    }).join('');
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(sourceType.sourceType || 'unknown') + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      commands +
+      '</span>' + statusBadge(sourceType.status || 'unknown', statusVariant(sourceType.status)) + '</div>';
+  }).join('');
 }
 
 function renderSourceTypeReadiness(report) {

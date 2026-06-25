@@ -42,6 +42,12 @@ Groups connector readiness by `sourceType`. Optional filters: `sourceKey` / `for
 
 The report includes source type counts, enabled source counts, per-type status/checks, unknown stored source types that are not registered in the current runtime, and next actions for onboarding or connector repair.
 
+### `GET /api/operations/source-type-operations`
+
+Aggregates multi-source operations by `sourceType`. It merges source type readiness, schedule decisions, lifecycle guards, and source attention signals into one matrix.
+
+Use it when deciding whether a whole connector family is healthy: it reports due/running/retry-waiting counts, attention priority, actionable source counts, recommended commands, and per-type status.
+
 ### `GET /openapi.json`
 
 返回 OpenAPI 3.0 契约，便于前端、测试工具或后续 SDK 生成器消费。

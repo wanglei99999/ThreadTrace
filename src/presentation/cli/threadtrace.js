@@ -513,6 +513,60 @@ function main(argv) {
     return;
   }
 
+  if (command === 'source-type-operations-report') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.getSourceTypeOperationsReport({
+      forum: options.forum,
+      sourceKey: options.sourceKey,
+      sourceType: options.sourceType,
+      enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
+      limit: options.limit ? Number(options.limit) : 100,
+      sourceTypeLimit: options.sourceTypeLimit ? Number(options.sourceTypeLimit) : undefined,
+      attentionLimit: options.attentionLimit ? Number(options.attentionLimit) : undefined,
+      pipelineLimit: options.pipelineLimit ? Number(options.pipelineLimit) : undefined,
+      eventLimit: options.eventLimit ? Number(options.eventLimit) : undefined,
+      taskLimit: options.taskLimit ? Number(options.taskLimit) : undefined,
+      maxAttempts: options.maxAttempts ? Number(options.maxAttempts) : undefined,
+      sourceRunStaleAfterMs: options.sourceRunStaleAfterMs ? Number(options.sourceRunStaleAfterMs) : undefined,
+      sourceFailureRetryBackoffMs: options.sourceFailureRetryBackoffMs ? Number(options.sourceFailureRetryBackoffMs) : undefined,
+      sourceFailureMaxRetryBackoffMs: options.sourceFailureMaxRetryBackoffMs ? Number(options.sourceFailureMaxRetryBackoffMs) : undefined,
+      runningStaleAfterMs: options.runningStaleAfterMs ? Number(options.runningStaleAfterMs) : undefined,
+      modulePath: options.modulePath,
+      now: options.now,
+      storeDir
+    }).then(function (report) {
+      if (isTruthyOption(options.json)) {
+        console.log(JSON.stringify(report, null, 2));
+        if (report.status === 'fail') {
+          process.exitCode = 2;
+        } else if (report.status === 'warn') {
+          process.exitCode = 1;
+        }
+        return;
+      }
+      const summary = report.summary || {};
+      console.log('Source type operations: ' + report.status);
+      console.log('Source types: total=' + (summary.sourceTypeCount || 0) + ', ok=' + (summary.okSourceTypeCount || 0) + ', warn=' + (summary.warnSourceTypeCount || 0) + ', fail=' + (summary.failSourceTypeCount || 0));
+      console.log('Sources: total=' + (summary.sourceCount || 0) + ', enabled=' + (summary.enabledSourceCount || 0) + ', due=' + (summary.dueSourceCount || 0) + ', running=' + (summary.runningSourceCount || 0) + ', retryWaiting=' + (summary.failureRetryWaitingSourceCount || 0));
+      console.log('Attention: total=' + (summary.attentionSourceCount || 0) + ', critical=' + (summary.criticalAttentionSourceCount || 0) + ', warning=' + (summary.warningAttentionSourceCount || 0) + ', actionable=' + (summary.actionableSourceCount || 0) + ', topPriority=' + (summary.highestPriorityScore || 0));
+      (report.sourceTypes || []).forEach(function (sourceType) {
+        console.log((sourceType.status || 'unknown') + '\t' + sourceType.sourceType + '\treadiness=' + (sourceType.readiness && sourceType.readiness.status || 'unknown') + '\tsources=' + (sourceType.readiness && sourceType.readiness.sourceCount || 0) + '\tdue=' + (sourceType.schedule && sourceType.schedule.due || 0) + '\trunning=' + (sourceType.lifecycle && sourceType.lifecycle.running || 0) + '\tattention=' + (sourceType.attention && sourceType.attention.total || 0) + '\tactionable=' + (sourceType.attention && sourceType.attention.actionable || 0));
+        (sourceType.recommendedCommands || []).slice(0, 2).forEach(function (command) {
+          console.log('  command: ' + command);
+        });
+      });
+      if (report.status === 'fail') {
+        process.exitCode = 2;
+      } else if (report.status === 'warn') {
+        process.exitCode = 1;
+      }
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'trace-context') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.getTaskTraceContext({
@@ -2793,6 +2847,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js source-lifecycle-report [--forum nga] [--enabled true] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-schedule-report [--forum nga] [--enabled true] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-attention-report [--forum nga] [--source-key key] [--source-id id] [--source-failure-retry-backoff-ms ms] [--running-stale-after-ms ms] [--json true] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js source-type-operations-report [--forum nga] [--source-type type] [--module-path file] [--json true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js trace-context [--request-id id | --trace-id id | --idempotency-key key] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-runbook [--forum nga] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--running-stale-after-ms ms] [--event-limit n] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js synthesize-runbook-events [--forum nga] [--source-id id] [--resolve-stale true|false] [--execute true] [--store-dir dir] [--limit n]');

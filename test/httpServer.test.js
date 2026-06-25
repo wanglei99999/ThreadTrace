@@ -30,6 +30,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     const handlers = await getJson(baseUrl + '/api/source-ingest-handlers');
     const connectorCatalog = await getJson(baseUrl + '/api/connectors/catalog?now=2026-06-19T10:00:00.000Z');
     const sourceTypeReadiness = await getJson(baseUrl + '/api/connectors/source-type-readiness?now=2026-06-19T10:00:00.000Z');
+    const sourceTypeOperations = await getJson(baseUrl + '/api/operations/source-type-operations?now=2026-06-19T10:00:00.000Z');
     const connectorReadiness = await getJson(baseUrl + '/api/connectors/readiness?now=2026-06-19T10:00:00.000Z');
     const openApi = await getJson(baseUrl + '/openapi.json');
     const notificationSynthesisPolicy = await getJson(baseUrl + '/api/events/synthesis-policy?priorityScoreThreshold=85&now=2026-06-25T10:00:00.000Z');
@@ -131,8 +132,10 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /rolloutManifestDraft/);
     assert.match(webAppJs, /onboardingRecipeManifestDraft/);
     assert.match(webAppJs, /sourceTypeReadiness/);
+    assert.match(webAppJs, /sourceTypeOperations/);
     assert.match(webAppJs, /renderSourceOnboardingRecipe/);
     assert.match(webAppJs, /renderSourceTypeReadiness/);
+    assert.match(webAppJs, /renderSourceTypeOperations/);
     assert.match(webAppJs, /load-rollout-manifest-draft/);
     assert.match(webAppJs, /load-onboarding-recipe-manifest/);
     assert.match(homeHtml, /modulePath/);
@@ -185,6 +188,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /buildSourceAttention/);
     assert.match(webAppJs, /renderSourceAttentionRows/);
     assert.match(webAppJs, /operations\/source-attention/);
+    assert.match(webAppJs, /operations\/source-type-operations/);
     assert.match(webAppJs, /synthesize-runbook-events/);
     assert.match(webAppJs, /synthesize-author-review-queue-events/);
     assert.match(webAppJs, /operations\/runbook\/events/);
@@ -263,6 +267,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     }));
     assert.equal(openApi.paths['/api/operations/source-attention'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceAttentionReport');
     assert.equal(openApi.paths['/api/operations/source-attention'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/SourceAttentionReport');
+    assert.equal(openApi.paths['/api/operations/source-type-operations'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceTypeOperationsReport');
+    assert.equal(openApi.paths['/api/operations/source-type-operations'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/SourceTypeOperationsReport');
     assert.equal(openApi.paths['/api/operations/source-attention/events'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceAttentionNotificationEventSynthesisResult');
     assert.equal(openApi.paths['/api/events/synthesis-policy'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/NotificationSynthesisPolicyReport');
     assert.equal(openApi.components.schemas.NotificationSynthesisPolicyReport.properties.eventTypes.items.$ref, '#/components/schemas/NotificationSynthesisPolicyEventType');
@@ -275,6 +281,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.components.schemas.SourceAttentionSummary.properties.actionable.type, 'number');
     assert.equal(openApi.components.schemas.SourceAttentionSummary.properties.highestPriorityScore.type, 'number');
     assert.equal(openApi.components.schemas.SourceAttentionSummary.properties.bySignal.additionalProperties.type, 'number');
+    assert.equal(openApi.components.schemas.SourceTypeOperationsReport.properties.sourceTypes.items.$ref, '#/components/schemas/SourceTypeOperationsItem');
+    assert.equal(openApi.components.schemas.SourceTypeOperationsReport.properties.summary.$ref, '#/components/schemas/SourceTypeOperationsSummary');
+    assert.equal(openApi.components.schemas.SourceTypeOperationsSummary.properties.actionableSourceCount.type, 'number');
     assert.equal(openApi.components.schemas.SourceAttentionNotificationEventSynthesisResult.properties.results.items.$ref, '#/components/schemas/SourceAttentionNotificationEventSynthesisItem');
     assert.equal(openApi.components.schemas.SourceAttentionNotificationEventSynthesisItem.properties.event.$ref, '#/components/schemas/NotificationEvent');
     assert.ok(openApi.components.schemas.NotificationEvent.properties.type.enum.includes('source-attention'));
@@ -366,6 +375,11 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(sourceTypeReadiness.sourceTypes.find(function (sourceType) {
       return sourceType.sourceType === 'saved-html-directory';
     }).status, 'warn');
+    assert.equal(sourceTypeOperations.summary.sourceTypeCount, 3);
+    assert.equal(sourceTypeOperations.summary.warnSourceTypeCount, 3);
+    assert.equal(sourceTypeOperations.sourceTypes.find(function (sourceType) {
+      return sourceType.sourceType === 'saved-html-directory';
+    }).readiness.status, 'warn');
     assert.equal(connectorReadiness.generatedAt, '2026-06-19T10:00:00.000Z');
     assert.equal(connectorReadiness.status, 'ok');
     assert.ok(connectorReadiness.connectors.some(function (connector) {

@@ -129,6 +129,7 @@ POST /api/connectors/modules/validate
 GET /api/connectors/catalog
 GET /api/connectors/source-type-readiness
 GET /api/connectors/readiness
+GET /api/operations/source-type-operations
 POST /api/sources/validate
 ```
 
@@ -140,6 +141,7 @@ CLI discovery uses the same catalog:
 node src/presentation/cli/threadtrace.js connector-catalog --source-type normalized-thread-json
 node src/presentation/cli/threadtrace.js connector-catalog --module-path docs/examples/external-connector-package/index.cjs --source-type package-normalized-feed --json true
 node src/presentation/cli/threadtrace.js source-type-readiness --source-type normalized-thread-json --json true
+node src/presentation/cli/threadtrace.js source-type-operations-report --json true
 ```
 
 `/api/connectors/catalog` combines source types with registered forum adapters, including `compatibleSourceKeys` for handler types that require an adapter.
@@ -157,6 +159,12 @@ Treat the recipe as the first screen for future source onboarding. It keeps RSS/
 
 ```powershell
 node src/presentation/cli/threadtrace.js source-type-readiness --forum nga
+```
+
+`/api/operations/source-type-operations` is the source-type operations matrix. It merges readiness with schedule, lifecycle, and source-attention signals so operators can see whether an entire connector family is due, running, blocked, retry-waiting, or actionable. The matching CLI command is:
+
+```powershell
+node src/presentation/cli/threadtrace.js source-type-operations-report --forum nga
 ```
 
 `/api/connectors/readiness` combines the catalog with stored source diagnostics. It reports loaded connector modules, each module's safe contract summary, each connector's handler registration, adapter coverage, configured source count, status counts, and per-source checks. The matching CLI command is:

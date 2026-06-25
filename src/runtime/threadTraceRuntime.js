@@ -48,6 +48,7 @@ const { runResetTrackedSourceFailureTask } = require('../application/use-cases/r
 const { getSourceLifecycleReport } = require('../application/use-cases/getSourceLifecycleReport');
 const { getSourceScheduleReport } = require('../application/use-cases/getSourceScheduleReport');
 const { getSourceAttentionReport } = require('../application/use-cases/getSourceAttentionReport');
+const { getSourceTypeOperationsReport } = require('../application/use-cases/getSourceTypeOperationsReport');
 const { getOperationalOverview } = require('../application/use-cases/getOperationalOverview');
 const { getSourceOperationsDrilldown } = require('../application/use-cases/getSourceOperationsDrilldown');
 const { getNotificationEventOverview } = require('../application/use-cases/getNotificationEventOverview');
@@ -1258,6 +1259,69 @@ function createThreadTraceRuntime(options) {
       });
     },
 
+    async getSourceTypeOperationsReport(request) {
+      const safeRequest = request || {};
+      const commonRequest = {
+        forum: safeRequest.forum,
+        sourceKey: safeRequest.sourceKey,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 100,
+        sourceRunStaleAfterMs: safeRequest.sourceRunStaleAfterMs,
+        sourceFailureRetryBackoffMs: safeRequest.sourceFailureRetryBackoffMs,
+        sourceFailureMaxRetryBackoffMs: safeRequest.sourceFailureMaxRetryBackoffMs,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir
+      };
+      const sourceTypeReadinessPromise = this.getSourceTypeReadiness({
+        forum: safeRequest.forum,
+        sourceKey: safeRequest.sourceKey,
+        sourceType: safeRequest.sourceType,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 100,
+        modulePath: safeRequest.modulePath || safeRequest.connectorModulePath,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir
+      });
+      const sourceScheduleReportPromise = this.getSourceScheduleReport(commonRequest);
+      const sourceLifecycleReportPromise = this.getSourceLifecycleReport(Object.assign({}, commonRequest, {
+        taskLimit: safeRequest.taskLimit || safeRequest.limit || 100
+      }));
+      const [
+        sourceTypeReadiness,
+        sourceScheduleReport,
+        sourceLifecycleReport
+      ] = await Promise.all([
+        sourceTypeReadinessPromise,
+        sourceScheduleReportPromise,
+        sourceLifecycleReportPromise
+      ]);
+      const operationsRunbook = await this.getOperationsRunbook(Object.assign({}, commonRequest, {
+        pipelineLimit: safeRequest.pipelineLimit || 20,
+        eventLimit: safeRequest.eventLimit,
+        maxAttempts: safeRequest.maxAttempts,
+        taskLimit: safeRequest.taskLimit || safeRequest.limit || 100,
+        runningStaleAfterMs: safeRequest.runningStaleAfterMs,
+        workerStaleAfterMs: safeRequest.workerStaleAfterMs,
+        sourceLifecycleReport
+      }));
+      const sourceAttentionReport = getSourceAttentionReport({
+        scheduleReport: sourceScheduleReport,
+        lifecycleReport: sourceLifecycleReport,
+        operationsRunbook,
+        limit: safeRequest.attentionLimit || safeRequest.limit || 100,
+        now: safeRequest.now
+      });
+      return getSourceTypeOperationsReport({
+        sourceTypeReadiness,
+        sourceScheduleReport,
+        sourceLifecycleReport,
+        sourceAttentionReport,
+        sourceType: safeRequest.sourceType,
+        limit: safeRequest.sourceTypeLimit || safeRequest.limit || 100,
+        now: safeRequest.now
+      });
+    },
+
     async getOperationalReadiness(request) {
       const safeRequest = request || {};
       return getOperationalReadiness({
@@ -1391,7 +1455,7 @@ function createThreadTraceRuntime(options) {
         limit: safeRequest.pipelineLimit || 20,
         storeDir: safeRequest.storeDir
       });
-      const sourceLifecycleReport = await this.getSourceLifecycleReport({
+      const sourceLifecycleReport = safeRequest.sourceLifecycleReport || await this.getSourceLifecycleReport({
         forum: safeRequest.forum,
         sourceKey: safeRequest.sourceKey,
         enabled: safeRequest.enabled,
