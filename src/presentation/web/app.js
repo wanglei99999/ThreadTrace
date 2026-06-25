@@ -1269,6 +1269,7 @@ async function loadSystemStatus() {
       statusRow('事件', 'pending ' + overview.events.pending + ' · failed ' + overview.events.failed + ' · open ' + overview.events.unacknowledged),
       statusRow('Author queue', authorReviewQueueStatusSummary(overview.authorReviewQueue)),
       statusRow('Review actions', reviewActionStatusSummary(overview.reviewActions)),
+      statusRow('Event actions', eventActionStatusSummary(overview.notificationEventActions)),
       statusRow('原始页', String(overview.rawPages.total)),
       statusRow('生成时间', overview.generatedAt)
     ]);
@@ -4151,6 +4152,7 @@ function renderSourceOperationsDrilldown(report) {
   const authorQueue = health.authorReviewQueue || {};
   const reviewActions = health.reviewActions || {};
   const reviewExecutions = reviewActions.executions || {};
+  const eventActions = health.notificationEventActions || {};
   const attention = report.attention || {};
   const recent = report.recent || {};
   const scope = report.scope || {};
@@ -4164,6 +4166,7 @@ function renderSourceOperationsDrilldown(report) {
       summaryTile('Stale runs', String(workerRuns.stale || 0), (workerRuns.stale || 0) > 0 ? 'warn' : 'ok'),
       summaryTile('Expired leases', String(workerLeases.expired || 0), (workerLeases.expired || 0) > 0 ? 'warn' : 'ok'),
       summaryTile('Review stale', String(reviewExecutions.staleRunning || 0), (reviewExecutions.staleRunning || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('Event action stale', String(eventActions.staleRunning || 0), (eventActions.staleRunning || 0) > 0 ? 'warn' : 'ok'),
       summaryTile('Queue high', String(authorQueue.highPriorityOpenCount || 0), (authorQueue.highPriorityOpenCount || 0) > 0 ? 'warn' : 'ok'),
       summaryTile('Attention', attention.found ? ('#' + (attention.attentionRank || '?') + ' · ' + (attention.priorityScore || 0)) : 'none', attentionStatusVariant(attention.severity)),
       '</div>',
@@ -4177,6 +4180,7 @@ function renderSourceOperationsDrilldown(report) {
       metric('Tasks', 'total ' + (tasks.total || 0) + ' | running ' + (tasks.running || 0) + ' | failed ' + (tasks.failed || 0)),
       metric('Events', 'open ' + (events.unacknowledged || 0) + ' | pending ' + (events.pending || 0) + ' | due ' + (events.dueForDelivery || 0)),
       metric('Review actions', 'audits ' + (reviewActions.auditCount || 0) + ' | executions ' + (reviewExecutions.count || 0) + ' | failed ' + (reviewExecutions.failed || 0)),
+      metric('Event actions', 'executions ' + (eventActions.count || 0) + ' | running ' + (eventActions.running || 0) + ' | failed ' + (eventActions.failed || 0)),
       metric('Author queue', 'open ' + (authorQueue.openCount || 0) + ' | high ' + (authorQueue.highPriorityOpenCount || 0))
     ].join(''), 'wide'),
     panel('Source attention details', renderSourceDrilldownAttention(attention), 'wide'),
@@ -5596,6 +5600,19 @@ function reviewActionStatusSummary(reviewActions) {
     'sources ' + compactCountMap(summary.bySourceKey || executions.bySourceKey),
     'latest ' + (summary.latestGeneratedAt || executions.latestUpdatedAt || 'none')
   ].join(' · ');
+}
+
+function eventActionStatusSummary(eventActions) {
+  const summary = eventActions || {};
+  const executions = summary.executions || summary;
+  return [
+    'executions ' + (executions.count || 0),
+    'running ' + (executions.running || 0),
+    'stale ' + (executions.staleRunning || 0),
+    'failed ' + (executions.failed || 0),
+    'sources ' + compactCountMap(executions.bySourceKey),
+    'latest ' + (executions.latestUpdatedAt || 'none')
+  ].join(' | ');
 }
 
 function authorReviewQueueStatusSummary(queue) {

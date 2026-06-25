@@ -34,6 +34,7 @@ async function getSourceOperationsDrilldown(options) {
     : [];
   const authorReviewQueue = safeOptions.authorReviewQueue || {};
   const reviewActions = summarizeReviewActions(safeOptions.reviewActionAuditOverview, safeOptions.reviewActionExecutions);
+  const notificationEventActions = summarizeActionExecutions(safeOptions.notificationEventActionExecutions);
   const attention = summarizeSourceAttention(safeOptions.sourceAttentionReport, scope);
   const summaries = {
     source: summarizeSource(sourceResolution.source, now),
@@ -41,7 +42,8 @@ async function getSourceOperationsDrilldown(options) {
     events: summarizeEvents(events.all, now),
     workers: summarizeWorkers(workerRuns, workerLeases, now, safeOptions.workerStaleAfterMs),
     authorReviewQueue: summarizeAuthorReviewQueue(authorReviewQueue),
-    reviewActions
+    reviewActions,
+    notificationEventActions
   };
   const status = resolveStatus(sourceResolution, summaries);
 
@@ -61,7 +63,8 @@ async function getSourceOperationsDrilldown(options) {
       workerRuns: workerRuns.slice(0, 10).map(summarizeWorkerRun),
       workerLeases: workerLeases.slice(0, 10),
       authorReviewQueue: (authorReviewQueue.items || []).slice(0, 10),
-      reviewActionExecutions: (safeOptions.reviewActionExecutions && safeOptions.reviewActionExecutions.executions || []).slice(0, 10)
+      reviewActionExecutions: (safeOptions.reviewActionExecutions && safeOptions.reviewActionExecutions.executions || []).slice(0, 10),
+      notificationEventActionExecutions: (safeOptions.notificationEventActionExecutions && safeOptions.notificationEventActionExecutions.executions || []).slice(0, 10)
     }
   };
 }
@@ -281,22 +284,26 @@ function summarizeAuthorReviewQueue(result) {
 }
 
 function summarizeReviewActions(auditOverview, executionsResult) {
-  const executions = executionsResult && Array.isArray(executionsResult.executions) ? executionsResult.executions : [];
-  const staleRunning = executionsResult && Array.isArray(executionsResult.staleRunningExecutions)
-    ? executionsResult.staleRunningExecutions
-    : executions.filter(function (execution) { return execution.staleRunning; });
   return {
     auditCount: auditOverview && auditOverview.count || 0,
     taskCount: auditOverview && auditOverview.taskCount || 0,
     plannedClosureCount: auditOverview && auditOverview.plannedClosureCount || 0,
     plannedMergeCandidateCount: auditOverview && auditOverview.plannedMergeCandidateCount || 0,
-    executions: {
-      count: executionsResult && executionsResult.count !== undefined ? executionsResult.count : executions.length,
-      running: executions.filter(function (execution) { return execution.status === 'running'; }).length,
-      completed: executions.filter(function (execution) { return execution.status === 'completed'; }).length,
-      failed: executions.filter(function (execution) { return execution.status === 'failed'; }).length,
-      staleRunning: executionsResult && executionsResult.staleRunningCount !== undefined ? executionsResult.staleRunningCount : staleRunning.length
-    }
+    executions: summarizeActionExecutions(executionsResult)
+  };
+}
+
+function summarizeActionExecutions(executionsResult) {
+  const executions = executionsResult && Array.isArray(executionsResult.executions) ? executionsResult.executions : [];
+  const staleRunning = executionsResult && Array.isArray(executionsResult.staleRunningExecutions)
+    ? executionsResult.staleRunningExecutions
+    : executions.filter(function (execution) { return execution.staleRunning; });
+  return {
+    count: executionsResult && executionsResult.count !== undefined ? executionsResult.count : executions.length,
+    running: executions.filter(function (execution) { return execution.status === 'running'; }).length,
+    completed: executions.filter(function (execution) { return execution.status === 'completed'; }).length,
+    failed: executions.filter(function (execution) { return execution.status === 'failed'; }).length,
+    staleRunning: executionsResult && executionsResult.staleRunningCount !== undefined ? executionsResult.staleRunningCount : staleRunning.length
   };
 }
 
@@ -351,7 +358,9 @@ function summarizeAttentionReport(sourceAttentionReport) {
 
 function resolveStatus(sourceResolution, summaries) {
   if (!sourceResolution.source) return 'warn';
-  if (summaries.workers.runs.stale > 0 || summaries.reviewActions.executions.staleRunning > 0) return 'fail';
+  if (summaries.workers.runs.stale > 0 ||
+    summaries.reviewActions.executions.staleRunning > 0 ||
+    summaries.notificationEventActions.staleRunning > 0) return 'fail';
   if (summaries.source.status === 'failed' || summaries.source.status === 'disabled') return 'warn';
   if (summaries.tasks.failed > 0 || summaries.events.failed > 0 || summaries.workers.leases.expired > 0 || summaries.authorReviewQueue.highPriorityOpenCount > 0) return 'warn';
   return 'ok';
@@ -387,6 +396,9 @@ function buildNextActions(sourceResolution, summaries, attention) {
   if (summaries.reviewActions.executions.staleRunning > 0 || summaries.reviewActions.executions.failed > 0) {
     actions.push(action('reviewActions.executionLedger', summaries.reviewActions.executions.staleRunning > 0 ? 'critical' : 'warning', 'Inspect review action execution ledger records for this source.', commands.reviewActionExecutions));
   }
+  if (summaries.notificationEventActions.staleRunning > 0 || summaries.notificationEventActions.failed > 0) {
+    actions.push(action('notificationEventActions.executionLedger', summaries.notificationEventActions.staleRunning > 0 ? 'critical' : 'warning', 'Inspect notification event action execution ledger records for this source.', commands.notificationEventActionExecutions));
+  }
   if (summaries.authorReviewQueue.highPriorityOpenCount > 0) {
     actions.push(action('authorReviewQueue.highPriority', 'warning', 'Review high-priority author intelligence queue items for this source.', commands.authorQueue));
   }
@@ -412,6 +424,7 @@ function scopedCommands(scope) {
     traceContext: 'node src/presentation/cli/threadtrace.js trace-context' + suffix,
     dispatchEvents: 'node src/presentation/cli/threadtrace.js dispatch-events' + suffix,
     reviewActionExecutions: 'node src/presentation/cli/threadtrace.js review-action-executions' + suffix,
+    notificationEventActionExecutions: 'node src/presentation/cli/threadtrace.js event-action-executions' + suffix,
     authorQueue: 'node src/presentation/cli/threadtrace.js author-review-queue' + suffix
   };
 }

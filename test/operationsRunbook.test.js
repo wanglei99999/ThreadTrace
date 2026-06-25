@@ -350,6 +350,49 @@ test('operations runbook points stale review action ledger runs to running inspe
   assert.match(runbook.actions[0].relatedCommands[1], /--source-key external/);
 });
 
+test('operations runbook points notification event action ledger failures to event action execution tools', function () {
+  const runbook = getOperationsRunbook({
+    now: '2026-06-21T10:00:00.000Z',
+    checklist: {
+      generatedAt: '2026-06-21T10:00:00.000Z',
+      items: [
+        {
+          key: 'notificationEventActions.executionLedger',
+          area: 'notifications',
+          status: 'fail',
+          summary: 'Notification event action execution ledger prevents duplicate operator-triggered event mutations.',
+          evidence: {
+            count: 2,
+            completed: 0,
+            running: 1,
+            failed: 1,
+            failedExecutions: [
+              {
+                eventId: 'event-failed',
+                sourceKey: 'nga',
+                sourceId: 'source-nga'
+              }
+            ]
+          }
+        }
+      ]
+    }
+  });
+
+  assert.equal(runbook.status, 'fail');
+  assert.equal(runbook.actionCount, 1);
+  assert.equal(runbook.actions[0].key, 'checklist.notificationEventActions.executionLedger');
+  assert.equal(runbook.actions[0].severity, 'critical');
+  assert.equal(runbook.actions[0].evidence.sourceId, 'source-nga');
+  assert.equal(runbook.actions[0].evidence.sourceKey, 'nga');
+  assert.match(runbook.actions[0].recommendedCommand, /event-action-executions --status failed/);
+  assert.match(runbook.actions[0].recommendedCommand, /--source-id source-nga/);
+  assert.match(runbook.actions[0].recommendedCommand, /--source-key nga/);
+  assert.match(runbook.actions[0].relatedCommands[0], /event-action-executions --status running/);
+  assert.match(runbook.actions[0].relatedCommands[1], /event-action-executions --status failed/);
+  assert.match(runbook.actions[0].relatedCommands[2], /list-events --acknowledged false/);
+});
+
 test('operations runbook flags duplicate idempotency task risk', function () {
   const runbook = getOperationsRunbook({
     now: '2026-06-19T10:00:00.000Z',

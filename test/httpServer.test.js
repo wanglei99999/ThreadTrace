@@ -304,7 +304,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.components.schemas.OperationalOverview.properties.workers.properties.latestRun.$ref, '#/components/schemas/WorkerRun');
     assert.equal(openApi.components.schemas.OperationalOverview.properties.workers.properties.staleRuns.items.$ref, '#/components/schemas/WorkerRun');
     assert.equal(openApi.components.schemas.OperationalOverview.properties.authorReviewQueue.$ref, '#/components/schemas/AuthorReviewQueueSummary');
+    assert.equal(openApi.components.schemas.OperationalOverview.properties.notificationEventActions.type, 'object');
     assert.equal(openApi.components.schemas.OperationalOverview.properties.recent.properties.authorReviewQueue.items.$ref, '#/components/schemas/AuthorReviewQueueItem');
+    assert.equal(openApi.components.schemas.OperationalOverview.properties.recent.properties.notificationEventActionExecutions.items.$ref, '#/components/schemas/NotificationEventActionExecutionRecord');
     assert.equal(openApi.components.schemas.AuthorReviewQueueSummary.properties.sourceHotspots.items.$ref, '#/components/schemas/AuthorReviewQueueSourceHotspot');
     assert.equal(openApi.components.schemas.AuthorReviewQueueSummary.properties.openBySourceKey.additionalProperties.type, 'number');
     assert.equal(openApi.components.schemas.AuthorReviewQueueSummary.properties.highPriorityOpenBySourceKey.additionalProperties.type, 'number');
@@ -353,7 +355,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.attention.properties.reportSummary.$ref, '#/components/schemas/SourceAttentionSummary');
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.recent.properties.workerRuns.items.$ref, '#/components/schemas/WorkerRun');
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.health.properties.authorReviewQueue.$ref, '#/components/schemas/AuthorReviewQueueSummary');
+    assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.health.properties.notificationEventActions.type, 'object');
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.recent.properties.authorReviewQueue.items.$ref, '#/components/schemas/AuthorReviewQueueItem');
+    assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.recent.properties.notificationEventActionExecutions.items.$ref, '#/components/schemas/NotificationEventActionExecutionRecord');
     assert.equal(openApi.paths['/api/intelligence/author-review-queue'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/AuthorReviewQueueListResult');
     assert.equal(openApi.components.schemas.AuthorReviewQueueListResult.properties.summary.$ref, '#/components/schemas/AuthorReviewQueueSummary');
     assert.equal(openApi.components.schemas.AuthorReviewQueueListResult.properties.items.items.$ref, '#/components/schemas/AuthorReviewQueueItem');

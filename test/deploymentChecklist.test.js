@@ -119,6 +119,20 @@ test('deployment checklist aggregates runtime, source, readiness, notification, 
         }
       ]
     },
+    notificationEventActionExecutions: {
+      status: 'ok',
+      count: 1,
+      executions: [
+        {
+          key: 'notification-event-action:v1:event.acknowledge:event-1',
+          actionKey: 'event.acknowledge',
+          status: 'completed',
+          eventId: 'event-1',
+          sourceKey: 'nga',
+          updatedAt: '2026-06-19T09:57:00.000Z'
+        }
+      ]
+    },
     readiness: {
       status: 'fail',
       checks: [
@@ -165,6 +179,13 @@ test('deployment checklist aggregates runtime, source, readiness, notification, 
   assert.equal(checklist.items.find(function (item) {
     return item.key === 'notifications.outbox';
   }).evidence.checks.length, 2);
+  const eventActionLedgerItem = checklist.items.find(function (item) {
+    return item.key === 'notificationEventActions.executionLedger';
+  });
+  assert.equal(eventActionLedgerItem.status, 'ok');
+  assert.equal(eventActionLedgerItem.evidence.count, 1);
+  assert.equal(eventActionLedgerItem.evidence.completed, 1);
+  assert.equal(eventActionLedgerItem.evidence.latestUpdatedAt, '2026-06-19T09:57:00.000Z');
   assert.equal(checklist.items.find(function (item) {
     return item.key === 'notifications.channel';
   }).status, 'ok');
@@ -332,4 +353,60 @@ test('deployment checklist fails when review action execution ledger has stale r
   assert.equal(item.evidence.staleRunningBySourceKey.external, 1);
   assert.equal(item.evidence.staleRunningExecutions[0].taskId, 'task-stale');
   assert.equal(item.evidence.staleRunningExecutions[0].sourceKey, 'external');
+});
+
+test('deployment checklist fails when notification event action execution ledger needs attention', function () {
+  const checklist = getDeploymentChecklist({
+    now: '2026-06-21T10:00:00.000Z',
+    notificationEventActionExecutions: {
+      status: 'ok',
+      count: 2,
+      runningStaleAfterMs: 600000,
+      staleRunningCount: 1,
+      staleRunningExecutions: [
+        {
+          key: 'notification-event-action:v1:event.acknowledge:event-stale',
+          actionKey: 'event.acknowledge',
+          status: 'running',
+          eventId: 'event-stale',
+          sourceKey: 'external',
+          updatedAt: '2026-06-21T09:40:00.000Z',
+          runningAgeMs: 1200000
+        }
+      ],
+      executions: [
+        {
+          key: 'notification-event-action:v1:event.acknowledge:event-failed',
+          actionKey: 'event.acknowledge',
+          status: 'failed',
+          eventId: 'event-failed',
+          sourceId: 'source-nga',
+          sourceKey: 'nga',
+          updatedAt: '2026-06-21T09:59:00.000Z'
+        },
+        {
+          key: 'notification-event-action:v1:event.acknowledge:event-stale',
+          actionKey: 'event.acknowledge',
+          status: 'running',
+          eventId: 'event-stale',
+          sourceKey: 'external',
+          updatedAt: '2026-06-21T09:40:00.000Z',
+          runningAgeMs: 1200000,
+          staleRunning: true
+        }
+      ]
+    }
+  });
+
+  const item = checklist.items.find(function (check) {
+    return check.key === 'notificationEventActions.executionLedger';
+  });
+  assert.equal(checklist.status, 'fail');
+  assert.equal(item.status, 'fail');
+  assert.equal(item.evidence.failed, 1);
+  assert.equal(item.evidence.staleRunning, 1);
+  assert.equal(item.evidence.bySourceKey.nga, 1);
+  assert.equal(item.evidence.staleRunningBySourceKey.external, 1);
+  assert.equal(item.evidence.failedExecutions[0].eventId, 'event-failed');
+  assert.equal(item.evidence.staleRunningExecutions[0].eventId, 'event-stale');
 });

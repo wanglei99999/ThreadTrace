@@ -209,6 +209,46 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
         }
       ]
     },
+    notificationEventActionExecutions: {
+      status: 'ok',
+      count: 2,
+      runningStaleAfterMs: 600000,
+      staleRunningCount: 1,
+      staleRunningExecutions: [
+        {
+          key: 'notification-event-action:v1:event.acknowledge:event-2',
+          actionKey: 'event.acknowledge',
+          status: 'running',
+          sourceId: 'source-external',
+          sourceKey: 'external',
+          eventId: 'event-2',
+          updatedAt: '2026-06-18T09:40:00.000Z',
+          runningAgeMs: 1200000
+        }
+      ],
+      executions: [
+        {
+          key: 'notification-event-action:v1:event.acknowledge:event-1',
+          actionKey: 'event.acknowledge',
+          status: 'completed',
+          sourceId: 'source-nga',
+          sourceKey: 'nga',
+          eventId: 'event-1',
+          updatedAt: '2026-06-18T09:59:00.000Z'
+        },
+        {
+          key: 'notification-event-action:v1:event.acknowledge:event-2',
+          actionKey: 'event.acknowledge',
+          status: 'running',
+          sourceId: 'source-external',
+          sourceKey: 'external',
+          eventId: 'event-2',
+          updatedAt: '2026-06-18T09:40:00.000Z',
+          runningAgeMs: 1200000,
+          staleRunning: true
+        }
+      ]
+    },
     authorReviewQueue: {
       itemCount: 3,
       summary: {
@@ -329,6 +369,19 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
   assert.equal(overview.reviewActions.executions.bySourceKey.external, 1);
   assert.equal(overview.reviewActions.executions.staleRunningBySourceKey.external, 1);
   assert.equal(overview.reviewActions.executions.staleRunningExecutions[0].taskId, 'review-action-task-2');
+  assert.equal(overview.notificationEventActions.executions.count, 2);
+  assert.equal(overview.notificationEventActions.executions.completed, 1);
+  assert.equal(overview.notificationEventActions.executions.running, 1);
+  assert.equal(overview.notificationEventActions.executions.staleRunning, 1);
+  assert.equal(overview.notificationEventActions.executions.failed, 0);
+  assert.equal(overview.notificationEventActions.executions.latestUpdatedAt, '2026-06-18T09:59:00.000Z');
+  assert.equal(overview.notificationEventActions.executions.runningStaleAfterMs, 600000);
+  assert.equal(overview.notificationEventActions.executions.latestEventId, 'event-1');
+  assert.equal(overview.notificationEventActions.executions.bySourceKey.nga, 1);
+  assert.equal(overview.notificationEventActions.executions.bySourceKey.external, 1);
+  assert.equal(overview.notificationEventActions.executions.staleRunningBySourceKey.external, 1);
+  assert.equal(overview.notificationEventActions.executions.staleRunningExecutions[0].eventId, 'event-2');
+  assert.equal(overview.recent.notificationEventActionExecutions[0].eventId, 'event-1');
 });
 
 test('operational overview scopes source type windows without mixing sibling source keys', async function () {

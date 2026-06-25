@@ -767,7 +767,7 @@ runningStaleAfterMs=600000
 now=2026-06-18T10:00:00.000Z
 ```
 
-The response is exposed in OpenAPI as `SourceOperationsDrilldown` and reuses `SourceScope`, `WorkerRun`, `WorkerLease`, `SourceAttentionSignal`, and `SourceAttentionSummary`. The `attention` field contains the matching source attention item when available, including `attentionRank`, `priorityScore`, `severity`, `recommendedNextAction`, and `recommendedCommand`; the first drill-down next action mirrors that recommendation so operators can move from source list to single-source remediation without rejoining reports. HTTP `503` means the source drill-down found a failing signal, such as stale worker runs or stale review action executions. Warnings return `200`.
+The response is exposed in OpenAPI as `SourceOperationsDrilldown` and reuses `SourceScope`, `WorkerRun`, `WorkerLease`, `SourceAttentionSignal`, and `SourceAttentionSummary`. The `attention` field contains the matching source attention item when available, including `attentionRank`, `priorityScore`, `severity`, `recommendedNextAction`, and `recommendedCommand`; the first drill-down next action mirrors that recommendation so operators can move from source list to single-source remediation without rejoining reports. HTTP `503` means the source drill-down found a failing signal, such as stale worker runs, stale review action executions, or stale notification event action executions. Warnings return `200`.
 
 ### `GET /api/operations/worker-topology-plan`
 

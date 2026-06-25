@@ -198,6 +198,32 @@ function createThreadTraceRuntime(options) {
       now: safeRequest.now
     });
   };
+  const listNotificationEventActionExecutionsFor = function (request) {
+    const safeRequest = request || {};
+    const repositories = createRepositoriesFor(safeRequest.storeDir);
+    if (!repositories.notificationEventActionExecutionRepository) {
+      return {
+        generatedAt: safeRequest.now || new Date().toISOString(),
+        status: 'warn',
+        healthStatus: 'warn',
+        count: 0,
+        executions: [],
+        message: 'Notification event action execution repository is not configured for this storage mode.'
+      };
+    }
+    return listNotificationEventActionExecutions({
+      notificationEventActionExecutionRepository: repositories.notificationEventActionExecutionRepository,
+      eventId: safeRequest.eventId,
+      actionKey: safeRequest.actionKey || safeRequest.action,
+      status: safeRequest.status,
+      sourceId: safeRequest.sourceId,
+      sourceKey: safeRequest.sourceKey || safeRequest.forum,
+      actor: safeRequest.actor,
+      limit: safeRequest.limit || 50,
+      runningStaleAfterMs: safeRequest.runningStaleAfterMs,
+      now: safeRequest.now
+    });
+  };
   const getPostgresClient = function () {
     if (!postgresClient) {
       postgresClient = createPostgresPool(safeOptions.postgres);
@@ -1164,6 +1190,14 @@ function createThreadTraceRuntime(options) {
         runningStaleAfterMs: safeRequest.runningStaleAfterMs,
         storeDir
       });
+      const notificationEventActionExecutions = await listNotificationEventActionExecutionsFor({
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        limit: safeRequest.limit || 100,
+        now: safeRequest.now,
+        runningStaleAfterMs: safeRequest.runningStaleAfterMs,
+        storeDir
+      });
       const authorReviewQueue = await listAuthorReviewQueue({
         authorReviewQueueRepository: repositories.authorReviewQueueRepository,
         limit: safeRequest.limit || 100,
@@ -1182,6 +1216,7 @@ function createThreadTraceRuntime(options) {
         enabled: safeRequest.enabled,
         reviewActionAuditOverview,
         reviewActionExecutions,
+        notificationEventActionExecutions,
         authorReviewQueue,
         now: safeRequest.now,
         limit: safeRequest.limit || 100,
@@ -1207,6 +1242,14 @@ function createThreadTraceRuntime(options) {
         now: safeRequest.now
       });
       const reviewActionExecutions = await listReviewActionExecutionsFor({
+        sourceId: safeRequest.sourceId,
+        sourceKey,
+        limit: safeRequest.limit || 50,
+        now: safeRequest.now,
+        runningStaleAfterMs: safeRequest.runningStaleAfterMs,
+        storeDir
+      });
+      const notificationEventActionExecutions = await listNotificationEventActionExecutionsFor({
         sourceId: safeRequest.sourceId,
         sourceKey,
         limit: safeRequest.limit || 50,
@@ -1249,6 +1292,7 @@ function createThreadTraceRuntime(options) {
         workerStaleAfterMs: safeRequest.workerStaleAfterMs,
         reviewActionAuditOverview,
         reviewActionExecutions,
+        notificationEventActionExecutions,
         authorReviewQueue,
         sourceAttentionReport,
         now: safeRequest.now
@@ -1538,6 +1582,12 @@ function createThreadTraceRuntime(options) {
         runningStaleAfterMs: safeRequest.runningStaleAfterMs,
         storeDir: safeRequest.storeDir
       });
+      const notificationEventActionExecutions = await listNotificationEventActionExecutionsFor({
+        limit: safeRequest.limit || 100,
+        now: safeRequest.now,
+        runningStaleAfterMs: safeRequest.runningStaleAfterMs,
+        storeDir: safeRequest.storeDir
+      });
       return getDeploymentChecklist({
         forum: safeRequest.forum,
         sourceKey: safeRequest.sourceKey,
@@ -1548,6 +1598,7 @@ function createThreadTraceRuntime(options) {
         notificationDiagnostics,
         reviewActionExecutorDiagnostics,
         reviewActionExecutions,
+        notificationEventActionExecutions,
         sourceDiagnostics,
         readiness,
         now: safeRequest.now
@@ -2123,30 +2174,7 @@ function createThreadTraceRuntime(options) {
     },
 
     async listNotificationEventActionExecutions(request) {
-      const safeRequest = request || {};
-      const repositories = createRepositoriesFor(safeRequest.storeDir);
-      if (!repositories.notificationEventActionExecutionRepository) {
-        return {
-          generatedAt: safeRequest.now || new Date().toISOString(),
-          status: 'warn',
-          healthStatus: 'warn',
-          count: 0,
-          executions: [],
-          message: 'Notification event action execution repository is not configured for this storage mode.'
-        };
-      }
-      return listNotificationEventActionExecutions({
-        notificationEventActionExecutionRepository: repositories.notificationEventActionExecutionRepository,
-        eventId: safeRequest.eventId,
-        actionKey: safeRequest.actionKey || safeRequest.action,
-        status: safeRequest.status,
-        sourceId: safeRequest.sourceId,
-        sourceKey: safeRequest.sourceKey || safeRequest.forum,
-        actor: safeRequest.actor,
-        limit: safeRequest.limit || 50,
-        runningStaleAfterMs: safeRequest.runningStaleAfterMs,
-        now: safeRequest.now
-      });
+      return listNotificationEventActionExecutionsFor(request);
     },
 
     async getNotificationEventOverview(request) {

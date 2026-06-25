@@ -7,7 +7,8 @@ function getDeploymentChecklist(options) {
   const connectorReadiness = safeOptions.connectorReadiness || {};
   const notificationDiagnostics = safeOptions.notificationDiagnostics || {};
   const reviewActionExecutorDiagnostics = safeOptions.reviewActionExecutorDiagnostics || {};
-  const reviewActionExecutionSummary = summarizeReviewActionExecutions(safeOptions.reviewActionExecutions);
+  const reviewActionExecutionSummary = summarizeActionExecutions(safeOptions.reviewActionExecutions);
+  const notificationEventActionExecutionSummary = summarizeActionExecutions(safeOptions.notificationEventActionExecutions);
   const sourceDiagnostics = safeOptions.sourceDiagnostics || {};
   const readiness = safeOptions.readiness || {};
   const sourceScope = {
@@ -46,6 +47,24 @@ function getDeploymentChecklist(options) {
     item('notifications.outbox', 'notifications', aggregateChecks(readiness.checks, /^events\./), 'Notification outbox has no unacknowledged failures or due delivery backlog.', {
       checks: selectCheckKeys(readiness.checks, /^events\./)
     }),
+    item('notificationEventActions.executionLedger', 'notifications', actionExecutionStatus(notificationEventActionExecutionSummary), 'Notification event action execution ledger prevents duplicate operator-triggered event mutations.', {
+      status: notificationEventActionExecutionSummary.status,
+      count: notificationEventActionExecutionSummary.count,
+      completed: notificationEventActionExecutionSummary.completed,
+      running: notificationEventActionExecutionSummary.running,
+      staleRunning: notificationEventActionExecutionSummary.staleRunning,
+      failed: notificationEventActionExecutionSummary.failed,
+      latestUpdatedAt: notificationEventActionExecutionSummary.latestUpdatedAt,
+      runningStaleAfterMs: notificationEventActionExecutionSummary.runningStaleAfterMs,
+      sourceId: notificationEventActionExecutionSummary.sourceId,
+      sourceKey: notificationEventActionExecutionSummary.sourceKey,
+      bySourceKey: notificationEventActionExecutionSummary.bySourceKey,
+      bySourceId: notificationEventActionExecutionSummary.bySourceId,
+      staleRunningBySourceKey: notificationEventActionExecutionSummary.staleRunningBySourceKey,
+      failedExecutions: notificationEventActionExecutionSummary.failedExecutions,
+      staleRunningExecutions: notificationEventActionExecutionSummary.staleRunningExecutions,
+      message: notificationEventActionExecutionSummary.message
+    }),
     item('reviewActions.executor', 'review-actions', reviewActionExecutorDiagnostics.status || 'warn', 'Review action executor mode and readiness are visible before execute=true.', {
       mode: reviewActionExecutorDiagnostics.mode,
       ready: reviewActionExecutorDiagnostics.ready,
@@ -54,7 +73,7 @@ function getDeploymentChecklist(options) {
       audit: reviewActionExecutorDiagnostics.audit,
       checks: selectCheckKeys(reviewActionExecutorDiagnostics.checks, /^reviewActionExecutor\./)
     }),
-    item('reviewActions.executionLedger', 'review-actions', reviewActionExecutionStatus(reviewActionExecutionSummary), 'Review action execution ledger prevents duplicate downstream mutations.', {
+    item('reviewActions.executionLedger', 'review-actions', actionExecutionStatus(reviewActionExecutionSummary), 'Review action execution ledger prevents duplicate downstream mutations.', {
       status: reviewActionExecutionSummary.status,
       count: reviewActionExecutionSummary.count,
       completed: reviewActionExecutionSummary.completed,
@@ -88,12 +107,13 @@ function getDeploymentChecklist(options) {
     notificationDiagnostics,
     reviewActionExecutorDiagnostics,
     reviewActionExecutions: reviewActionExecutionSummary,
+    notificationEventActionExecutions: notificationEventActionExecutionSummary,
     sourceDiagnostics,
     readiness
   };
 }
 
-function summarizeReviewActionExecutions(result) {
+function summarizeActionExecutions(result) {
   const executions = result && Array.isArray(result.executions) ? result.executions : [];
   const staleRunningExecutions = result && Array.isArray(result.staleRunningExecutions)
     ? result.staleRunningExecutions
@@ -126,7 +146,7 @@ function summarizeReviewActionExecutions(result) {
   };
 }
 
-function reviewActionExecutionStatus(summary) {
+function actionExecutionStatus(summary) {
   if (!summary || summary.status === 'warn') return 'warn';
   if (summary.failed > 0) return 'fail';
   if (summary.staleRunning > 0) return 'fail';

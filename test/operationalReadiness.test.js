@@ -143,3 +143,43 @@ test('operational readiness reports source-scoped review action execution ledger
   assert.equal(check.value.sourceKey, 'nga');
   assert.equal(check.value.staleRunningBySourceKey.nga, 1);
 });
+
+test('operational readiness reports notification event action execution ledger health', async function () {
+  const readiness = await getOperationalReadiness({
+    overview: {
+      generatedAt: '2026-06-18T10:00:00.000Z',
+      sources: { failed: 0 },
+      tasks: { failed: 0 },
+      events: { failed: 0, dueForDelivery: 0 },
+      workers: {
+        stale: 0,
+        failed: 0,
+        leases: {
+          expired: 0
+        }
+      },
+      notificationEventActions: {
+        executions: {
+          sourceId: 'source-nga',
+          sourceKey: 'nga',
+          count: 2,
+          running: 1,
+          staleRunning: 1,
+          failed: 1,
+          bySourceKey: { nga: 2 },
+          staleRunningBySourceKey: { nga: 1 }
+        }
+      }
+    }
+  });
+  const check = readiness.checks.find(function (item) {
+    return item.key === 'notificationEventActions.executionLedger';
+  });
+
+  assert.equal(readiness.status, 'fail');
+  assert.equal(check.status, 'fail');
+  assert.equal(check.count, 2);
+  assert.equal(check.value.sourceKey, 'nga');
+  assert.equal(check.value.failed, 1);
+  assert.equal(check.value.staleRunningBySourceKey.nga, 1);
+});

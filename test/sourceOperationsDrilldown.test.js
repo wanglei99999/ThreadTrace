@@ -141,6 +141,29 @@ test('source operations drilldown aggregates source-scoped health and recent rec
         { id: 'execution-1', status: 'completed', sourceId: 'source-1', sourceKey: 'nga' }
       ]
     },
+    notificationEventActionExecutions: {
+      count: 2,
+      staleRunningCount: 1,
+      executions: [
+        {
+          key: 'notification-event-action:v1:event.acknowledge:event-1',
+          actionKey: 'event.acknowledge',
+          status: 'failed',
+          eventId: 'event-1',
+          sourceId: 'source-1',
+          sourceKey: 'nga'
+        },
+        {
+          key: 'notification-event-action:v1:event.acknowledge:event-2',
+          actionKey: 'event.acknowledge',
+          status: 'running',
+          eventId: 'event-2',
+          sourceId: 'source-1',
+          sourceKey: 'nga',
+          staleRunning: true
+        }
+      ]
+    },
     sourceAttentionReport: {
       status: 'warn',
       summary: {
@@ -189,6 +212,9 @@ test('source operations drilldown aggregates source-scoped health and recent rec
   assert.equal(report.health.workers.leases.expired, 1);
   assert.equal(report.health.authorReviewQueue.highPriorityOpenCount, 1);
   assert.equal(report.health.reviewActions.auditCount, 2);
+  assert.equal(report.health.notificationEventActions.count, 2);
+  assert.equal(report.health.notificationEventActions.failed, 1);
+  assert.equal(report.health.notificationEventActions.staleRunning, 1);
   assert.equal(report.attention.found, true);
   assert.equal(report.attention.attentionRank, 1);
   assert.equal(report.attention.priorityScore, 92);
@@ -200,9 +226,15 @@ test('source operations drilldown aggregates source-scoped health and recent rec
   assert.ok(report.nextActions.some(function (action) {
     return action.key === 'workers.stale' && action.severity === 'critical';
   }));
+  assert.ok(report.nextActions.some(function (action) {
+    return action.key === 'notificationEventActions.executionLedger' &&
+      action.severity === 'critical' &&
+      /event-action-executions/.test(action.recommendedCommand);
+  }));
   assert.equal(report.recent.tasks.length, 1);
   assert.equal(report.recent.workerRuns.length, 1);
   assert.equal(report.recent.workerLeases.length, 1);
+  assert.equal(report.recent.notificationEventActionExecutions[0].eventId, 'event-1');
 });
 
 test('source operations drilldown warns for unresolved source scope', async function () {

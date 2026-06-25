@@ -9,6 +9,7 @@ const COMMANDS_BY_KEY = {
   'workers.readiness': 'node src/presentation/cli/threadtrace.js worker-topology-plan',
   'notifications.channel': 'node src/presentation/cli/threadtrace.js notification-diagnostics',
   'notifications.outbox': 'node src/presentation/cli/threadtrace.js operations-overview',
+  'notificationEventActions.executionLedger': 'node src/presentation/cli/threadtrace.js event-action-executions --status failed',
   'reviewActions.executor': 'node src/presentation/cli/threadtrace.js review-action-executor-diagnostics',
   'reviewActions.executionLedger': 'node src/presentation/cli/threadtrace.js review-action-executions --status failed',
   'llm.configuration': 'node src/presentation/cli/threadtrace.js runtime-diagnostics'
@@ -218,8 +219,8 @@ function checklistActionEvidence(item, scope) {
 function checklistActionSourceScope(item, evidence, scope) {
   const safeEvidence = evidence || {};
   const safeScope = scope || {};
-  if (item.key === 'reviewActions.executionLedger') {
-    const ledgerScope = reviewActionExecutionLedgerScope(safeEvidence);
+  if (item.key === 'reviewActions.executionLedger' || item.key === 'notificationEventActions.executionLedger') {
+    const ledgerScope = actionExecutionLedgerScope(safeEvidence);
     return {
       sourceId: safeEvidence.sourceId || ledgerScope.sourceId || safeScope.sourceId,
       sourceKey: safeEvidence.sourceKey || ledgerScope.sourceKey || safeScope.sourceKey
@@ -536,7 +537,8 @@ function relatedCommandsForChecklistItem(item) {
       'node src/presentation/cli/threadtrace.js review-action-audit-overview',
       'node src/presentation/cli/threadtrace.js review-action-apply --execute true'
     ],
-    'reviewActions.executionLedger': reviewActionExecutionLedgerCommands(item)
+    'reviewActions.executionLedger': reviewActionExecutionLedgerCommands(item),
+    'notificationEventActions.executionLedger': notificationEventActionExecutionLedgerCommands(item)
   };
   return commands[item.key] || [];
 }
@@ -544,9 +546,17 @@ function relatedCommandsForChecklistItem(item) {
 function recommendedCommandForChecklistItem(item) {
   if (item.key === 'reviewActions.executionLedger') {
     const evidence = item.evidence || {};
-    const scope = reviewActionExecutionLedgerScope(evidence);
+    const scope = actionExecutionLedgerScope(evidence);
     if ((evidence.staleRunning || 0) > 0 && !(evidence.failed > 0)) {
       return scopedCommand('node src/presentation/cli/threadtrace.js review-action-executions --status running', scope);
+    }
+    return scopedCommand(COMMANDS_BY_KEY[item.key], scope);
+  }
+  if (item.key === 'notificationEventActions.executionLedger') {
+    const evidence = item.evidence || {};
+    const scope = actionExecutionLedgerScope(evidence);
+    if ((evidence.staleRunning || 0) > 0 && !(evidence.failed > 0)) {
+      return scopedCommand('node src/presentation/cli/threadtrace.js event-action-executions --status running', scope);
     }
     return scopedCommand(COMMANDS_BY_KEY[item.key], scope);
   }
@@ -555,7 +565,7 @@ function recommendedCommandForChecklistItem(item) {
 
 function reviewActionExecutionLedgerCommands(item) {
   const evidence = item && item.evidence || {};
-  const scope = reviewActionExecutionLedgerScope(evidence);
+  const scope = actionExecutionLedgerScope(evidence);
   return [
     scopedCommand('node src/presentation/cli/threadtrace.js review-action-executions --status running', scope),
     scopedCommand('node src/presentation/cli/threadtrace.js review-action-gate', scope),
@@ -563,7 +573,17 @@ function reviewActionExecutionLedgerCommands(item) {
   ];
 }
 
-function reviewActionExecutionLedgerScope(evidence) {
+function notificationEventActionExecutionLedgerCommands(item) {
+  const evidence = item && item.evidence || {};
+  const scope = actionExecutionLedgerScope(evidence);
+  return [
+    scopedCommand('node src/presentation/cli/threadtrace.js event-action-executions --status running', scope),
+    scopedCommand('node src/presentation/cli/threadtrace.js event-action-executions --status failed', scope),
+    scopedCommand('node src/presentation/cli/threadtrace.js list-events --acknowledged false', scope)
+  ];
+}
+
+function actionExecutionLedgerScope(evidence) {
   const safeEvidence = evidence || {};
   const sourceId = safeEvidence.sourceId ||
     singleKnownCountKey(safeEvidence.bySourceId) ||

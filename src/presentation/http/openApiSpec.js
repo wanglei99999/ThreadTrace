@@ -6130,7 +6130,8 @@ function createOpenApiSpec() {
                   additionalProperties: true
                 },
                 authorReviewQueue: { $ref: '#/components/schemas/AuthorReviewQueueSummary' },
-                reviewActions: { type: 'object', additionalProperties: true }
+                reviewActions: { type: 'object', additionalProperties: true },
+                notificationEventActions: { type: 'object', additionalProperties: true }
               },
               additionalProperties: true
             },
@@ -6189,6 +6190,10 @@ function createOpenApiSpec() {
                 reviewActionExecutions: {
                   type: 'array',
                   items: { type: 'object', additionalProperties: true }
+                },
+                notificationEventActionExecutions: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/NotificationEventActionExecutionRecord' }
                 }
               },
               additionalProperties: true
@@ -6255,6 +6260,7 @@ function createOpenApiSpec() {
             rawPages: { type: 'object', additionalProperties: true },
             authorReviewQueue: { $ref: '#/components/schemas/AuthorReviewQueueSummary' },
             reviewActions: { type: 'object', additionalProperties: true },
+            notificationEventActions: { type: 'object', additionalProperties: true },
             recent: {
               type: 'object',
               properties: {
@@ -6269,6 +6275,10 @@ function createOpenApiSpec() {
                 authorReviewQueue: {
                   type: 'array',
                   items: { $ref: '#/components/schemas/AuthorReviewQueueItem' }
+                },
+                notificationEventActionExecutions: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/NotificationEventActionExecutionRecord' }
                 }
               },
               additionalProperties: true

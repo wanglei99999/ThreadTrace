@@ -10,6 +10,7 @@ ThreadTrace exposes a deployment checklist as a runnable readiness contract. It 
 - tracked source ingest configuration
 - worker readiness and lease health
 - notification outbox delivery health
+- notification event action execution ledger health
 - review action executor readiness, execution ledger health, and audit evidence
 - LLM provider configuration
 
@@ -40,6 +41,7 @@ When `sourceKey`, `sourceType`, or `enabled` filters are provided, the source in
 | `workers.readiness` | workers | Stale/failed worker runs and expired leases. |
 | `notifications.channel` | notifications | File delivery directory or webhook URL configuration. |
 | `notifications.outbox` | notifications | Unacknowledged notification delivery failures or due delivery backlog. |
+| `notificationEventActions.executionLedger` | notifications | Operator-triggered notification event action execution ledger availability, completed/running/failed counts, stale-running records, and latest update time. |
 | `reviewActions.executor` | review-actions | Executor mode, required methods, dry-run status, source-truth mutation capability, and audit counts. |
 | `reviewActions.executionLedger` | review-actions | Execution ledger availability, completed/running/failed counts, and latest update time. |
 | `llm.configuration` | llm | Provider-specific LLM configuration checks. |

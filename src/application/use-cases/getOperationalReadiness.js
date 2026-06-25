@@ -35,6 +35,8 @@ function buildReadinessChecks(overview) {
   const leases = workers.leases || {};
   const reviewActions = overview.reviewActions || {};
   const reviewActionExecutions = reviewActions.executions || {};
+  const notificationEventActions = overview.notificationEventActions || {};
+  const notificationEventActionExecutions = notificationEventActions.executions || {};
 
   return [
     check('sources.failed', sources.failed > 0 ? 'warn' : 'ok', sources.failed || 0, 'Tracked sources have failed runs.'),
@@ -46,8 +48,8 @@ function buildReadinessChecks(overview) {
     check('workerLeases.expired', leases.expired > 0 ? 'warn' : 'ok', leases.expired || 0, 'Worker leases are expired.'),
     check(
       'reviewActions.executionLedger',
-      reviewActionExecutionReadinessStatus(reviewActionExecutions),
-      reviewActionExecutionAttentionCount(reviewActionExecutions),
+      actionExecutionReadinessStatus(reviewActionExecutions),
+      actionExecutionAttentionCount(reviewActionExecutions),
       'Review action execution ledger has no failed or stale downstream mutations.',
       {
         sourceId: reviewActionExecutions.sourceId || reviewActions.sourceId,
@@ -59,11 +61,27 @@ function buildReadinessChecks(overview) {
         bySourceKey: reviewActionExecutions.bySourceKey || {},
         staleRunningBySourceKey: reviewActionExecutions.staleRunningBySourceKey || {}
       }
+    ),
+    check(
+      'notificationEventActions.executionLedger',
+      actionExecutionReadinessStatus(notificationEventActionExecutions),
+      actionExecutionAttentionCount(notificationEventActionExecutions),
+      'Notification event action execution ledger has no failed or stale operator-triggered mutations.',
+      {
+        sourceId: notificationEventActionExecutions.sourceId,
+        sourceKey: notificationEventActionExecutions.sourceKey,
+        count: notificationEventActionExecutions.count || 0,
+        running: notificationEventActionExecutions.running || 0,
+        staleRunning: notificationEventActionExecutions.staleRunning || 0,
+        failed: notificationEventActionExecutions.failed || 0,
+        bySourceKey: notificationEventActionExecutions.bySourceKey || {},
+        staleRunningBySourceKey: notificationEventActionExecutions.staleRunningBySourceKey || {}
+      }
     )
   ];
 }
 
-function reviewActionExecutionReadinessStatus(executions) {
+function actionExecutionReadinessStatus(executions) {
   const safeExecutions = executions || {};
   if ((safeExecutions.failed || 0) > 0) return 'fail';
   if ((safeExecutions.staleRunning || 0) > 0) return 'fail';
@@ -72,7 +90,7 @@ function reviewActionExecutionReadinessStatus(executions) {
   return 'ok';
 }
 
-function reviewActionExecutionAttentionCount(executions) {
+function actionExecutionAttentionCount(executions) {
   const safeExecutions = executions || {};
   return (safeExecutions.failed || 0) + Math.max(safeExecutions.running || 0, safeExecutions.staleRunning || 0);
 }

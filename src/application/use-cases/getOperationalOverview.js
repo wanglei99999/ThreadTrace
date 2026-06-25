@@ -49,11 +49,20 @@ async function getOperationalOverview(options) {
       auditOverview: safeOptions.reviewActionAuditOverview,
       executions: safeOptions.reviewActionExecutions
     }),
+    notificationEventActions: {
+      executions: summarizeActionExecutions(safeOptions.notificationEventActionExecutions, {
+        latestIdKey: 'latestEventId',
+        idField: 'eventId'
+      })
+    },
     recent: {
       tasks: recentTasks.slice(0, 10).map(summarizeRecentTask),
       events: unacknowledgedEvents.slice(0, 10),
       rawPages: rawPages.slice(0, 10),
       authorReviewQueue: recentAuthorReviewQueueItems(safeOptions.authorReviewQueue),
+      notificationEventActionExecutions: safeOptions.notificationEventActionExecutions && safeOptions.notificationEventActionExecutions.executions
+        ? safeOptions.notificationEventActionExecutions.executions.slice(0, 10)
+        : [],
       workerRuns: workerRuns.slice(0, 10).map(summarizeWorkerRun),
       workerLeases: workerLeases.slice(0, 10).map(function (lease) {
         return summarizeWorkerLease(lease, now);
@@ -209,11 +218,19 @@ function summarizeReviewActions(options) {
 }
 
 function summarizeReviewActionExecutions(result) {
+  return summarizeActionExecutions(result, {
+    latestIdKey: 'latestTaskId',
+    idField: 'taskId'
+  });
+}
+
+function summarizeActionExecutions(result, options) {
+  const safeOptions = options || {};
   const executions = result && Array.isArray(result.executions) ? result.executions : [];
   const staleRunningExecutions = result && Array.isArray(result.staleRunningExecutions)
     ? result.staleRunningExecutions
     : executions.filter(function (execution) { return execution.staleRunning; }).slice(0, 10);
-  return {
+  const summary = {
     status: result && result.status || (result ? 'ok' : 'unknown'),
     healthStatus: result && result.healthStatus,
     count: result && result.count !== undefined ? result.count : executions.length,
@@ -226,7 +243,6 @@ function summarizeReviewActionExecutions(result) {
     latestUpdatedAt: latestTimestamp(executions.map(function (execution) {
       return execution.updatedAt || execution.completedAt || execution.failedAt || execution.createdAt;
     })),
-    latestTaskId: executions[0] && executions[0].taskId,
     sourceId: result && result.sourceId,
     sourceKey: result && result.sourceKey,
     bySourceKey: countBy(executions, function (execution) { return execution.sourceKey || 'unknown'; }),
@@ -236,6 +252,10 @@ function summarizeReviewActionExecutions(result) {
     staleRunningExecutions,
     message: result && result.message
   };
+  if (safeOptions.latestIdKey) {
+    summary[safeOptions.latestIdKey] = executions[0] && executions[0][safeOptions.idField];
+  }
+  return summary;
 }
 
 function summarizeSources(sources, now) {
