@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshTasksButton').addEventListener('click', loadTasks);
   document.getElementById('refreshSourcesButton').addEventListener('click', loadSources);
   document.getElementById('refreshSourceOperationsButton').addEventListener('click', loadSourceOperations);
+  document.getElementById('loadConnectorModuleCatalogButton').addEventListener('click', loadConnectorModuleCatalogFromOnboardingForm);
   document.getElementById('onboardingResult').addEventListener('click', handleOnboardingAction);
   document.getElementById('sourceOnboardingRecipe').addEventListener('click', handleOnboardingAction);
   document.getElementById('refreshEventsButton').addEventListener('click', loadEvents);
@@ -654,12 +655,15 @@ async function loadAdapters() {
   }
 }
 
-async function loadConnectorCatalog() {
+async function loadConnectorCatalog(options) {
+  const safeOptions = options || {};
   try {
-    const result = await fetchJson('/api/connectors/catalog', {
+    const query = new URLSearchParams();
+    if (safeOptions.modulePath) query.set('modulePath', safeOptions.modulePath);
+    const result = await fetchJson('/api/connectors/catalog' + (query.toString() ? '?' + query.toString() : ''), {
       acceptErrorStatus: true
     });
-    state.connectorPackages = result.packages || [];
+    state.connectorPackages = mergeConnectorPackageLists(state.connectorPackages, result.packages || []);
     state.connectorModuleErrors = result.moduleErrors || [];
     state.sourceTypes = mergeSourceTypeLists(state.sourceTypes, result.sourceTypes || []);
     fillSuggestionLists();
@@ -670,6 +674,15 @@ async function loadConnectorCatalog() {
     state.sourceTypes = state.sourceTypes || [];
     renderSourceOnboardingRecipeFromForm();
   }
+}
+
+async function loadConnectorModuleCatalogFromOnboardingForm() {
+  const form = document.getElementById('sourceOnboardingForm');
+  if (!form) return;
+  const modulePath = String(form.elements.modulePath && form.elements.modulePath.value || '').trim();
+  await loadConnectorCatalog({
+    modulePath
+  });
 }
 
 function fillAdapterSelect(id) {
@@ -720,6 +733,19 @@ function mergeSourceTypeLists(current, incoming) {
     bySourceType.set(item.sourceType, Object.assign({}, bySourceType.get(item.sourceType) || {}, item));
   });
   bySourceType.forEach(function (item) {
+    result.push(item);
+  });
+  return result;
+}
+
+function mergeConnectorPackageLists(current, incoming) {
+  const result = [];
+  const byPackage = new Map();
+  (current || []).concat(incoming || []).forEach(function (item) {
+    if (!item || !item.packageName) return;
+    byPackage.set(item.packageName + '|' + (item.modulePath || ''), Object.assign({}, byPackage.get(item.packageName + '|' + (item.modulePath || '')) || {}, item));
+  });
+  byPackage.forEach(function (item) {
     result.push(item);
   });
   return result;
