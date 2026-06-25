@@ -2633,32 +2633,81 @@ function renderAuthorReviewQueueRows(items) {
 function renderAuthorReviewQueueResult(result) {
   const summary = result.summary || {};
   const openCount = summary.openCount || 0;
-  const sourceCounts = Object.keys(summary.openBySourceKey || {}).length > 0 ? summary.openBySourceKey : summary.bySourceKey;
-  const alertDisabled = openCount > 0 ? '' : ' disabled';
-  const tiles = '<div class="summary-strip event-summary-strip">' + [
-    summaryTile('Items', result.itemCount || 0),
-    summaryTile('Open', openCount, openCount > 0 ? 'warn' : 'ok'),
-    summaryTile('High', summary.byPriority && summary.byPriority.high || 0, summary.byPriority && summary.byPriority.high ? 'warn' : 'ok')
-  ].join('') + '</div>';
   return [
-    panel('Author review queue', [
-      tiles,
-      metric('Status', result.status || 'ok'),
-      metric('By status', formatStanceSummary(summary.byStatus)),
-      metric('By priority', formatStanceSummary(summary.byPriority)),
-      metric('By type', formatStanceSummary(summary.byType)),
-      metric('By source', formatStanceSummary(sourceCounts)),
-      result.createdCount === undefined ? '' : metric('Sync', 'created=' + (result.createdCount || 0) + ' / updated=' + (result.updatedCount || 0)),
-      metric('Next', result.recommendedNextAction || 'none'),
-      '<span class="button-group">' +
-        '<button class="inline-button secondary-inline-button" type="button" data-action="load-author-review-queue">Refresh open queue</button>' +
-        '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-author-review-queue-events" data-execute="false" data-limit="50">Alert check</button>' +
-        '<button class="inline-button warning-inline-button" type="button" data-action="synthesize-author-review-queue-events" data-execute="true" data-limit="50"' + alertDisabled + '>Create alerts</button>' +
-      '</span>'
-    ].join(''), 'wide'),
+    renderAuthorReviewQueueHero(result),
     panel('Source hotspots', renderAuthorReviewQueueSourceHotspots(summary.sourceHotspots || []), 'wide'),
     panel('Open items', renderDurableAuthorReviewQueueRows(result.items || []), 'wide')
   ].join('');
+}
+
+function renderAuthorReviewQueueHero(result) {
+  const summary = result.summary || {};
+  const openCount = summary.openCount || 0;
+  const highCount = summary.byPriority && summary.byPriority.high || 0;
+  const sourceCounts = Object.keys(summary.openBySourceKey || {}).length > 0 ? summary.openBySourceKey : summary.bySourceKey;
+  const sourceCount = Object.keys(sourceCounts || {}).length;
+  const hotspots = summary.sourceHotspots || [];
+  const alertDisabled = openCount > 0 ? '' : ' disabled';
+  const sync = result.createdCount === undefined ? undefined : 'created=' + (result.createdCount || 0) + ' / updated=' + (result.updatedCount || 0);
+  const status = result.status || (openCount > 0 ? 'review' : 'ok');
+  return [
+    '<article class="review-queue-hero">',
+    '<section class="review-queue-main">',
+    '<div class="review-queue-header">',
+    '<span class="review-queue-label">Review queue</span>',
+    statusBadge(status, openCount > 0 ? 'warn' : statusVariant(status)),
+    '</div>',
+    '<h3>' + escapeHtml(result.recommendedNextAction || 'No open author review work.') + '</h3>',
+    '<p>' + escapeHtml([
+      'status=' + (result.status || 'ok'),
+      'priority=' + formatStanceSummary(summary.byPriority),
+      'type=' + formatStanceSummary(summary.byType),
+      sync
+    ].filter(Boolean).join(' | ')) + '</p>',
+    '<div class="review-queue-actions button-group">' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="load-author-review-queue">Refresh open queue</button>' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-author-review-queue-events" data-execute="false" data-limit="50">Alert check</button>' +
+      '<button class="inline-button warning-inline-button" type="button" data-action="synthesize-author-review-queue-events" data-execute="true" data-limit="50"' + alertDisabled + '>Create alerts</button>' +
+    '</div>',
+    '</section>',
+    '<aside class="review-queue-signals">',
+    reviewQueueSignal('Items', result.itemCount || 0, (result.itemCount || 0) > 0 ? 'ok' : 'muted'),
+    reviewQueueSignal('Open', openCount, openCount > 0 ? 'warn' : 'ok'),
+    reviewQueueSignal('High', highCount, highCount > 0 ? 'warn' : 'ok'),
+    reviewQueueSignal('Sources', sourceCount, sourceCount > 0 ? 'warn' : 'muted'),
+    '</aside>',
+    '<section class="review-queue-hotspots">',
+    '<span>Source hotspots</span>',
+    renderReviewQueueHotspotRows(hotspots),
+    '</section>',
+    '<section class="review-queue-foot">',
+    '<span>Queue mix</span>',
+    '<strong>' + escapeHtml(formatStanceSummary(summary.byStatus)) + '</strong>',
+    '<small>' + escapeHtml('source=' + formatStanceSummary(sourceCounts)) + '</small>',
+    '</section>',
+    '</article>'
+  ].join('');
+}
+
+function reviewQueueSignal(label, value, variant) {
+  return '<div class="review-queue-signal ' + statusClassName(variant) + '"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(value) + '</strong></div>';
+}
+
+function renderReviewQueueHotspotRows(items) {
+  if (!items || items.length === 0) {
+    return '<div class="review-queue-empty">No source hotspots.</div>';
+  }
+  return items.slice(0, 3).map(function (item) {
+    return '<div class="review-queue-hotspot-row">' +
+      '<strong>' + escapeHtml(item.sourceKey || 'unknown-source') + '</strong>' +
+      '<small>' + escapeHtml([
+        'items=' + (item.itemCount || 0),
+        'open=' + (item.openCount || 0),
+        'high=' + (item.highPriorityOpenCount || 0),
+        formatStanceSummary(item.byType)
+      ].filter(Boolean).join(' | ')) + '</small>' +
+      '</div>';
+  }).join('');
 }
 
 function renderAuthorReviewQueueSourceHotspots(items) {
