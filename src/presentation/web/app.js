@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshTasksButton').addEventListener('click', loadTasks);
   document.getElementById('refreshSourcesButton').addEventListener('click', loadSources);
   document.getElementById('refreshSourceOperationsButton').addEventListener('click', loadSourceOperations);
+  document.getElementById('refreshAutomationReadinessButton').addEventListener('click', loadAutomationReadiness);
   document.getElementById('runLlmReadinessButton').addEventListener('click', runLlmReadiness);
   document.getElementById('runLlmPreflightButton').addEventListener('click', runLlmPreflight);
   document.getElementById('runLlmEvaluationButton').addEventListener('click', runLlmEvaluation);
@@ -1483,6 +1484,20 @@ async function loadSourceOperations() {
       };
     });
   }, renderSourceOperations);
+}
+
+async function loadAutomationReadiness() {
+  await renderAsync('sourceOperationsResult', function () {
+    const query = new URLSearchParams({
+      limit: '100',
+      cockpitLimit: '12',
+      sourceTaskMode: 'insight-pipeline',
+      llmReadinessMode: 'configuration'
+    });
+    return fetchJson('/api/operations/automation-readiness?' + query.toString(), {
+      acceptErrorStatus: true
+    });
+  }, renderAutomationReadinessPlan);
 }
 
 async function loadEvents() {
@@ -4250,6 +4265,71 @@ function renderOperationsRunbook(runbook) {
     }).join('');
     return '<div class="action-row"><span>' + escapeHtml(action.severity + ' · ' + action.area + ' · ' + action.title) + '<small>' + escapeHtml(action.summary) + '</small>' + command + '</span></div>';
   }).join(''), 'wide');
+}
+
+function renderAutomationReadinessPlan(plan) {
+  const summary = plan.summary || {};
+  const sources = summary.sources || {};
+  const operations = summary.operations || {};
+  const workers = summary.workers || {};
+  const llm = summary.llm || {};
+  const demo = summary.demo || {};
+  const representative = summary.representativeSource || {};
+  return [
+    panel('Automation readiness', [
+      '<div class="summary-strip">',
+      summaryTile('Status', plan.status || 'unknown', statusVariant(plan.status)),
+      summaryTile('Ready', String(Boolean(plan.readyForUnattendedRun)), plan.readyForUnattendedRun ? 'ok' : 'warn'),
+      summaryTile('Sources', String(sources.total || 0), (sources.total || 0) > 0 ? 'ok' : 'fail'),
+      summaryTile('Due', String(sources.due || 0), (sources.due || 0) > 0 ? 'ok' : 'muted'),
+      summaryTile('Queue', String(operations.queueTotal || 0), statusVariant(operations.cockpitStatus)),
+      summaryTile('Runnable', String(operations.runnable || 0), (operations.runnable || 0) > 0 ? 'ok' : 'muted'),
+      summaryTile('Workers', workers.topology || 'unknown', statusVariant(workers.status)),
+      summaryTile('LLM', llm.provider || 'unknown', statusVariant(llm.status)),
+      summaryTile('Demo', demo.closureStatus || 'not-run', demo.readyForDailyUse ? 'ok' : 'warn'),
+      '</div>',
+      metric('Source task mode', workers.sourceTaskMode || plan.automation && plan.automation.sourceTaskMode || 'unknown'),
+      metric('Representative source', representative.source && (representative.source.displayName || representative.source.id || representative.source.sourceKey) || 'none'),
+      metric('Collection health', representative.status || 'not-evaluated'),
+      metric('Replay evidence', representative.replay && representative.replay.available ? 'available' : 'missing')
+    ].join(''), 'wide'),
+    panel('Automation gates', renderAutomationReadinessChecks(plan.checks || []), 'wide'),
+    panel('Worker commands', renderAutomationWorkerCommands(plan.automation && plan.automation.workerCommands || []), 'wide'),
+    panel('Next actions', renderAutomationNextActions(plan.nextActions || []), 'wide')
+  ].join('');
+}
+
+function renderAutomationReadinessChecks(checks) {
+  if (!checks.length) return '<div class="muted">No automation gates returned.</div>';
+  return checks.map(function (check) {
+    return '<div class="action-row"><span>' +
+      '<strong>' + escapeHtml(check.key || 'check') + '</strong>' +
+      '<small>' + escapeHtml([check.area, check.value].filter(Boolean).join(' | ')) + '</small>' +
+      '<small>' + escapeHtml(check.summary || '') + '</small>' +
+      '</span>' + statusBadge(check.status || 'unknown', statusVariant(check.status)) + '</div>';
+  }).join('');
+}
+
+function renderAutomationWorkerCommands(commands) {
+  if (!commands.length) return '<div class="muted">No worker commands available.</div>';
+  return commands.map(function (worker) {
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(worker.workerType || worker.key || 'worker') + '</strong>' +
+      '<small>' + escapeHtml([worker.leaseKey, worker.intervalMs ? 'interval=' + worker.intervalMs + 'ms' : undefined].filter(Boolean).join(' | ')) + '</small>' +
+      '<small>' + escapeHtml(worker.command || '') + '</small>' +
+      '</span></div>';
+  }).join('');
+}
+
+function renderAutomationNextActions(actions) {
+  if (!actions.length) return '<div class="muted">No next actions.</div>';
+  return actions.map(function (action) {
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(action.key || 'action') + '</strong>' +
+      '<small>' + escapeHtml(action.summary || '') + '</small>' +
+      (action.recommendedCommand ? '<small>' + escapeHtml(action.recommendedCommand) + '</small>' : '') +
+      '</span>' + statusBadge(action.severity || 'info', attentionStatusVariant(action.severity)) + '</div>';
+  }).join('');
 }
 
 function renderSourceOperations(result) {

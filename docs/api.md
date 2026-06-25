@@ -858,6 +858,14 @@ Returns a source-scoped collection health profile for one source id or source ke
 
 Query parameters mirror `GET /api/operations/source-drilldown` and add `includeDrilldown=true` when callers also need the raw drill-down evidence. The response is exposed in OpenAPI as `SourceCollectionHealthProfile`. HTTP `503` means the profile has failing health checks, such as stale source-scoped worker runs. Warnings return `200`.
 
+### `GET /api/operations/automation-readiness`
+
+Returns a v0.2 unattended automation readiness plan. It composes source schedule, source operations cockpit, representative source collection health, worker topology, and LLM readiness into one set of gates for deciding whether ThreadTrace can run continuously.
+
+Useful query parameters: `sourceId` / `sourceKey` / `forum`, `sourceType`, `sourceTaskMode=ingest|insight-pipeline`, `topology=operations-worker|split-workers`, `llmReadinessMode=configuration|preflight|evaluation`, `provider`, `includeInputs=true`, `limit`, and the same stale/backoff timing options used by source operations endpoints.
+
+The response includes `readyForUnattendedRun`, `summary`, `automation.workerCommands`, `checks`, `nextActions`, and optional composed input reports. HTTP `503` means a required automation gate failed, such as no registered source. Warnings return `200`.
+
 ### `GET /api/operations/worker-topology-plan`
 
 Returns a read-only worker deployment topology plan for choosing between the combined operations worker and split due-source / notification-event workers.

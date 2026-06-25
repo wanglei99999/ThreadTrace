@@ -1190,6 +1190,39 @@ test('http server exposes source operations drilldown API', async function () {
             { key: 'collectionHealth.operations.tasks', severity: 'warning' }
           ]
         };
+      },
+      async getAutomationReadinessPlan(request) {
+        calls.push(Object.assign({ automationReadiness: true }, request));
+        return {
+          generatedAt: request.now || '2026-06-18T10:00:00.000Z',
+          status: 'warn',
+          readyForUnattendedRun: false,
+          scope: {
+            sourceId: request.sourceId,
+            sourceKey: request.sourceKey
+          },
+          summary: {
+            sources: { total: 1, due: 0, skipped: 1 },
+            operations: { cockpitStatus: 'ok', queueTotal: 0, runnable: 0 },
+            representativeSource: { status: 'warn' },
+            workers: { status: 'ok', topology: 'operations-worker', sourceTaskMode: request.sourceTaskMode },
+            llm: { status: 'warn', provider: request.provider || 'mock', mode: request.llmReadinessMode || 'configuration', mockMode: true },
+            demo: { closureStatus: 'not-run', readyForDailyUse: false }
+          },
+          automation: {
+            sourceTaskMode: request.sourceTaskMode,
+            topology: 'operations-worker',
+            workerCommands: [
+              { workerType: 'operations', leaseKey: 'worker:operations:global', command: 'node src/presentation/worker/operationsWorkerMain.js --loop --source-task-mode insight-pipeline' }
+            ]
+          },
+          checks: [
+            { key: 'automation.demo.closure', area: 'demo', status: 'warn', value: 'not-run', summary: 'End-to-end demo cycle closure has been run and reviewed.' }
+          ],
+          nextActions: [
+            { key: 'automationReadiness.automation.demo.closure', severity: 'warning', recommendedCommand: 'node src/presentation/cli/threadtrace.js source-demo-cycle --source-id source-1' }
+          ]
+        };
       }
     }
   });
@@ -1200,6 +1233,7 @@ test('http server exposes source operations drilldown API', async function () {
   try {
     const report = await getJson(baseUrl + '/api/operations/source-drilldown?sourceKey=nga&sourceId=source-1&limit=10&timelineLimit=7&attentionLimit=5&taskScanLimit=20&leaseScanLimit=30&sourceFailureRetryBackoffMs=60000');
     const health = await getJson(baseUrl + '/api/operations/source-collection-health?sourceKey=nga&sourceId=source-1&limit=10&timelineLimit=7&attentionLimit=5&taskScanLimit=20&leaseScanLimit=30&sourceFailureRetryBackoffMs=60000');
+    const automation = await getJson(baseUrl + '/api/operations/automation-readiness?sourceKey=nga&sourceId=source-1&sourceTaskMode=insight-pipeline&llmReadinessMode=configuration&provider=mock&limit=10&includeInputs=true');
     const webAppJs = await getText(baseUrl + '/app.js', 'text/javascript');
 
     assert.equal(report.status, 'warn');
@@ -1225,8 +1259,19 @@ test('http server exposes source operations drilldown API', async function () {
     assert.equal(calls[1].sourceId, 'source-1');
     assert.equal(calls[1].limit, 10);
     assert.equal(calls[1].timelineLimit, 7);
+    assert.equal(automation.status, 'warn');
+    assert.equal(automation.readyForUnattendedRun, false);
+    assert.equal(automation.summary.workers.sourceTaskMode, 'insight-pipeline');
+    assert.equal(automation.nextActions[0].key, 'automationReadiness.automation.demo.closure');
+    assert.equal(calls[2].automationReadiness, true);
+    assert.equal(calls[2].sourceKey, 'nga');
+    assert.equal(calls[2].sourceId, 'source-1');
+    assert.equal(calls[2].sourceTaskMode, 'insight-pipeline');
+    assert.equal(calls[2].includeInputs, true);
     assert.match(webAppJs, /renderSourceCollectionHealthProfile/);
     assert.match(webAppJs, /load-source-collection-health/);
+    assert.match(webAppJs, /renderAutomationReadinessPlan/);
+    assert.match(webAppJs, /refreshAutomationReadinessButton/);
   } finally {
     await close(server);
   }
@@ -1882,6 +1927,14 @@ test('http server exposes deployment checklist API', async function () {
     }));
     assert.equal(openApi.paths['/api/operations/worker-topology-plan'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/WorkerTopologyPlan');
     assert.equal(openApi.paths['/api/operations/worker-topology-plan'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/WorkerTopologyPlan');
+    assert.ok(openApi.paths['/api/operations/automation-readiness']);
+    assert.ok(openApi.paths['/api/operations/automation-readiness'].get.parameters.find(function (parameter) {
+      return parameter.name === 'sourceTaskMode';
+    }));
+    assert.equal(openApi.paths['/api/operations/automation-readiness'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/AutomationReadinessPlan');
+    assert.equal(openApi.paths['/api/operations/automation-readiness'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/AutomationReadinessPlan');
+    assert.ok(openApi.components.schemas.AutomationReadinessPlan.properties.automation);
+    assert.ok(openApi.components.schemas.AutomationReadinessPlan.properties.readyForUnattendedRun);
     assert.equal(openApi.components.schemas.WorkerTopologyWorker.properties.scope.$ref, '#/components/schemas/SourceScope');
     assert.equal(openApi.components.schemas.WorkerTopologyWorker.properties.leaseKey.example, 'worker:due-source:source-id:tracked-source-nga-001');
   } finally {

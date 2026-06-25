@@ -908,6 +908,65 @@ function main(argv) {
     return;
   }
 
+  if (command === 'automation-readiness') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.getAutomationReadinessPlan({
+      sourceId: options.sourceId,
+      sourceKey: options.sourceKey || options.forum,
+      sourceType: options.sourceType,
+      enabled: parseOptionalBoolean(options.enabled),
+      topology: options.topology,
+      sourceTaskMode: options.sourceTaskMode,
+      llmReadinessMode: options.llmReadinessMode,
+      provider: options.provider,
+      limit: options.limit ? Number(options.limit) : 100,
+      cockpitLimit: options.cockpitLimit ? Number(options.cockpitLimit) : undefined,
+      healthLimit: options.healthLimit ? Number(options.healthLimit) : undefined,
+      timelineLimit: options.timelineLimit ? Number(options.timelineLimit) : undefined,
+      attentionLimit: options.attentionLimit ? Number(options.attentionLimit) : undefined,
+      sourceTypeLimit: options.sourceTypeLimit ? Number(options.sourceTypeLimit) : undefined,
+      taskLimit: options.taskLimit ? Number(options.taskLimit) : undefined,
+      pipelineLimit: options.pipelineLimit ? Number(options.pipelineLimit) : undefined,
+      eventLimit: options.eventLimit ? Number(options.eventLimit) : undefined,
+      maxAttempts: options.maxAttempts ? Number(options.maxAttempts) : undefined,
+      taskScanLimit: options.taskScanLimit ? Number(options.taskScanLimit) : undefined,
+      leaseScanLimit: options.leaseScanLimit ? Number(options.leaseScanLimit) : undefined,
+      sourceRunStaleAfterMs: options.sourceRunStaleAfterMs ? Number(options.sourceRunStaleAfterMs) : undefined,
+      sourceFailureRetryBackoffMs: options.sourceFailureRetryBackoffMs ? Number(options.sourceFailureRetryBackoffMs) : undefined,
+      sourceFailureMaxRetryBackoffMs: options.sourceFailureMaxRetryBackoffMs ? Number(options.sourceFailureMaxRetryBackoffMs) : undefined,
+      workerStaleAfterMs: options.workerStaleAfterMs ? Number(options.workerStaleAfterMs) : undefined,
+      runningStaleAfterMs: options.runningStaleAfterMs ? Number(options.runningStaleAfterMs) : undefined,
+      includeInputs: isTruthyOption(options.includeInputs),
+      now: options.now,
+      storeDir
+    }).then(function (plan) {
+      if (isTruthyOption(options.json)) {
+        console.log(JSON.stringify(plan, null, 2));
+        if (plan.status === 'fail') process.exitCode = 2;
+        if (plan.status === 'warn') process.exitCode = 1;
+        return;
+      }
+      console.log('Automation readiness: ' + plan.status + '\tready=' + Boolean(plan.readyForUnattendedRun));
+      console.log('Sources: total=' + (plan.summary.sources.total || 0) + ', due=' + (plan.summary.sources.due || 0) + ', skipped=' + (plan.summary.sources.skipped || 0));
+      console.log('Workers: status=' + (plan.summary.workers.status || 'unknown') + ', topology=' + (plan.summary.workers.topology || 'unknown') + ', mode=' + (plan.summary.workers.sourceTaskMode || 'unknown'));
+      console.log('LLM: status=' + (plan.summary.llm.status || 'unknown') + ', provider=' + (plan.summary.llm.provider || 'unknown') + ', mock=' + Boolean(plan.summary.llm.mockMode));
+      console.log('Demo closure: ' + (plan.summary.demo.closureStatus || 'not-run') + ', daily=' + Boolean(plan.summary.demo.readyForDailyUse));
+      plan.checks.forEach(function (check) {
+        console.log(check.status + '\t' + check.area + '\t' + check.key + '\t' + check.value + '\t' + check.summary);
+      });
+      plan.automation.workerCommands.forEach(function (worker) {
+        console.log('worker\t' + worker.workerType + '\t' + worker.leaseKey + '\t' + worker.command);
+      });
+      plan.nextActions.forEach(printActionWithDetails);
+      if (plan.status === 'fail') process.exitCode = 2;
+      if (plan.status === 'warn') process.exitCode = 1;
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'trace-context') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.getTaskTraceContext({
@@ -3444,7 +3503,7 @@ function formatCheckValue(value) {
 }
 
 function printActionWithDetails(action) {
-  const commands = action.commands || (action.command ? [action.command] : []);
+  const commands = action.commands || (action.command ? [action.command] : (action.recommendedCommand ? [action.recommendedCommand] : []));
   console.log((action.severity || 'info') + '\t' + action.key + '\t' + (action.summary || '') + (action.evidenceSummary ? '\tevidence=' + action.evidenceSummary : ''));
   commands.forEach(function (command) {
     console.log('  command: ' + command);
@@ -3519,6 +3578,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js source-cockpit-action-plan [--rank 1 | --item-id id] [--source-key key] [--source-type type] [--provider mock] [--json true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-drilldown [--source-id id | --source-key key] [--json true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-collection-health [--source-id id | --source-key key] [--json true] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js automation-readiness [--source-id id | --source-key key] [--source-task-mode ingest|insight-pipeline] [--llm-readiness-mode configuration|preflight|evaluation] [--provider mock|openai-compatible] [--json true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-demo-cycle [--source-id id] [--source-key key] [--provider mock] [--acknowledge-events true] [--execute-acknowledgement true] [--json true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-type-drilldown --source-type type [--forum nga] [--json true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js trace-context [--task-id id | --request-id id | --trace-id id | --idempotency-key key] [--store-dir dir] [--limit n]');

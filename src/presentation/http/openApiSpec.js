@@ -1368,6 +1368,42 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/operations/automation-readiness': {
+        get: {
+          summary: 'Get v0.2 unattended automation readiness across sources, workers, LLM, cockpit, and demo closure',
+          parameters: [
+            { name: 'sourceId', in: 'query', required: false, schema: { type: 'string', example: 'tracked-source-nga-001' } },
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceType', in: 'query', required: false, schema: { type: 'string', example: 'thread-url' } },
+            { name: 'topology', in: 'query', required: false, schema: { type: 'string', enum: ['operations-worker', 'split-workers'] } },
+            { name: 'sourceTaskMode', in: 'query', required: false, schema: { type: 'string', enum: ['ingest', 'insight-pipeline'] } },
+            { name: 'llmReadinessMode', in: 'query', required: false, schema: { type: 'string', enum: ['configuration', 'preflight', 'evaluation'] } },
+            { name: 'provider', in: 'query', required: false, schema: { type: 'string', example: 'mock' } },
+            { name: 'includeInputs', in: 'query', required: false, schema: { type: 'boolean' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Automation readiness is ok or has warnings',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/AutomationReadinessPlan' }
+                }
+              }
+            },
+            503: {
+              description: 'Automation readiness contains failing gates',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/AutomationReadinessPlan' }
+                }
+              }
+            }
+          }
+        }
+      },
       '/api/operations/source-type-drilldown': {
         get: {
           summary: 'Get source-type operational drill-down across sources, workers, tasks, events, and source-type operations',
@@ -7003,6 +7039,84 @@ function createOpenApiSpec() {
               }
             },
             drilldown: { $ref: '#/components/schemas/SourceOperationsDrilldown' },
+            nextActions: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true }
+            }
+          }
+        },
+        AutomationReadinessPlan: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            scope: { $ref: '#/components/schemas/SourceScope' },
+            readyForUnattendedRun: { type: 'boolean', example: false },
+            summary: {
+              type: 'object',
+              properties: {
+                sources: { type: 'object', additionalProperties: true },
+                operations: { type: 'object', additionalProperties: true },
+                representativeSource: { type: 'object', additionalProperties: true },
+                workers: { type: 'object', additionalProperties: true },
+                llm: { type: 'object', additionalProperties: true },
+                demo: { type: 'object', additionalProperties: true }
+              },
+              additionalProperties: true
+            },
+            automation: {
+              type: 'object',
+              properties: {
+                sourceTaskMode: { type: 'string', example: 'insight-pipeline' },
+                topology: { type: 'string', example: 'operations-worker' },
+                dueSources: {
+                  type: 'array',
+                  items: { type: 'object', additionalProperties: true }
+                },
+                skippedSources: {
+                  type: 'array',
+                  items: { type: 'object', additionalProperties: true }
+                },
+                nextScheduledSource: { type: 'object', additionalProperties: true },
+                representativeSource: { type: 'object', additionalProperties: true },
+                workerCommands: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      key: { type: 'string' },
+                      workerType: { type: 'string' },
+                      leaseKey: { type: 'string' },
+                      intervalMs: { type: 'number' },
+                      command: { type: 'string' }
+                    },
+                    additionalProperties: true
+                  }
+                }
+              },
+              additionalProperties: true
+            },
+            checks: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  key: { type: 'string', example: 'automation.sources.scheduled' },
+                  area: { type: 'string', example: 'sources' },
+                  status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+                  value: { type: 'string' },
+                  summary: { type: 'string' }
+                },
+                additionalProperties: true
+              }
+            },
+            inputs: { type: 'object', additionalProperties: true },
+            sourceScheduleReport: { $ref: '#/components/schemas/SourceScheduleReport' },
+            sourceOperationsCockpit: { $ref: '#/components/schemas/SourceOperationsCockpit' },
+            sourceCollectionHealthProfile: { $ref: '#/components/schemas/SourceCollectionHealthProfile' },
+            workerTopologyPlan: { $ref: '#/components/schemas/WorkerTopologyPlan' },
+            llmReadinessProfile: { $ref: '#/components/schemas/LlmReadinessProfile' },
+            demoCycle: { $ref: '#/components/schemas/SourceDemoCycleReport' },
             nextActions: {
               type: 'array',
               items: { type: 'object', additionalProperties: true }

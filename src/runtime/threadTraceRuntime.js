@@ -67,6 +67,7 @@ const { getSourceOperationsCockpitActionPlan } = require('../application/use-cas
 const { getOperationalOverview } = require('../application/use-cases/getOperationalOverview');
 const { getSourceOperationsDrilldown } = require('../application/use-cases/getSourceOperationsDrilldown');
 const { getSourceCollectionHealthProfile } = require('../application/use-cases/getSourceCollectionHealthProfile');
+const { getAutomationReadinessPlan } = require('../application/use-cases/getAutomationReadinessPlan');
 const { getSourceTypeOperationsDrilldown } = require('../application/use-cases/getSourceTypeOperationsDrilldown');
 const { getNotificationEventOverview } = require('../application/use-cases/getNotificationEventOverview');
 const { getAuthorIntelligenceDashboard } = require('../application/use-cases/getAuthorIntelligenceDashboard');
@@ -1438,6 +1439,79 @@ function createThreadTraceRuntime(options) {
             storeDir: safeRequest.storeDir
           }));
         }
+      });
+    },
+
+    async getAutomationReadinessPlan(request) {
+      const safeRequest = request || {};
+      const commonRequest = {
+        forum: safeRequest.forum,
+        sourceKey: safeRequest.sourceKey,
+        sourceId: safeRequest.sourceId,
+        sourceType: safeRequest.sourceType,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 100,
+        sourceRunStaleAfterMs: safeRequest.sourceRunStaleAfterMs,
+        sourceFailureRetryBackoffMs: safeRequest.sourceFailureRetryBackoffMs,
+        sourceFailureMaxRetryBackoffMs: safeRequest.sourceFailureMaxRetryBackoffMs,
+        runningStaleAfterMs: safeRequest.runningStaleAfterMs,
+        workerStaleAfterMs: safeRequest.workerStaleAfterMs,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir
+      };
+      const [
+        sourceScheduleReport,
+        sourceOperationsCockpit,
+        workerTopologyPlan,
+        llmReadinessProfile
+      ] = await Promise.all([
+        this.getSourceScheduleReport(commonRequest),
+        this.getSourceOperationsCockpit(Object.assign({}, commonRequest, {
+          cockpitLimit: safeRequest.cockpitLimit || safeRequest.limit || 25,
+          attentionLimit: safeRequest.attentionLimit,
+          sourceTypeLimit: safeRequest.sourceTypeLimit,
+          pipelineLimit: safeRequest.pipelineLimit,
+          eventLimit: safeRequest.eventLimit,
+          maxAttempts: safeRequest.maxAttempts,
+          taskLimit: safeRequest.taskLimit,
+          modulePath: safeRequest.modulePath || safeRequest.connectorModulePath
+        })),
+        this.getWorkerTopologyPlan(Object.assign({}, commonRequest, {
+          topology: safeRequest.topology || safeRequest.deploymentTopology,
+          sourceTaskMode: safeRequest.sourceTaskMode || runtimeConfig.workers.sourceTaskMode,
+          llmReadinessMode: safeRequest.llmReadinessMode,
+          provider: safeRequest.provider
+        })),
+        this.getLlmReadinessProfile({
+          provider: safeRequest.provider,
+          llmReadinessMode: safeRequest.llmReadinessMode || 'configuration',
+          traceId: safeRequest.traceId,
+          now: safeRequest.now,
+          storeDir: safeRequest.storeDir
+        })
+      ]);
+      const representativeScope = resolveAutomationRepresentativeSourceScope(safeRequest, sourceScheduleReport, sourceOperationsCockpit);
+      const sourceCollectionHealthProfile = representativeScope
+        ? await this.getSourceCollectionHealthProfile(Object.assign({}, commonRequest, representativeScope, {
+          limit: safeRequest.healthLimit || safeRequest.limit || 50,
+          timelineLimit: safeRequest.timelineLimit,
+          attentionLimit: safeRequest.attentionLimit,
+          taskScanLimit: safeRequest.taskScanLimit,
+          leaseScanLimit: safeRequest.leaseScanLimit
+        }))
+        : undefined;
+
+      return getAutomationReadinessPlan({
+        sourceId: safeRequest.sourceId || representativeScope && representativeScope.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum || representativeScope && representativeScope.sourceKey,
+        sourceType: safeRequest.sourceType,
+        sourceScheduleReport,
+        sourceOperationsCockpit,
+        sourceCollectionHealthProfile,
+        workerTopologyPlan,
+        llmReadinessProfile,
+        includeInputs: safeRequest.includeInputs === true,
+        now: safeRequest.now
       });
     },
 
@@ -2852,6 +2926,40 @@ function buildManifestWorkerTopologyRequest(options) {
     storeDir: safeOptions.storeDir || deployment.storeDir,
     runningStaleAfterMs: firstDefined(safeOptions.runningStaleAfterMs, deployment.runningStaleAfterMs),
     workerStaleAfterMs: safeOptions.workerStaleAfterMs || deployment.workerStaleAfterMs
+  };
+}
+
+function resolveAutomationRepresentativeSourceScope(request, sourceScheduleReport, sourceOperationsCockpit) {
+  const explicit = compactSourceScope({
+    sourceId: request && request.sourceId,
+    sourceKey: request && (request.sourceKey || request.forum)
+  });
+  if (explicit) return explicit;
+
+  const dueSource = firstSourceScope(sourceScheduleReport && sourceScheduleReport.dueSources);
+  if (dueSource) return dueSource;
+
+  const queueSource = firstSourceScope((sourceOperationsCockpit && sourceOperationsCockpit.queue || []).map(function (item) {
+    return item && item.source;
+  }));
+  if (queueSource) return queueSource;
+
+  return firstSourceScope(sourceScheduleReport && sourceScheduleReport.sources || sourceScheduleReport && sourceScheduleReport.skippedSources);
+}
+
+function firstSourceScope(sources) {
+  const source = (sources || []).map(compactSourceScope).filter(Boolean)[0];
+  return source;
+}
+
+function compactSourceScope(source) {
+  const safeSource = source || {};
+  const sourceId = safeSource.id || safeSource.sourceId;
+  const sourceKey = safeSource.sourceKey || safeSource.forum;
+  if (!sourceId && !sourceKey) return undefined;
+  return {
+    sourceId,
+    sourceKey
   };
 }
 

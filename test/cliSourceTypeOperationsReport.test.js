@@ -274,3 +274,37 @@ test('CLI prints source collection health profile as JSON', async function () {
     return true;
   });
 });
+
+test('CLI prints automation readiness plan as JSON', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-cli-automation-readiness-'));
+  const root = path.resolve(__dirname, '..');
+  const scriptPath = path.join(root, 'src', 'presentation', 'cli', 'threadtrace.js');
+
+  await assert.rejects(execFileAsync(process.execPath, [
+    scriptPath,
+    'automation-readiness',
+    '--store-dir',
+    tempDir,
+    '--source-task-mode',
+    'insight-pipeline',
+    '--json',
+    'true',
+    '--now',
+    '2026-06-26T10:00:00.000Z'
+  ], {
+    cwd: root,
+    timeout: 20000
+  }), function (error) {
+    const plan = JSON.parse(error.stdout);
+    assert.equal(error.code, 2);
+    assert.equal(plan.status, 'fail');
+    assert.equal(plan.readyForUnattendedRun, false);
+    assert.equal(plan.summary.sources.total, 0);
+    assert.equal(plan.summary.workers.sourceTaskMode, 'insight-pipeline');
+    assert.ok(plan.checks.find(function (item) {
+      return item.key === 'automation.sources.registered' && item.status === 'fail';
+    }));
+    assert.equal(error.stderr, '');
+    return true;
+  });
+});
