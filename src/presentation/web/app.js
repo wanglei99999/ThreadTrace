@@ -657,6 +657,29 @@ async function runRolloutReadinessChecks(manifest) {
   });
 }
 
+async function runRolloutApplyDryRun(manifest) {
+  if (!manifest) {
+    renderError('rolloutApplyResult', new Error('Rollout manifest JSON is required for apply dry-run.'));
+    return;
+  }
+  const request = clonePlainObject(manifest);
+  request.execute = false;
+  fillRolloutManifestForms(request);
+  const executeSelect = document.querySelector('#rolloutApplyForm select[name="execute"]');
+  if (executeSelect) executeSelect.value = 'false';
+  setLoading('rolloutApplyResult', 'Running apply dry-run...');
+  try {
+    const result = await requestJson('/api/operations/rollout-manifest/apply', request, {
+      acceptErrorStatus: true
+    });
+    document.getElementById('rolloutApplyResult').innerHTML = renderRolloutManifestApply(result);
+    await loadSources();
+    await loadSourceOperations();
+  } catch (error) {
+    renderError('rolloutApplyResult', error);
+  }
+}
+
 async function runManifestCheck(options) {
   const target = document.getElementById(options.targetId);
   if (target) setLoading(options.targetId, 'Running ' + options.title + '...');
@@ -700,6 +723,11 @@ async function handleRolloutReadinessAction(event) {
   }
   if (button.dataset.action === 'load-source-type-drilldown') {
     await loadSourceTypeOperationsDrilldownFromButton(button);
+    return;
+  }
+  if (button.dataset.action === 'run-rollout-apply-dry-run') {
+    await runRolloutApplyDryRun(getRolloutManifestFormManifest() || state.rolloutManifestDraft || state.loadedConnectorPackageManifestDraft);
+    return;
   }
 }
 
@@ -2884,6 +2912,7 @@ function renderRolloutReadinessOpsButtons(source) {
   return '<div class="button-group source-op-buttons">' +
     renderSourceDrilldownButtonForScope({ sourceKey }) +
     renderSourceTypeDrilldownButton({ sourceKey, sourceType }) +
+    '<button class="inline-button secondary-inline-button" type="button" data-action="run-rollout-apply-dry-run">Apply dry-run</button>' +
     '</div>';
 }
 
