@@ -2472,32 +2472,8 @@ function renderEvidenceReliability(reliability) {
 }
 
 function renderAuthorIntelligenceDashboard(dashboard) {
-  const summary = dashboard.summary || {};
-  const tiles = '<div class="summary-strip event-summary-strip">' + [
-    summaryTile('报告', dashboard.reportCount || 0, dashboard.status === 'warn' ? 'warn' : 'ok'),
-    summaryTile('修订', dashboard.reportRevisionCount || 0),
-    summaryTile('线程', summary.threadCount || 0),
-    summaryTile('作者', summary.authorCount || 0),
-    summaryTile('观点', summary.opinionCount || 0),
-    summaryTile('实体', summary.focusEntityCount || 0),
-    summaryTile('缺口', summary.evidenceGapCount || 0, summary.evidenceGapCount > 0 ? 'warn' : 'ok'),
-    summaryTile('Queue', summary.reviewQueueCount || 0, (summary.reviewQueueCount || 0) > 0 ? 'warn' : 'ok')
-  ].join('') + '</div>';
   return [
-    panel('作者情报概览', [
-      tiles,
-      metric('状态', dashboard.status || 'unknown'),
-      metric('范围', authorIntelligenceScope(dashboard)),
-      metric('报告模式', dashboard.revisionMode || 'latest-per-thread'),
-      metric('建议', dashboard.recommendedNextAction || dashboard.message || ''),
-      metric('Queue priority', formatStanceSummary(summary.reviewQueuePriorityCounts)),
-      metric('Queue type', formatStanceSummary(summary.reviewQueueTypeCounts)),
-      '<span class="button-group">' +
-        '<button class="inline-button" type="button" data-action="sync-author-review-queue">Sync queue</button>' +
-        '<button class="inline-button secondary-inline-button" type="button" data-action="load-author-review-queue">Open queue</button>' +
-        '<a class="inline-button secondary-inline-button" href="' + escapeHtml(authorIntelligenceMarkdownHref(dashboard)) + '" target="_blank" rel="noreferrer">Markdown</a>' +
-      '</span>'
-    ].join(''), 'wide'),
+    renderAuthorIntelligenceHero(dashboard),
     panel('Source review pressure', renderAuthorSourceReviewPressureRows(dashboard.sourceReviewPressure || []), 'wide'),
     panel('Review queue', renderAuthorReviewQueueRows(dashboard.reviewQueue || []), 'wide'),
     panel('重点作者', renderAuthorIntelligenceRows(dashboard.authors || []), 'wide'),
@@ -2506,6 +2482,75 @@ function renderAuthorIntelligenceDashboard(dashboard) {
     panel('证据缺口', renderAuthorEvidenceGapRows(dashboard.evidenceGaps || []), 'wide'),
     panel('高信号证据', renderAuthorEvidenceRows(dashboard.evidence || []), 'wide')
   ].join('');
+}
+
+function renderAuthorIntelligenceHero(dashboard) {
+  const summary = dashboard.summary || {};
+  const authors = dashboard.authors || [];
+  const topPressure = (dashboard.sourceReviewPressure || [])[0] || {};
+  const status = dashboard.status || 'unknown';
+  const queueCount = summary.reviewQueueCount || 0;
+  const gapCount = summary.evidenceGapCount || 0;
+  const nextAction = dashboard.recommendedNextAction || dashboard.message || 'Review author signals and sync the open queue.';
+  return [
+    '<article class="author-intel-hero">',
+    '<section class="author-intel-main">',
+    '<div class="author-intel-header">',
+    '<span class="author-intel-label">Author radar</span>',
+    statusBadge(status, statusVariant(status)),
+    '</div>',
+    '<h3>' + escapeHtml(nextAction) + '</h3>',
+    '<p>' + escapeHtml(authorIntelligenceScope(dashboard) + ' | ' + (dashboard.revisionMode || 'latest-per-thread') + ' | reports=' + (dashboard.reportCount || 0) + ' | revisions=' + (dashboard.reportRevisionCount || 0)) + '</p>',
+    '<div class="author-intel-actions button-group">' +
+      '<button class="inline-button" type="button" data-action="sync-author-review-queue">Sync queue</button>' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="load-author-review-queue">Open queue</button>' +
+      '<a class="inline-button secondary-inline-button" href="' + escapeHtml(authorIntelligenceMarkdownHref(dashboard)) + '" target="_blank" rel="noreferrer">Markdown</a>' +
+    '</div>',
+    '</section>',
+    '<aside class="author-intel-signals">',
+    authorIntelSignal('Authors', summary.authorCount || 0, (summary.authorCount || 0) > 0 ? 'ok' : 'muted'),
+    authorIntelSignal('Opinions', summary.opinionCount || 0, (summary.opinionCount || 0) > 0 ? 'ok' : 'muted'),
+    authorIntelSignal('Entities', summary.focusEntityCount || 0, (summary.focusEntityCount || 0) > 0 ? 'ok' : 'muted'),
+    authorIntelSignal('Gaps', gapCount, gapCount > 0 ? 'warn' : 'ok'),
+    authorIntelSignal('Queue', queueCount, queueCount > 0 ? 'warn' : 'ok'),
+    authorIntelSignal('Threads', summary.threadCount || 0, (summary.threadCount || 0) > 0 ? 'ok' : 'muted'),
+    '</aside>',
+    '<section class="author-intel-focus">',
+    '<span>Focus authors</span>',
+    renderAuthorIntelFocusRows(authors),
+    '</section>',
+    '<section class="author-intel-review">',
+    '<span>Review pressure</span>',
+    '<strong>' + escapeHtml(queueCount + ' queue / ' + gapCount + ' gaps') + '</strong>',
+    '<small>' + escapeHtml([
+      formatStanceSummary(summary.reviewQueuePriorityCounts),
+      formatStanceSummary(summary.reviewQueueTypeCounts),
+      topPressure.sourceKey ? 'top source=' + topPressure.sourceKey : undefined,
+      topPressure.recommendedNextAction
+    ].filter(Boolean).join(' | ')) + '</small>',
+    '</section>',
+    '</article>'
+  ].join('');
+}
+
+function authorIntelSignal(label, value, variant) {
+  return '<div class="author-intel-signal ' + statusClassName(variant) + '"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(value) + '</strong></div>';
+}
+
+function renderAuthorIntelFocusRows(authors) {
+  if (!authors || authors.length === 0) {
+    return '<div class="author-intel-empty">No author signals yet.</div>';
+  }
+  return authors.slice(0, 3).map(function (item) {
+    const author = item.author || {};
+    const focus = (item.topFocusEntities || []).slice(0, 3).map(function (entity) {
+      return entity.entity && entity.entity.displayName ? entity.entity.displayName : entity.key;
+    }).filter(Boolean).join(' / ');
+    return '<div class="author-intel-focus-row">' +
+      '<strong>' + escapeHtml(author.displayName || author.sourceAuthorId || item.key || 'unknown') + '</strong>' +
+      '<small>' + escapeHtml(['posts=' + (item.postCount || 0), 'opinions=' + (item.opinionCount || 0), 'gaps=' + (item.evidenceGapCount || 0), focus].filter(Boolean).join(' | ')) + '</small>' +
+      '</div>';
+  }).join('');
 }
 
 function authorIntelligenceScope(dashboard) {
