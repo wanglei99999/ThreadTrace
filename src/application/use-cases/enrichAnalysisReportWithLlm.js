@@ -23,7 +23,7 @@ async function enrichAnalysisReportWithLlm(options) {
   });
 
   return Object.assign({}, report, {
-    semanticInsights: normalizeSemanticInsights(response.output, {
+    semanticInsights: normalizeSemanticInsights(validateSemanticEnrichmentOutput(response.output), {
       provider: response.provider || safeOptions.providerKey || 'unknown',
       generatedAt: new Date().toISOString(),
       traceId,
@@ -54,8 +54,55 @@ function normalizeSemanticInsights(output, meta) {
     opinionInsights: Array.isArray(safeOutput.opinionInsights) ? safeOutput.opinionInsights : [],
     evidenceQuestions: Array.isArray(safeOutput.evidenceQuestions) ? safeOutput.evidenceQuestions : [],
     limitations: Array.isArray(safeOutput.limitations) ? safeOutput.limitations : [],
+    validation: safeOutput.validation,
     usage: meta.usage
   };
+}
+
+function validateSemanticEnrichmentOutput(output) {
+  const checks = [];
+  const safeOutput = output || {};
+  const required = [
+    { key: 'summary', type: 'string' },
+    { key: 'entityInsights', type: 'array' },
+    { key: 'opinionInsights', type: 'array' },
+    { key: 'evidenceQuestions', type: 'array' },
+    { key: 'limitations', type: 'array' }
+  ];
+
+  required.forEach(function (field) {
+    const value = safeOutput[field.key];
+    const valid = field.type === 'array' ? Array.isArray(value) : typeof value === field.type;
+    checks.push({
+      key: 'semantic.' + field.key,
+      status: valid ? 'ok' : 'fail',
+      expected: field.type,
+      actual: Array.isArray(value) ? 'array' : typeof value
+    });
+  });
+
+  const failed = checks.filter(function (check) {
+    return check.status === 'fail';
+  });
+  if (failed.length > 0) {
+    const summary = failed.map(function (check) {
+      return check.key + ' expected ' + check.expected + ' got ' + check.actual;
+    }).join('; ');
+    const error = new Error('Semantic enrichment output validation failed: ' + summary + '.');
+    error.validation = {
+      status: 'fail',
+      checks
+    };
+    throw error;
+  }
+
+  return Object.assign({}, safeOutput, {
+    validation: {
+      status: 'ok',
+      schemaVersion: 'semantic-enrichment.v1',
+      checks
+    }
+  });
 }
 
 function semanticEnrichmentSchema() {
@@ -74,5 +121,6 @@ function semanticEnrichmentSchema() {
 
 module.exports = {
   enrichAnalysisReportWithLlm,
-  semanticEnrichmentSchema
+  semanticEnrichmentSchema,
+  validateSemanticEnrichmentOutput
 };

@@ -6,7 +6,10 @@ const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 const { analyzeSavedThreadDirectory } = require('../src/application/use-cases/analyzeSavedThreadDirectory');
-const { enrichAnalysisReportWithLlm } = require('../src/application/use-cases/enrichAnalysisReportWithLlm');
+const {
+  enrichAnalysisReportWithLlm,
+  validateSemanticEnrichmentOutput
+} = require('../src/application/use-cases/enrichAnalysisReportWithLlm');
 const { getForumAdapter } = require('../src/infrastructure/forum-adapters/registry');
 const { createLlmProvider } = require('../src/infrastructure/llm/llmProviderFactory');
 const { createMockLlmProvider } = require('../src/infrastructure/llm/mockLlmProvider');
@@ -33,6 +36,64 @@ test('mock LLM provider enriches reports with evidence-grounded insights', async
   assert.ok(enriched.semanticInsights.entityInsights[0].evidenceRefs.length >= 1);
   assert.ok(enriched.semanticInsights.opinionInsights.length >= 1);
   assert.ok(enriched.semanticInsights.limitations.length >= 1);
+  assert.equal(enriched.semanticInsights.validation.status, 'ok');
+  assert.equal(enriched.semanticInsights.validation.schemaVersion, 'semantic-enrichment.v1');
+});
+
+test('semantic enrichment validates structured LLM output before storing insights', async function () {
+  const valid = validateSemanticEnrichmentOutput({
+    summary: 'ok',
+    entityInsights: [],
+    opinionInsights: [],
+    evidenceQuestions: [],
+    limitations: []
+  });
+
+  assert.equal(valid.validation.status, 'ok');
+  assert.equal(valid.validation.checks.length, 5);
+
+  assert.throws(function () {
+    validateSemanticEnrichmentOutput({
+      summary: 'missing arrays'
+    });
+  }, function (error) {
+    assert.match(error.message, /Semantic enrichment output validation failed/);
+    assert.equal(error.validation.status, 'fail');
+    assert.ok(error.validation.checks.some(function (check) {
+      return check.key === 'semantic.entityInsights' && check.status === 'fail';
+    }));
+    return true;
+  });
+});
+
+test('semantic enrichment rejects invalid provider output with validation evidence', async function () {
+  const result = analyzeSavedThreadDirectory({
+    adapter: getForumAdapter('nga'),
+    inputDir: path.resolve(__dirname, '..', 'example')
+  });
+  const invalidProvider = {
+    async completeStructured() {
+      return {
+        provider: 'invalid-test',
+        output: {
+          summary: 123,
+          entityInsights: []
+        }
+      };
+    }
+  };
+
+  await assert.rejects(async function () {
+    await enrichAnalysisReportWithLlm({
+      report: result.report,
+      llmProvider: invalidProvider,
+      traceId: 'invalid-output-test'
+    });
+  }, function (error) {
+    assert.match(error.message, /semantic\.summary expected string got number/);
+    assert.equal(error.validation.status, 'fail');
+    return true;
+  });
 });
 
 test('runtime exposes semantic directory enrichment', async function () {
@@ -83,6 +144,7 @@ test('runtime persists semantic enrichment as a task report', async function () 
   assert.equal(reports[0].semanticInsights.provider, 'mock');
   assert.equal(tasks.length, 1);
   assert.equal(tasks[0].output.reportType, 'semantic-enrichment');
+  assert.equal(tasks[0].output.semanticValidation.status, 'ok');
 });
 
 test('openai-compatible LLM provider posts structured requests and parses JSON output', async function () {

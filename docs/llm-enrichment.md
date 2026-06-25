@@ -48,9 +48,12 @@ The enriched report keeps the existing basic report and adds `semanticInsights`:
 - `opinionInsights`
 - `evidenceQuestions`
 - `limitations`
+- `validation`
 - `usage`
 
 Every entity or opinion insight should include `evidenceRefs` with floor/post references or be covered by `limitations`.
+
+Before a semantic report is stored, ThreadTrace validates the provider output against the required structured fields: `summary`, `entityInsights`, `opinionInsights`, `evidenceQuestions`, and `limitations`. Successful reports include `semanticInsights.validation.status=ok` with per-field checks and schema version `semantic-enrichment.v1`; durable semantic task output also carries the same validation summary. Invalid provider output fails the semantic task with validation evidence instead of silently storing partial model data.
 
 ## Provider Strategy
 

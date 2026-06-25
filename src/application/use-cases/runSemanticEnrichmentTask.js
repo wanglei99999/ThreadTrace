@@ -78,6 +78,7 @@ async function runSemanticEnrichmentTask(options) {
       reportType: semanticReport.reportType,
       semanticProvider: semanticReport.semanticInsights.provider,
       semanticTraceId: semanticReport.semanticInsights.traceId,
+      semanticValidation: semanticReport.semanticInsights.validation,
       summary: semanticReport.semanticInsights.summary
     });
     await taskRepository.saveTask(task);
