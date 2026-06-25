@@ -3220,10 +3220,26 @@ function renderIndexResult(result) {
 function renderSearchResults(result) {
   const results = result.results || [];
   return [
-    panel('证据命中', evidenceList(results.map(function (item) {
-      return '#' + item.metadata.floor + ' ' + item.metadata.author + ' · ' + item.score + '｜' + item.text;
-    })), 'wide')
+    panel('证据命中', renderSearchHitRows(results), 'wide search-results-panel')
   ].join('');
+}
+
+function renderSearchHitRows(results) {
+  if (!results.length) return emptySignal('No matching evidence yet.', 'Search');
+  return results.map(function (item) {
+    const metadata = item.metadata || {};
+    const floor = metadata.floor !== undefined && metadata.floor !== null ? '#' + metadata.floor : '#?';
+    const author = metadata.author || metadata.authorId || 'unknown author';
+    const score = item.score !== undefined && item.score !== null ? item.score : 'n/a';
+    return '<div class="search-hit-row">' +
+      '<div class="search-hit-meta">' +
+      '<span>' + escapeHtml(floor) + '</span>' +
+      '<strong>' + escapeHtml(author) + '</strong>' +
+      '<small>score ' + escapeHtml(score) + '</small>' +
+      '</div>' +
+      '<p>' + escapeHtml(item.text || '') + '</p>' +
+      '</div>';
+  }).join('');
 }
 
 function renderTaskRunResult(result) {

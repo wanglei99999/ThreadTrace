@@ -87,28 +87,51 @@
 
       <section class="view-panel hidden" id="searchView">
         <div class="search-workbench">
-        <form id="indexForm" class="control-strip entry-card search-index-card" data-title="Index refresh">
-          <label>
-            <span>论坛</span>
-            <select name="forum" id="searchForum"></select>
-          </label>
-          <label class="grow">
-            <span>保存页目录</span>
-            <input name="inputDir" value="example" autocomplete="off">
-          </label>
-          <button type="submit">更新索引</button>
-        </form>
-        <form id="searchForm" class="control-strip entry-card search-query-card" data-title="Evidence search">
-          <label class="grow">
-            <span>检索问题</span>
-            <input name="text" value="科技" autocomplete="off">
-          </label>
-          <label class="compact">
-            <span>结果数</span>
-            <input name="limit" value="8" inputmode="numeric" autocomplete="off">
-          </label>
-          <button type="submit">搜索证据</button>
-        </form>
+          <form id="indexForm" class="control-strip entry-card search-index-card" data-title="Index refresh">
+            <div class="search-card-kicker">
+              <span>Archive</span>
+              <strong>local pages</strong>
+            </div>
+            <label>
+              <span>论坛</span>
+              <select name="forum" id="searchForum"></select>
+            </label>
+            <label class="grow">
+              <span>保存页目录</span>
+              <input name="inputDir" value="example" autocomplete="off">
+            </label>
+            <div class="search-command-shelf" data-label="Index">
+              <button type="submit">更新索引</button>
+              <span>raw → searchable</span>
+            </div>
+          </form>
+          <div class="search-flow-rail" aria-hidden="true">
+            <span>01</span>
+            <i></i>
+            <span>02</span>
+          </div>
+          <form id="searchForm" class="control-strip entry-card search-query-card" data-title="Evidence search">
+            <div class="search-card-kicker">
+              <span>Recall</span>
+              <strong>floor evidence</strong>
+            </div>
+            <label class="grow search-query-input">
+              <span>检索问题</span>
+              <input name="text" value="科技" autocomplete="off">
+            </label>
+            <div class="search-query-side">
+              <label class="compact">
+                <span>结果数</span>
+                <input name="limit" value="8" inputmode="numeric" autocomplete="off">
+              </label>
+              <button type="submit">搜索证据</button>
+            </div>
+            <div class="search-hit-schema" aria-hidden="true">
+              <span>floor</span>
+              <span>author</span>
+              <span>score</span>
+            </div>
+          </form>
         </div>
         <div id="searchResult" class="result-grid"></div>
       </section>
