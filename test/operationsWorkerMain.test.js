@@ -12,8 +12,11 @@ test('operations worker main request scopes event dispatch runbook synthesis and
     '--source-id', 'source-a',
     '--runbook-events', 'true',
     '--source-attention-events', 'true',
+    '--source-type-operations-events', 'true',
+    '--source-type', 'thread-url',
     '--priority-score-threshold', '80',
     '--attention-limit', '12',
+    '--source-type-limit', '7',
     '--include-failed', 'true',
     '--limit', '25'
   ]);
@@ -40,6 +43,11 @@ test('operations worker main request scopes event dispatch runbook synthesis and
   assert.equal(request.sourceAttentionEvents.execute, false);
   assert.equal(request.sourceAttentionEvents.priorityScoreThreshold, 80);
   assert.equal(request.sourceAttentionEvents.attentionLimit, 12);
+  assert.equal(request.sourceTypeOperationsEvents.sourceType, 'thread-url');
+  assert.equal(request.sourceTypeOperationsEvents.execute, false);
+  assert.equal(request.sourceTypeOperationsEvents.priorityScoreThreshold, 80);
+  assert.equal(request.sourceTypeOperationsEvents.attentionLimit, 12);
+  assert.equal(request.sourceTypeOperationsEvents.sourceTypeLimit, 7);
   assert.equal(request.overview.sourceId, 'source-a');
   assert.equal(request.overview.sourceKey, 'forum-a');
   assert.equal(request.sourceAttention.sourceId, 'source-a');

@@ -39,3 +39,29 @@ test('CLI prints source type operations report as JSON', async function () {
     return true;
   });
 });
+
+test('CLI can dry-run source type operations notification synthesis', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-cli-source-type-operations-events-'));
+  const root = path.resolve(__dirname, '..');
+  const scriptPath = path.join(root, 'src', 'presentation', 'cli', 'threadtrace.js');
+
+  const result = await execFileAsync(process.execPath, [
+    scriptPath,
+    'synthesize-source-type-operations-events',
+    '--store-dir',
+    tempDir,
+    '--now',
+    '2026-06-25T10:00:00.000Z',
+    '--priority-score-threshold',
+    '80'
+  ], {
+    cwd: root,
+    timeout: 20000
+  });
+
+  assert.match(result.stdout, /Source type operations events: ok/);
+  assert.match(result.stdout, /Mode: dry-run/);
+  assert.match(result.stdout, /Source types: 3/);
+  assert.match(result.stdout, /threshold=80/);
+  assert.equal(result.stderr, '');
+});

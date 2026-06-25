@@ -77,6 +77,9 @@ async function main(argv) {
     if (result.sourceAttentionEvents) {
       console.log('Source attention events: ' + result.sourceAttentionEvents.eventCount + ', dryRun=' + result.sourceAttentionEvents.dryRun);
     }
+    if (result.sourceTypeOperationsEvents) {
+      console.log('Source type operations events: ' + result.sourceTypeOperationsEvents.eventCount + ', dryRun=' + result.sourceTypeOperationsEvents.dryRun);
+    }
     console.log('Events delivered: ' + result.events.dispatchedCount);
     console.log('Events failed: ' + result.events.failedCount);
     if (result.archivedEvents) {
@@ -184,6 +187,24 @@ function buildRequest(options, storeDir, config) {
         resolveStale: parseOptionalBoolean(options.sourceAttentionResolveStale),
         priorityScoreThreshold: options.priorityScoreThreshold ? Number(options.priorityScoreThreshold) : undefined,
         limit: options.limit ? Number(options.limit) : undefined,
+        attentionLimit: options.attentionLimit ? Number(options.attentionLimit) : undefined,
+        sourceRunStaleAfterMs: config.workers.sourceRunStaleAfterMs,
+        sourceFailureRetryBackoffMs: config.workers.sourceFailureRetryBackoffMs,
+        sourceFailureMaxRetryBackoffMs: config.workers.sourceFailureMaxRetryBackoffMs,
+        storeDir
+      }
+      : undefined,
+    sourceTypeOperationsEvents: options.sourceTypeOperationsEvents === 'true' || options.sourceTypeOperationsEventsExecute === 'true'
+      ? {
+        forum: options.forum,
+        sourceKey: options.sourceKey || options.forum,
+        sourceType: options.sourceType,
+        execute: options.sourceTypeOperationsEventsExecute === 'true',
+        resolveStale: parseOptionalBoolean(options.sourceTypeOperationsResolveStale),
+        priorityScoreThreshold: options.priorityScoreThreshold ? Number(options.priorityScoreThreshold) : undefined,
+        includeReadinessWarnings: options.sourceTypeOperationsIncludeReadinessWarnings === 'true',
+        limit: options.limit ? Number(options.limit) : undefined,
+        sourceTypeLimit: options.sourceTypeLimit ? Number(options.sourceTypeLimit) : undefined,
         attentionLimit: options.attentionLimit ? Number(options.attentionLimit) : undefined,
         sourceRunStaleAfterMs: config.workers.sourceRunStaleAfterMs,
         sourceFailureRetryBackoffMs: config.workers.sourceFailureRetryBackoffMs,
@@ -317,6 +338,24 @@ function parseArgs(args) {
       index += 1;
     } else if (item === '--source-attention-resolve-stale') {
       options.sourceAttentionResolveStale = args[index + 1];
+      index += 1;
+    } else if (item === '--source-type-operations-events') {
+      options.sourceTypeOperationsEvents = args[index + 1];
+      index += 1;
+    } else if (item === '--source-type-operations-events-execute') {
+      options.sourceTypeOperationsEventsExecute = args[index + 1];
+      index += 1;
+    } else if (item === '--source-type-operations-resolve-stale') {
+      options.sourceTypeOperationsResolveStale = args[index + 1];
+      index += 1;
+    } else if (item === '--source-type-operations-include-readiness-warnings') {
+      options.sourceTypeOperationsIncludeReadinessWarnings = args[index + 1];
+      index += 1;
+    } else if (item === '--source-type') {
+      options.sourceType = args[index + 1];
+      index += 1;
+    } else if (item === '--source-type-limit') {
+      options.sourceTypeLimit = args[index + 1];
       index += 1;
     } else if (item === '--attention-limit') {
       options.attentionLimit = args[index + 1];

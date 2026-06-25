@@ -72,6 +72,7 @@ function createOperationsWorker(options) {
       const runbookEvents = await synthesizeRunbookEvents(runtime, safeRequest, leaseGuard, tracker, workerRun);
       const authorReviewQueueEvents = await synthesizeAuthorReviewQueueEvents(runtime, safeRequest, leaseGuard, tracker, workerRun);
       const sourceAttentionEvents = await synthesizeSourceAttentionEvents(runtime, safeRequest, leaseGuard, tracker, workerRun);
+      const sourceTypeOperationsEvents = await synthesizeSourceTypeOperationsEvents(runtime, safeRequest, leaseGuard, tracker, workerRun);
       workerRun = await tracker.heartbeat(workerRun, { step: 'dispatch-events' });
       await leaseGuard.renew();
       const events = await runtime.dispatchNotificationEvents(safeRequest.events || {});
@@ -82,8 +83,8 @@ function createOperationsWorker(options) {
       const sourceAttentionResult = await getSourceAttentionReport(runtime, safeRequest, leaseGuard, tracker, workerRun);
       workerRun = sourceAttentionResult.workerRun;
       const sourceAttention = sourceAttentionResult.sourceAttention;
-      await tracker.complete(workerRun, summarizeOperationsResult(dueSources, reviewActionTask, contextReviewResultEvents, runbookEvents, authorReviewQueueEvents, sourceAttentionEvents, events, archivedEvents, overview, sourceAttention));
-      logger.log('[worker] operations run completed: due=' + dueSources.dueCount + ', sourceFailed=' + dueSources.failedCount + ', reviewAction=' + (reviewActionTask ? reviewActionTask.report.status : 'skipped') + ', reviewResultEvents=' + (contextReviewResultEvents ? contextReviewResultEvents.eventCount : 0) + ', runbookEvents=' + (runbookEvents ? runbookEvents.eventCount : 0) + ', authorQueueEvents=' + (authorReviewQueueEvents ? authorReviewQueueEvents.eventCount : 0) + ', sourceAttentionEvents=' + (sourceAttentionEvents ? sourceAttentionEvents.eventCount : 0) + ', eventDelivered=' + events.dispatchedCount + ', eventFailed=' + events.failedCount + ', eventArchived=' + (archivedEvents ? archivedEvents.archivedCount : 0) + ', openEvents=' + overview.events.unacknowledged + ', sourceAttention=' + formatSourceAttentionLog(sourceAttention));
+      await tracker.complete(workerRun, summarizeOperationsResult(dueSources, reviewActionTask, contextReviewResultEvents, runbookEvents, authorReviewQueueEvents, sourceAttentionEvents, sourceTypeOperationsEvents, events, archivedEvents, overview, sourceAttention));
+      logger.log('[worker] operations run completed: due=' + dueSources.dueCount + ', sourceFailed=' + dueSources.failedCount + ', reviewAction=' + (reviewActionTask ? reviewActionTask.report.status : 'skipped') + ', reviewResultEvents=' + (contextReviewResultEvents ? contextReviewResultEvents.eventCount : 0) + ', runbookEvents=' + (runbookEvents ? runbookEvents.eventCount : 0) + ', authorQueueEvents=' + (authorReviewQueueEvents ? authorReviewQueueEvents.eventCount : 0) + ', sourceAttentionEvents=' + (sourceAttentionEvents ? sourceAttentionEvents.eventCount : 0) + ', sourceTypeOperationsEvents=' + (sourceTypeOperationsEvents ? sourceTypeOperationsEvents.eventCount : 0) + ', eventDelivered=' + events.dispatchedCount + ', eventFailed=' + events.failedCount + ', eventArchived=' + (archivedEvents ? archivedEvents.archivedCount : 0) + ', openEvents=' + overview.events.unacknowledged + ', sourceAttention=' + formatSourceAttentionLog(sourceAttention));
       return {
         dueSources,
         reviewActionTask,
@@ -91,6 +92,7 @@ function createOperationsWorker(options) {
         runbookEvents,
         authorReviewQueueEvents,
         sourceAttentionEvents,
+        sourceTypeOperationsEvents,
         events,
         archivedEvents,
         overview,
@@ -175,6 +177,16 @@ async function synthesizeSourceAttentionEvents(runtime, request, leaseGuard, tra
   return runtime.synthesizeSourceAttentionNotificationEvents(request.sourceAttentionEvents);
 }
 
+async function synthesizeSourceTypeOperationsEvents(runtime, request, leaseGuard, tracker, workerRun) {
+  if (!request.sourceTypeOperationsEvents) return undefined;
+  if (typeof runtime.synthesizeSourceTypeOperationsNotificationEvents !== 'function') {
+    throw new Error('OperationsWorker requires runtime.synthesizeSourceTypeOperationsNotificationEvents(request) when sourceTypeOperationsEvents is enabled.');
+  }
+  await tracker.heartbeat(workerRun, { step: 'source-type-operations-events' });
+  await leaseGuard.renew();
+  return runtime.synthesizeSourceTypeOperationsNotificationEvents(request.sourceTypeOperationsEvents);
+}
+
 async function archiveNotificationEvents(runtime, request, leaseGuard, tracker, workerRun) {
   if (!request.archiveEvents) return undefined;
   if (typeof runtime.archiveNotificationEvents !== 'function') {
@@ -239,7 +251,7 @@ function stepForSourceTaskMode(sourceTaskMode) {
   return 'ingest-due-sources';
 }
 
-function summarizeOperationsResult(dueSources, reviewActionTask, contextReviewResultEvents, runbookEvents, authorReviewQueueEvents, sourceAttentionEvents, events, archivedEvents, overview, sourceAttention) {
+function summarizeOperationsResult(dueSources, reviewActionTask, contextReviewResultEvents, runbookEvents, authorReviewQueueEvents, sourceAttentionEvents, sourceTypeOperationsEvents, events, archivedEvents, overview, sourceAttention) {
   return {
     dueSources: {
       sourceTaskMode: dueSources.task && dueSources.task.type === 'source-insight-pipeline-due-sources' ? 'insight-pipeline' : 'ingest',
@@ -285,6 +297,18 @@ function summarizeOperationsResult(dueSources, reviewActionTask, contextReviewRe
       reopenedCount: sourceAttentionEvents.reopenedCount,
       skippedCount: sourceAttentionEvents.skippedCount,
       priorityScoreThreshold: sourceAttentionEvents.priorityScoreThreshold
+    } : undefined,
+    sourceTypeOperationsEvents: sourceTypeOperationsEvents ? {
+      sourceTypeCount: sourceTypeOperationsEvents.sourceTypeCount,
+      actionCount: sourceTypeOperationsEvents.actionCount,
+      eventCount: sourceTypeOperationsEvents.eventCount,
+      createdCount: sourceTypeOperationsEvents.createdCount,
+      updatedCount: sourceTypeOperationsEvents.updatedCount,
+      resolvedCount: sourceTypeOperationsEvents.resolvedCount,
+      reopenedCount: sourceTypeOperationsEvents.reopenedCount,
+      skippedCount: sourceTypeOperationsEvents.skippedCount,
+      priorityScoreThreshold: sourceTypeOperationsEvents.priorityScoreThreshold,
+      includeReadinessWarnings: sourceTypeOperationsEvents.includeReadinessWarnings
     } : undefined,
     reviewActionTask: reviewActionTask ? {
       taskId: reviewActionTask.task && reviewActionTask.task.id,

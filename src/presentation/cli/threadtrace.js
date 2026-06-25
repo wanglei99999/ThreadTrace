@@ -703,6 +703,46 @@ function main(argv) {
     return;
   }
 
+  if (command === 'synthesize-source-type-operations-events') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.synthesizeSourceTypeOperationsNotificationEvents({
+      forum: options.forum,
+      sourceKey: options.sourceKey || options.forum,
+      sourceType: options.sourceType,
+      enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
+      execute: options.execute === 'true' || options.dryRun === 'false',
+      limit: options.limit ? Number(options.limit) : 100,
+      sourceTypeLimit: options.sourceTypeLimit ? Number(options.sourceTypeLimit) : undefined,
+      attentionLimit: options.attentionLimit ? Number(options.attentionLimit) : undefined,
+      priorityScoreThreshold: options.priorityScoreThreshold ? Number(options.priorityScoreThreshold) : undefined,
+      includeReadinessWarnings: options.includeReadinessWarnings === 'true',
+      modulePath: options.modulePath,
+      pipelineLimit: options.pipelineLimit ? Number(options.pipelineLimit) : 20,
+      eventLimit: options.eventLimit ? Number(options.eventLimit) : undefined,
+      taskLimit: options.taskLimit ? Number(options.taskLimit) : undefined,
+      sourceRunStaleAfterMs: options.sourceRunStaleAfterMs ? Number(options.sourceRunStaleAfterMs) : undefined,
+      sourceFailureRetryBackoffMs: options.sourceFailureRetryBackoffMs ? Number(options.sourceFailureRetryBackoffMs) : undefined,
+      sourceFailureMaxRetryBackoffMs: options.sourceFailureMaxRetryBackoffMs ? Number(options.sourceFailureMaxRetryBackoffMs) : undefined,
+      runningStaleAfterMs: options.runningStaleAfterMs ? Number(options.runningStaleAfterMs) : undefined,
+      workerStaleAfterMs: options.workerStaleAfterMs ? Number(options.workerStaleAfterMs) : undefined,
+      resolveStale: parseOptionalBoolean(options.resolveStale),
+      staleLimit: options.staleLimit ? Number(options.staleLimit) : undefined,
+      now: options.now,
+      storeDir
+    }).then(function (result) {
+      console.log('Source type operations events: ' + result.status);
+      console.log('Mode: ' + (result.dryRun ? 'dry-run' : 'execute'));
+      console.log('Source types: ' + result.sourceTypeCount + '\tthreshold=' + result.priorityScoreThreshold + '\tcreated=' + result.createdCount + '\tupdated=' + result.updatedCount + '\tresolved=' + result.resolvedCount + '\treopened=' + result.reopenedCount + '\tskipped=' + result.skippedCount);
+      result.results.forEach(function (item) {
+        console.log(item.status + '\t' + (item.sourceType || 'unknown-source-type') + '\t' + item.event.id + '\t' + item.event.severity);
+      });
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'synthesize-author-review-queue-events') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.synthesizeAuthorReviewQueueNotificationEvents({
@@ -2852,6 +2892,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js operations-runbook [--forum nga] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--running-stale-after-ms ms] [--event-limit n] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js synthesize-runbook-events [--forum nga] [--source-id id] [--resolve-stale true|false] [--execute true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js synthesize-source-attention-events [--source-key key] [--priority-score-threshold n] [--resolve-stale true] [--execute true] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js synthesize-source-type-operations-events [--source-type type] [--priority-score-threshold n] [--include-readiness-warnings true] [--execute true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js synthesize-author-review-queue-events [--execute true] [--source-key key] [--status open] [--resolve-stale true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js synthesize-context-review-result-events [--execute true] [--source-key key] [--source-id id] [--handoff-id id] [--status status] [--reviewer-id id] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js notification-synthesis-policy [--priority-score-threshold n] [--json true] [--now iso]');

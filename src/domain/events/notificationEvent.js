@@ -186,6 +186,44 @@ function createSourceAttentionEvent(input) {
   };
 }
 
+function createSourceTypeOperationsEvent(input) {
+  const safeInput = input || {};
+  const item = safeInput.item || {};
+  const now = safeInput.createdAt || new Date().toISOString();
+  return {
+    id: safeInput.id || buildSourceTypeOperationsEventId(item),
+    type: 'source-type-operations',
+    severity: severityForSourceTypeOperationsItem(item),
+    sourceId: undefined,
+    sourceKey: undefined,
+    taskId: undefined,
+    createdAt: now,
+    title: 'Source type operations: ' + (item.sourceType || 'unknown'),
+    summary: sourceTypeOperationsSummary(item),
+    payload: {
+      sourceType: item.sourceType,
+      status: item.status,
+      readiness: item.readiness,
+      schedule: item.schedule,
+      lifecycle: item.lifecycle,
+      attention: item.attention,
+      nextActions: item.nextActions || [],
+      recommendedCommands: item.recommendedCommands || [],
+      topAttention: item.topAttention || [],
+      reportGeneratedAt: safeInput.reportGeneratedAt,
+      reportStatus: safeInput.reportStatus
+    },
+    deliveryStatus: safeInput.deliveryStatus || 'pending',
+    deliveryAttempts: safeInput.deliveryAttempts || 0,
+    nextDeliveryAt: safeInput.nextDeliveryAt || now,
+    lastDeliveryError: safeInput.lastDeliveryError,
+    lastDeliveredAt: safeInput.lastDeliveredAt,
+    acknowledgedAt: safeInput.acknowledgedAt,
+    acknowledgedBy: safeInput.acknowledgedBy,
+    acknowledgementNote: safeInput.acknowledgementNote
+  };
+}
+
 function acknowledgeNotificationEvent(event, input) {
   const safeInput = input || {};
   const now = safeInput.acknowledgedAt || new Date().toISOString();
@@ -296,6 +334,14 @@ function buildSourceAttentionEventId(item) {
   return 'source-attention-' + digest;
 }
 
+function buildSourceTypeOperationsEventId(item) {
+  const key = JSON.stringify({
+    sourceType: item && item.sourceType
+  });
+  const digest = crypto.createHash('sha1').update(key).digest('hex').slice(0, 12);
+  return 'source-type-operations-' + digest;
+}
+
 function severityForRunbookAction(action) {
   if (action && action.severity === 'critical') return 'critical';
   if (action && action.severity === 'warning') return 'warning';
@@ -313,12 +359,37 @@ function severityForSourceAttentionItem(item) {
   return 'info';
 }
 
+function severityForSourceTypeOperationsItem(item) {
+  if (item && item.status === 'fail') return 'critical';
+  const lifecycle = item && item.lifecycle || {};
+  const attention = item && item.attention || {};
+  if ((attention.critical || 0) > 0) return 'critical';
+  if ((attention.warning || 0) > 0 ||
+    (lifecycle.disableBlocked || 0) > 0 ||
+    (lifecycle.staleRunning || 0) > 0 ||
+    (lifecycle.failureRetryWaiting || 0) > 0) return 'warning';
+  return 'info';
+}
+
 function sourceAttentionSummary(item) {
   const signals = item.signals || [];
   const firstSignal = signals[0] || {};
   const action = item.recommendedNextAction || item.nextAction || item.recommendedCommand || firstSignal.action;
   const score = item.priorityScore === undefined ? 'unknown' : item.priorityScore;
   return 'Priority ' + score + ', rank #' + (item.attentionRank || '?') + ': ' + (action || firstSignal.summary || 'Review source attention.');
+}
+
+function sourceTypeOperationsSummary(item) {
+  const lifecycle = item && item.lifecycle || {};
+  const attention = item && item.attention || {};
+  const schedule = item && item.schedule || {};
+  const score = attention.highestPriorityScore === undefined ? 'unknown' : attention.highestPriorityScore;
+  return 'status=' + (item && item.status || 'unknown') +
+    ', due=' + (schedule.due || 0) +
+    ', running=' + (lifecycle.running || 0) +
+    ', retry=' + (lifecycle.failureRetryWaiting || 0) +
+    ', attention=' + (attention.total || 0) +
+    ', priority=' + score + '.';
 }
 
 function buildSummary(source, cursorDiff, cursor) {
@@ -338,10 +409,12 @@ module.exports = {
   createContextReviewResultEvent,
   createAuthorReviewQueueEvent,
   createSourceAttentionEvent,
+  createSourceTypeOperationsEvent,
   buildRunbookActionEventId,
   buildContextReviewResultEventId,
   buildAuthorReviewQueueEventId,
   buildSourceAttentionEventId,
+  buildSourceTypeOperationsEventId,
   acknowledgeNotificationEvent,
   markNotificationEventDelivered,
   markNotificationEventDeliveryFailed

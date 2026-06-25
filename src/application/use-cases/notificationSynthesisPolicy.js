@@ -59,6 +59,25 @@ function getNotificationSynthesisPolicyReport(options) {
       ]
     }),
     synthesisPolicyEventType({
+      type: 'source-type-operations',
+      sourceScoped: false,
+      staleResolution: true,
+      reopensAutoResolved: true,
+      alertRules: [
+        severityRule('critical'),
+        severityRule('warning'),
+        {
+          key: 'operations-pressure',
+          summary: 'Alert source type operations when lifecycle retry/block/stale counts, warning attention, or priority score indicate operational pressure.',
+          threshold: sourceAttentionThreshold
+        },
+        {
+          key: 'readiness-warnings-opt-in',
+          summary: 'Pure source type readiness warnings are ignored by default and only alert when includeReadinessWarnings=true.'
+        }
+      ]
+    }),
+    synthesisPolicyEventType({
       type: 'context-review-result',
       sourceScoped: true,
       staleResolution: false,

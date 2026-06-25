@@ -108,4 +108,16 @@ test('notification synthesis policy report exposes shared rules and event type p
   assert.ok(sourceAttention.alertRules.find(function (rule) {
     return rule.key === 'priority-score-threshold' && rule.threshold === 85;
   }));
+
+  const sourceTypeOperations = report.eventTypes.find(function (item) {
+    return item.type === 'source-type-operations';
+  });
+  assert.equal(sourceTypeOperations.sourceScoped, false);
+  assert.equal(sourceTypeOperations.staleResolution, true);
+  assert.ok(sourceTypeOperations.alertRules.find(function (rule) {
+    return rule.key === 'operations-pressure' && rule.threshold === 85;
+  }));
+  assert.ok(sourceTypeOperations.alertRules.find(function (rule) {
+    return rule.key === 'readiness-warnings-opt-in';
+  }));
 });

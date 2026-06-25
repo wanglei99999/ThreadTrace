@@ -1339,6 +1339,61 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/operations/source-type-operations/events': {
+        post: {
+          summary: 'Dry-run or execute synthesis of source type operations into notification outbox events',
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    execute: { type: 'boolean', example: false },
+                    dryRun: { type: 'boolean', example: true },
+                    forum: { type: 'string', example: 'nga' },
+                    sourceKey: { type: 'string', example: 'nga' },
+                    sourceType: { type: 'string', example: 'saved-html-directory' },
+                    enabled: { type: 'boolean' },
+                    limit: { type: 'number', example: 100 },
+                    sourceTypeLimit: { type: 'number', example: 100 },
+                    attentionLimit: { type: 'number', example: 100 },
+                    staleLimit: { type: 'number', example: 100 },
+                    resolveStale: { type: 'boolean', example: true },
+                    priorityScoreThreshold: { type: 'number', example: 70 },
+                    includeReadinessWarnings: { type: 'boolean', example: false },
+                    modulePath: { type: 'string', example: 'D:/connectors/custom-forum.cjs' },
+                    pipelineLimit: { type: 'number', example: 20 },
+                    eventLimit: { type: 'number', example: 100 },
+                    taskLimit: { type: 'number', example: 100 },
+                    maxAttempts: { type: 'number', example: 3 },
+                    sourceRunStaleAfterMs: { type: 'number', example: 600000 },
+                    sourceFailureRetryBackoffMs: { type: 'number', example: 60000 },
+                    sourceFailureMaxRetryBackoffMs: { type: 'number', example: 3600000 },
+                    runningStaleAfterMs: { type: 'number', example: 600000 },
+                    workerStaleAfterMs: { type: 'number', example: 300000 },
+                    includeSourceTypeOperations: { type: 'boolean', example: false },
+                    now: { type: 'string', example: '2026-06-25T10:00:00.000Z' },
+                    storeDir: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Source type operations notification event synthesis result; stale resolution can be scoped by sourceType',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceTypeOperationsNotificationEventSynthesisResult'
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       '/api/operations/worker-topology-plan': {
         get: {
           summary: 'Plan worker deployment topology for local, single-process, or split-worker operations',
@@ -4741,7 +4796,7 @@ function createOpenApiSpec() {
             id: { type: 'string', example: 'runbook-action-afdda22a04d1' },
             type: {
               type: 'string',
-              enum: ['source-changed', 'runbook-action', 'context-review-result', 'author-review-queue', 'source-attention']
+              enum: ['source-changed', 'runbook-action', 'context-review-result', 'author-review-queue', 'source-attention', 'source-type-operations']
             },
             severity: { type: 'string', enum: ['debug', 'info', 'warning', 'critical'] },
             sourceId: { type: 'string', example: 'tracked-source-nga-001' },
@@ -5158,6 +5213,40 @@ function createOpenApiSpec() {
               items: { $ref: '#/components/schemas/SourceAttentionNotificationEventSynthesisItem' }
             },
             sourceAttention: { $ref: '#/components/schemas/SourceAttentionReport' }
+          }
+        },
+        SourceTypeOperationsNotificationEventSynthesisItem: {
+          type: 'object',
+          properties: {
+            status: { type: 'string', enum: ['created', 'updated', 'resolved', 'reopened', 'skipped'] },
+            sourceType: { type: 'string', example: 'saved-html-directory' },
+            event: { $ref: '#/components/schemas/NotificationEvent' },
+            reason: { type: 'string', example: 'source-type-operations-cleared' }
+          }
+        },
+        SourceTypeOperationsNotificationEventSynthesisResult: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-25T10:00:00.000Z' },
+            status: { type: 'string', example: 'ok' },
+            dryRun: { type: 'boolean', example: true },
+            executed: { type: 'boolean', example: false },
+            sourceTypeCount: { type: 'number', example: 3 },
+            actionCount: { type: 'number', example: 1 },
+            eventCount: { type: 'number', example: 1 },
+            createdCount: { type: 'number', example: 1 },
+            updatedCount: { type: 'number', example: 0 },
+            resolvedCount: { type: 'number', example: 0 },
+            reopenedCount: { type: 'number', example: 0 },
+            skippedCount: { type: 'number', example: 0 },
+            priorityScoreThreshold: { type: 'number', example: 70 },
+            includeReadinessWarnings: { type: 'boolean', example: false },
+            recommendedNextAction: { type: 'string' },
+            results: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceTypeOperationsNotificationEventSynthesisItem' }
+            },
+            sourceTypeOperations: { $ref: '#/components/schemas/SourceTypeOperationsReport' }
           }
         },
         WorkerTopologyWorker: {

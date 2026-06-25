@@ -251,9 +251,9 @@ Summarizes notification outbox health for dashboards and workers. Optional filte
 
 ### `GET /api/events/synthesis-policy`
 
-Returns the read-only notification synthesis policy report used by runbook, source attention, context review result, and author review queue alert synthesis. Optional query parameters: `priorityScoreThreshold` and `now`.
+Returns the read-only notification synthesis policy report used by runbook, source attention, source type operations, context review result, and author review queue alert synthesis. Optional query parameters: `priorityScoreThreshold` and `now`.
 
-The response includes default dry-run behavior, alert severities, source attention priority threshold, immutable existing event states, mutation statuses, shared synthesis rules, and per-event-type alert rules. Use it before execute mode when operators or generated clients need to explain why an item will become a `runbook-action`, `source-attention`, `context-review-result`, or `author-review-queue` outbox event.
+The response includes default dry-run behavior, alert severities, source attention/source type priority threshold, immutable existing event states, mutation statuses, shared synthesis rules, and per-event-type alert rules. Use it before execute mode when operators or generated clients need to explain why an item will become a `runbook-action`, `source-attention`, `source-type-operations`, `context-review-result`, or `author-review-queue` outbox event.
 
 ### `POST /api/events/dispatch`
 
@@ -502,6 +502,28 @@ Request:
 ```
 
 The endpoint defaults to dry-run. Set `execute: true` or `dryRun: false` to persist `source-attention` events. Event IDs are stable per source attention key plus `sourceId` / `sourceKey` scope, so repeated synthesis updates pending or failed events without duplicating alerts while keeping different sources isolated. Critical and warning attention rows always alert; lower-severity rows alert when `priorityScore` is at or above `priorityScoreThreshold`. When `sourceId`, `sourceKey`, or `forum` is provided, stale source attention event resolution is scoped to that source filter so a partial source run does not resolve alerts owned by other sources. The response includes source, event, created, updated, resolved, reopened, and skipped counts. Operator-acknowledged and delivered events are skipped.
+
+### `POST /api/operations/source-type-operations/events`
+
+Dry-runs or executes synthesis of source-type operations pressure into notification outbox events.
+
+Request:
+
+```json
+{
+  "execute": false,
+  "sourceType": "saved-html-directory",
+  "limit": 100,
+  "sourceTypeLimit": 100,
+  "attentionLimit": 100,
+  "priorityScoreThreshold": 70,
+  "includeReadinessWarnings": false,
+  "resolveStale": true,
+  "includeSourceTypeOperations": false
+}
+```
+
+The endpoint defaults to dry-run. Set `execute: true` or `dryRun: false` to persist `source-type-operations` events. Event IDs are stable per `sourceType`, so repeated synthesis refreshes pending or failed source-type alerts without duplication. It alerts on failing source types, lifecycle pressure (`disableBlocked`, `staleRunning`, or `failureRetryWaiting`), warning/critical attention, or `highestPriorityScore >= priorityScoreThreshold`. Pure readiness warnings, such as catalog source types with no tracked sources, are ignored by default and only alert when `includeReadinessWarnings: true`.
 
 ### `GET /api/notifications/diagnostics`
 

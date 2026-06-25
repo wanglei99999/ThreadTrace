@@ -305,6 +305,12 @@ function bindForms() {
       await synthesizeSourceAttentionEventsFromButton(button, execute);
       return;
     }
+    if (button.dataset.action === 'synthesize-source-type-operations-events') {
+      const execute = button.dataset.execute === 'true';
+      if (execute && !window.confirm('Create notification events from current source type operations?')) return;
+      await synthesizeSourceTypeOperationsEventsFromButton(button, execute);
+      return;
+    }
     if (button.dataset.action === 'reset-source-failure') {
       const execute = button.dataset.execute === 'true';
       if (execute && !window.confirm('Reset this source failure state and retry now?')) return;
@@ -1173,6 +1179,22 @@ async function synthesizeSourceAttentionEventsFromButton(button, execute) {
       priorityScoreThreshold: Number(button.dataset.priorityScoreThreshold) || 70
     });
   }, renderSourceAttentionNotificationEventResult);
+  await loadSystemStatus();
+  await loadSourceOperations();
+  await loadEvents();
+}
+
+async function synthesizeSourceTypeOperationsEventsFromButton(button, execute) {
+  await renderAsync('sourceOperationActionResult', function () {
+    return requestJson('/api/operations/source-type-operations/events', {
+      execute,
+      limit: Number(button.dataset.limit) || 100,
+      sourceTypeLimit: Number(button.dataset.sourceTypeLimit) || 100,
+      attentionLimit: Number(button.dataset.attentionLimit) || 100,
+      priorityScoreThreshold: Number(button.dataset.priorityScoreThreshold) || 70,
+      includeReadinessWarnings: button.dataset.includeReadinessWarnings === 'true'
+    });
+  }, renderSourceTypeOperationsNotificationEventResult);
   await loadSystemStatus();
   await loadSourceOperations();
   await loadEvents();
@@ -2619,6 +2641,7 @@ function renderSourceOperations(result) {
   const alertableCount = countAlertableRunbookActions(actions);
   const attentionItems = attention.sources || buildSourceAttention(result);
   const sourceAttentionAlertableCount = countAlertableSourceAttention(attentionItems);
+  const sourceTypeOperationsAlertableCount = countAlertableSourceTypeOperations(sourceTypeOperations.sourceTypes || []);
   const panels = [
     panel('Source operations', [
       '<div class="summary-strip">',
@@ -2637,7 +2660,8 @@ function renderSourceOperations(result) {
       renderReasonTags(scheduleSummary.byReason),
       '</div>',
       renderRunbookEventControls(alertableCount),
-      renderSourceAttentionEventControls(sourceAttentionAlertableCount)
+      renderSourceAttentionEventControls(sourceAttentionAlertableCount),
+      renderSourceTypeOperationsEventControls(sourceTypeOperationsAlertableCount)
     ].join(''), 'wide'),
     panel('Source attention', renderSourceAttentionRows(attentionItems), 'wide'),
     panel('Source type operations', renderSourceTypeOperations(sourceTypeOperations), 'wide'),
@@ -3159,6 +3183,18 @@ function renderSourceAttentionEventControls(alertableCount) {
     '</span></div>';
 }
 
+function renderSourceTypeOperationsEventControls(alertableCount) {
+  const disabled = alertableCount > 0 ? '' : ' disabled';
+  return '<div class="action-row ops-row"><span>' +
+    '<strong>Source type operations alerts</strong>' +
+    '<small>' + escapeHtml('alertable=' + alertableCount + ' | threshold=70') + '</small>' +
+    '</span>' +
+    '<span class="button-group source-op-buttons">' +
+    '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-source-type-operations-events" data-execute="false" data-limit="100" data-source-type-limit="100" data-attention-limit="100" data-priority-score-threshold="70">Type check</button>' +
+    '<button class="inline-button warning-inline-button" type="button" data-action="synthesize-source-type-operations-events" data-execute="true" data-limit="100" data-source-type-limit="100" data-attention-limit="100" data-priority-score-threshold="70"' + disabled + '>Create alerts</button>' +
+    '</span></div>';
+}
+
 function countAlertableRunbookActions(actions) {
   return (actions || []).filter(function (action) {
     return action.severity === 'critical' || action.severity === 'warning';
@@ -3168,6 +3204,20 @@ function countAlertableRunbookActions(actions) {
 function countAlertableSourceAttention(items) {
   return (items || []).filter(function (item) {
     return item.severity === 'critical' || item.severity === 'warning' || item.severity === 'warn' || (item.priorityScore || 0) >= 70;
+  }).length;
+}
+
+function countAlertableSourceTypeOperations(sourceTypes) {
+  return (sourceTypes || []).filter(function (sourceType) {
+    const lifecycle = sourceType.lifecycle || {};
+    const attention = sourceType.attention || {};
+    return sourceType.status === 'fail' ||
+      (attention.critical || 0) > 0 ||
+      (attention.warning || 0) > 0 ||
+      (attention.highestPriorityScore || 0) >= 70 ||
+      (lifecycle.disableBlocked || 0) > 0 ||
+      (lifecycle.staleRunning || 0) > 0 ||
+      (lifecycle.failureRetryWaiting || 0) > 0;
   }).length;
 }
 
@@ -3393,6 +3443,29 @@ function renderSourceAttentionNotificationEventResult(result) {
       const source = event.payload && event.payload.source || {};
       const reason = item.reason ? ' / ' + item.reason : '';
       return item.status + ' | ' + (item.attentionKey || source.id || source.sourceKey || 'unknown-source') + ' | ' + (event.id || 'no-event') + ' | ' + (event.severity || 'unknown') + reason;
+    }))
+  ].join(''), 'wide');
+}
+
+function renderSourceTypeOperationsNotificationEventResult(result) {
+  const items = result.results || [];
+  return panel('Source type operations notification events', [
+    metric('Status', result.status || 'unknown'),
+    metric('Mode', result.dryRun ? 'dry-run' : 'execute'),
+    metric('Source types', result.sourceTypeCount || 0),
+    metric('Threshold', result.priorityScoreThreshold || 0),
+    metric('Readiness warnings', result.includeReadinessWarnings ? 'included' : 'ignored'),
+    metric('Events', result.eventCount || 0),
+    metric('Created', result.createdCount || 0),
+    metric('Updated', result.updatedCount || 0),
+    metric('Resolved', result.resolvedCount || 0),
+    metric('Reopened', result.reopenedCount || 0),
+    metric('Skipped', result.skippedCount || 0),
+    evidenceList(items.map(function (item) {
+      const event = item.event || {};
+      const sourceType = item.sourceType || event.payload && event.payload.sourceType || 'unknown-source-type';
+      const reason = item.reason ? ' / ' + item.reason : '';
+      return item.status + ' | ' + sourceType + ' | ' + (event.id || 'no-event') + ' | ' + (event.severity || 'unknown') + reason;
     }))
   ].join(''), 'wide');
 }

@@ -189,7 +189,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /renderSourceAttentionRows/);
     assert.match(webAppJs, /operations\/source-attention/);
     assert.match(webAppJs, /operations\/source-type-operations/);
+    assert.match(webAppJs, /operations\/source-type-operations\/events/);
     assert.match(webAppJs, /synthesize-runbook-events/);
+    assert.match(webAppJs, /synthesize-source-type-operations-events/);
     assert.match(webAppJs, /synthesize-author-review-queue-events/);
     assert.match(webAppJs, /operations\/runbook\/events/);
     assert.match(webAppJs, /operations\/readiness/);
@@ -270,6 +272,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.paths['/api/operations/source-type-operations'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceTypeOperationsReport');
     assert.equal(openApi.paths['/api/operations/source-type-operations'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/SourceTypeOperationsReport');
     assert.equal(openApi.paths['/api/operations/source-attention/events'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceAttentionNotificationEventSynthesisResult');
+    assert.equal(openApi.paths['/api/operations/source-type-operations/events'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceTypeOperationsNotificationEventSynthesisResult');
     assert.equal(openApi.paths['/api/events/synthesis-policy'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/NotificationSynthesisPolicyReport');
     assert.equal(openApi.components.schemas.NotificationSynthesisPolicyReport.properties.eventTypes.items.$ref, '#/components/schemas/NotificationSynthesisPolicyEventType');
     assert.equal(openApi.components.schemas.NotificationSynthesisPolicyEventType.properties.alertRules.items.$ref, '#/components/schemas/NotificationSynthesisPolicyRule');
@@ -287,6 +290,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.components.schemas.SourceAttentionNotificationEventSynthesisResult.properties.results.items.$ref, '#/components/schemas/SourceAttentionNotificationEventSynthesisItem');
     assert.equal(openApi.components.schemas.SourceAttentionNotificationEventSynthesisItem.properties.event.$ref, '#/components/schemas/NotificationEvent');
     assert.ok(openApi.components.schemas.NotificationEvent.properties.type.enum.includes('source-attention'));
+    assert.equal(openApi.components.schemas.SourceTypeOperationsNotificationEventSynthesisResult.properties.results.items.$ref, '#/components/schemas/SourceTypeOperationsNotificationEventSynthesisItem');
+    assert.equal(openApi.components.schemas.SourceTypeOperationsNotificationEventSynthesisItem.properties.event.$ref, '#/components/schemas/NotificationEvent');
+    assert.ok(openApi.components.schemas.NotificationEvent.properties.type.enum.includes('source-type-operations'));
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.scope.$ref, '#/components/schemas/SourceScope');
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.attention.properties.signals.items.$ref, '#/components/schemas/SourceAttentionSignal');
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.attention.properties.reportSummary.$ref, '#/components/schemas/SourceAttentionSummary');
@@ -1099,6 +1105,80 @@ test('http server synthesizes source attention notification events', async funct
     assert.equal(calls[0].execute, true);
     assert.equal(calls[0].priorityScoreThreshold, 80);
     assert.equal(calls[0].attentionLimit, 5);
+    assert.equal(calls[0].limit, 10);
+    assert.equal(calls[0].resolveStale, true);
+  } finally {
+    await close(server);
+  }
+});
+
+test('http server synthesizes source type operations notification events', async function () {
+  const calls = [];
+  const server = createThreadTraceServer({
+    runtime: {
+      listAdapters() {
+        return [{ sourceKey: 'nga', displayName: 'NGA' }];
+      },
+      async synthesizeSourceTypeOperationsNotificationEvents(request) {
+        calls.push(request);
+        return {
+          generatedAt: request.now || '2026-06-25T10:00:00.000Z',
+          status: 'ok',
+          dryRun: request.execute !== true,
+          executed: request.execute === true,
+          sourceTypeCount: 1,
+          actionCount: 1,
+          eventCount: 1,
+          createdCount: request.execute === true ? 1 : 0,
+          updatedCount: 0,
+          resolvedCount: 0,
+          reopenedCount: 0,
+          skippedCount: 0,
+          priorityScoreThreshold: request.priorityScoreThreshold,
+          includeReadinessWarnings: request.includeReadinessWarnings,
+          results: [
+            {
+              status: 'created',
+              sourceType: request.sourceType,
+              event: {
+                id: 'source-type-operations-1',
+                type: 'source-type-operations',
+                severity: 'warning',
+                payload: {
+                  sourceType: request.sourceType
+                }
+              }
+            }
+          ]
+        };
+      }
+    }
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const result = await postJson(baseUrl + '/api/operations/source-type-operations/events', {
+      sourceType: 'thread-url',
+      execute: true,
+      priorityScoreThreshold: 80,
+      includeReadinessWarnings: true,
+      attentionLimit: 5,
+      sourceTypeLimit: 3,
+      limit: 10,
+      resolveStale: true,
+      now: '2026-06-25T10:00:00.000Z'
+    });
+
+    assert.equal(result.executed, true);
+    assert.equal(result.results[0].event.type, 'source-type-operations');
+    assert.equal(calls[0].sourceType, 'thread-url');
+    assert.equal(calls[0].execute, true);
+    assert.equal(calls[0].priorityScoreThreshold, 80);
+    assert.equal(calls[0].includeReadinessWarnings, true);
+    assert.equal(calls[0].attentionLimit, 5);
+    assert.equal(calls[0].sourceTypeLimit, 3);
     assert.equal(calls[0].limit, 10);
     assert.equal(calls[0].resolveStale, true);
   } finally {

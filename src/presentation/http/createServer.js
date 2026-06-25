@@ -750,6 +750,39 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/operations/source-type-operations/events') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.synthesizeSourceTypeOperationsNotificationEvents({
+      forum: body.forum,
+      sourceKey: body.sourceKey,
+      sourceType: body.sourceType,
+      enabled: body.enabled,
+      execute: body.execute === true || body.dryRun === false,
+      limit: body.limit,
+      sourceTypeLimit: body.sourceTypeLimit,
+      attentionLimit: body.attentionLimit,
+      staleLimit: body.staleLimit,
+      resolveStale: body.resolveStale,
+      priorityScoreThreshold: body.priorityScoreThreshold,
+      includeReadinessWarnings: body.includeReadinessWarnings === true,
+      pipelineLimit: body.pipelineLimit,
+      eventLimit: body.eventLimit,
+      taskLimit: body.taskLimit,
+      maxAttempts: body.maxAttempts,
+      modulePath: body.modulePath || body.connectorModulePath,
+      sourceRunStaleAfterMs: body.sourceRunStaleAfterMs,
+      sourceFailureRetryBackoffMs: body.sourceFailureRetryBackoffMs,
+      sourceFailureMaxRetryBackoffMs: body.sourceFailureMaxRetryBackoffMs,
+      runningStaleAfterMs: body.runningStaleAfterMs,
+      workerStaleAfterMs: body.workerStaleAfterMs,
+      includeSourceTypeOperations: body.includeSourceTypeOperations === true,
+      now: body.now,
+      storeDir: body.storeDir || context.storeDir
+    });
+    writeJson(response, 200, result);
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/context-review-results/events') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     const result = await context.runtime.synthesizeContextReviewResultNotificationEvents({

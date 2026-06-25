@@ -34,6 +34,7 @@ const { synthesizeRunbookNotificationEvents } = require('../application/use-case
 const { synthesizeContextReviewResultNotificationEvents } = require('../application/use-cases/synthesizeContextReviewResultNotificationEvents');
 const { synthesizeAuthorReviewQueueNotificationEvents } = require('../application/use-cases/synthesizeAuthorReviewQueueNotificationEvents');
 const { synthesizeSourceAttentionNotificationEvents } = require('../application/use-cases/synthesizeSourceAttentionNotificationEvents');
+const { synthesizeSourceTypeOperationsNotificationEvents } = require('../application/use-cases/synthesizeSourceTypeOperationsNotificationEvents');
 const { getNotificationSynthesisPolicyReport } = require('../application/use-cases/notificationSynthesisPolicy');
 const { fetchAndStoreThreadPage } = require('../application/use-cases/fetchAndStoreThreadPage');
 const { enrichAnalysisReportWithLlm } = require('../application/use-cases/enrichAnalysisReportWithLlm');
@@ -2023,6 +2024,47 @@ function createThreadTraceRuntime(options) {
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
         now: safeRequest.now,
         includeSourceAttention: safeRequest.includeSourceAttention
+      });
+    },
+
+    async synthesizeSourceTypeOperationsNotificationEvents(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      const runtime = this;
+      return synthesizeSourceTypeOperationsNotificationEvents({
+        notificationEventRepository: repositories.notificationEventRepository,
+        getSourceTypeOperationsReport(sourceTypeOperationsRequest) {
+          return runtime.getSourceTypeOperationsReport(Object.assign({}, sourceTypeOperationsRequest, {
+            forum: safeRequest.forum,
+            sourceKey: safeRequest.sourceKey,
+            sourceType: safeRequest.sourceType,
+            enabled: safeRequest.enabled,
+            limit: safeRequest.limit || 100,
+            sourceTypeLimit: safeRequest.sourceTypeLimit,
+            attentionLimit: safeRequest.attentionLimit,
+            taskLimit: safeRequest.taskLimit,
+            pipelineLimit: safeRequest.pipelineLimit,
+            eventLimit: safeRequest.eventLimit,
+            maxAttempts: safeRequest.maxAttempts,
+            sourceRunStaleAfterMs: safeRequest.sourceRunStaleAfterMs,
+            sourceFailureRetryBackoffMs: safeRequest.sourceFailureRetryBackoffMs,
+            sourceFailureMaxRetryBackoffMs: safeRequest.sourceFailureMaxRetryBackoffMs,
+            runningStaleAfterMs: safeRequest.runningStaleAfterMs,
+            workerStaleAfterMs: safeRequest.workerStaleAfterMs,
+            modulePath: safeRequest.modulePath || safeRequest.connectorModulePath,
+            now: safeRequest.now,
+            storeDir: safeRequest.storeDir
+          }));
+        },
+        execute: safeRequest.execute,
+        limit: safeRequest.limit,
+        staleLimit: safeRequest.staleLimit,
+        resolveStale: safeRequest.resolveStale,
+        priorityScoreThreshold: safeRequest.priorityScoreThreshold,
+        includeReadinessWarnings: safeRequest.includeReadinessWarnings,
+        sourceType: safeRequest.sourceType,
+        now: safeRequest.now,
+        includeSourceTypeOperations: safeRequest.includeSourceTypeOperations
       });
     },
 
