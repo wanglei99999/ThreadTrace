@@ -58,6 +58,7 @@ New connector modules should prefer the lightweight SDK helpers in `src/connecto
 const path = require('path');
 const {
   defineConnectorModule,
+  defineNormalizedThreadJsonHandler,
   defineSourceIngestHandler,
   defineLocationSchema
 } = require(path.join(process.env.THREADTRACE_ROOT || process.cwd(), 'src/connectors/connectorSdk'));
@@ -84,6 +85,25 @@ module.exports = defineConnectorModule({
 ```
 
 The SDK validates required metadata at module authoring time and normalizes `locationSchema`, `capabilities`, and adapter requirements. Bare object modules remain supported for compatibility.
+
+When an upstream collector already emits ThreadTrace's canonical `ThreadSnapshot` JSON, use `defineNormalizedThreadJsonHandler` instead of re-implementing the ingest boilerplate:
+
+```js
+module.exports = defineConnectorModule({
+  sourceIngestHandlers: [
+    defineNormalizedThreadJsonHandler({
+      sourceType: 'external-normalized-feed',
+      description: 'Ingest normalized snapshots from an external collector.',
+      inputFileField: 'inputFile',
+      capabilities: {
+        externalCollector: true
+      }
+    })
+  ]
+});
+```
+
+The factory creates a no-adapter handler, requires the configured input file location field, marks the handler as accepting canonical snapshots, and reuses ThreadTrace's standard normalized JSON ingest task.
 
 Fetch the machine-readable connector module contract before implementing a custom package:
 

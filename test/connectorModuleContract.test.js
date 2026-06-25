@@ -15,6 +15,7 @@ test('connector module contract exposes runtime extension shapes', function () {
   assert.ok(contract.exports.objectShape.optional.includes('register'));
   assert.ok(contract.context.registerSourceIngestHandler);
   assert.ok(contract.sdk.helpers.includes('defineConnectorModule(options)'));
+  assert.ok(contract.sdk.helpers.includes('defineNormalizedThreadJsonHandler(options)'));
   assert.deepEqual(contract.forumAdapter.required, ['sourceKey', 'displayName', 'parseSavedHtml']);
   assert.ok(contract.sourceIngestHandler.required.includes('sourceType'));
   assert.ok(contract.validation.requiredChecks.includes('connectorModule.handlerContracts'));

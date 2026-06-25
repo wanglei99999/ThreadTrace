@@ -4,7 +4,7 @@ This directory is a package-style connector template for future forums, channels
 
 ## Files
 
-- `index.cjs`: connector module entrypoint. It uses `register(context)`, the `src/connectors/connectorSdk` helpers, and registers one `SourceIngestHandler`.
+- `index.cjs`: connector module entrypoint. It uses `register(context)`, the `src/connectors/connectorSdk` helpers, and registers one canonical JSON `SourceIngestHandler`.
 - `package.json`: package metadata and local validation scripts.
 - `sample-location.json`: source `location` payload for onboarding preflight or rollout manifests.
 - `../external-thread.sample.json`: canonical sample thread payload used by the dry-run command.
@@ -68,4 +68,4 @@ When the package is copied outside this repository, set `THREADTRACE_ROOT` if th
 $env:THREADTRACE_ROOT="D:\Coding\GitCoding\ThreadTrace"
 ```
 
-Longer term, external packages should depend on a published ThreadTrace SDK package instead of importing source files directly. Until then, `src/connectors/connectorSdk` is the local authoring surface for connector definitions, and this template keeps the package boundary explicit while staying executable in the repository test suite.
+Longer term, external packages should depend on a published ThreadTrace SDK package instead of importing source files directly. Until then, `src/connectors/connectorSdk` is the local authoring surface for connector definitions, including `defineNormalizedThreadJsonHandler` for collectors that already emit canonical snapshots. This template keeps the package boundary explicit while staying executable in the repository test suite.

@@ -33,6 +33,7 @@ function getConnectorModuleContract() {
       helpers: [
         'defineConnectorModule(options)',
         'defineSourceIngestHandler(options)',
+        'defineNormalizedThreadJsonHandler(options)',
         'defineForumAdapter(options)',
         'defineLocationSchema(options)'
       ],
@@ -82,17 +83,13 @@ function getConnectorModuleContract() {
       "'use strict';",
       "const path = require('path');",
       "const threadTraceRoot = process.env.THREADTRACE_ROOT || process.cwd();",
-      "const { defineConnectorModule, defineSourceIngestHandler, defineLocationSchema } = require(path.join(threadTraceRoot, 'src/connectors/connectorSdk'));",
+      "const { defineConnectorModule, defineNormalizedThreadJsonHandler } = require(path.join(threadTraceRoot, 'src/connectors/connectorSdk'));",
       'module.exports = defineConnectorModule({',
-      '  sourceIngestHandlers: [defineSourceIngestHandler({',
+      '  sourceIngestHandlers: [defineNormalizedThreadJsonHandler({',
       "    sourceType: 'external-feed',",
-      '    requiresAdapter: false,',
       "    description: 'Ingest an external feed into ThreadTrace.',",
-      "    locationSchema: defineLocationSchema({ required: ['feedUrl'], properties: { feedUrl: { type: 'string', format: 'uri' } } }),",
-      '    capabilities: { fetchesRemote: true },',
-      '    async run(context) {',
-      "      throw new Error('implement ingestion here');",
-      '    }',
+      "    inputFileField: 'threadSnapshotFile'",
+      "    capabilities: { acceptsCanonicalSnapshot: true }",
       '  })]',
       '});'
     ].join('\n')

@@ -8,6 +8,7 @@ const {
   defineConnectorModule,
   defineForumAdapter,
   defineLocationSchema,
+  defineNormalizedThreadJsonHandler,
   defineSourceIngestHandler
 } = require('../src/connectors/connectorSdk');
 const { createThreadTraceRuntime } = require('../src/runtime/threadTraceRuntime');
@@ -77,6 +78,53 @@ test('connector sdk fails fast on incomplete connector definitions', function ()
       properties: {}
     });
   }, /required/);
+});
+
+test('connector sdk creates canonical thread json handlers', async function () {
+  const tempDir = await makeWorkspaceTempDir('threadtrace-connector-sdk-json-');
+  const inputFile = path.resolve(__dirname, '..', 'docs', 'examples', 'external-thread.sample.json');
+  const modulePath = path.join(tempDir, 'jsonConnector.cjs');
+  const sdkPath = path.resolve(__dirname, '..', 'src', 'connectors', 'connectorSdk.js');
+  await fs.writeFile(modulePath, [
+    "'use strict';",
+    "const { defineConnectorModule, defineNormalizedThreadJsonHandler } = require(" + JSON.stringify(sdkPath) + ");",
+    "module.exports = defineConnectorModule({",
+    "  sourceIngestHandlers: [defineNormalizedThreadJsonHandler({",
+    "    sourceType: 'sdk-json-feed',",
+    "    description: 'SDK JSON feed.',",
+    "    capabilities: { sdkJsonFactory: true }",
+    "  })]",
+    "});",
+    ""
+  ].join('\n'), 'utf8');
+
+  const runtime = createThreadTraceRuntime({
+    storeDir: path.join(tempDir, 'store')
+  });
+  const validation = runtime.validateConnectorModule({
+    modulePath,
+    now: '2026-06-25T10:00:00.000Z'
+  });
+  const dryRun = await runtime.dryRunSourceIngest({
+    modulePath,
+    forum: 'sdk-json',
+    sourceType: 'sdk-json-feed',
+    displayName: 'SDK JSON feed',
+    inputFile,
+    now: '2026-06-25T10:00:00.000Z'
+  });
+  const handler = defineNormalizedThreadJsonHandler({
+    sourceType: 'local-json-feed',
+    description: 'Local JSON feed.',
+    requiredLocationFields: ['sourceLabel']
+  });
+
+  assert.equal(validation.valid, true);
+  assert.equal(validation.contractSummary.sourceIngestHandlers[0].capabilities.acceptsCanonicalSnapshot, true);
+  assert.equal(validation.contractSummary.sourceIngestHandlers[0].capabilities.sdkJsonFactory, true);
+  assert.equal(dryRun.status, 'ok');
+  assert.equal(dryRun.thread.sourceThreadId, 'external-thread-1');
+  assert.deepEqual(handler.locationSchema.required, ['inputFile', 'sourceLabel']);
 });
 
 test('runtime validates connector modules authored with connector sdk', async function () {

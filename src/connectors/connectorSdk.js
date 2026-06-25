@@ -1,5 +1,10 @@
 'use strict';
 
+const { assertAnalysisReportRepository } = require('../application/ports/analysisReportRepository');
+const { assertTaskRepository } = require('../application/ports/taskRepository');
+const { assertThreadRepository } = require('../application/ports/threadRepository');
+const { runIngestNormalizedThreadJsonTask } = require('../application/use-cases/runIngestNormalizedThreadJsonTask');
+
 function defineConnectorModule(options) {
   const safeOptions = options || {};
   const moduleDefinition = {};
@@ -35,6 +40,48 @@ function defineSourceIngestHandler(options) {
     requiresAdapter: safeOptions.requiresAdapter !== false,
     locationSchema: defineLocationSchema(safeOptions.locationSchema),
     capabilities: Object.assign({}, safeOptions.capabilities || {})
+  });
+}
+
+function defineNormalizedThreadJsonHandler(options) {
+  const safeOptions = options || {};
+  const inputFileField = safeOptions.inputFileField || 'inputFile';
+  assertNonEmptyString(inputFileField, 'NormalizedThreadJsonHandler inputFileField');
+  const properties = Object.assign({}, safeOptions.locationProperties || {});
+  properties[inputFileField] = properties[inputFileField] || {
+    type: 'string',
+    format: 'path',
+    description: 'Path to a canonical ThreadTrace ThreadSnapshot JSON file.'
+  };
+
+  return defineSourceIngestHandler({
+    sourceType: safeOptions.sourceType,
+    requiresAdapter: false,
+    description: safeOptions.description,
+    locationSchema: defineLocationSchema({
+      required: unique([inputFileField].concat(safeOptions.requiredLocationFields || [])),
+      properties
+    }),
+    capabilities: Object.assign({
+      readsLocalFiles: true,
+      fetchesRemote: false,
+      acceptsCanonicalSnapshot: true
+    }, safeOptions.capabilities || {}),
+    async run(context) {
+      const source = context.source || {};
+      const location = source.location || {};
+      return runIngestNormalizedThreadJsonTask({
+        sourceKey: source.sourceKey,
+        source,
+        inputFile: location[inputFileField],
+        threadRepository: assertThreadRepository(context.threadRepository),
+        reportRepository: assertAnalysisReportRepository(context.reportRepository),
+        taskRepository: assertTaskRepository(context.taskRepository),
+        requestId: context.requestId,
+        traceId: context.traceId,
+        idempotencyKey: context.idempotencyKey
+      });
+    }
   });
 }
 
@@ -92,9 +139,19 @@ function isPlainObject(value) {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
+function unique(items) {
+  const seen = new Set();
+  return (items || []).filter(function (item) {
+    if (seen.has(item)) return false;
+    seen.add(item);
+    return true;
+  });
+}
+
 module.exports = {
   defineConnectorModule,
   defineSourceIngestHandler,
+  defineNormalizedThreadJsonHandler,
   defineForumAdapter,
   defineLocationSchema
 };
