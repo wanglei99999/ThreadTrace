@@ -666,6 +666,61 @@ function main(argv) {
     return;
   }
 
+  if (command === 'source-cockpit-action-plan') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.getSourceOperationsCockpitActionPlan({
+      rank: options.rank ? Number(options.rank) : undefined,
+      itemId: options.itemId,
+      provider: options.provider || 'mock',
+      forum: options.forum,
+      sourceKey: options.sourceKey,
+      sourceId: options.sourceId,
+      sourceType: options.sourceType,
+      enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
+      limit: options.limit ? Number(options.limit) : 100,
+      cockpitLimit: options.cockpitLimit ? Number(options.cockpitLimit) : undefined,
+      attentionLimit: options.attentionLimit ? Number(options.attentionLimit) : undefined,
+      sourceTypeLimit: options.sourceTypeLimit ? Number(options.sourceTypeLimit) : undefined,
+      pipelineLimit: options.pipelineLimit ? Number(options.pipelineLimit) : undefined,
+      eventLimit: options.eventLimit ? Number(options.eventLimit) : undefined,
+      taskLimit: options.taskLimit ? Number(options.taskLimit) : undefined,
+      maxAttempts: options.maxAttempts ? Number(options.maxAttempts) : undefined,
+      sourceRunStaleAfterMs: options.sourceRunStaleAfterMs ? Number(options.sourceRunStaleAfterMs) : undefined,
+      sourceFailureRetryBackoffMs: options.sourceFailureRetryBackoffMs ? Number(options.sourceFailureRetryBackoffMs) : undefined,
+      sourceFailureMaxRetryBackoffMs: options.sourceFailureMaxRetryBackoffMs ? Number(options.sourceFailureMaxRetryBackoffMs) : undefined,
+      runningStaleAfterMs: options.runningStaleAfterMs ? Number(options.runningStaleAfterMs) : undefined,
+      workerStaleAfterMs: options.workerStaleAfterMs ? Number(options.workerStaleAfterMs) : undefined,
+      modulePath: options.modulePath,
+      now: options.now,
+      storeDir
+    }).then(function (plan) {
+      if (isTruthyOption(options.json)) {
+        console.log(JSON.stringify(plan, null, 2));
+        return;
+      }
+      const item = plan.selectedItem || {};
+      const summary = plan.summary || {};
+      console.log('Source cockpit action plan: ' + plan.status);
+      console.log('Selected: #' + (item.rank || '?') + '\t' + (item.kind || 'unknown') + '\t' + (item.title || item.id || 'unknown'));
+      console.log('Actions: total=' + (summary.actionCount || 0) + ', view=' + (summary.viewCount || 0) + ', dryRun=' + (summary.dryRunCount || 0) + ', execute=' + (summary.executeCount || 0) + ', destructive=' + (summary.destructiveCount || 0));
+      console.log('Next: ' + (plan.recommendedNextAction || 'none'));
+      (plan.actions || []).forEach(function (action) {
+        const api = action.api || {};
+        console.log((action.mode || 'manual') + '\t' + (action.key || 'unknown') + '\t' + (action.label || 'Action'));
+        if (action.summary) console.log('  summary: ' + action.summary);
+        if (api.method && api.path) console.log('  api: ' + api.method + ' ' + api.path);
+        if (action.command) console.log('  command: ' + action.command);
+        if (action.destructive || action.confirmationRequired) {
+          console.log('  safety: destructive=' + Boolean(action.destructive) + ', confirmation=' + Boolean(action.confirmationRequired));
+        }
+      });
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = error && error.statusCode === 404 ? 2 : 1;
+    });
+    return;
+  }
+
   if (command === 'source-type-drilldown') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.getSourceTypeOperationsDrilldown({
@@ -3376,6 +3431,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js source-schedule-report [--forum nga] [--source-type type] [--enabled true] [--collection-status due,retry-waiting] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-attention-report [--forum nga] [--source-key key] [--source-id id] [--source-failure-retry-backoff-ms ms] [--running-stale-after-ms ms] [--json true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-type-operations-report [--forum nga] [--source-type type] [--module-path file] [--json true] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js source-cockpit-action-plan [--rank 1 | --item-id id] [--source-key key] [--source-type type] [--provider mock] [--json true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-drilldown [--source-id id | --source-key key] [--json true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js run-demo-cycle [--source-id id] [--source-key key] [--provider mock] [--acknowledge-events true] [--execute-acknowledgement true] [--json true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-type-drilldown --source-type type [--forum nga] [--json true] [--store-dir dir] [--limit n]');

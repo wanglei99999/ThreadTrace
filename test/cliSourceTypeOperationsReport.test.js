@@ -40,6 +40,61 @@ test('CLI prints source type operations report as JSON', async function () {
   });
 });
 
+test('CLI prints source cockpit action plan as JSON', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-cli-source-cockpit-plan-json-'));
+  const root = path.resolve(__dirname, '..');
+  const scriptPath = path.join(root, 'src', 'presentation', 'cli', 'threadtrace.js');
+
+  const result = await execFileAsync(process.execPath, [
+    scriptPath,
+    'source-cockpit-action-plan',
+    '--store-dir',
+    tempDir,
+    '--rank',
+    '1',
+    '--json',
+    'true',
+    '--now',
+    '2026-06-25T10:00:00.000Z'
+  ], {
+    cwd: root,
+    timeout: 20000
+  });
+
+  const plan = JSON.parse(result.stdout);
+  assert.equal(plan.status, 'actionable');
+  assert.equal(plan.selectedItem.rank, 1);
+  assert.ok(plan.actions.length > 0);
+  assert.ok(plan.actions[0].api || plan.actions[0].command);
+  assert.equal(result.stderr, '');
+});
+
+test('CLI prints source cockpit action plan summary', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-cli-source-cockpit-plan-'));
+  const root = path.resolve(__dirname, '..');
+  const scriptPath = path.join(root, 'src', 'presentation', 'cli', 'threadtrace.js');
+
+  const result = await execFileAsync(process.execPath, [
+    scriptPath,
+    'source-cockpit-action-plan',
+    '--store-dir',
+    tempDir,
+    '--rank',
+    '1',
+    '--now',
+    '2026-06-25T10:00:00.000Z'
+  ], {
+    cwd: root,
+    timeout: 20000
+  });
+
+  assert.match(result.stdout, /Source cockpit action plan: actionable/);
+  assert.match(result.stdout, /Selected: #1/);
+  assert.match(result.stdout, /Actions: total=/);
+  assert.match(result.stdout, /\n  api: |\n  command: /);
+  assert.equal(result.stderr, '');
+});
+
 test('CLI can dry-run source type operations notification synthesis', async function () {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-cli-source-type-operations-events-'));
   const root = path.resolve(__dirname, '..');
