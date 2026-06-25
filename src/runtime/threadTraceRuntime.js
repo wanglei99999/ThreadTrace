@@ -31,6 +31,7 @@ const { acknowledgeNotificationEvents } = require('../application/use-cases/ackn
 const { archiveNotificationEvents } = require('../application/use-cases/archiveNotificationEvents');
 const { dispatchPendingNotificationEvents } = require('../application/use-cases/dispatchPendingNotificationEvents');
 const { getNotificationEventDetail } = require('../application/use-cases/getNotificationEventDetail');
+const { prepareNotificationEventActionIntent } = require('../application/use-cases/prepareNotificationEventActionIntent');
 const { synthesizeRunbookNotificationEvents } = require('../application/use-cases/synthesizeRunbookNotificationEvents');
 const { synthesizeContextReviewResultNotificationEvents } = require('../application/use-cases/synthesizeContextReviewResultNotificationEvents');
 const { synthesizeAuthorReviewQueueNotificationEvents } = require('../application/use-cases/synthesizeAuthorReviewQueueNotificationEvents');
@@ -2058,6 +2059,22 @@ function createThreadTraceRuntime(options) {
         notificationEventRepository: repositories.notificationEventRepository,
         taskRepository: repositories.taskRepository,
         eventId: safeRequest.eventId,
+        now: safeRequest.now
+      });
+    },
+
+    async prepareNotificationEventActionIntent(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return prepareNotificationEventActionIntent({
+        notificationEventRepository: repositories.notificationEventRepository,
+        taskRepository: repositories.taskRepository,
+        eventId: safeRequest.eventId,
+        actionKey: safeRequest.actionKey,
+        actor: safeRequest.actor,
+        requestedBy: safeRequest.requestedBy,
+        reason: safeRequest.reason,
+        note: safeRequest.note,
         now: safeRequest.now
       });
     },

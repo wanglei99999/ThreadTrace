@@ -396,6 +396,10 @@ function bindForms() {
       await loadSourceOperationsDrilldownFromButton(button);
       return;
     }
+    if (button.dataset.action === 'prepare-event-action-intent') {
+      await prepareEventActionIntentFromButton(button);
+      return;
+    }
     if (button.dataset.action !== 'ack-event') return;
     await renderAsync('eventResult', function () {
       return requestJson('/api/events/' + encodeURIComponent(button.dataset.eventId) + '/ack', {
@@ -1512,6 +1516,24 @@ async function loadEventDetailFromButton(button) {
       acceptErrorStatus: true
     });
   }, renderNotificationEventDetail);
+}
+
+async function prepareEventActionIntentFromButton(button) {
+  const eventId = button.dataset.eventId;
+  const actionKey = button.dataset.actionKey;
+  if (!eventId || !actionKey) {
+    renderError('eventResult', new Error('Event id and action key are required for action dry-run.'));
+    return;
+  }
+  await renderAsync('eventResult', function () {
+    return requestJson('/api/events/' + encodeURIComponent(eventId) + '/actions/intent', {
+      actionKey,
+      actor: 'web',
+      reason: 'event-detail-dry-run'
+    }, {
+      acceptErrorStatus: true
+    });
+  }, renderNotificationEventActionIntent);
 }
 
 function eventFilterFormData() {
@@ -5024,7 +5046,7 @@ function renderNotificationEventDetail(result) {
       renderNotificationEventDetailButtons(result)
     ].join(''), 'wide'),
     panel('Action readiness', renderNotificationEventActionReadiness(result.actionReadiness), 'wide'),
-    panel('Event actions', renderNotificationEventDetailActions(result.nextActions || []), 'wide'),
+    panel('Event actions', renderNotificationEventDetailActions(result.nextActions || [], event.id), 'wide'),
     panel('Event payload', '<pre>' + escapeHtml(JSON.stringify({
       title: event.title,
       summary: event.summary,
@@ -5070,17 +5092,58 @@ function renderNotificationEventDetailButtons(result) {
     '</div>';
 }
 
-function renderNotificationEventDetailActions(actions) {
+function renderNotificationEventDetailActions(actions, eventId) {
   if (!actions.length) return '<div class="muted">No recommended event actions.</div>';
   return actions.map(function (action) {
+    const intentButton = eventId && action.key
+      ? '<button class="inline-button secondary-inline-button" type="button" data-action="prepare-event-action-intent" data-event-id="' + escapeHtml(eventId) + '" data-action-key="' + escapeHtml(action.key) + '">Dry-run</button>'
+      : '';
     return '<div class="action-row ops-row"><span>' +
       '<strong>' + escapeHtml((action.severity || 'info') + ' | ' + (action.key || 'event.action')) + '</strong>' +
       '<small>' + escapeHtml(action.summary || '') + '</small>' +
       (action.command ? '<small>' + escapeHtml(action.command) + '</small>' : '') +
       '</span>' +
+      '<span class="button-group source-op-buttons">' +
+      intentButton +
       statusBadge(action.severity || 'info', action.severity === 'warning' ? 'warn' : statusVariant(action.severity)) +
+      '</span>' +
       '</div>';
   }).join('');
+}
+
+function renderNotificationEventActionIntent(result) {
+  if (result && result.error) {
+    return panel('Event action dry-run error', [
+      metric('Code', result.error.code || 'error'),
+      metric('Message', result.error.message || 'Action intent could not be prepared.')
+    ].join(''), 'wide');
+  }
+  const intent = result.intent || {};
+  const api = intent.api || {};
+  const gate = result.readinessGate || {};
+  return [
+    panel('Event action dry-run', [
+      '<div class="summary-strip event-summary-strip">' + [
+        summaryTile('Status', result.status || 'unknown', statusVariant(result.status)),
+        summaryTile('Mode', result.mode || 'dry-run', 'ok'),
+        summaryTile('Executed', result.executed ? 'yes' : 'no', result.executed ? 'warn' : 'ok'),
+        summaryTile('Action', result.action && result.action.key || 'unknown')
+      ].join('') + '</div>',
+      metric('Intent ID', intent.id || 'none'),
+      metric('Event ID', result.event && result.event.id || intent.eventId || 'none'),
+      metric('Actor', intent.actor || 'operator'),
+      metric('Reason', intent.reason || 'none'),
+      metric('API plan', [api.method, api.path].filter(Boolean).join(' ') || 'manual'),
+      metric('Command', intent.command || 'none'),
+      metric('Gate', gate.key ? gate.status + ' | ' + gate.key + ' | ' + gate.summary : 'none')
+    ].join(''), 'wide'),
+    panel('Intent evidence', '<pre>' + escapeHtml(JSON.stringify({
+      api: intent.api,
+      audit: intent.audit,
+      evidence: intent.evidence,
+      actionReadiness: result.actionReadiness
+    }, null, 2)) + '</pre>', 'wide')
+  ].join('');
 }
 
 function renderNotificationEventOverview(overview) {

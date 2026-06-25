@@ -1917,6 +1917,56 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/events/{eventId}/actions/intent': {
+        post: {
+          summary: 'Prepare a dry-run notification event action intent',
+          description: 'Returns a side-effect-free action intent for one notification event action, including target API/CLI plan, readiness gate evidence, and audit metadata for future execution.',
+          parameters: [
+            { name: 'eventId', in: 'path', required: true, schema: { type: 'string' } }
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['actionKey'],
+                  properties: {
+                    actionKey: { type: 'string', example: 'event.acknowledge' },
+                    actor: { type: 'string', example: 'operator' },
+                    requestedBy: { type: 'string', example: 'operator' },
+                    reason: { type: 'string', example: 'reviewed in web console' },
+                    note: { type: 'string' },
+                    now: { type: 'string' },
+                    storeDir: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Dry-run event action intent',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/NotificationEventActionIntentResult'
+                  }
+                }
+              }
+            },
+            400: {
+              $ref: '#/components/responses/BadRequest'
+            },
+            404: {
+              $ref: '#/components/responses/NotFound'
+            },
+            409: {
+              $ref: '#/components/responses/Conflict'
+            }
+          }
+        }
+      },
       '/api/events/overview': {
         get: {
           summary: 'Summarize notification outbox health and backlog distribution',
@@ -5298,6 +5348,53 @@ function createOpenApiSpec() {
             gates: {
               type: 'array',
               items: { $ref: '#/components/schemas/NotificationEventActionReadinessGate' }
+            }
+          }
+        },
+        NotificationEventActionIntentApiPlan: {
+          type: 'object',
+          properties: {
+            method: { type: 'string', example: 'POST' },
+            path: { type: 'string', example: '/api/events/event-id/ack' },
+            body: { type: 'object', additionalProperties: true }
+          },
+          additionalProperties: true
+        },
+        NotificationEventActionIntent: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            type: { type: 'string', example: 'notification-event-action' },
+            actionKey: { type: 'string', example: 'event.acknowledge' },
+            eventId: { type: 'string' },
+            summary: { type: 'string' },
+            command: { type: 'string' },
+            api: { $ref: '#/components/schemas/NotificationEventActionIntentApiPlan' },
+            actor: { type: 'string' },
+            reason: { type: 'string' },
+            evidence: { type: 'object', additionalProperties: true },
+            audit: { type: 'object', additionalProperties: true }
+          },
+          additionalProperties: true
+        },
+        NotificationEventActionIntentResult: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string' },
+            mode: { type: 'string', enum: ['dry-run'] },
+            dryRun: { type: 'boolean' },
+            executed: { type: 'boolean' },
+            status: { type: 'string', enum: ['ok', 'warn', 'blocked'] },
+            event: { $ref: '#/components/schemas/NotificationEventSummary' },
+            sourceScope: { $ref: '#/components/schemas/TaskSourceScope' },
+            relatedTask: { type: 'object', additionalProperties: true },
+            action: { $ref: '#/components/schemas/TaskDetailAction' },
+            readinessGate: { $ref: '#/components/schemas/NotificationEventActionReadinessGate' },
+            intent: { $ref: '#/components/schemas/NotificationEventActionIntent' },
+            actionReadiness: { $ref: '#/components/schemas/NotificationEventActionReadiness' },
+            nextActions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/TaskDetailAction' }
             }
           }
         },

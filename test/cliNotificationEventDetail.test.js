@@ -71,3 +71,57 @@ test('CLI prints notification event detail as JSON', async function () {
   }));
   assert.equal(result.stderr, '');
 });
+
+test('CLI prints notification event action intent as JSON', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-cli-event-action-intent-'));
+  const root = path.resolve(__dirname, '..');
+  const scriptPath = path.join(root, 'src', 'presentation', 'cli', 'threadtrace.js');
+
+  await fs.mkdir(path.join(tempDir, 'events'), { recursive: true });
+  await fs.writeFile(path.join(tempDir, 'events', 'event-1.json'), JSON.stringify({
+    id: 'event-1',
+    type: 'source-changed',
+    severity: 'info',
+    createdAt: '2026-06-25T09:00:00.000Z',
+    title: 'Source changed',
+    summary: 'Source cursor changed.',
+    payload: {},
+    sourceId: 'source-1',
+    sourceKey: 'nga',
+    deliveryStatus: 'pending',
+    deliveryAttempts: 0,
+    nextDeliveryAt: '2026-06-25T09:05:00.000Z'
+  }, null, 2) + '\n', 'utf8');
+
+  const result = await execFileAsync(process.execPath, [
+    scriptPath,
+    'event-action-intent',
+    '--event-id',
+    'event-1',
+    '--action-key',
+    'event.acknowledge',
+    '--by',
+    'cli-test',
+    '--reason',
+    'reviewed',
+    '--store-dir',
+    tempDir,
+    '--json',
+    'true',
+    '--now',
+    '2026-06-25T10:00:00.000Z'
+  ], {
+    cwd: root,
+    timeout: 20000
+  });
+
+  const intent = JSON.parse(result.stdout);
+  assert.equal(intent.mode, 'dry-run');
+  assert.equal(intent.dryRun, true);
+  assert.equal(intent.executed, false);
+  assert.equal(intent.action.key, 'event.acknowledge');
+  assert.equal(intent.intent.actor, 'cli-test');
+  assert.equal(intent.intent.reason, 'reviewed');
+  assert.equal(intent.intent.api.path, '/api/events/event-1/ack');
+  assert.equal(result.stderr, '');
+});

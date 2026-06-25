@@ -1354,6 +1354,35 @@ function main(argv) {
     return;
   }
 
+  if (command === 'event-action-intent') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    const eventId = options.eventId || options.id;
+    runtime.prepareNotificationEventActionIntent({
+      eventId,
+      actionKey: options.actionKey || options.action,
+      actor: options.actor || options.by,
+      reason: options.reason,
+      note: options.note,
+      now: options.now,
+      storeDir
+    }).then(function (result) {
+      if (isTruthyOption(options.json)) {
+        console.log(JSON.stringify(result, null, 2));
+        return;
+      }
+      console.log('Event action intent: ' + result.intent.id);
+      console.log('Status: ' + result.status + '\tdryRun=' + result.dryRun + '\texecuted=' + result.executed);
+      console.log('Action: ' + result.action.key);
+      console.log('API: ' + result.intent.api.method + ' ' + result.intent.api.path);
+      if (result.intent.command) console.log('Command: ' + result.intent.command);
+      if (result.readinessGate) console.log('Gate: ' + result.readinessGate.status + '\t' + result.readinessGate.key + '\t' + result.readinessGate.summary);
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'fetch-thread-page') {
     if (!options.url && !options.sourceId) {
       throw new Error('fetch-thread-page requires --url or --source-id.');
@@ -2621,6 +2650,9 @@ function parseArgs(args) {
     } else if (item === '--action') {
       options.action = args[index + 1];
       index += 1;
+    } else if (item === '--action-key') {
+      options.actionKey = args[index + 1];
+      index += 1;
     } else if (item === '--task-id') {
       options.taskId = args[index + 1];
       index += 1;
@@ -3117,6 +3149,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js migrate-store --from-store-dir dir [--to-store-dir dir] [--dry-run true|false] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js list-events [--source-key key] [--source-id id] [--type type] [--acknowledged true|false] [--delivery-status status] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js event-detail --event-id id [--json true] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js event-action-intent --event-id id --action-key event.acknowledge [--json true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js fetch-thread-page [--forum nga] [--url url | --source-id id] [--source-thread-id id] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js list-raw-pages [--forum nga] [--source-thread-id id] [--limit n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js ingest-raw-page [--forum nga] --content-sha1 sha1 [--store-dir dir]');

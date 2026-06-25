@@ -1042,6 +1042,23 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  const eventActionIntentMatch = url.pathname.match(/^\/api\/events\/([^/]+)\/actions\/intent$/);
+  if (request.method === 'POST' && eventActionIntentMatch) {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.prepareNotificationEventActionIntent({
+      eventId: decodeURIComponent(eventActionIntentMatch[1]),
+      actionKey: body.actionKey || body.action,
+      actor: body.actor,
+      requestedBy: body.requestedBy,
+      reason: body.reason,
+      note: body.note,
+      now: body.now,
+      storeDir: body.storeDir || context.storeDir
+    });
+    writeJson(response, result.status === 'blocked' ? 409 : 200, result);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/raw-pages') {
     const pages = await context.runtime.listRawThreadPages({
       forum: url.searchParams.get('forum') || undefined,

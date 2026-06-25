@@ -280,6 +280,17 @@ Returns an operator detail document for a notification outbox event.
 
 The response includes the raw `event`, derived `sourceScope`, optional `relatedTask`, stable API `links`, `actionReadiness` gates, and recommended `nextActions` such as acknowledging the event, dispatching pending or failed source-scoped events, opening source drilldown, opening task detail, or archiving handled delivered/resolved events. Use this endpoint when a Web console, runbook, or external monitor starts from one concrete event id and needs the surrounding operational context.
 
+### `POST /api/events/{eventId}/actions/intent`
+
+Builds a side-effect-free dry-run intent for one notification event action.
+
+Request body:
+- `actionKey`: required, such as `event.acknowledge`, `event.dispatch`, `event.source-drilldown`, `event.task-detail`, or `event.archive`.
+- `actor`, `requestedBy`, `reason`, `note`: optional operator/audit metadata.
+- `now`, `storeDir`: optional runtime overrides.
+
+The response includes `mode: "dry-run"`, `executed: false`, the selected `action`, its readiness gate, an `intent` with CLI/API plan and audit metadata, plus the full event `actionReadiness`. This endpoint is the reviewable handoff point before future executor-backed event actions.
+
 ### `GET /api/events/overview`
 
 Summarizes notification outbox health for dashboards and workers. Optional filters mirror `GET /api/events` and add `maxAttempts`, `now`, and `storeDir`. The response includes status, window size, pending/failed/unacknowledged/due counts, retry-exhausted count, next delivery time, oldest open event, counts by type/severity/delivery status/source, `byOpenSourceKey`, `sourceHotspots`, attention samples, and a recommended next action.
