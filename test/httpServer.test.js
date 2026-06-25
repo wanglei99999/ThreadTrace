@@ -138,6 +138,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /renderSourceTypeOperations/);
     assert.match(webAppJs, /load-rollout-manifest-draft/);
     assert.match(webAppJs, /load-onboarding-recipe-manifest/);
+    assert.match(webAppJs, /preflight-onboarding-recipe-manifest/);
+    assert.match(webAppJs, /preflight-loaded-connector-package-manifest/);
+    assert.match(webAppJs, /preflight-rollout-manifest-draft/);
     assert.match(homeHtml, /modulePath/);
     assert.match(homeHtml, /locationJson/);
     assert.match(homeHtml, /connectorModuleValidationForm/);

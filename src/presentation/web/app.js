@@ -8,6 +8,7 @@ const state = {
   currentView: 'history',
   rolloutManifestDraft: undefined,
   onboardingRecipeManifestDraft: undefined,
+  loadedConnectorPackageManifestDraft: undefined,
   sourceTypeReadiness: undefined
 };
 
@@ -511,31 +512,90 @@ function buildSourceOnboardingRequest(form) {
   return request;
 }
 
-function handleOnboardingAction(event) {
+async function handleOnboardingAction(event) {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
-  if (button.dataset.action === 'load-rollout-manifest-draft') {
-    fillRolloutManifestForms(state.rolloutManifestDraft);
+  try {
+    if (button.dataset.action === 'load-rollout-manifest-draft') {
+      fillRolloutManifestForms(state.rolloutManifestDraft);
+      return;
+    }
+    if (button.dataset.action === 'load-onboarding-recipe-manifest') {
+      useOnboardingRecipeManifest();
+      return;
+    }
+    if (button.dataset.action === 'preflight-onboarding-recipe-manifest') {
+      await preflightSourceOnboardingManifest(getCurrentOnboardingRecipeManifest());
+      return;
+    }
+    if (button.dataset.action === 'preflight-loaded-connector-package-manifest') {
+      await preflightSourceOnboardingManifest(getRolloutManifestFormManifest() || state.loadedConnectorPackageManifestDraft);
+      return;
+    }
+    if (button.dataset.action === 'preflight-rollout-manifest-draft') {
+      await preflightSourceOnboardingManifest(state.rolloutManifestDraft);
+      return;
+    }
+    if (button.dataset.action === 'use-connector-package') {
+      fillSourceOnboardingFromConnectorPackage({
+        packageName: button.dataset.packageName,
+        modulePath: button.dataset.modulePath,
+        sourceType: button.dataset.sourceType
+      });
+      return;
+    }
+    if (button.dataset.action === 'load-connector-package-manifest') {
+      await loadConnectorPackageRecommendedManifest({
+        packageName: button.dataset.packageName,
+        modulePath: button.dataset.modulePath,
+        sourceType: button.dataset.sourceType
+      });
+    }
+  } catch (error) {
+    renderError('onboardingResult', error);
   }
-  if (button.dataset.action === 'load-onboarding-recipe-manifest') {
-    fillRolloutManifestForms(state.onboardingRecipeManifestDraft);
+}
+
+function useOnboardingRecipeManifest() {
+  const manifest = getCurrentOnboardingRecipeManifest();
+  fillSourceOnboardingFromManifest(manifest);
+  fillRolloutManifestForms(manifest);
+}
+
+async function preflightSourceOnboardingManifest(manifest) {
+  if (!manifest) {
+    renderError('onboardingResult', new Error('No rollout manifest is available for preflight.'));
+    return;
   }
-  if (button.dataset.action === 'use-connector-package') {
-    fillSourceOnboardingFromConnectorPackage({
-      packageName: button.dataset.packageName,
-      modulePath: button.dataset.modulePath,
-      sourceType: button.dataset.sourceType
+  await renderAsync('onboardingResult', function () {
+    return requestJson('/api/sources/onboarding/preflight', {
+      manifest
+    }, {
+      acceptErrorStatus: true
     });
-  }
-  if (button.dataset.action === 'load-connector-package-manifest') {
-    loadConnectorPackageRecommendedManifest({
-      packageName: button.dataset.packageName,
-      modulePath: button.dataset.modulePath,
-      sourceType: button.dataset.sourceType
-    }).catch(function (error) {
-      renderError('onboardingResult', error);
-    });
-  }
+  }, renderSourceOnboardingPreflight);
+}
+
+function getCurrentOnboardingRecipeManifest() {
+  const form = document.getElementById('sourceOnboardingForm');
+  if (!form) return state.onboardingRecipeManifestDraft;
+  const sourceType = String(form.elements.sourceType && form.elements.sourceType.value || '').trim();
+  const sourceKey = String(form.elements.forum && form.elements.forum.value || '').trim();
+  const sourceTypeSpec = findSourceTypeSpec(sourceType);
+  if (!sourceTypeSpec || !sourceTypeSpec.onboardingRecipe) return state.onboardingRecipeManifestDraft;
+  const connectorPackage = findConnectorPackageForSourceType(
+    sourceTypeSpec.sourceType,
+    sourceTypeSpec.package && sourceTypeSpec.package.packageName
+  );
+  return buildOnboardingRecipeManifest(sourceTypeSpec.onboardingRecipe.rolloutManifestTemplate, sourceKey, {
+    connectorPackage
+  });
+}
+
+function getRolloutManifestFormManifest() {
+  const textarea = document.querySelector('#rolloutManifestForm textarea[name="manifestJson"]');
+  if (!textarea || !String(textarea.value || '').trim()) return undefined;
+  return parseManifestJson(textarea.value);
 }
 
 function fillRolloutManifestForms(manifest) {
@@ -617,12 +677,29 @@ async function loadConnectorPackageRecommendedManifest(selection) {
   fillSourceOnboardingFromManifest(result.manifest, modulePath);
   renderSourceOnboardingRecipeFromForm();
   state.onboardingRecipeManifestDraft = result.manifest;
+  state.loadedConnectorPackageManifestDraft = result.manifest;
   fillRolloutManifestForms(result.manifest);
-  document.getElementById('onboardingResult').innerHTML = panel('Recommended manifest loaded', [
+  const target = document.getElementById('onboardingResult');
+  target.innerHTML = panel('Recommended manifest loaded', [
     metric('Package', result.packageName || 'unknown'),
     metric('Source type', result.sourceType || 'unknown'),
-    metric('Manifest path', result.manifestPath || result.recommendedManifest || 'unknown')
+    metric('Manifest path', result.manifestPath || result.recommendedManifest || 'unknown'),
+    '<div class="button-group source-op-buttons">' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="preflight-loaded-connector-package-manifest">Preflight manifest</button>' +
+    '</div>'
   ].join(''), 'wide');
+  const preflightButton = target.querySelector('button[data-action="preflight-loaded-connector-package-manifest"]');
+  if (preflightButton) {
+    preflightButton.addEventListener('click', async function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      try {
+        await preflightSourceOnboardingManifest(getRolloutManifestFormManifest() || result.manifest);
+      } catch (error) {
+        renderError('onboardingResult', error);
+      }
+    });
+  }
 }
 
 function legacySourceLocation(source) {
@@ -2046,6 +2123,7 @@ function renderSourceOnboardingRecipe(sourceTypeSpec, selectedSourceKey) {
       '<small>' + escapeHtml((manifest.source && manifest.source.sourceKey || 'unknown') + ' | ' + (manifest.source && manifest.source.sourceType || 'unknown')) + '</small>' +
       '</span><span class="button-group source-op-buttons">' +
       '<button class="inline-button secondary-inline-button" type="button" data-action="load-onboarding-recipe-manifest">Use template</button>' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="preflight-onboarding-recipe-manifest">Preflight template</button>' +
       '</span></div>',
       '<pre>' + escapeHtml(JSON.stringify(manifest, null, 2)) + '</pre>'
     ].join(''), 'wide')
@@ -2236,6 +2314,7 @@ function renderSourceOnboardingPreflight(result) {
       '<small>' + escapeHtml((result.rolloutManifestDraft.source && result.rolloutManifestDraft.source.sourceKey || 'unknown') + ' | ' + (result.rolloutManifestDraft.source && result.rolloutManifestDraft.source.sourceType || 'unknown')) + '</small>' +
       '</span><span class="button-group source-op-buttons">' +
       '<button class="inline-button secondary-inline-button" type="button" data-action="load-rollout-manifest-draft">Use draft</button>' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="preflight-rollout-manifest-draft">Preflight draft</button>' +
       '</span></div>',
       '<pre>' + escapeHtml(JSON.stringify(result.rolloutManifestDraft, null, 2)) + '</pre>'
     ].join(''), 'wide'));
