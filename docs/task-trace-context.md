@@ -79,4 +79,8 @@ node src/presentation/cli/threadtrace.js trace-context --trace-id semantic-trace
 node src/presentation/cli/threadtrace.js trace-context --idempotency-key client-retry-key-1
 ```
 
+## Web
+
+The Web workbench renders `Trace` controls on task-producing operation results such as rollout apply and source lifecycle updates when the returned task includes `_trace` metadata. The control opens the same `/api/operations/trace-context` summary in the task panel, showing correlated task counts, status/type distribution, idempotency duplicate risk, reusable completed task id, and the individual task records.
+
 When querying by `idempotencyKey`, the response includes `summary.idempotency`. If `duplicateExecutionRisk=true`, more than one task was recorded for the same key and an operator should inspect the caller retry behavior before enabling automatic idempotent replay.

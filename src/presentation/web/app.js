@@ -286,6 +286,12 @@ function bindForms() {
     await runSourceTaskFromButton(button, 'taskResult');
   });
 
+  document.getElementById('taskResult').addEventListener('click', async function (event) {
+    const button = event.target.closest('button[data-action="load-trace-context"]');
+    if (!button) return;
+    await loadTaskTraceContextFromButton(button);
+  });
+
   document.getElementById('sourceOperationsResult').addEventListener('click', async function (event) {
     const button = event.target.closest('button[data-action]');
     if (!button) return;
@@ -334,9 +340,19 @@ function bindForms() {
     }
   });
 
+  document.getElementById('sourceOperationActionResult').addEventListener('click', async function (event) {
+    const button = event.target.closest('button[data-action="load-trace-context"]');
+    if (!button) return;
+    await loadTaskTraceContextFromButton(button);
+  });
+
   document.getElementById('rolloutApplyResult').addEventListener('click', async function (event) {
     const button = event.target.closest('button[data-action]');
     if (!button) return;
+    if (button.dataset.action === 'load-trace-context') {
+      await loadTaskTraceContextFromButton(button);
+      return;
+    }
     if (button.dataset.action === 'load-source-drilldown') {
       await loadSourceOperationsDrilldownFromButton(button);
       return;
@@ -1438,6 +1454,23 @@ function buildEventQuery() {
 function appendOptionalQuery(query, key, value) {
   const text = String(value || '').trim();
   if (text) query.set(key, text);
+}
+
+async function loadTaskTraceContextFromButton(button) {
+  const query = new URLSearchParams();
+  appendOptionalQuery(query, 'requestId', button.dataset.requestId);
+  appendOptionalQuery(query, 'traceId', button.dataset.traceId);
+  appendOptionalQuery(query, 'idempotencyKey', button.dataset.idempotencyKey);
+  query.set('limit', button.dataset.limit || '20');
+  if (!query.get('requestId') && !query.get('traceId') && !query.get('idempotencyKey')) {
+    renderError('taskResult', new Error('No trace metadata is available for this task.'));
+    return;
+  }
+  await renderAsync('taskResult', function () {
+    return fetchJson('/api/operations/trace-context?' + query.toString(), {
+      acceptErrorStatus: true
+    });
+  }, renderTaskTraceContext);
 }
 
 function eventFilterFormData() {
@@ -3064,7 +3097,8 @@ function renderRolloutManifestApply(result) {
       metric('Task', result.task ? result.task.id : 'none'),
       metric('Mode', report.dryRun ? 'dry-run' : 'execute'),
       metric('Applied', report.applied ? 'yes' : 'no'),
-      metric('Source', report.sourceDraft ? (report.sourceDraft.sourceKey || 'unknown') + ' / ' + (report.sourceDraft.sourceType || 'unknown') : 'missing')
+      metric('Source', report.sourceDraft ? (report.sourceDraft.sourceKey || 'unknown') + ' / ' + (report.sourceDraft.sourceType || 'unknown') : 'missing'),
+      renderTaskTraceButton(result.task)
     ].join('')),
     panel('Apply steps', evidenceList(steps.map(function (step) {
       return step.status + ' 路 ' + step.key + ' 路 ' + step.summary;
@@ -3119,6 +3153,24 @@ function renderRolloutRollbackButtons(report) {
   const safeSourceId = escapeHtml(sourceId);
   return '<button class="inline-button secondary-inline-button" type="button" data-action="set-source-enabled" data-source-id="' + safeSourceId + '" data-enabled="false" data-execute="false">Rollback check</button>' +
     '<button class="inline-button warning-inline-button" type="button" data-action="set-source-enabled" data-source-id="' + safeSourceId + '" data-enabled="false" data-execute="true">Rollback disable</button>';
+}
+
+function renderTaskTraceButton(task) {
+  const trace = taskTraceMetadata(task);
+  if (!trace.requestId && !trace.traceId && !trace.idempotencyKey) return '';
+  return '<div class="button-group source-op-buttons">' +
+    '<button class="inline-button secondary-inline-button" type="button" data-action="load-trace-context"' +
+    ' data-task-id="' + escapeHtml(task && task.id || '') + '"' +
+    ' data-task-type="' + escapeHtml(task && task.type || '') + '"' +
+    ' data-request-id="' + escapeHtml(trace.requestId || '') + '"' +
+    ' data-trace-id="' + escapeHtml(trace.traceId || '') + '"' +
+    ' data-idempotency-key="' + escapeHtml(trace.idempotencyKey || '') + '"' +
+    ' data-limit="20">Trace</button>' +
+    '</div>';
+}
+
+function taskTraceMetadata(task) {
+  return task && task.input && task.input._trace || {};
 }
 
 function renderSourceTaskRunResult(result) {
@@ -3231,6 +3283,57 @@ function renderTaskList(result) {
       return task.status + ' · ' + task.type + ' · ' + (output.title || task.id);
     })), 'wide')
   ].join('');
+}
+
+function renderTaskTraceContext(result) {
+  const summary = result.summary || {};
+  const latest = summary.latestTask || {};
+  const idempotency = summary.idempotency || {};
+  const panels = [
+    panel('Task trace context', [
+      '<div class="summary-strip">' + [
+        summaryTile('Tasks', String(result.taskCount || 0)),
+        summaryTile('Latest', latest.status || 'none', statusVariant(latest.status)),
+        summaryTile('Duplicate risk', idempotency.duplicateExecutionRisk ? 'yes' : 'no', idempotency.duplicateExecutionRisk ? 'fail' : 'ok'),
+        summaryTile('Reusable', idempotency.reusableTaskId || 'none', idempotency.reusableTaskId ? 'ok' : 'muted')
+      ].join('') + '</div>',
+      metric('Request', result.query && result.query.requestId || 'none'),
+      metric('Trace', result.query && result.query.traceId || 'none'),
+      metric('Idempotency', result.query && result.query.idempotencyKey || 'none'),
+      metric('By status', compactCountMap(summary.byStatus || {})),
+      metric('By type', compactCountMap(summary.byType || {}))
+    ].join(''), 'wide'),
+    panel('Correlated tasks', renderTraceContextTaskRows(result.tasks || []), 'wide')
+  ];
+  if (idempotency.idempotencyKey) {
+    panels.push(panel('Idempotency', [
+      metric('Key', idempotency.idempotencyKey),
+      metric('Task count', idempotency.taskCount || 0),
+      metric('Completed', idempotency.completedCount || 0),
+      metric('Reusable task', idempotency.reusableTaskId || 'none'),
+      evidenceList(idempotency.taskIds || [])
+    ].join(''), 'wide'));
+  }
+  return panels.join('');
+}
+
+function renderTraceContextTaskRows(tasks) {
+  if (!tasks || tasks.length === 0) return '<div class="muted">No correlated tasks.</div>';
+  return '<div class="source-operation-result-list">' + tasks.map(function (task) {
+    const trace = task.trace || taskTraceMetadata(task);
+    const details = [
+      task.id,
+      task.createdAt ? 'created=' + task.createdAt : undefined,
+      task.updatedAt ? 'updated=' + task.updatedAt : undefined,
+      trace.requestId ? 'request=' + trace.requestId : undefined,
+      trace.traceId ? 'trace=' + trace.traceId : undefined,
+      trace.idempotencyKey ? 'idempotency=' + trace.idempotencyKey : undefined
+    ].filter(Boolean).join(' | ');
+    return '<div class="action-row ops-row source-operation-result-row"><span>' +
+      '<strong>' + escapeHtml((task.status || 'unknown') + ' | ' + (task.type || 'task')) + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '</span>' + statusBadge(task.status || 'unknown', statusVariant(task.status)) + '</div>';
+  }).join('') + '</div>';
 }
 
 function renderOperationsReadiness(readiness) {
@@ -4220,7 +4323,8 @@ function renderSourceLifecycleUpdateResult(result) {
     metric('Source', (before.id || after.id || 'unknown') + ' / ' + (after.displayName || before.displayName || 'unknown')),
     metric('Enabled before', before.enabled === undefined ? 'unknown' : before.enabled),
     metric('Enabled after', after.enabled === undefined ? 'unknown' : after.enabled),
-    metric('Guard', guard.running ? 'running=' + guard.running + ' blocked=' + guard.blocked + ' stale=' + guard.stale : 'not-running')
+    metric('Guard', guard.running ? 'running=' + guard.running + ' blocked=' + guard.blocked + ' stale=' + guard.stale : 'not-running'),
+    renderTaskTraceButton(task)
   ].join(''), 'wide');
 }
 
@@ -4238,7 +4342,8 @@ function renderSourceFailureResetResult(result) {
     metric('Reason', reset.reason || 'unknown'),
     metric('Run state', runState.status || 'unknown'),
     metric('Failure count', runState.failureCount === undefined ? 'unknown' : runState.failureCount),
-    metric('Next run', schedule.nextRunAt || reset.nextRunAt || 'unchanged')
+    metric('Next run', schedule.nextRunAt || reset.nextRunAt || 'unchanged'),
+    renderTaskTraceButton(task)
   ].join(''), 'wide');
 }
 

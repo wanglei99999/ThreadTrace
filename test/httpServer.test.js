@@ -156,6 +156,11 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /renderRolloutRollbackButtons/);
     assert.match(webAppJs, /Rollback check/);
     assert.match(webAppJs, /Rollback disable/);
+    assert.match(webAppJs, /loadTaskTraceContextFromButton/);
+    assert.match(webAppJs, /renderTaskTraceButton/);
+    assert.match(webAppJs, /renderTaskTraceContext/);
+    assert.match(webAppJs, /load-trace-context/);
+    assert.match(webAppJs, /Task trace context/);
     assert.match(webAppJs, /run-rollout-apply-dry-run/);
     assert.match(webAppJs, /Apply dry-run/);
     assert.match(webAppJs, /copy-lifecycle-command/);
