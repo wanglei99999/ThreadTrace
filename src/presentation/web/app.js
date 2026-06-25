@@ -400,6 +400,10 @@ function bindForms() {
       await prepareEventActionIntentFromButton(button);
       return;
     }
+    if (button.dataset.action === 'execute-event-action') {
+      await executeEventActionFromButton(button);
+      return;
+    }
     if (button.dataset.action !== 'ack-event') return;
     await renderAsync('eventResult', function () {
       return requestJson('/api/events/' + encodeURIComponent(button.dataset.eventId) + '/ack', {
@@ -1534,6 +1538,28 @@ async function prepareEventActionIntentFromButton(button) {
       acceptErrorStatus: true
     });
   }, renderNotificationEventActionIntent);
+}
+
+async function executeEventActionFromButton(button) {
+  const eventId = button.dataset.eventId;
+  const actionKey = button.dataset.actionKey;
+  if (!eventId || !actionKey) {
+    renderError('eventResult', new Error('Event id and action key are required for action execution.'));
+    return;
+  }
+  if (!window.confirm('Execute ' + actionKey + ' for this notification event?')) return;
+  await renderAsync('eventResult', function () {
+    return requestJson('/api/events/' + encodeURIComponent(eventId) + '/actions/execute', {
+      actionKey,
+      actor: 'web',
+      reason: 'event-detail-execute',
+      execute: true
+    }, {
+      acceptErrorStatus: true
+    });
+  }, renderNotificationEventActionIntent);
+  await loadSystemStatus();
+  await loadEvents();
 }
 
 function eventFilterFormData() {
@@ -5098,6 +5124,9 @@ function renderNotificationEventDetailActions(actions, eventId) {
     const intentButton = eventId && action.key
       ? '<button class="inline-button secondary-inline-button" type="button" data-action="prepare-event-action-intent" data-event-id="' + escapeHtml(eventId) + '" data-action-key="' + escapeHtml(action.key) + '">Dry-run</button>'
       : '';
+    const executeButton = eventId && action.key === 'event.acknowledge'
+      ? '<button class="inline-button" type="button" data-action="execute-event-action" data-event-id="' + escapeHtml(eventId) + '" data-action-key="' + escapeHtml(action.key) + '">Execute</button>'
+      : '';
     return '<div class="action-row ops-row"><span>' +
       '<strong>' + escapeHtml((action.severity || 'info') + ' | ' + (action.key || 'event.action')) + '</strong>' +
       '<small>' + escapeHtml(action.summary || '') + '</small>' +
@@ -5105,6 +5134,7 @@ function renderNotificationEventDetailActions(actions, eventId) {
       '</span>' +
       '<span class="button-group source-op-buttons">' +
       intentButton +
+      executeButton +
       statusBadge(action.severity || 'info', action.severity === 'warning' ? 'warn' : statusVariant(action.severity)) +
       '</span>' +
       '</div>';
@@ -5122,12 +5152,14 @@ function renderNotificationEventActionIntent(result) {
   const api = intent.api || {};
   const gate = result.readinessGate || {};
   const ledger = result.ledger || {};
+  const executionLedger = result.executionLedger || {};
+  const executed = result.executed === true;
   return [
-    panel('Event action dry-run', [
+    panel(executed ? 'Event action execution' : 'Event action dry-run', [
       '<div class="summary-strip event-summary-strip">' + [
         summaryTile('Status', result.status || 'unknown', statusVariant(result.status)),
         summaryTile('Mode', result.mode || 'dry-run', 'ok'),
-        summaryTile('Executed', result.executed ? 'yes' : 'no', result.executed ? 'warn' : 'ok'),
+        summaryTile('Executed', executed ? 'yes' : 'no', executed ? 'warn' : 'ok'),
         summaryTile('Action', result.action && result.action.key || 'unknown')
       ].join('') + '</div>',
       metric('Intent ID', intent.id || 'none'),
@@ -5135,13 +5167,16 @@ function renderNotificationEventActionIntent(result) {
       metric('Actor', intent.actor || 'operator'),
       metric('Reason', intent.reason || 'none'),
       metric('Ledger', ledger.recorded ? ledger.recordId || 'recorded' : ledger.reason || 'not recorded'),
+      metric('Execution ledger', executionLedger.recorded ? [executionLedger.status, executionLedger.key, executionLedger.replayed ? 'replayed' : 'new'].filter(Boolean).join(' | ') : executionLedger.reason || 'not recorded'),
       metric('API plan', [api.method, api.path].filter(Boolean).join(' ') || 'manual'),
       metric('Command', intent.command || 'none'),
+      metric('Acknowledged at', result.event && result.event.acknowledgedAt || 'none'),
       metric('Gate', gate.key ? gate.status + ' | ' + gate.key + ' | ' + gate.summary : 'none')
     ].join(''), 'wide'),
     panel('Intent evidence', '<pre>' + escapeHtml(JSON.stringify({
       api: intent.api,
       ledger: result.ledger,
+      executionLedger: result.executionLedger,
       audit: intent.audit,
       evidence: intent.evidence,
       actionReadiness: result.actionReadiness

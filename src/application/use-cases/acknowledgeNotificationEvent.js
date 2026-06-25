@@ -14,7 +14,8 @@ async function acknowledgeNotificationEvent(options) {
 
   const acknowledgedEvent = acknowledgeEvent(event, {
     acknowledgedBy: safeOptions.acknowledgedBy,
-    note: safeOptions.note
+    note: safeOptions.note,
+    acknowledgedAt: safeOptions.acknowledgedAt || safeOptions.now
   });
   await notificationEventRepository.saveEvent(acknowledgedEvent);
 

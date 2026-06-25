@@ -291,6 +291,18 @@ Request body:
 
 The response includes `mode: "dry-run"`, `executed: false`, the selected `action`, its readiness gate, an `intent` with CLI/API plan and audit metadata, plus the full event `actionReadiness`. When the runtime has a store directory, the generated intent is also persisted to the `event-action-intents` ledger and returned as `ledger.recorded: true`. This endpoint is the reviewable handoff point before future executor-backed event actions.
 
+### `POST /api/events/{eventId}/actions/execute`
+
+Dry-runs or executes a supported notification event action. The endpoint defaults to dry-run; callers must set `execute: true` before any event state changes are written.
+
+Request body:
+- `actionKey`: required. Executor-backed execution currently supports `event.acknowledge`.
+- `execute`: optional boolean, default `false`.
+- `actor`, `acknowledgedBy`, `requestedBy`, `reason`, `note`: optional operator/audit metadata.
+- `now`, `storeDir`: optional runtime overrides.
+
+When `execute` is false, the response mirrors the action intent preview and includes `executionLedger.recorded: false`. When `execute` is true, ThreadTrace re-checks event action readiness, claims an `event-action-executions` ledger record, applies the supported action, and completes or fails the ledger. Repeated calls for an already completed execution replay the completed ledger result instead of reapplying the mutation.
+
 ### `GET /api/events/action-intents`
 
 Lists persisted dry-run event action intents from the ledger.
@@ -304,6 +316,21 @@ Optional filters:
 - `limit`
 
 Use this endpoint to replay operator intent history, audit dry-run plans before execution, and build Web console views for event action review.
+
+### `GET /api/events/action-executions`
+
+Lists notification event action execution ledger records used for idempotency, replay inspection, and operator audit.
+
+Optional filters:
+- `eventId`
+- `actionKey`
+- `status` (`running`, `completed`, or `failed`)
+- `sourceId`, `sourceKey` / `forum`
+- `actor`
+- `runningStaleAfterMs`
+- `limit`
+
+The response includes status counters, stale-running detection, source scope, request hash, compact intent evidence, execution result or error, attempt count, and file path when using file storage.
 
 ### `GET /api/events/overview`
 

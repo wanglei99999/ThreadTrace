@@ -1967,6 +1967,61 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/events/{eventId}/actions/execute': {
+        post: {
+          summary: 'Dry-run or execute a supported notification event action',
+          description: 'Defaults to dry-run preview. Set execute=true to apply the supported event.acknowledge action through the notification event action execution ledger.',
+          parameters: [
+            { name: 'eventId', in: 'path', required: true, schema: { type: 'string' } }
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['actionKey'],
+                  properties: {
+                    actionKey: { type: 'string', example: 'event.acknowledge' },
+                    execute: { type: 'boolean', default: false },
+                    actor: { type: 'string', example: 'operator' },
+                    acknowledgedBy: { type: 'string', example: 'operator' },
+                    requestedBy: { type: 'string', example: 'operator' },
+                    reason: { type: 'string', example: 'handled from event detail' },
+                    note: { type: 'string' },
+                    now: { type: 'string' },
+                    storeDir: { type: 'string' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Notification event action execution result or dry-run preview',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/NotificationEventActionExecutionResult'
+                  }
+                }
+              }
+            },
+            400: {
+              $ref: '#/components/responses/BadRequest'
+            },
+            404: {
+              $ref: '#/components/responses/NotFound'
+            },
+            409: {
+              $ref: '#/components/responses/Conflict'
+            },
+            503: {
+              $ref: '#/components/responses/ServiceUnavailable'
+            }
+          }
+        }
+      },
       '/api/events/action-intents': {
         get: {
           summary: 'List persisted notification event action intents',
@@ -1990,6 +2045,37 @@ function createOpenApiSpec() {
                   }
                 }
               }
+            }
+          }
+        }
+      },
+      '/api/events/action-executions': {
+        get: {
+          summary: 'List notification event action execution ledger records',
+          parameters: [
+            { name: 'eventId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'actionKey', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'status', in: 'query', required: false, schema: { type: 'string', enum: ['running', 'completed', 'failed'] } },
+            { name: 'sourceId', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'actor', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'runningStaleAfterMs', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Notification event action execution ledger records',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/NotificationEventActionExecutionListResult'
+                  }
+                }
+              }
+            },
+            503: {
+              $ref: '#/components/responses/ServiceUnavailable'
             }
           }
         }
@@ -5473,6 +5559,94 @@ function createOpenApiSpec() {
             }
           }
         },
+        NotificationEventActionExecutionLedger: {
+          type: 'object',
+          properties: {
+            recorded: { type: 'boolean' },
+            key: { type: 'string' },
+            status: { type: 'string', enum: ['completed', 'running', 'failed'] },
+            replayed: { type: 'boolean' },
+            originalUpdatedAt: { type: 'string' },
+            filePath: { type: 'string' },
+            reason: { type: 'string' }
+          },
+          additionalProperties: true
+        },
+        NotificationEventActionExecutionRecord: {
+          type: 'object',
+          properties: {
+            key: { type: 'string' },
+            type: { type: 'string', example: 'notification-event-action-execution' },
+            status: { type: 'string', enum: ['running', 'completed', 'failed'] },
+            attemptCount: { type: 'number' },
+            eventId: { type: 'string' },
+            actionKey: { type: 'string', example: 'event.acknowledge' },
+            actor: { type: 'string' },
+            sourceId: { type: 'string' },
+            sourceKey: { type: 'string' },
+            sourceScope: { $ref: '#/components/schemas/TaskSourceScope' },
+            requestHash: { type: 'string' },
+            createdAt: { type: 'string' },
+            updatedAt: { type: 'string' },
+            completedAt: { type: 'string' },
+            failedAt: { type: 'string' },
+            staleRunning: { type: 'boolean' },
+            runningAgeMs: { type: 'number' },
+            intent: { type: 'object', additionalProperties: true },
+            result: { type: 'object', additionalProperties: true },
+            error: { type: 'object', additionalProperties: true },
+            filePath: { type: 'string' }
+          },
+          additionalProperties: true
+        },
+        NotificationEventActionExecutionResult: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string' },
+            mode: { type: 'string', enum: ['dry-run', 'execute'] },
+            dryRun: { type: 'boolean' },
+            executed: { type: 'boolean' },
+            status: { type: 'string', enum: ['ok', 'warn', 'blocked'] },
+            event: { $ref: '#/components/schemas/NotificationEventSummary' },
+            sourceScope: { $ref: '#/components/schemas/TaskSourceScope' },
+            relatedTask: { type: 'object', additionalProperties: true },
+            action: { $ref: '#/components/schemas/TaskDetailAction' },
+            readinessGate: { $ref: '#/components/schemas/NotificationEventActionReadinessGate' },
+            intent: { $ref: '#/components/schemas/NotificationEventActionIntent' },
+            ledger: { $ref: '#/components/schemas/NotificationEventActionIntentLedger' },
+            executionLedger: { $ref: '#/components/schemas/NotificationEventActionExecutionLedger' },
+            actionReadiness: { $ref: '#/components/schemas/NotificationEventActionReadiness' },
+            nextActions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/TaskDetailAction' }
+            }
+          },
+          additionalProperties: true
+        },
+        NotificationEventActionExecutionListResult: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string' },
+            status: { type: 'string' },
+            healthStatus: { type: 'string' },
+            eventId: { type: 'string' },
+            actionKey: { type: 'string' },
+            sourceId: { type: 'string' },
+            sourceKey: { type: 'string' },
+            actor: { type: 'string' },
+            count: { type: 'number' },
+            runningStaleAfterMs: { type: 'number' },
+            runningCount: { type: 'number' },
+            completedCount: { type: 'number' },
+            failedCount: { type: 'number' },
+            staleRunningCount: { type: 'number' },
+            message: { type: 'string' },
+            executions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/NotificationEventActionExecutionRecord' }
+            }
+          }
+        },
         NotificationEventDispatchItem: {
           type: 'object',
           properties: {
@@ -6160,6 +6334,16 @@ function createOpenApiSpec() {
         },
         RequestTooLarge: {
           description: 'Request body exceeds the configured limit',
+          content: {
+            'application/json': {
+              schema: {
+                $ref: '#/components/schemas/ErrorResponse'
+              }
+            }
+          }
+        },
+        ServiceUnavailable: {
+          description: 'Required runtime dependency is unavailable or unhealthy',
           content: {
             'application/json': {
               schema: {

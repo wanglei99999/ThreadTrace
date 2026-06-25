@@ -1047,6 +1047,23 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/events/action-executions') {
+    const result = await context.runtime.listNotificationEventActionExecutions({
+      eventId: url.searchParams.get('eventId') || undefined,
+      actionKey: url.searchParams.get('actionKey') || url.searchParams.get('action') || undefined,
+      status: url.searchParams.get('status') || undefined,
+      sourceId: url.searchParams.get('sourceId') || undefined,
+      sourceKey: url.searchParams.get('sourceKey') || url.searchParams.get('forum') || undefined,
+      actor: url.searchParams.get('actor') || undefined,
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 50,
+      runningStaleAfterMs: url.searchParams.get('runningStaleAfterMs') ? Number(url.searchParams.get('runningStaleAfterMs')) : undefined,
+      now: url.searchParams.get('now') || undefined,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, result.status === 'warn' ? 503 : 200, result);
+    return;
+  }
+
   const eventDetailMatch = url.pathname.match(/^\/api\/events\/([^/]+)$/);
   if (request.method === 'GET' && eventDetailMatch) {
     const result = await context.runtime.getNotificationEventDetail({
@@ -1068,6 +1085,25 @@ async function routeRequest(request, response, context) {
       requestedBy: body.requestedBy,
       reason: body.reason,
       note: body.note,
+      now: body.now,
+      storeDir: body.storeDir || context.storeDir
+    });
+    writeJson(response, result.status === 'blocked' ? 409 : 200, result);
+    return;
+  }
+
+  const eventActionExecuteMatch = url.pathname.match(/^\/api\/events\/([^/]+)\/actions\/execute$/);
+  if (request.method === 'POST' && eventActionExecuteMatch) {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.executeNotificationEventAction({
+      eventId: decodeURIComponent(eventActionExecuteMatch[1]),
+      actionKey: body.actionKey || body.action,
+      actor: body.actor,
+      acknowledgedBy: body.acknowledgedBy,
+      requestedBy: body.requestedBy,
+      reason: body.reason,
+      note: body.note,
+      execute: body.execute === true,
       now: body.now,
       storeDir: body.storeDir || context.storeDir
     });

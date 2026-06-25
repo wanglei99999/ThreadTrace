@@ -2,6 +2,7 @@
 
 const assert = require('node:assert/strict');
 const test = require('node:test');
+const { executeNotificationEventAction } = require('../src/application/use-cases/executeNotificationEventAction');
 const { prepareNotificationEventActionIntent } = require('../src/application/use-cases/prepareNotificationEventActionIntent');
 
 test('notification event action intent builds dry-run acknowledge plan', async function () {
@@ -67,9 +68,101 @@ test('notification event action intent rejects unavailable actions', async funct
   });
 });
 
+test('notification event action execution defaults to dry-run preview', async function () {
+  const savedIntents = [];
+  const executions = executionRepository();
+  const result = await executeNotificationEventAction({
+    eventId: 'event-1',
+    actionKey: 'event.acknowledge',
+    actor: 'operator-1',
+    now: '2026-06-25T11:00:00.000Z',
+    notificationEventRepository: eventRepository([notificationEvent({
+      id: 'event-1'
+    })]),
+    notificationEventActionIntentRepository: intentRepository(savedIntents),
+    notificationEventActionExecutionRepository: executions
+  });
+
+  assert.equal(result.dryRun, true);
+  assert.equal(result.executed, false);
+  assert.equal(result.executionLedger.recorded, false);
+  assert.equal(savedIntents.length, 1);
+  assert.equal((await executions.listExecutions()).length, 0);
+});
+
+test('notification event action execution acknowledges event and replays completed ledger', async function () {
+  const events = [notificationEvent({
+    id: 'event-1',
+    sourceId: 'source-1',
+    sourceKey: 'nga'
+  })];
+  const repository = eventRepository(events);
+  const executions = executionRepository();
+
+  const result = await executeNotificationEventAction({
+    eventId: 'event-1',
+    actionKey: 'event.acknowledge',
+    actor: 'operator-1',
+    note: 'handled',
+    execute: true,
+    now: '2026-06-25T11:00:00.000Z',
+    notificationEventRepository: repository,
+    notificationEventActionIntentRepository: intentRepository([]),
+    notificationEventActionExecutionRepository: executions
+  });
+  const replay = await executeNotificationEventAction({
+    eventId: 'event-1',
+    actionKey: 'event.acknowledge',
+    actor: 'operator-1',
+    note: 'handled',
+    execute: true,
+    now: '2026-06-25T11:01:00.000Z',
+    notificationEventRepository: repository,
+    notificationEventActionIntentRepository: intentRepository([]),
+    notificationEventActionExecutionRepository: executions
+  });
+
+  assert.equal(result.mode, 'execute');
+  assert.equal(result.dryRun, false);
+  assert.equal(result.executed, true);
+  assert.equal(result.event.acknowledgedAt, '2026-06-25T11:00:00.000Z');
+  assert.equal(result.event.acknowledgedBy, 'operator-1');
+  assert.equal(result.event.acknowledgementNote, 'handled');
+  assert.equal(result.executionLedger.recorded, true);
+  assert.equal(result.executionLedger.replayed, false);
+  assert.equal(replay.executionLedger.replayed, true);
+  assert.equal((await executions.listExecutions({ status: 'completed' })).length, 1);
+});
+
+test('notification event action execution rejects unsupported execute actions', async function () {
+  await assert.rejects(function () {
+    return executeNotificationEventAction({
+      eventId: 'event-1',
+      actionKey: 'event.dispatch',
+      execute: true,
+      notificationEventRepository: eventRepository([notificationEvent({
+        id: 'event-1',
+        deliveryStatus: 'pending'
+      })]),
+      notificationEventActionIntentRepository: intentRepository([]),
+      notificationEventActionExecutionRepository: executionRepository()
+    });
+  }, function (error) {
+    assert.equal(error.code, 'event_action_execution_unsupported');
+    assert.equal(error.statusCode, 409);
+    return true;
+  });
+});
+
 function eventRepository(events) {
   return {
-    async saveEvent() {},
+    async saveEvent(event) {
+      const index = events.findIndex(function (candidate) {
+        return candidate.id === event.id;
+      });
+      if (index >= 0) events[index] = event;
+      else events.push(event);
+    },
     async findEvent(id) {
       return events.find(function (event) {
         return event.id === id;
@@ -77,6 +170,78 @@ function eventRepository(events) {
     },
     async listEvents() {
       return events;
+    }
+  };
+}
+
+function executionRepository() {
+  const records = [];
+  return {
+    async claimExecution(record) {
+      const existing = records.find(function (item) {
+        return item.key === record.key;
+      });
+      if (existing && (existing.status === 'completed' || existing.status === 'running')) {
+        return {
+          claimed: false,
+          record: existing
+        };
+      }
+      const saved = Object.assign({}, existing || {}, record, {
+        status: 'running',
+        createdAt: record.now || '2026-06-25T10:00:00.000Z',
+        updatedAt: record.now || '2026-06-25T10:00:00.000Z'
+      });
+      const index = records.findIndex(function (item) {
+        return item.key === record.key;
+      });
+      if (index >= 0) records[index] = saved;
+      else records.push(saved);
+      return {
+        claimed: true,
+        record: saved
+      };
+    },
+    async completeExecution(key, result, metadata) {
+      const index = records.findIndex(function (item) {
+        return item.key === key;
+      });
+      const saved = Object.assign({}, records[index] || { key }, metadata || {}, {
+        status: 'completed',
+        result,
+        updatedAt: metadata && metadata.now || '2026-06-25T10:00:00.000Z'
+      });
+      if (index >= 0) records[index] = saved;
+      else records.push(saved);
+      return saved;
+    },
+    async failExecution(key, error, metadata) {
+      const index = records.findIndex(function (item) {
+        return item.key === key;
+      });
+      const saved = Object.assign({}, records[index] || { key }, metadata || {}, {
+        status: 'failed',
+        error: {
+          message: error.message
+        },
+        updatedAt: metadata && metadata.now || '2026-06-25T10:00:00.000Z'
+      });
+      if (index >= 0) records[index] = saved;
+      else records.push(saved);
+      return saved;
+    },
+    async findExecution(key) {
+      return records.find(function (record) {
+        return record.key === key;
+      });
+    },
+    async listExecutions(query) {
+      const safeQuery = query || {};
+      return records.filter(function (record) {
+        return (!safeQuery.status || record.status === safeQuery.status) &&
+          (!safeQuery.eventId || record.eventId === safeQuery.eventId) &&
+          (!safeQuery.actionKey || record.actionKey === safeQuery.actionKey);
+      });
     }
   };
 }

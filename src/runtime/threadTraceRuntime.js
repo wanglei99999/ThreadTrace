@@ -33,6 +33,8 @@ const { dispatchPendingNotificationEvents } = require('../application/use-cases/
 const { getNotificationEventDetail } = require('../application/use-cases/getNotificationEventDetail');
 const { prepareNotificationEventActionIntent } = require('../application/use-cases/prepareNotificationEventActionIntent');
 const { listNotificationEventActionIntents } = require('../application/use-cases/listNotificationEventActionIntents');
+const { executeNotificationEventAction } = require('../application/use-cases/executeNotificationEventAction');
+const { listNotificationEventActionExecutions } = require('../application/use-cases/listNotificationEventActionExecutions');
 const { synthesizeRunbookNotificationEvents } = require('../application/use-cases/synthesizeRunbookNotificationEvents');
 const { synthesizeContextReviewResultNotificationEvents } = require('../application/use-cases/synthesizeContextReviewResultNotificationEvents');
 const { synthesizeAuthorReviewQueueNotificationEvents } = require('../application/use-cases/synthesizeAuthorReviewQueueNotificationEvents');
@@ -112,6 +114,7 @@ const { createFileContextReviewResultRepository } = require('../infrastructure/s
 const { createFileContextReviewActionAuditRepository } = require('../infrastructure/storage/fileContextReviewActionAuditRepository');
 const { createFileContextReviewActionExecutionRepository } = require('../infrastructure/storage/fileContextReviewActionExecutionRepository');
 const { createFileNotificationEventActionIntentRepository } = require('../infrastructure/storage/fileNotificationEventActionIntentRepository');
+const { createFileNotificationEventActionExecutionRepository } = require('../infrastructure/storage/fileNotificationEventActionExecutionRepository');
 const { createFileAuthorReviewQueueRepository } = require('../infrastructure/storage/fileAuthorReviewQueueRepository');
 const { createFileNotificationChannel } = require('../infrastructure/notifications/fileNotificationChannel');
 const { createWebhookNotificationChannel } = require('../infrastructure/notifications/webhookNotificationChannel');
@@ -2099,6 +2102,53 @@ function createThreadTraceRuntime(options) {
       });
     },
 
+    async executeNotificationEventAction(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return executeNotificationEventAction({
+        notificationEventRepository: repositories.notificationEventRepository,
+        taskRepository: repositories.taskRepository,
+        notificationEventActionIntentRepository: repositories.notificationEventActionIntentRepository,
+        notificationEventActionExecutionRepository: repositories.notificationEventActionExecutionRepository,
+        eventId: safeRequest.eventId,
+        actionKey: safeRequest.actionKey || safeRequest.action,
+        actor: safeRequest.actor || safeRequest.acknowledgedBy || safeRequest.requestedBy,
+        acknowledgedBy: safeRequest.acknowledgedBy,
+        requestedBy: safeRequest.requestedBy,
+        reason: safeRequest.reason,
+        note: safeRequest.note,
+        execute: safeRequest.execute,
+        now: safeRequest.now
+      });
+    },
+
+    async listNotificationEventActionExecutions(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      if (!repositories.notificationEventActionExecutionRepository) {
+        return {
+          generatedAt: safeRequest.now || new Date().toISOString(),
+          status: 'warn',
+          healthStatus: 'warn',
+          count: 0,
+          executions: [],
+          message: 'Notification event action execution repository is not configured for this storage mode.'
+        };
+      }
+      return listNotificationEventActionExecutions({
+        notificationEventActionExecutionRepository: repositories.notificationEventActionExecutionRepository,
+        eventId: safeRequest.eventId,
+        actionKey: safeRequest.actionKey || safeRequest.action,
+        status: safeRequest.status,
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        actor: safeRequest.actor,
+        limit: safeRequest.limit || 50,
+        runningStaleAfterMs: safeRequest.runningStaleAfterMs,
+        now: safeRequest.now
+      });
+    },
+
     async getNotificationEventOverview(request) {
       const safeRequest = request || {};
       const repositories = createRepositoriesFor(safeRequest.storeDir);
@@ -2260,7 +2310,9 @@ function createThreadTraceRuntime(options) {
         notificationEventRepository: repositories.notificationEventRepository,
         eventId: safeRequest.eventId,
         acknowledgedBy: safeRequest.acknowledgedBy,
-        note: safeRequest.note
+        note: safeRequest.note,
+        acknowledgedAt: safeRequest.acknowledgedAt,
+        now: safeRequest.now
       });
     },
 
@@ -2396,6 +2448,9 @@ function createFileRepositories(storeDir) {
     }),
     notificationEventActionIntentRepository: createFileNotificationEventActionIntentRepository({
       baseDir: path.join(storeDir, 'event-action-intents')
+    }),
+    notificationEventActionExecutionRepository: createFileNotificationEventActionExecutionRepository({
+      baseDir: path.join(storeDir, 'event-action-executions')
     }),
     authorReviewQueueRepository: createFileAuthorReviewQueueRepository({
       baseDir: path.join(storeDir, 'author-review-queue')
