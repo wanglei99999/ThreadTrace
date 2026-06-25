@@ -731,7 +731,9 @@ function createThreadTraceRuntime(options) {
         now: safeRequest.now,
         storeDir: safeRequest.storeDir,
         runningStaleAfterMs: safeRequest.runningStaleAfterMs,
-        workerStaleAfterMs: safeRequest.workerStaleAfterMs
+        workerStaleAfterMs: safeRequest.workerStaleAfterMs,
+        llmReadinessMode: safeRequest.llmReadinessMode,
+        provider: safeRequest.provider
       });
 
       return getConnectorRolloutPlan({
@@ -760,7 +762,9 @@ function createThreadTraceRuntime(options) {
           storeDir: safeRequest.storeDir || deployment.storeDir,
           limit: safeRequest.limit || deployment.limit,
           runningStaleAfterMs: firstDefined(safeRequest.runningStaleAfterMs, deployment.runningStaleAfterMs),
-          workerStaleAfterMs: safeRequest.workerStaleAfterMs || deployment.workerStaleAfterMs
+          workerStaleAfterMs: safeRequest.workerStaleAfterMs || deployment.workerStaleAfterMs,
+          llmReadinessMode: safeRequest.llmReadinessMode || deployment.llmReadinessMode,
+          provider: safeRequest.provider || deployment.llmProvider
         }))
         : undefined;
       const workerTopologyPlan = manifest.workers && manifest.workers.enabled === false
@@ -771,7 +775,9 @@ function createThreadTraceRuntime(options) {
           storeDir: safeRequest.storeDir || deployment.storeDir,
           limit: safeRequest.limit || deployment.limit,
           runningStaleAfterMs: firstDefined(safeRequest.runningStaleAfterMs, deployment.runningStaleAfterMs),
-          workerStaleAfterMs: safeRequest.workerStaleAfterMs || deployment.workerStaleAfterMs
+          workerStaleAfterMs: safeRequest.workerStaleAfterMs || deployment.workerStaleAfterMs,
+          llmReadinessMode: safeRequest.llmReadinessMode || deployment.llmReadinessMode,
+          provider: safeRequest.provider || deployment.llmProvider
         }));
 
       return getRolloutManifestPlan({
@@ -795,7 +801,9 @@ function createThreadTraceRuntime(options) {
         now: safeRequest.now,
         storeDir: safeRequest.storeDir,
         runningStaleAfterMs: safeRequest.runningStaleAfterMs,
-        workerStaleAfterMs: safeRequest.workerStaleAfterMs
+        workerStaleAfterMs: safeRequest.workerStaleAfterMs,
+        llmReadinessMode: safeRequest.llmReadinessMode,
+        provider: safeRequest.provider
       });
       const rolloutManifestPlan = safeRequest.manifest
         ? await this.getRolloutManifestPlan({
@@ -804,7 +812,9 @@ function createThreadTraceRuntime(options) {
           storeDir: safeRequest.storeDir,
           limit: safeRequest.limit,
           runningStaleAfterMs: safeRequest.runningStaleAfterMs,
-          workerStaleAfterMs: safeRequest.workerStaleAfterMs
+          workerStaleAfterMs: safeRequest.workerStaleAfterMs,
+          llmReadinessMode: safeRequest.llmReadinessMode,
+          provider: safeRequest.provider
         })
         : undefined;
 
@@ -827,7 +837,9 @@ function createThreadTraceRuntime(options) {
           storeDir: safeRequest.storeDir,
           limit: safeRequest.limit,
           runningStaleAfterMs: safeRequest.runningStaleAfterMs,
-          workerStaleAfterMs: safeRequest.workerStaleAfterMs
+          workerStaleAfterMs: safeRequest.workerStaleAfterMs,
+          llmReadinessMode: safeRequest.llmReadinessMode,
+          provider: safeRequest.provider
         })
         : undefined;
       const resourceProvisioningPlan = await this.getResourceProvisioningPlan({
@@ -839,7 +851,9 @@ function createThreadTraceRuntime(options) {
         now: safeRequest.now,
         storeDir: safeRequest.storeDir,
         runningStaleAfterMs: safeRequest.runningStaleAfterMs,
-        workerStaleAfterMs: safeRequest.workerStaleAfterMs
+        workerStaleAfterMs: safeRequest.workerStaleAfterMs,
+        llmReadinessMode: safeRequest.llmReadinessMode,
+        provider: safeRequest.provider
       });
       const deploymentChecklist = await this.getDeploymentChecklist({
         forum: safeRequest.forum,
@@ -849,7 +863,9 @@ function createThreadTraceRuntime(options) {
         now: safeRequest.now,
         storeDir: safeRequest.storeDir,
         runningStaleAfterMs: safeRequest.runningStaleAfterMs,
-        workerStaleAfterMs: safeRequest.workerStaleAfterMs
+        workerStaleAfterMs: safeRequest.workerStaleAfterMs,
+        llmReadinessMode: safeRequest.llmReadinessMode,
+        provider: safeRequest.provider
       });
       const operationsRunbook = await this.getOperationsRunbook({
         forum: safeRequest.forum,
@@ -861,7 +877,9 @@ function createThreadTraceRuntime(options) {
         now: safeRequest.now,
         storeDir: safeRequest.storeDir,
         runningStaleAfterMs: safeRequest.runningStaleAfterMs,
-        workerStaleAfterMs: safeRequest.workerStaleAfterMs
+        workerStaleAfterMs: safeRequest.workerStaleAfterMs,
+        llmReadinessMode: safeRequest.llmReadinessMode,
+        provider: safeRequest.provider
       });
 
       return getDeploymentGateReport({
@@ -1647,6 +1665,22 @@ function createThreadTraceRuntime(options) {
         runningStaleAfterMs: safeRequest.runningStaleAfterMs,
         storeDir: safeRequest.storeDir
       });
+      const llmReadinessMode = normalizeLlmReadinessMode(safeRequest.llmReadinessMode);
+      const llmPreflight = llmReadinessMode === 'preflight' || llmReadinessMode === 'evaluation'
+        ? await this.runLlmProviderPreflight({
+          provider: safeRequest.provider,
+          traceId: safeRequest.traceId,
+          now: safeRequest.now
+        })
+        : undefined;
+      const llmEvaluation = llmReadinessMode === 'evaluation'
+        ? await this.runLlmProviderEvaluation({
+          provider: safeRequest.provider,
+          traceId: safeRequest.traceId,
+          samples: safeRequest.llmEvaluationSamples || safeRequest.samples,
+          now: safeRequest.now
+        })
+        : undefined;
       return getDeploymentChecklist({
         forum: safeRequest.forum,
         sourceKey: safeRequest.sourceKey,
@@ -1660,6 +1694,8 @@ function createThreadTraceRuntime(options) {
         notificationEventActionExecutions,
         sourceDiagnostics,
         readiness,
+        llmPreflight,
+        llmEvaluation,
         now: safeRequest.now
       });
     },
@@ -1743,7 +1779,9 @@ function createThreadTraceRuntime(options) {
           now: safeRequest.now,
           storeDir: safeRequest.storeDir,
           runningStaleAfterMs: safeRequest.runningStaleAfterMs,
-          workerStaleAfterMs: safeRequest.workerStaleAfterMs
+          workerStaleAfterMs: safeRequest.workerStaleAfterMs,
+          llmReadinessMode: safeRequest.llmReadinessMode,
+          provider: safeRequest.provider
         });
       const overview = safeRequest.includeOperationalOverview === false
         ? undefined
@@ -1752,7 +1790,9 @@ function createThreadTraceRuntime(options) {
           now: safeRequest.now,
           storeDir: safeRequest.storeDir,
           runningStaleAfterMs: safeRequest.runningStaleAfterMs,
-          workerStaleAfterMs: safeRequest.workerStaleAfterMs
+          workerStaleAfterMs: safeRequest.workerStaleAfterMs,
+          llmReadinessMode: safeRequest.llmReadinessMode,
+          provider: safeRequest.provider
         });
 
       return getWorkerTopologyPlan({
@@ -2724,6 +2764,12 @@ function shouldRunSourceOnboardingPreflight(request) {
 function shouldRunSourceIngestDryRun(request) {
   if (!request) return false;
   return request.dryRunIngest === true || request.includeIngestDryRun === true;
+}
+
+function normalizeLlmReadinessMode(mode) {
+  if (!mode || mode === 'configuration') return 'configuration';
+  if (mode === 'preflight' || mode === 'evaluation') return mode;
+  throw new Error('Unknown LLM readiness mode: ' + mode);
 }
 
 function connectorModulePaths(options, config) {

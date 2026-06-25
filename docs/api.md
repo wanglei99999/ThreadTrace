@@ -557,7 +557,7 @@ Runs a read-only onboarding preflight across connector catalog support, connecto
 
 ### `GET /api/deployment/checklist`
 
-Optional filters include `forum` / `sourceKey`, `sourceType`, `enabled`, `limit`, `now`, and `storeDir`. Source ingest configuration evidence preserves the requested `sourceType` so deployment gates and operator UIs can show which connector family was evaluated.
+Optional filters include `forum` / `sourceKey`, `sourceType`, `enabled`, `limit`, `now`, `storeDir`, `provider`, and `llmReadinessMode`. Source ingest configuration evidence preserves the requested `sourceType` so deployment gates and operator UIs can show which connector family was evaluated. `llmReadinessMode` defaults to `configuration`; use `preflight` to add the provider contract probe, or `evaluation` to add both preflight and multi-sample semantic quality checks to the checklist.
 
 查询部署前验收清单。它聚合 runtime diagnostics、source diagnostics 和 operations readiness，用于部署脚本或控制台判断当前实例是否具备上线条件。
 
@@ -884,6 +884,8 @@ The response includes `resources`, required/optional status, expected environmen
 ### `POST /api/deployment/gate`
 
 Evaluates the highest-level deployment gate by composing rollout manifest planning, resource provisioning, deployment checklist, and operations runbook.
+
+Set `llmReadinessMode` to `preflight` or `evaluation` in the request body when a rollout should prove the configured LLM provider before scheduled semantic workers are enabled. The same value can also be supplied in `manifest.deployment.llmReadinessMode`.
 
 Request:
 

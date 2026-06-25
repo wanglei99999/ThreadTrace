@@ -208,6 +208,87 @@ test('deployment checklist aggregates runtime, source, readiness, notification, 
   }).status, 'warn');
 });
 
+test('deployment checklist includes LLM preflight and semantic evaluation evidence when provided', function () {
+  const checklist = getDeploymentChecklist({
+    now: '2026-06-25T10:00:00.000Z',
+    diagnostics: {
+      status: 'ok',
+      configuration: {
+        storageMode: 'file',
+        llm: {
+          provider: 'mock'
+        }
+      },
+      checks: [
+        { key: 'resources.storeDir', status: 'ok', summary: 'Store directory is writable.' },
+        { key: 'config.llm.provider', status: 'ok', summary: 'LLM provider is configured.' }
+      ]
+    },
+    adapterDiagnostics: { status: 'ok', adapterCount: 1 },
+    connectorReadiness: { status: 'ok', connectorCount: 1, sourceCount: 1 },
+    sourceDiagnostics: { status: 'ok', sourceCount: 1, sources: [] },
+    notificationDiagnostics: {
+      channel: 'file',
+      checks: [
+        { key: 'notifications.channel', status: 'ok', summary: 'Notification channel is supported.' }
+      ]
+    },
+    reviewActionExecutorDiagnostics: { status: 'ok', mode: 'file-audit', ready: true, checks: [] },
+    reviewActionExecutions: { status: 'ok', count: 0, executions: [] },
+    notificationEventActionExecutions: { status: 'ok', count: 0, executions: [] },
+    readiness: { status: 'ok', checks: [] },
+    llmPreflight: {
+      status: 'ok',
+      provider: 'mock',
+      traceId: 'llm-preflight:mock:test',
+      task: 'thread-history-semantic-enrichment',
+      schemaVersion: 'semantic-enrichment.v1',
+      checks: [
+        { key: 'llm.semantic.validation', status: 'ok', summary: 'Provider output matched the semantic enrichment contract.' }
+      ],
+      validation: { status: 'ok' },
+      outputPreview: { evidenceRefCount: 2 }
+    },
+    llmEvaluation: {
+      status: 'warn',
+      provider: 'mock',
+      traceId: 'llm-evaluation:mock:test',
+      task: 'thread-history-semantic-enrichment',
+      schemaVersion: 'semantic-enrichment.v1',
+      sampleCount: 1,
+      summary: { ok: 0, warn: 1, fail: 0 },
+      results: [
+        {
+          id: 'weak-sample',
+          title: 'Weak sample',
+          status: 'warn',
+          validation: { status: 'ok' },
+          qualityChecks: [
+            { key: 'llm.output.evidenceRefs.present', status: 'warn', summary: 'Insights should cite source evidence references.' }
+          ]
+        }
+      ],
+      nextActions: [
+        { key: 'llm.evaluation.review', severity: 'info', summary: 'Review warning evaluation samples.' }
+      ]
+    }
+  });
+
+  assert.equal(checklist.status, 'warn');
+  const preflightItem = checklist.items.find(function (item) {
+    return item.key === 'llm.preflight';
+  });
+  const evaluationItem = checklist.items.find(function (item) {
+    return item.key === 'llm.semanticEvaluation';
+  });
+  assert.equal(preflightItem.status, 'ok');
+  assert.equal(preflightItem.evidence.validationStatus, 'ok');
+  assert.equal(evaluationItem.status, 'warn');
+  assert.equal(evaluationItem.evidence.sampleCount, 1);
+  assert.equal(evaluationItem.evidence.warningSamples[0].qualityChecks[0].key, 'llm.output.evidenceRefs.present');
+  assert.equal(checklist.llmEvaluation.summary.warn, 1);
+});
+
 test('deployment checklist fails when review action execution ledger has failed records', function () {
   const checklist = getDeploymentChecklist({
     now: '2026-06-19T10:00:00.000Z',

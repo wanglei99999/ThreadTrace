@@ -1739,7 +1739,9 @@ function createOpenApiSpec() {
                     limit: { type: 'number', example: 100 },
                     now: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
                     storeDir: { type: 'string' },
-                    workerStaleAfterMs: { type: 'number' }
+                    workerStaleAfterMs: { type: 'number' },
+                    provider: { type: 'string', example: 'mock' },
+                    llmReadinessMode: { type: 'string', enum: ['configuration', 'preflight', 'evaluation'] }
                   }
                 }
               }
@@ -1856,7 +1858,9 @@ function createOpenApiSpec() {
             { name: 'enabled', in: 'query', required: false, schema: { type: 'boolean' } },
             { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
             { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
-            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'provider', in: 'query', required: false, schema: { type: 'string', example: 'mock' } },
+            { name: 'llmReadinessMode', in: 'query', required: false, schema: { type: 'string', enum: ['configuration', 'preflight', 'evaluation'] } }
           ],
           responses: {
             200: {

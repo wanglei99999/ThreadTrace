@@ -13,21 +13,25 @@ ThreadTrace exposes a deployment checklist as a runnable readiness contract. It 
 - notification event action execution ledger health
 - review action executor readiness, execution ledger health, and audit evidence
 - LLM provider configuration
+- optional LLM provider preflight and semantic evaluation quality gates
 
 ## Entrypoints
 
 ```powershell
 node src/presentation/cli/threadtrace.js deployment-checklist --store-dir data/store
 node src/presentation/cli/threadtrace.js deployment-checklist --source-type saved-html-directory --enabled true
+node src/presentation/cli/threadtrace.js deployment-checklist --llm-readiness-mode evaluation --provider mock
 ```
 
 ```text
 GET /api/deployment/checklist
 GET /api/deployment/checklist?sourceType=saved-html-directory&enabled=true
+GET /api/deployment/checklist?llmReadinessMode=evaluation&provider=mock
 ```
 
 The checklist returns `ok`, `warn`, or `fail`. HTTP returns `503` when the checklist is `fail`, while still returning the full response body for operators and deployment scripts.
 When `sourceKey`, `sourceType`, or `enabled` filters are provided, the source ingest configuration evidence preserves that scope so rollout scripts can tell which connector family was evaluated.
+LLM checks default to `configuration` mode so routine dashboard refreshes do not spend model calls. Use `llmReadinessMode=preflight` to run the contract preflight, or `llmReadinessMode=evaluation` to run both preflight and multi-sample semantic quality checks before enabling scheduled source insight workers with a real provider.
 
 ## Checklist Items
 
@@ -45,6 +49,8 @@ When `sourceKey`, `sourceType`, or `enabled` filters are provided, the source in
 | `reviewActions.executor` | review-actions | Executor mode, required methods, dry-run status, source-truth mutation capability, and audit counts. |
 | `reviewActions.executionLedger` | review-actions | Execution ledger availability, completed/running/failed counts, and latest update time. |
 | `llm.configuration` | llm | Provider-specific LLM configuration checks. |
+| `llm.preflight` | llm | Optional provider call, semantic enrichment schema validation, usage, and output preview. |
+| `llm.semanticEvaluation` | llm | Optional multi-sample semantic quality gate, warning/failing samples, and next actions. |
 
 ## Resource Preparation
 
@@ -52,7 +58,7 @@ Before production traffic, prepare the resources below and use the checklist as 
 
 - PostgreSQL: set `THREADTRACE_STORAGE=postgres`, provide `THREADTRACE_DATABASE_URL` or host-based variables, and apply `docs/postgresql-schema.sql`.
 - Workers: run either the combined operations worker or separate due-source and notification workers.
-- LLM: keep `mock` for local smoke tests, then configure provider, model, and API key for real enrichment.
+- LLM: keep `mock` for local smoke tests, then configure provider, model, and API key for real enrichment. Before production scheduling, run `deployment-checklist --llm-readiness-mode evaluation --provider openai-compatible` and review any warning samples.
 - Notifications: start with file outbox delivery and run `notification-diagnostics`; then add a webhook or future channel when an external receiver is ready.
 - Review actions: keep the default `none` mode for safe dry-runs, use `THREADTRACE_REVIEW_ACTION_EXECUTOR=file-audit` to rehearse execution with audit files, then inject a mutating executor when downstream task and context stores are provisioned.
 - Sources: run `connector-readiness` before registration, then `source-diagnostics` after registering each new forum/source integration.

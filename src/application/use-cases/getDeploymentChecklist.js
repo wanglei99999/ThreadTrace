@@ -11,6 +11,8 @@ function getDeploymentChecklist(options) {
   const notificationEventActionExecutionSummary = summarizeActionExecutions(safeOptions.notificationEventActionExecutions);
   const sourceDiagnostics = safeOptions.sourceDiagnostics || {};
   const readiness = safeOptions.readiness || {};
+  const llmPreflight = safeOptions.llmPreflight;
+  const llmEvaluation = safeOptions.llmEvaluation;
   const sourceScope = {
     sourceKey: safeOptions.sourceKey || safeOptions.forum,
     sourceType: safeOptions.sourceType
@@ -95,7 +97,7 @@ function getDeploymentChecklist(options) {
       provider: diagnostics.configuration && diagnostics.configuration.llm && diagnostics.configuration.llm.provider,
       checks: selectCheckKeys(diagnostics.checks, /^config\.llm\./)
     })
-  ];
+  ].concat(llmReadinessItems(llmPreflight, llmEvaluation));
 
   return {
     generatedAt: safeOptions.now || diagnostics.generatedAt || readiness.generatedAt || new Date().toISOString(),
@@ -109,8 +111,55 @@ function getDeploymentChecklist(options) {
     reviewActionExecutions: reviewActionExecutionSummary,
     notificationEventActionExecutions: notificationEventActionExecutionSummary,
     sourceDiagnostics,
-    readiness
+    readiness,
+    llmPreflight,
+    llmEvaluation
   };
+}
+
+function llmReadinessItems(preflight, evaluation) {
+  const items = [];
+  if (preflight) {
+    items.push(item('llm.preflight', 'llm', preflight.status || 'warn', 'LLM provider can complete and validate a semantic enrichment preflight sample.', {
+      provider: preflight.provider,
+      traceId: preflight.traceId,
+      task: preflight.task,
+      schemaVersion: preflight.schemaVersion,
+      checks: selectCheckKeys(preflight.checks),
+      validationStatus: preflight.validation && preflight.validation.status,
+      outputPreview: preflight.outputPreview,
+      error: preflight.error
+    }));
+  }
+  if (evaluation) {
+    items.push(item('llm.semanticEvaluation', 'llm', evaluation.status || 'warn', 'LLM provider passes semantic contract and quality checks across evaluation samples.', {
+      provider: evaluation.provider,
+      traceId: evaluation.traceId,
+      task: evaluation.task,
+      schemaVersion: evaluation.schemaVersion,
+      sampleCount: evaluation.sampleCount,
+      summary: evaluation.summary,
+      failedSamples: summarizeLlmEvaluationSamples(evaluation, 'fail'),
+      warningSamples: summarizeLlmEvaluationSamples(evaluation, 'warn'),
+      nextActions: (evaluation.nextActions || []).slice(0, 5)
+    }));
+  }
+  return items;
+}
+
+function summarizeLlmEvaluationSamples(evaluation, status) {
+  return (evaluation.results || []).filter(function (result) {
+    return result.status === status;
+  }).slice(0, 10).map(function (result) {
+    return {
+      id: result.id,
+      title: result.title,
+      status: result.status,
+      validationStatus: result.validation && result.validation.status,
+      qualityChecks: selectCheckKeys(result.qualityChecks),
+      error: result.error
+    };
+  });
 }
 
 function summarizeActionExecutions(result) {
@@ -174,7 +223,7 @@ function aggregateChecks(checks, pattern) {
 
 function selectCheckKeys(checks, pattern) {
   return (checks || []).filter(function (check) {
-    return pattern.test(check.key);
+    return !pattern || pattern.test(check.key);
   }).map(function (check) {
     return {
       key: check.key,

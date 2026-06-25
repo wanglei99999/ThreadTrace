@@ -378,7 +378,9 @@ async function routeRequest(request, response, context) {
       now: body.now,
       storeDir: body.storeDir || context.storeDir,
       runningStaleAfterMs: body.runningStaleAfterMs,
-      workerStaleAfterMs: body.workerStaleAfterMs
+      workerStaleAfterMs: body.workerStaleAfterMs,
+      llmReadinessMode: body.llmReadinessMode,
+      provider: body.provider
     });
     writeJson(response, result.status === 'fail' ? 503 : 200, result);
     return;
@@ -914,7 +916,9 @@ async function routeRequest(request, response, context) {
       now: body.now,
       storeDir: body.storeDir || context.storeDir,
       runningStaleAfterMs: body.runningStaleAfterMs,
-      workerStaleAfterMs: body.workerStaleAfterMs
+      workerStaleAfterMs: body.workerStaleAfterMs,
+      llmReadinessMode: body.llmReadinessMode,
+      provider: body.provider
     });
     writeJson(response, plan.status === 'fail' ? 503 : 200, plan);
     return;
@@ -932,7 +936,9 @@ async function routeRequest(request, response, context) {
       now: body.now,
       storeDir: body.storeDir || context.storeDir,
       runningStaleAfterMs: body.runningStaleAfterMs,
-      workerStaleAfterMs: body.workerStaleAfterMs
+      workerStaleAfterMs: body.workerStaleAfterMs,
+      llmReadinessMode: body.llmReadinessMode,
+      provider: body.provider
     });
     writeJson(response, plan.status === 'fail' ? 503 : 200, plan);
     return;
@@ -974,6 +980,8 @@ async function routeRequest(request, response, context) {
       storeDir: body.storeDir || context.storeDir,
       runningStaleAfterMs: body.runningStaleAfterMs,
       workerStaleAfterMs: body.workerStaleAfterMs,
+      llmReadinessMode: body.llmReadinessMode,
+      provider: body.provider,
       requestId: context.requestId,
       idempotencyKey: context.idempotencyKey
     });
@@ -998,7 +1006,9 @@ async function routeRequest(request, response, context) {
       enabled: enabledParam === null ? undefined : enabledParam === 'true',
       limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,
       now: url.searchParams.get('now') || undefined,
-      storeDir: url.searchParams.get('storeDir') || undefined
+      storeDir: url.searchParams.get('storeDir') || undefined,
+      llmReadinessMode: url.searchParams.get('llmReadinessMode') || undefined,
+      provider: url.searchParams.get('provider') || undefined
     });
     writeJson(response, checklist.status === 'fail' ? 503 : 200, checklist);
     return;

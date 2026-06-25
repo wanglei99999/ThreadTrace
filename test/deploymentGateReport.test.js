@@ -199,3 +199,34 @@ test('runtime deployment gate composes rollout and resource reports', async func
     return gate.key === 'resources.provisioning';
   }).status, 'ok');
 });
+
+test('runtime deployment gate can include LLM evaluation readiness evidence', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-deployment-gate-llm-'));
+  const runtime = createThreadTraceRuntime({
+    defaultInputDir: path.resolve(__dirname, '..', 'example'),
+    env: {
+      THREADTRACE_REVIEW_ACTION_EXECUTOR: 'file-audit'
+    },
+    storeDir: path.join(tempDir, 'store')
+  });
+
+  const report = await runtime.getDeploymentGateReport({
+    now: '2026-06-25T10:00:00.000Z',
+    storeDir: path.join(tempDir, 'store'),
+    provider: 'mock',
+    llmReadinessMode: 'evaluation'
+  });
+
+  const checklist = report.deploymentChecklist;
+  assert.equal(checklist.llmPreflight.status, 'ok');
+  assert.equal(checklist.llmEvaluation.status, 'ok');
+  assert.equal(checklist.items.find(function (item) {
+    return item.key === 'llm.preflight';
+  }).status, 'ok');
+  assert.equal(checklist.items.find(function (item) {
+    return item.key === 'llm.semanticEvaluation';
+  }).evidence.sampleCount, 2);
+  assert.equal(report.gates.find(function (gate) {
+    return gate.key === 'deployment.checklist';
+  }).status, 'ok');
+});

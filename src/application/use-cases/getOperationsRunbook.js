@@ -12,7 +12,9 @@ const COMMANDS_BY_KEY = {
   'notificationEventActions.executionLedger': 'node src/presentation/cli/threadtrace.js event-action-executions --status failed',
   'reviewActions.executor': 'node src/presentation/cli/threadtrace.js review-action-executor-diagnostics',
   'reviewActions.executionLedger': 'node src/presentation/cli/threadtrace.js review-action-executions --status failed',
-  'llm.configuration': 'node src/presentation/cli/threadtrace.js runtime-diagnostics'
+  'llm.configuration': 'node src/presentation/cli/threadtrace.js runtime-diagnostics',
+  'llm.preflight': 'node src/presentation/cli/threadtrace.js llm-preflight',
+  'llm.semanticEvaluation': 'node src/presentation/cli/threadtrace.js llm-evaluate'
 };
 
 function getOperationsRunbook(options) {
@@ -538,7 +540,15 @@ function relatedCommandsForChecklistItem(item) {
       'node src/presentation/cli/threadtrace.js review-action-apply --execute true'
     ],
     'reviewActions.executionLedger': reviewActionExecutionLedgerCommands(item),
-    'notificationEventActions.executionLedger': notificationEventActionExecutionLedgerCommands(item)
+    'notificationEventActions.executionLedger': notificationEventActionExecutionLedgerCommands(item),
+    'llm.preflight': [
+      'node src/presentation/cli/threadtrace.js llm-preflight --json true',
+      'node src/presentation/cli/threadtrace.js deployment-checklist --llm-readiness-mode preflight'
+    ],
+    'llm.semanticEvaluation': [
+      'node src/presentation/cli/threadtrace.js llm-evaluate --json true',
+      'node src/presentation/cli/threadtrace.js deployment-checklist --llm-readiness-mode evaluation'
+    ]
   };
   return commands[item.key] || [];
 }

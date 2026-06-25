@@ -426,7 +426,9 @@ function main(argv) {
       limit: options.limit ? Number(options.limit) : 100,
       now: options.now,
       storeDir,
-      runningStaleAfterMs: options.runningStaleAfterMs ? Number(options.runningStaleAfterMs) : undefined
+      runningStaleAfterMs: options.runningStaleAfterMs ? Number(options.runningStaleAfterMs) : undefined,
+      llmReadinessMode: options.llmReadinessMode,
+      provider: options.provider
     }).then(function (overview) {
       console.log('Storage: ' + overview.storageMode);
       console.log('Sources: total=' + overview.sources.total + ', enabled=' + overview.sources.enabled + ', due=' + overview.sources.due + ', failed=' + overview.sources.failed);
@@ -2160,7 +2162,9 @@ function main(argv) {
       pipelineLimit: options.pipelineLimit ? Number(options.pipelineLimit) : 20,
       now: options.now,
       storeDir,
-      workerStaleAfterMs: options.workerStaleAfterMs ? Number(options.workerStaleAfterMs) : undefined
+      workerStaleAfterMs: options.workerStaleAfterMs ? Number(options.workerStaleAfterMs) : undefined,
+      llmReadinessMode: options.llmReadinessMode,
+      provider: options.provider
     }).then(function (report) {
       console.log('Deployment gate: ' + report.status);
       console.log('Gates: ' + report.gateCount);
@@ -2773,6 +2777,9 @@ function parseArgs(args) {
       index += 1;
     } else if (item === '--provider') {
       options.provider = args[index + 1];
+      index += 1;
+    } else if (item === '--llm-readiness-mode') {
+      options.llmReadinessMode = args[index + 1];
       index += 1;
     } else if (item === '--source-key') {
       options.sourceKey = args[index + 1];
@@ -3390,7 +3397,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js worker-topology-plan [--topology operations-worker|split-workers] [--source-task-mode ingest|insight-pipeline] [--source-key key] [--source-id id] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js runtime-diagnostics [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js adapter-diagnostics [--now iso]');
-  console.log('  node src/presentation/cli/threadtrace.js deployment-checklist [--forum nga] [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js deployment-checklist [--forum nga] [--llm-readiness-mode configuration|preflight|evaluation] [--provider mock|openai-compatible] [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js migrate-store --from-store-dir dir [--to-store-dir dir] [--dry-run true|false] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js list-events [--source-key key] [--source-id id] [--type type] [--acknowledged true|false] [--delivery-status status] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js event-detail --event-id id [--json true] [--store-dir dir]');
@@ -3412,7 +3419,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js connector-rollout-plan [--forum nga] [--source-type type] [--module-path file] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--dry-run-ingest true] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js rollout-manifest-plan --manifest-file file [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js resource-provisioning-plan [--manifest-file file] [--store-dir dir] [--now iso]');
-  console.log('  node src/presentation/cli/threadtrace.js deployment-gate [--manifest-file file] [--store-dir dir] [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js deployment-gate [--manifest-file file] [--llm-readiness-mode configuration|preflight|evaluation] [--provider mock|openai-compatible] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js rollout-manifest-apply --manifest-file file [--execute true] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js register-source [--forum nga] [--source-type type] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--start-page n] [--page-count n] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js disable-source --source-id id [--execute true] [--force true] [--source-run-stale-after-ms ms] [--store-dir dir] [--now iso]');

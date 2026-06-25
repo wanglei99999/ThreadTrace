@@ -13,6 +13,7 @@ Use it before registering a new source in production, adding a connector module,
 
 ```powershell
 node src/presentation/cli/threadtrace.js deployment-gate --manifest-file docs/examples/rollout-manifest.sample.json
+node src/presentation/cli/threadtrace.js deployment-gate --manifest-file docs/examples/rollout-manifest.sample.json --llm-readiness-mode evaluation --provider mock
 ```
 
 The command exits with code `2` when any gate fails. Warnings are printed but keep exit code `0`, which lets deployment automation distinguish hard blockers from follow-up recommendations.
@@ -23,7 +24,7 @@ The command exits with code `2` when any gate fails. Warnings are printed but ke
 POST /api/deployment/gate
 ```
 
-The body can be a rollout manifest directly, or an object with a `manifest` property and overrides such as `storeDir`, `limit`, `pipelineLimit`, `now`, and `workerStaleAfterMs`.
+The body can be a rollout manifest directly, or an object with a `manifest` property and overrides such as `storeDir`, `limit`, `pipelineLimit`, `now`, `workerStaleAfterMs`, `provider`, and `llmReadinessMode`.
 
 ## Gates
 
@@ -33,3 +34,5 @@ The body can be a rollout manifest directly, or an object with a `manifest` prop
 - `operations.runbook`: critical and warning actions derived from diagnostics and recent task history.
 
 The response includes each gate, its evidence, and flattened next actions with commands from the lower-level reports. Resource provisioning failures carry compact lower-level action details, including `evidenceSummary`, so a failed gate can show which resource is missing required source inputs such as `missingRequiredFields=tenantId`. Deployment checklist failures also carry source diagnostics actions when stored sources are broken, for example `source.handler` with `sourceId=... registeredHandler=false`, so top-level gates identify the source that needs repair before rollout.
+
+LLM readiness defaults to configuration-only checks to keep routine gate runs cheap. Use `llmReadinessMode=evaluation` when switching to a real provider; the deployment checklist portion will include both `llm.preflight` and `llm.semanticEvaluation`, and the runbook will point warnings back to the LLM evaluation commands.

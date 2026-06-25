@@ -674,6 +674,36 @@ test('operations runbook recommends connector readiness diagnostics', function (
   assert.match(runbook.actions[0].relatedCommands[0], /connector-readiness/);
 });
 
+test('operations runbook recommends LLM evaluation diagnostics', function () {
+  const runbook = getOperationsRunbook({
+    now: '2026-06-25T10:00:00.000Z',
+    checklist: {
+      generatedAt: '2026-06-25T10:00:00.000Z',
+      items: [
+        {
+          key: 'llm.semanticEvaluation',
+          area: 'llm',
+          status: 'warn',
+          summary: 'LLM provider evaluation produced warning samples.',
+          evidence: {
+            provider: 'mock',
+            sampleCount: 2
+          }
+        }
+      ]
+    },
+    pipelineRuns: {
+      runs: []
+    }
+  });
+
+  assert.equal(runbook.status, 'warn');
+  assert.equal(runbook.actionCount, 1);
+  assert.equal(runbook.actions[0].key, 'checklist.llm.semanticEvaluation');
+  assert.match(runbook.actions[0].recommendedCommand, /llm-evaluate/);
+  assert.match(runbook.actions[0].relatedCommands[1], /deployment-checklist --llm-readiness-mode evaluation/);
+});
+
 test('operations runbook recommends worker topology plan for worker readiness warnings', function () {
   const runbook = getOperationsRunbook({
     now: '2026-06-19T10:00:00.000Z',

@@ -1509,7 +1509,7 @@ test('http server exposes deployment checklist API', async function () {
   const baseUrl = 'http://127.0.0.1:' + address.port;
 
   try {
-    const checklist = await getJson(baseUrl + '/api/deployment/checklist?sourceType=saved-html-directory&enabled=true&now=2026-06-19T10:00:00.000Z');
+    const checklist = await getJson(baseUrl + '/api/deployment/checklist?sourceType=saved-html-directory&enabled=true&provider=mock&llmReadinessMode=evaluation&now=2026-06-19T10:00:00.000Z');
     const topologyPlan = await getJson(baseUrl + '/api/operations/worker-topology-plan?now=2026-06-19T10:00:00.000Z');
     const scopedTopologyPlan = await getJson(baseUrl + '/api/operations/worker-topology-plan?topology=split-workers&sourceKey=nga&sourceId=source-1&now=2026-06-19T10:00:00.000Z');
     const openApi = await getJson(baseUrl + '/openapi.json');
@@ -1528,6 +1528,10 @@ test('http server exposes deployment checklist API', async function () {
     assert.equal(checklist.items.find(function (item) {
       return item.key === 'reviewActions.executor';
     }).status, 'warn');
+    assert.equal(checklist.items.find(function (item) {
+      return item.key === 'llm.semanticEvaluation';
+    }).status, 'ok');
+    assert.equal(checklist.llmEvaluation.sampleCount, 2);
     assert.equal(topologyPlan.status, 'warn');
     assert.equal(topologyPlan.topology, 'operations-worker');
     assert.equal(topologyPlan.workers[0].workerType, 'operations');
@@ -1543,6 +1547,9 @@ test('http server exposes deployment checklist API', async function () {
     }));
     assert.ok(openApi.paths['/api/deployment/checklist'].get.parameters.find(function (parameter) {
       return parameter.name === 'enabled';
+    }));
+    assert.ok(openApi.paths['/api/deployment/checklist'].get.parameters.find(function (parameter) {
+      return parameter.name === 'llmReadinessMode';
     }));
     assert.ok(openApi.paths['/api/operations/worker-topology-plan']);
     assert.ok(openApi.paths['/api/operations/worker-topology-plan'].get.parameters.find(function (parameter) {
