@@ -1003,6 +1003,8 @@ function createOpenApiSpec() {
             parameters: [
               { name: 'sourceId', in: 'query', required: false, schema: { type: 'string' } },
               { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+              { name: 'sourceType', in: 'query', required: false, schema: { type: 'string', example: 'saved-html-directory' } },
+              { name: 'enabled', in: 'query', required: false, schema: { type: 'boolean' } },
               { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
             { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
             { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
@@ -1122,6 +1124,8 @@ function createOpenApiSpec() {
           parameters: [
             { name: 'sourceId', in: 'query', required: false, schema: { type: 'string' } },
             { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceType', in: 'query', required: false, schema: { type: 'string', example: 'saved-html-directory' } },
+            { name: 'enabled', in: 'query', required: false, schema: { type: 'boolean' } },
             { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
             { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
             { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
@@ -1708,6 +1712,7 @@ function createOpenApiSpec() {
           parameters: [
             { name: 'forum', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
             { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceType', in: 'query', required: false, schema: { type: 'string', example: 'saved-html-directory' } },
             { name: 'enabled', in: 'query', required: false, schema: { type: 'boolean' } },
             { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
             { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },

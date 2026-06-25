@@ -871,15 +871,24 @@ test('http server exposes operational overview API', async function () {
   const baseUrl = 'http://127.0.0.1:' + address.port;
 
   try {
-    const overview = await getJson(baseUrl + '/api/operations/overview?sourceKey=nga&sourceId=source-1&limit=10');
+    const overview = await getJson(baseUrl + '/api/operations/overview?sourceKey=nga&sourceId=source-1&sourceType=saved-html-directory&enabled=true&limit=10');
+    const openApi = await getJson(baseUrl + '/openapi.json');
 
     assert.equal(overview.storageMode, 'file');
     assert.equal(calls[0].sourceKey, 'nga');
     assert.equal(calls[0].sourceId, 'source-1');
+    assert.equal(calls[0].sourceType, 'saved-html-directory');
+    assert.equal(calls[0].enabled, true);
     assert.equal(calls[0].limit, 10);
     assert.equal(overview.sources.due, 1);
     assert.equal(overview.tasks.failed, 1);
     assert.equal(overview.events.dueForDelivery, 1);
+    assert.ok(openApi.paths['/api/operations/overview'].get.parameters.find(function (parameter) {
+      return parameter.name === 'sourceType';
+    }));
+    assert.ok(openApi.paths['/api/operations/overview'].get.parameters.find(function (parameter) {
+      return parameter.name === 'enabled';
+    }));
   } finally {
     await close(server);
   }
@@ -1283,19 +1292,27 @@ test('http server exposes operational readiness API', async function () {
   const baseUrl = 'http://127.0.0.1:' + address.port;
 
   try {
-    const response = await fetch(baseUrl + '/api/operations/readiness?sourceKey=nga&sourceId=source-1&limit=10');
+    const response = await fetch(baseUrl + '/api/operations/readiness?sourceKey=nga&sourceId=source-1&sourceType=saved-html-directory&enabled=true&limit=10');
     const readiness = await response.json();
     const openApi = await getJson(baseUrl + '/openapi.json');
 
     assert.equal(response.status, 503);
     assert.equal(calls[0].sourceKey, 'nga');
     assert.equal(calls[0].sourceId, 'source-1');
+    assert.equal(calls[0].sourceType, 'saved-html-directory');
+    assert.equal(calls[0].enabled, true);
     assert.equal(calls[0].limit, 10);
     assert.equal(readiness.status, 'fail');
     assert.equal(readiness.checks[0].key, 'workers.stale');
     assert.ok(openApi.paths['/api/operations/readiness']);
     assert.ok(openApi.paths['/api/operations/readiness'].get.parameters.find(function (parameter) {
       return parameter.name === 'sourceKey';
+    }));
+    assert.ok(openApi.paths['/api/operations/readiness'].get.parameters.find(function (parameter) {
+      return parameter.name === 'sourceType';
+    }));
+    assert.ok(openApi.paths['/api/operations/readiness'].get.parameters.find(function (parameter) {
+      return parameter.name === 'enabled';
     }));
   } finally {
     await close(server);
@@ -1340,7 +1357,7 @@ test('http server exposes deployment checklist API', async function () {
   const baseUrl = 'http://127.0.0.1:' + address.port;
 
   try {
-    const checklist = await getJson(baseUrl + '/api/deployment/checklist?now=2026-06-19T10:00:00.000Z');
+    const checklist = await getJson(baseUrl + '/api/deployment/checklist?sourceType=saved-html-directory&enabled=true&now=2026-06-19T10:00:00.000Z');
     const topologyPlan = await getJson(baseUrl + '/api/operations/worker-topology-plan?now=2026-06-19T10:00:00.000Z');
     const scopedTopologyPlan = await getJson(baseUrl + '/api/operations/worker-topology-plan?topology=split-workers&sourceKey=nga&sourceId=source-1&now=2026-06-19T10:00:00.000Z');
     const openApi = await getJson(baseUrl + '/openapi.json');
@@ -1354,6 +1371,9 @@ test('http server exposes deployment checklist API', async function () {
       return item.key === 'sources.ingestConfiguration';
     }));
     assert.equal(checklist.items.find(function (item) {
+      return item.key === 'sources.ingestConfiguration';
+    }).evidence.sourceType, 'saved-html-directory');
+    assert.equal(checklist.items.find(function (item) {
       return item.key === 'reviewActions.executor';
     }).status, 'warn');
     assert.equal(topologyPlan.status, 'warn');
@@ -1366,6 +1386,12 @@ test('http server exposes deployment checklist API', async function () {
     assert.match(scopedTopologyPlan.workers[0].command, /--source-key nga/);
     assert.match(scopedTopologyPlan.workers[0].command, /--source-id source-1/);
     assert.ok(openApi.paths['/api/deployment/checklist']);
+    assert.ok(openApi.paths['/api/deployment/checklist'].get.parameters.find(function (parameter) {
+      return parameter.name === 'sourceType';
+    }));
+    assert.ok(openApi.paths['/api/deployment/checklist'].get.parameters.find(function (parameter) {
+      return parameter.name === 'enabled';
+    }));
     assert.ok(openApi.paths['/api/operations/worker-topology-plan']);
     assert.ok(openApi.paths['/api/operations/worker-topology-plan'].get.parameters.find(function (parameter) {
       return parameter.name === 'sourceId';
@@ -2154,11 +2180,12 @@ test('http server exposes tracked source diagnostics', async function () {
       displayName: 'Missing forum source',
       inputDir: path.resolve(__dirname, '..', 'example')
     }, 201);
-    const response = await fetch(baseUrl + '/api/sources/diagnostics');
+    const response = await fetch(baseUrl + '/api/sources/diagnostics?sourceType=saved-html-directory');
     const diagnostics = await response.json();
     const openApi = await getJson(baseUrl + '/openapi.json');
 
     assert.equal(response.status, 503);
+    assert.equal(diagnostics.sourceType, 'saved-html-directory');
     assert.equal(diagnostics.status, 'fail');
     assert.equal(diagnostics.sources[0].status, 'fail');
     assert.equal(diagnostics.sources[0].checks.find(function (check) {

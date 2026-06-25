@@ -17,13 +17,16 @@ ThreadTrace exposes a deployment checklist as a runnable readiness contract. It 
 
 ```powershell
 node src/presentation/cli/threadtrace.js deployment-checklist --store-dir data/store
+node src/presentation/cli/threadtrace.js deployment-checklist --source-type saved-html-directory --enabled true
 ```
 
 ```text
 GET /api/deployment/checklist
+GET /api/deployment/checklist?sourceType=saved-html-directory&enabled=true
 ```
 
 The checklist returns `ok`, `warn`, or `fail`. HTTP returns `503` when the checklist is `fail`, while still returning the full response body for operators and deployment scripts.
+When `sourceKey`, `sourceType`, or `enabled` filters are provided, the source ingest configuration evidence preserves that scope so rollout scripts can tell which connector family was evaluated.
 
 ## Checklist Items
 

@@ -96,6 +96,8 @@ test('operational readiness reports source-scoped review action execution ledger
   const readiness = await getOperationalReadiness({
     sourceKey: 'nga',
     sourceId: 'source-nga',
+    sourceType: 'saved-html-directory',
+    enabled: true,
     async getOperationalOverview(request) {
       calls.push(request);
       return {
@@ -133,6 +135,8 @@ test('operational readiness reports source-scoped review action execution ledger
 
   assert.equal(calls[0].sourceKey, 'nga');
   assert.equal(calls[0].sourceId, 'source-nga');
+  assert.equal(calls[0].sourceType, 'saved-html-directory');
+  assert.equal(calls[0].enabled, true);
   assert.equal(readiness.status, 'fail');
   assert.equal(check.status, 'fail');
   assert.equal(check.count, 1);

@@ -333,6 +333,8 @@ function main(argv) {
       forum: options.forum,
       sourceKey: options.sourceKey,
       sourceId: options.sourceId,
+      sourceType: options.sourceType,
+      enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
       limit: options.limit ? Number(options.limit) : 100,
       now: options.now,
       storeDir,
@@ -366,6 +368,8 @@ function main(argv) {
       forum: options.forum,
       sourceKey: options.sourceKey,
       sourceId: options.sourceId,
+      sourceType: options.sourceType,
+      enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
       limit: options.limit ? Number(options.limit) : 100,
       now: options.now,
       storeDir
@@ -1127,6 +1131,7 @@ function main(argv) {
     runtime.getDeploymentChecklist({
       forum: options.forum,
       sourceKey: options.sourceKey,
+      sourceType: options.sourceType,
       enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
       limit: options.limit ? Number(options.limit) : 100,
       now: options.now,
@@ -1800,6 +1805,7 @@ function main(argv) {
       manifest: options.manifestFile ? parseManifestOption(options) : undefined,
       forum: options.forum,
       sourceKey: options.sourceKey,
+      sourceType: options.sourceType,
       enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
       limit: options.limit ? Number(options.limit) : 100,
       now: options.now,
@@ -1962,6 +1968,7 @@ function main(argv) {
     runtime.diagnoseSources({
       forum: options.forum,
       sourceKey: options.sourceKey,
+      sourceType: options.sourceType,
       enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
       limit: options.limit ? Number(options.limit) : 100,
       now: options.now,

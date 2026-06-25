@@ -8,6 +8,7 @@ test('deployment checklist aggregates runtime, source, readiness, notification, 
   const checklist = getDeploymentChecklist({
     now: '2026-06-19T10:00:00.000Z',
     sourceKey: 'missing',
+    sourceType: 'external-feed',
     diagnostics: {
       status: 'warn',
       generatedAt: '2026-06-19T10:00:00.000Z',
@@ -150,6 +151,7 @@ test('deployment checklist aggregates runtime, source, readiness, notification, 
   });
   assert.equal(sourceItem.status, 'fail');
   assert.equal(sourceItem.evidence.sourceKey, 'missing');
+  assert.equal(sourceItem.evidence.sourceType, 'external-feed');
   assert.equal(sourceItem.evidence.summary.sourceCount, 2);
   assert.equal(sourceItem.evidence.summary.fail, 1);
   assert.equal(sourceItem.evidence.summary.nextActionCount, 1);

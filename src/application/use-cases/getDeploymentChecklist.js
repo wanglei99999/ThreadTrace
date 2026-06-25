@@ -11,7 +11,8 @@ function getDeploymentChecklist(options) {
   const sourceDiagnostics = safeOptions.sourceDiagnostics || {};
   const readiness = safeOptions.readiness || {};
   const sourceScope = {
-    sourceKey: safeOptions.sourceKey || safeOptions.forum
+    sourceKey: safeOptions.sourceKey || safeOptions.forum,
+    sourceType: safeOptions.sourceType
   };
   const items = [
     item('runtime.configuration', 'runtime', diagnostics.status || 'fail', 'Runtime configuration and resource diagnostics are available.', {
@@ -31,6 +32,7 @@ function getDeploymentChecklist(options) {
     }),
     item('sources.ingestConfiguration', 'sources', sourceDiagnostics.status || 'fail', 'Tracked sources have usable locations, handlers, and adapters.', {
       sourceKey: sourceScope.sourceKey,
+      sourceType: sourceScope.sourceType,
       sourceCount: sourceDiagnostics.sourceCount,
       summary: summarizeSourceDiagnostics(sourceDiagnostics)
     }),

@@ -9,6 +9,7 @@ async function diagnoseTrackedSources(options) {
   const getAdapter = safeOptions.getAdapter;
   const sources = await sourceRepository.listSources({
     sourceKey: safeOptions.sourceKey,
+    sourceType: safeOptions.sourceType,
     enabled: safeOptions.enabled,
     limit: safeOptions.limit || 100
   });
@@ -22,6 +23,7 @@ async function diagnoseTrackedSources(options) {
   return {
     generatedAt: safeOptions.now || new Date().toISOString(),
     status: aggregateStatus(sourceDiagnostics.map(function (item) { return item.status; })),
+    sourceType: safeOptions.sourceType,
     sourceCount: sourceDiagnostics.length,
     sources: sourceDiagnostics,
     nextActions: sourceDiagnostics.flatMap(function (source) {

@@ -330,3 +330,127 @@ test('operational overview summarizes sources, tasks, events, and raw pages', as
   assert.equal(overview.reviewActions.executions.staleRunningBySourceKey.external, 1);
   assert.equal(overview.reviewActions.executions.staleRunningExecutions[0].taskId, 'review-action-task-2');
 });
+
+test('operational overview scopes source type windows without mixing sibling source keys', async function () {
+  const sourceQueries = [];
+  const overview = await getOperationalOverview({
+    now: '2026-06-25T10:00:00.000Z',
+    sourceKey: 'nga',
+    sourceType: 'saved-html-directory',
+    sourceRepository: {
+      async saveSource() {},
+      async findSource() {},
+      async listSources(query) {
+        sourceQueries.push(query);
+        return [
+          {
+            id: 'source-html',
+            sourceKey: 'nga',
+            sourceType: 'saved-html-directory',
+            displayName: 'NGA archive',
+            enabled: true,
+            runState: { status: 'failed' }
+          }
+        ];
+      }
+    },
+    taskRepository: {
+      async saveTask() {},
+      async findTask() {},
+      async listTasks() {
+        return [
+          { id: 'task-html', status: 'failed', input: { sourceId: 'source-html', sourceKey: 'nga' } },
+          { id: 'task-url', status: 'failed', input: { sourceId: 'source-url', sourceKey: 'nga' } },
+          { id: 'task-key-only', status: 'failed', input: { sourceKey: 'nga' } }
+        ];
+      }
+    },
+    notificationEventRepository: {
+      async saveEvent() {},
+      async findEvent() {},
+      async listEvents(query) {
+        return [
+          {
+            id: 'event-html',
+            type: 'source-attention',
+            deliveryStatus: query.deliveryStatus || 'pending',
+            sourceId: 'source-html',
+            sourceKey: 'nga'
+          },
+          {
+            id: 'event-url',
+            type: 'source-attention',
+            deliveryStatus: query.deliveryStatus || 'pending',
+            sourceId: 'source-url',
+            sourceKey: 'nga'
+          },
+          {
+            id: 'event-type',
+            type: 'source-type-operations',
+            deliveryStatus: query.deliveryStatus || 'pending',
+            payload: { sourceType: 'saved-html-directory' }
+          }
+        ].filter(function (event) {
+          if (query.deliveryStatus && event.deliveryStatus !== query.deliveryStatus) return false;
+          return true;
+        });
+      }
+    },
+    rawThreadPageRepository: {
+      async saveRawThreadPage() {},
+      async findRawThreadPageByHash() {},
+      async listRawThreadPages() {
+        return [];
+      }
+    },
+    workerRunRepository: {
+      async saveWorkerRun() {},
+      async findWorkerRun() {},
+      async listWorkerRuns() {
+        return [
+          { id: 'run-html', status: 'running', input: { sourceId: 'source-html', sourceKey: 'nga' } },
+          { id: 'run-url', status: 'running', input: { sourceId: 'source-url', sourceKey: 'nga' } },
+          { id: 'run-key-only', status: 'running', input: { sourceKey: 'nga' } }
+        ];
+      }
+    },
+    workerLeaseRepository: {
+      async acquireWorkerLease() {},
+      async renewWorkerLease() {},
+      async releaseWorkerLease() {},
+      async listWorkerLeases() {
+        return [
+          {
+            leaseKey: 'worker:due-source:source-id:source-html',
+            expiresAt: '2026-06-25T10:05:00.000Z'
+          },
+          {
+            leaseKey: 'worker:due-source:source-id:source-url',
+            expiresAt: '2026-06-25T10:05:00.000Z'
+          },
+          {
+            leaseKey: 'worker:due-source:source-key:nga',
+            expiresAt: '2026-06-25T10:05:00.000Z'
+          }
+        ];
+      }
+    }
+  });
+
+  assert.equal(sourceQueries[0].sourceType, 'saved-html-directory');
+  assert.equal(sourceQueries[0].sourceKey, 'nga');
+  assert.equal(overview.scope.sourceKey, 'nga');
+  assert.equal(overview.scope.sourceType, 'saved-html-directory');
+  assert.deepEqual(overview.scope.sourceIds, ['source-html']);
+  assert.deepEqual(overview.scope.sourceKeys, ['nga']);
+  assert.equal(overview.sources.total, 1);
+  assert.equal(overview.sources.failed, 1);
+  assert.equal(overview.tasks.total, 1);
+  assert.equal(overview.tasks.failed, 1);
+  assert.equal(overview.events.pending, 2);
+  assert.equal(overview.events.failed, 2);
+  assert.equal(overview.events.unacknowledged, 2);
+  assert.equal(overview.workers.running, 1);
+  assert.equal(overview.workers.leases.total, 1);
+  assert.equal(overview.workers.leases.activeBySourceId['source-html'], 1);
+});

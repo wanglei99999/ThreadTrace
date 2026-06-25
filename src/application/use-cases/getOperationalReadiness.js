@@ -5,6 +5,8 @@ async function getOperationalReadiness(options) {
   const overview = safeOptions.overview || await safeOptions.getOperationalOverview({
     sourceId: safeOptions.sourceId,
     sourceKey: safeOptions.sourceKey || safeOptions.forum,
+    sourceType: safeOptions.sourceType,
+    enabled: safeOptions.enabled,
     now: safeOptions.now,
     limit: safeOptions.limit,
     storeDir: safeOptions.storeDir,

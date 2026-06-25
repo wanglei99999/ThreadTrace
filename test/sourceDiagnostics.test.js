@@ -118,3 +118,49 @@ test('source diagnostics uses handler location schema for custom source types', 
   assert.match(diagnostics.sources[0].nextActions[0].evidenceSummary, /missingRequiredFields=endpoint/);
   assert.deepEqual(diagnostics.sources[0].nextActions[0].evidence.missingRequiredFields, ['endpoint']);
 });
+
+test('source diagnostics scopes repository queries by source type', async function () {
+  const queries = [];
+  const diagnostics = await diagnoseTrackedSources({
+    now: '2026-06-25T10:00:00.000Z',
+    sourceType: 'external-feed',
+    enabled: true,
+    sourceRepository: {
+      async saveSource() {},
+      async findSource() {},
+      async listSources(query) {
+        queries.push(query);
+        return [
+          {
+            id: 'source-external',
+            sourceKey: 'external',
+            sourceType: 'external-feed',
+            displayName: 'External feed',
+            enabled: true,
+            location: { endpoint: 'https://example.test/feed' }
+          }
+        ];
+      }
+    },
+    sourceIngestHandlerRegistry: createSourceIngestHandlerRegistry([
+      {
+        sourceType: 'external-feed',
+        requiresAdapter: false,
+        locationSchema: {
+          required: ['endpoint'],
+          properties: {
+            endpoint: { type: 'string' }
+          }
+        },
+        async run() {}
+      }
+    ])
+  });
+
+  assert.equal(queries[0].sourceType, 'external-feed');
+  assert.equal(queries[0].enabled, true);
+  assert.equal(diagnostics.sourceType, 'external-feed');
+  assert.equal(diagnostics.sourceCount, 1);
+  assert.equal(diagnostics.sources[0].sourceType, 'external-feed');
+  assert.equal(diagnostics.status, 'ok');
+});

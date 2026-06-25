@@ -1118,6 +1118,10 @@ function createThreadTraceRuntime(options) {
         rawThreadPageRepository: repositories.rawThreadPageRepository,
         workerRunRepository: repositories.workerRunRepository,
         workerLeaseRepository: repositories.workerLeaseRepository,
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        sourceType: safeRequest.sourceType,
+        enabled: safeRequest.enabled,
         reviewActionAuditOverview,
         reviewActionExecutions,
         authorReviewQueue,
@@ -1386,6 +1390,8 @@ function createThreadTraceRuntime(options) {
         }),
         sourceId: safeRequest.sourceId,
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        sourceType: safeRequest.sourceType,
+        enabled: safeRequest.enabled,
         now: safeRequest.now,
         limit: safeRequest.limit || 100,
         storeDir: safeRequest.storeDir,
@@ -1430,6 +1436,7 @@ function createThreadTraceRuntime(options) {
       });
       const connectorReadiness = await this.getConnectorReadiness({
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        sourceType: safeRequest.sourceType,
         enabled: safeRequest.enabled,
         limit: safeRequest.limit || 100,
         now: safeRequest.now,
@@ -1443,6 +1450,7 @@ function createThreadTraceRuntime(options) {
       const sourceDiagnostics = await this.diagnoseSources({
         forum: safeRequest.forum,
         sourceKey: safeRequest.sourceKey,
+        sourceType: safeRequest.sourceType,
         enabled: safeRequest.enabled,
         limit: safeRequest.limit || 100,
         now: safeRequest.now,
@@ -1453,6 +1461,8 @@ function createThreadTraceRuntime(options) {
         diagnostics,
         sourceId: safeRequest.sourceId,
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        sourceType: safeRequest.sourceType,
+        enabled: safeRequest.enabled,
         now: safeRequest.now,
         limit: safeRequest.limit || 100,
         storeDir: safeRequest.storeDir,
@@ -1472,6 +1482,7 @@ function createThreadTraceRuntime(options) {
       return getDeploymentChecklist({
         forum: safeRequest.forum,
         sourceKey: safeRequest.sourceKey,
+        sourceType: safeRequest.sourceType,
         diagnostics,
         adapterDiagnostics,
         connectorReadiness,
@@ -1745,6 +1756,7 @@ function createThreadTraceRuntime(options) {
         sourceIngestHandlerRegistry,
         getAdapter: forumAdapterRegistry.get,
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        sourceType: safeRequest.sourceType,
         enabled: safeRequest.enabled,
         limit: safeRequest.limit || 100,
         now: safeRequest.now

@@ -25,18 +25,20 @@ async function getOperationalOverview(options) {
     ? assertWorkerLeaseRepository(safeOptions.workerLeaseRepository)
     : undefined;
 
-  const sources = await sourceRepository.listSources({ limit });
-  const recentTasks = await taskRepository.listTasks({ limit });
-  const pendingEvents = await notificationEventRepository.listEvents({ deliveryStatus: 'pending', acknowledged: false, limit });
-  const failedEvents = await notificationEventRepository.listEvents({ deliveryStatus: 'failed', acknowledged: false, limit });
-  const unacknowledgedEvents = await notificationEventRepository.listEvents({ acknowledged: false, limit });
+  const sources = await resolveScopedSources(sourceRepository, safeOptions, limit);
+  const scope = buildOverviewScope(safeOptions, sources);
+  const recentTasks = filterTasksByOverviewScope(await taskRepository.listTasks({ limit }), scope);
+  const pendingEvents = filterEventsByOverviewScope(await notificationEventRepository.listEvents({ deliveryStatus: 'pending', acknowledged: false, limit }), scope);
+  const failedEvents = filterEventsByOverviewScope(await notificationEventRepository.listEvents({ deliveryStatus: 'failed', acknowledged: false, limit }), scope);
+  const unacknowledgedEvents = filterEventsByOverviewScope(await notificationEventRepository.listEvents({ acknowledged: false, limit }), scope);
   const rawPages = await rawThreadPageRepository.listRawThreadPages({ limit });
-  const workerRuns = workerRunRepository ? await workerRunRepository.listWorkerRuns({ limit }) : [];
-  const workerLeases = workerLeaseRepository ? await workerLeaseRepository.listWorkerLeases({ limit }) : [];
+  const workerRuns = workerRunRepository ? filterWorkerRunsByOverviewScope(await workerRunRepository.listWorkerRuns({ limit }), scope) : [];
+  const workerLeases = workerLeaseRepository ? filterWorkerLeasesByOverviewScope(await workerLeaseRepository.listWorkerLeases({ limit }), scope) : [];
 
   return {
     generatedAt: now,
     windowLimit: limit,
+    scope,
     sources: summarizeSources(sources, now),
     tasks: summarizeTasks(recentTasks),
     events: summarizeEvents(pendingEvents, failedEvents, unacknowledgedEvents, now),
@@ -57,6 +59,36 @@ async function getOperationalOverview(options) {
         return summarizeWorkerLease(lease, now);
       })
     }
+  };
+}
+
+async function resolveScopedSources(sourceRepository, options, limit) {
+  if (options.sourceId) {
+    const source = await sourceRepository.findSource(options.sourceId);
+    if (!source) return [];
+    if (options.sourceKey && source.sourceKey !== options.sourceKey) return [];
+    if (options.sourceType && source.sourceType !== options.sourceType) return [];
+    if (typeof options.enabled === 'boolean' && source.enabled !== options.enabled) return [];
+    return [source];
+  }
+  return sourceRepository.listSources({
+    sourceKey: options.sourceKey || options.forum,
+    sourceType: options.sourceType,
+    enabled: options.enabled,
+    limit
+  });
+}
+
+function buildOverviewScope(options, sources) {
+  const sourceIds = unique((sources || []).map(function (source) { return source.id; }));
+  const sourceKeys = unique((sources || []).map(function (source) { return source.sourceKey; }));
+  return {
+    sourceId: options.sourceId,
+    sourceKey: options.sourceKey || options.forum,
+    sourceType: options.sourceType,
+    sourceIds,
+    sourceKeys,
+    scoped: Boolean(options.sourceId || options.sourceKey || options.forum || options.sourceType)
   };
 }
 
@@ -293,6 +325,58 @@ function summarizeTaskOutput(output) {
   };
 }
 
+function filterTasksByOverviewScope(tasks, scope) {
+  if (!scope.scoped) return tasks || [];
+  return (tasks || []).filter(function (task) {
+    return matchesOverviewScope(taskSourceScope(task), scope);
+  });
+}
+
+function filterEventsByOverviewScope(events, scope) {
+  if (!scope.scoped) return events || [];
+  return (events || []).filter(function (event) {
+    if (scope.sourceType && event && event.type === 'source-type-operations') {
+      return event.payload && event.payload.sourceType === scope.sourceType;
+    }
+    return matchesOverviewScope(event || {}, scope);
+  });
+}
+
+function filterWorkerRunsByOverviewScope(workerRuns, scope) {
+  if (!scope.scoped) return workerRuns || [];
+  return (workerRuns || []).filter(function (run) {
+    return matchesOverviewScope(deriveWorkerRunSourceScope(run), scope);
+  });
+}
+
+function filterWorkerLeasesByOverviewScope(workerLeases, scope) {
+  if (!scope.scoped) return workerLeases || [];
+  return (workerLeases || []).filter(function (lease) {
+    const parsed = parseWorkerLeaseKey(lease && lease.leaseKey);
+    return matchesOverviewScope(parsed.scope, scope);
+  });
+}
+
+function taskSourceScope(task) {
+  const input = task && task.input || {};
+  const output = task && task.output || {};
+  const source = input.source || output.source || output.sourceAfter || output.sourceBefore || {};
+  return {
+    sourceId: input.sourceId || output.sourceId || source.id || source.sourceId,
+    sourceKey: input.sourceKey || input.forum || output.sourceKey || output.forum || source.sourceKey || source.forum
+  };
+}
+
+function matchesOverviewScope(value, scope) {
+  const safeValue = value || {};
+  if (scope.sourceId) return safeValue.sourceId === scope.sourceId;
+  if (scope.sourceIds.length > 0 && safeValue.sourceId && scope.sourceIds.includes(safeValue.sourceId)) return true;
+  if (scope.sourceType) return false;
+  if (scope.sourceKey) return safeValue.sourceKey === scope.sourceKey;
+  if (scope.sourceKeys.length > 0 && safeValue.sourceKey && scope.sourceKeys.includes(safeValue.sourceKey)) return true;
+  return false;
+}
+
 function summarizeEvents(pendingEvents, failedEvents, unacknowledgedEvents, now) {
   const openPendingEvents = pendingEvents.filter(isUnacknowledgedEvent);
   const openFailedEvents = failedEvents.filter(isUnacknowledgedEvent);
@@ -448,6 +532,15 @@ function countBy(items, keySelector) {
     counts[key] = (counts[key] || 0) + 1;
     return counts;
   }, {});
+}
+
+function unique(items) {
+  const seen = new Set();
+  return (items || []).filter(function (item) {
+    if (!item || seen.has(item)) return false;
+    seen.add(item);
+    return true;
+  });
 }
 
 function isEventDue(event, now) {

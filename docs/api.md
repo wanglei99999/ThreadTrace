@@ -441,6 +441,8 @@ Runs a read-only onboarding preflight across connector catalog support, connecto
 
 ### `GET /api/deployment/checklist`
 
+Optional filters include `forum` / `sourceKey`, `sourceType`, `enabled`, `limit`, `now`, and `storeDir`. Source ingest configuration evidence preserves the requested `sourceType` so deployment gates and operator UIs can show which connector family was evaluated.
+
 查询部署前验收清单。它聚合 runtime diagnostics、source diagnostics 和 operations readiness，用于部署脚本或控制台判断当前实例是否具备上线条件。
 
 查询参数：

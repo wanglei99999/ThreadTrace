@@ -9,6 +9,8 @@ CLI:
 ```powershell
 node src/presentation/cli/threadtrace.js operations-overview
 node src/presentation/cli/threadtrace.js operations-overview --source-key nga
+node src/presentation/cli/threadtrace.js operations-overview --source-type saved-html-directory --enabled true
+node src/presentation/cli/threadtrace.js operations-readiness --source-type saved-html-directory --enabled true
 node src/presentation/cli/threadtrace.js source-attention-report --source-key nga
 node src/presentation/cli/threadtrace.js source-attention-report --source-key nga --json true
 node src/presentation/cli/threadtrace.js source-type-operations-report
@@ -21,11 +23,13 @@ HTTP:
 ```text
 GET /api/operations/overview
 GET /api/operations/overview?sourceKey=nga
+GET /api/operations/overview?sourceType=saved-html-directory&enabled=true
 GET /api/operations/source-drilldown?sourceId=tracked-source-nga-001
 GET /api/operations/source-attention
 GET /api/operations/source-type-operations
 GET /api/operations/source-type-drilldown?sourceType=saved-html-directory
 GET /api/operations/readiness
+GET /api/operations/readiness?sourceType=saved-html-directory&enabled=true
 GET /api/operations/trace-context
 GET /api/operations/runbook
 POST /api/operations/runbook/events
