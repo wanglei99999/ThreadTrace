@@ -259,13 +259,7 @@ function bindForms() {
     const form = new FormData(event.currentTarget);
     const request = parseManifestJson(form.get('manifestJson'));
     request.execute = form.get('execute') === 'true';
-    await renderAsync('rolloutApplyResult', function () {
-      return requestJson('/api/operations/rollout-manifest/apply', request, {
-        acceptErrorStatus: true
-      });
-    }, renderRolloutManifestApply);
-    await loadSources();
-    await loadSourceOperations();
+    await runRolloutApplyRequest(request);
   });
 
   document.getElementById('eventFilterForm').addEventListener('submit', async function (event) {
@@ -669,15 +663,77 @@ async function runRolloutApplyDryRun(manifest) {
   if (executeSelect) executeSelect.value = 'false';
   setLoading('rolloutApplyResult', 'Running apply dry-run...');
   try {
-    const result = await requestJson('/api/operations/rollout-manifest/apply', request, {
-      acceptErrorStatus: true
-    });
-    document.getElementById('rolloutApplyResult').innerHTML = renderRolloutManifestApply(result);
+    await runRolloutApplyRequest(request);
+  } catch (error) {
+    renderError('rolloutApplyResult', error);
+  }
+}
+
+async function runRolloutApplyRequest(request) {
+  const safeRequest = clonePlainObject(request);
+  try {
+    if (safeRequest.execute) {
+      const proceed = await preflightRolloutApplyExecution(safeRequest);
+      if (!proceed) return;
+    }
+    await renderAsync('rolloutApplyResult', function () {
+      return requestJson('/api/operations/rollout-manifest/apply', safeRequest, {
+        acceptErrorStatus: true
+      });
+    }, renderRolloutManifestApply);
     await loadSources();
     await loadSourceOperations();
   } catch (error) {
     renderError('rolloutApplyResult', error);
   }
+}
+
+async function preflightRolloutApplyExecution(request) {
+  setLoading('rolloutApplyResult', 'Checking deployment gate before execute...');
+  const gate = await requestJson('/api/deployment/gate', request, {
+    acceptErrorStatus: true
+  });
+  const blocking = isBlockingRolloutExecutionGate(gate);
+  if (blocking) {
+    document.getElementById('rolloutApplyResult').innerHTML = renderRolloutApplyExecutionGate(gate, {
+      decision: 'blocked'
+    });
+    if (document.getElementById('deploymentGateResult')) {
+      document.getElementById('deploymentGateResult').innerHTML = renderDeploymentGateReport(gate);
+    }
+    return false;
+  }
+  const warning = isWarningRolloutExecutionGate(gate);
+  document.getElementById('rolloutApplyResult').innerHTML = renderRolloutApplyExecutionGate(gate, {
+    decision: warning ? 'awaiting-confirmation' : 'cleared'
+  });
+  if (document.getElementById('deploymentGateResult')) {
+    document.getElementById('deploymentGateResult').innerHTML = renderDeploymentGateReport(gate);
+  }
+  if (!warning) return true;
+  const confirmed = window.confirm('Deployment gate returned warnings. Continue with execute=true and create a rollout apply audit task?');
+  if (!confirmed) {
+    document.getElementById('rolloutApplyResult').innerHTML = renderRolloutApplyExecutionGate(gate, {
+      decision: 'cancelled'
+    });
+  }
+  return confirmed;
+}
+
+function isBlockingRolloutExecutionGate(gate) {
+  if (!gate) return true;
+  if (gate.status === 'fail' || gate.status === 'critical') return true;
+  return (gate.gates || []).some(function (item) {
+    return item.status === 'fail' || item.status === 'critical';
+  });
+}
+
+function isWarningRolloutExecutionGate(gate) {
+  if (!gate) return true;
+  if (gate.status === 'warn' || gate.status === 'warning') return true;
+  return (gate.gates || []).some(function (item) {
+    return item.status === 'warn' || item.status === 'warning';
+  }) || (gate.nextActions || []).length > 0;
 }
 
 async function runManifestCheck(options) {
@@ -2865,6 +2921,35 @@ function renderDeploymentGateReport(result) {
         return detail.key + (detail.evidenceSummary ? ' evidence=' + detail.evidenceSummary : '');
       }).join(' | ');
       return action.severity + ' 路 ' + action.key + ' 路 ' + action.summary + ' 路 ' + (action.commands || []).join(' | ') + (details ? ' details=' + details : '');
+    })), 'wide'));
+  }
+  return panels.join('');
+}
+
+function renderRolloutApplyExecutionGate(result, options) {
+  const safeOptions = options || {};
+  const gates = result && result.gates || [];
+  const actions = result && result.nextActions || [];
+  const decision = safeOptions.decision || 'unknown';
+  const panels = [
+    panel('Apply execution gate', [
+      metric('Decision', decision),
+      metric('Gate status', result && result.status || 'unknown'),
+      metric('Mode', 'execute=true'),
+      metric('Gates', result && (result.gateCount || gates.length) || 0),
+      metric('Next actions', actions.length),
+      metric('Audit', decision === 'cleared' || decision === 'awaiting-confirmation' ? 'rollout apply task will be recorded after execute' : 'no apply task was submitted')
+    ].join('')),
+    panel('Gate results', evidenceList(gates.map(function (gate) {
+      return gate.status + ' 璺?' + gate.area + ' 璺?' + gate.key + ' 璺?' + gate.summary;
+    })), 'wide')
+  ];
+  if (actions.length > 0) {
+    panels.push(panel('Gate actions before execute', evidenceList(actions.map(function (action) {
+      const details = (action.details || []).map(function (detail) {
+        return detail.key + (detail.evidenceSummary ? ' evidence=' + detail.evidenceSummary : '');
+      }).join(' | ');
+      return action.severity + ' 璺?' + action.key + ' 璺?' + action.summary + ' 璺?' + (action.commands || []).join(' | ') + (details ? ' details=' + details : '');
     })), 'wide'));
   }
   return panels.join('');
