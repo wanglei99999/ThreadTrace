@@ -268,6 +268,45 @@ test('documented external connector package validates and dry-runs sample JSON',
   assert.equal(dryRun.repositoryWrites.reports, 1);
 });
 
+test('documented rss archive connector package validates and dry-runs sample JSON', async function () {
+  const tempDir = await makeWorkspaceTempDir('threadtrace-docs-rss-archive-connector-package-');
+  const cwd = path.resolve(__dirname, '..');
+  const modulePath = path.join(cwd, 'docs', 'examples', 'rss-archive-connector-package', 'index.cjs');
+  const inputFile = path.join(cwd, 'docs', 'examples', 'external-thread.sample.json');
+  const runtime = createThreadTraceRuntime({
+    cwd,
+    storeDir: path.join(tempDir, 'store')
+  });
+
+  const validation = runtime.validateConnectorModule({
+    modulePath,
+    now: '2026-06-25T10:00:00.000Z'
+  });
+  const dryRun = await runtime.dryRunSourceIngest({
+    modulePath,
+    forum: 'rss-archive',
+    sourceType: 'rss-archive-normalized-feed',
+    displayName: 'RSS/API archive docs sample',
+    location: {
+      inputFile,
+      feedUrl: 'https://example.test/rss.xml',
+      archiveLabel: 'example-rss-archive'
+    },
+    now: '2026-06-25T10:00:00.000Z'
+  });
+
+  assert.equal(validation.valid, true);
+  assert.equal(validation.packageManifests[0].packageName, '@threadtrace/example-rss-archive-connector-package');
+  assert.deepEqual(validation.packageManifests[0].declaredSourceTypes, ['rss-archive-normalized-feed']);
+  assert.equal(validation.packageManifests[0].capabilities.rssTemplate, true);
+  assert.equal(validation.contractSummary.sourceIngestHandlers[0].sourceType, 'rss-archive-normalized-feed');
+  assert.equal(validation.contractSummary.sourceIngestHandlers[0].capabilities.archiveTemplate, true);
+  assert.equal(dryRun.status, 'ok');
+  assert.equal(dryRun.thread.sourceThreadId, 'external-thread-1');
+  assert.equal(dryRun.repositoryWrites.threadSnapshots, 1);
+  assert.equal(dryRun.repositoryWrites.reports, 1);
+});
+
 test('connector module validation fails when package manifest does not match registrations', async function () {
   const tempDir = await makeWorkspaceTempDir('threadtrace-connector-package-manifest-mismatch-');
   const packageDir = path.join(tempDir, 'connector-package');

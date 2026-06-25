@@ -188,6 +188,16 @@ node src/presentation/cli/threadtrace.js source-onboarding-preflight --module-pa
 
 The package template uses the `register(context)` module shape and keeps package metadata, source location examples, and authoring commands together.
 
+For RSS/API/archive collectors that normalize data outside ThreadTrace, start from `docs/examples/rss-archive-connector-package`:
+
+```powershell
+node src/presentation/cli/threadtrace.js validate-connector-module --module-path docs/examples/rss-archive-connector-package/index.cjs
+node src/presentation/cli/threadtrace.js source-ingest-dry-run --module-path docs/examples/rss-archive-connector-package/index.cjs --forum rss-archive --source-type rss-archive-normalized-feed --location-file docs/examples/rss-archive-connector-package/sample-location.json
+node src/presentation/cli/threadtrace.js rollout-manifest-plan --manifest-file docs/examples/rss-archive-rollout-manifest.sample.json
+```
+
+This template is the recommended first step for feeds and APIs whose fetching, authentication, or rate limits should stay in an external collector while ThreadTrace handles persistence, analysis, review, and operations.
+
 For a full pre-release view, run the read-only connector rollout plan. It aggregates the connector contract, optional module validation, optional source onboarding preflight, current connector readiness, and deployment checklist:
 
 ```powershell

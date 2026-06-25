@@ -214,3 +214,41 @@ test('documented external package rollout manifest composes connector dry-run', 
   assert.equal(plan.connectorRolloutPlan.sourceIngestDryRun.thread.sourceThreadId, 'external-thread-1');
   assert.equal(plan.workerTopologyPlan.status, 'ok');
 });
+
+test('documented rss archive package rollout manifest composes connector dry-run', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-rss-archive-rollout-manifest-'));
+  const cwd = path.resolve(__dirname, '..');
+  const manifest = JSON.parse(await fs.readFile(path.join(cwd, 'docs', 'examples', 'rss-archive-rollout-manifest.sample.json'), 'utf8'));
+  const runtime = createThreadTraceRuntime({
+    cwd,
+    env: {
+      THREADTRACE_REVIEW_ACTION_EXECUTOR: 'file-audit'
+    },
+    storeDir: path.join(tempDir, 'store')
+  });
+
+  const plan = await runtime.getRolloutManifestPlan({
+    now: '2026-06-25T10:00:00.000Z',
+    manifest
+  });
+
+  assert.equal(plan.sourceKey, 'rss-archive');
+  assert.equal(plan.sourceType, 'rss-archive-normalized-feed');
+  assert.equal(plan.modulePath, 'docs/examples/rss-archive-connector-package/index.cjs');
+  assert.equal(plan.connectorRolloutPlan.connectorModuleValidation.valid, true);
+  assert.equal(
+    plan.connectorRolloutPlan.connectorModuleValidation.packageManifests[0].packageName,
+    '@threadtrace/example-rss-archive-connector-package'
+  );
+  assert.equal(
+    plan.connectorRolloutPlan.connectorModuleValidation.contractSummary.sourceIngestHandlers[0].capabilities.rssTemplate,
+    true
+  );
+  assert.equal(
+    plan.connectorRolloutPlan.connectorModuleValidation.contractSummary.sourceIngestHandlers[0].capabilities.archiveTemplate,
+    true
+  );
+  assert.equal(plan.connectorRolloutPlan.sourceIngestDryRun.status, 'ok');
+  assert.equal(plan.connectorRolloutPlan.sourceIngestDryRun.thread.sourceThreadId, 'external-thread-1');
+  assert.equal(plan.workerTopologyPlan.status, 'ok');
+});

@@ -1,0 +1,40 @@
+{
+  "name": "@threadtrace/example-rss-archive-connector-package",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ThreadTrace connector template for RSS, API, and archive collectors that emit canonical snapshots.",
+  "main": "index.cjs",
+  "type": "commonjs",
+  "scripts": {
+    "validate": "node ../../../src/presentation/cli/threadtrace.js validate-connector-module --module-path ./index.cjs",
+    "dry-run": "node ../../../src/presentation/cli/threadtrace.js source-ingest-dry-run --module-path ./index.cjs --forum rss-archive --source-type rss-archive-normalized-feed --location-file ./sample-location.json"
+  },
+  "threadtraceConnector": {
+    "version": "1.0",
+    "displayName": "RSS/API Archive Connector Template",
+    "packageType": "normalized-thread-json",
+    "categories": ["rss", "api", "archive", "json-package"],
+    "sourceTypes": [
+      {
+        "sourceType": "rss-archive-normalized-feed",
+        "displayName": "RSS/API Archive Normalized Feed",
+        "description": "Ingest canonical ThreadTrace ThreadSnapshot JSON emitted by RSS, API, or archive collectors.",
+        "kind": "normalized-thread-json",
+        "locationExample": "sample-location.json",
+        "rolloutManifestExample": "../rss-archive-rollout-manifest.sample.json"
+      }
+    ],
+    "capabilities": {
+      "acceptsCanonicalSnapshot": true,
+      "readsLocalFiles": true,
+      "fetchesRemote": false,
+      "rssTemplate": true,
+      "apiTemplate": true,
+      "archiveTemplate": true
+    },
+    "rollout": {
+      "recommendedManifest": "../rss-archive-rollout-manifest.sample.json",
+      "validationCommand": "node ../../../src/presentation/cli/threadtrace.js validate-connector-module --module-path ./index.cjs"
+    }
+  }
+}

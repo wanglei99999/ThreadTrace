@@ -1,0 +1,5 @@
+{
+  "inputFile": "docs/examples/external-thread.sample.json",
+  "feedUrl": "https://example.test/rss.xml",
+  "archiveLabel": "example-rss-archive"
+}
