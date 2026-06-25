@@ -157,18 +157,28 @@
             <input name="intervalMinutes" value="60" inputmode="numeric" autocomplete="off">
           </label>
           <button type="submit">保存来源</button>
-          <button id="refreshSourcesButton" class="secondary-button" type="button">刷新来源</button>
-          <button id="refreshSourceOperationsButton" class="secondary-button" type="button">Source ops</button>
-          <button id="refreshAutomationReadinessButton" class="secondary-button" type="button">Automation readiness</button>
-          <button id="runLlmReadinessButton" class="secondary-button" type="button">LLM readiness</button>
-          <button id="runLlmPreflightButton" class="secondary-button" type="button">LLM preflight</button>
-          <button id="runLlmEvaluationButton" class="secondary-button" type="button">LLM evaluate</button>
-          <button id="runDemoCycleButton" class="secondary-button" type="button">Demo cycle</button>
-          <button id="runSourcesButton" class="secondary-button" type="button">运行全部</button>
-          <button id="runDueSourcesButton" class="secondary-button" type="button">运行到期</button>
-          <button id="runDuePipelinesButton" class="secondary-button" type="button">洞察到期</button>
-          <button id="refreshEventsButton" class="secondary-button" type="button">刷新事件</button>
-          <button id="dispatchEventsButton" class="secondary-button" type="button">投递事件</button>
+          <div class="source-command-shelf" aria-label="Source commands">
+            <div class="source-command-group" data-label="Source">
+              <button id="refreshSourcesButton" class="secondary-button" type="button">刷新来源</button>
+              <button id="refreshSourceOperationsButton" class="secondary-button" type="button">Source ops</button>
+              <button id="runDemoCycleButton" class="secondary-button" type="button">Demo cycle</button>
+            </div>
+            <div class="source-command-group" data-label="Automation">
+              <button id="refreshAutomationReadinessButton" class="secondary-button" type="button">Automation readiness</button>
+              <button id="runSourcesButton" class="secondary-button" type="button">运行全部</button>
+              <button id="runDueSourcesButton" class="secondary-button" type="button">运行到期</button>
+              <button id="runDuePipelinesButton" class="secondary-button" type="button">洞察到期</button>
+            </div>
+            <div class="source-command-group" data-label="LLM">
+              <button id="runLlmReadinessButton" class="secondary-button" type="button">LLM readiness</button>
+              <button id="runLlmPreflightButton" class="secondary-button" type="button">LLM preflight</button>
+              <button id="runLlmEvaluationButton" class="secondary-button" type="button">LLM evaluate</button>
+            </div>
+            <div class="source-command-group" data-label="Events">
+              <button id="refreshEventsButton" class="secondary-button" type="button">刷新事件</button>
+              <button id="dispatchEventsButton" class="secondary-button" type="button">投递事件</button>
+            </div>
+          </div>
         </form>
         <form id="threadUrlForm" class="control-strip collection-card collection-card-url" data-title="Thread URL">
           <label>
