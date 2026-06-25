@@ -1297,6 +1297,7 @@ async function routeRequest(request, response, context) {
       forum: url.searchParams.get('forum') || undefined,
       sourceKey: url.searchParams.get('sourceKey') || undefined,
       enabled: enabledParam === null ? undefined : enabledParam === 'true',
+      collectionStatus: url.searchParams.get('collectionStatus') || undefined,
       limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 100,
       sourceRunStaleAfterMs: url.searchParams.get('sourceRunStaleAfterMs') ? Number(url.searchParams.get('sourceRunStaleAfterMs')) : undefined,
       sourceFailureRetryBackoffMs: url.searchParams.get('sourceFailureRetryBackoffMs') ? Number(url.searchParams.get('sourceFailureRetryBackoffMs')) : undefined,

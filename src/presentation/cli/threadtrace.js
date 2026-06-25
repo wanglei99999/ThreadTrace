@@ -422,6 +422,7 @@ function main(argv) {
       sourceKey: options.sourceKey,
       sourceType: options.sourceType,
       enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
+      collectionStatus: options.collectionStatus,
       limit: options.limit ? Number(options.limit) : 100,
       taskLimit: options.taskLimit ? Number(options.taskLimit) : undefined,
       sourceRunStaleAfterMs: options.sourceRunStaleAfterMs,
@@ -470,8 +471,10 @@ function main(argv) {
     }).then(function (report) {
       console.log('Source schedule: ' + report.status);
       console.log('Sources: total=' + report.summary.total + ', due=' + report.summary.due + ', skipped=' + report.summary.skipped);
+      console.log('Collection statuses: ' + compactCliCountMap(report.summary.byCollectionStatus));
       report.sources.forEach(function (source) {
-        console.log(source.id + '\t' + source.sourceKey + '\t' + source.sourceType + '\tdue=' + source.decision.due + '\treason=' + source.decision.reason + '\tnextRunAt=' + (source.decision.nextRunAt || 'none') + '\tretryAt=' + (source.decision.retryAt || 'none'));
+        const plan = source.collectionPlan || {};
+        console.log(source.id + '\t' + source.sourceKey + '\t' + source.sourceType + '\tcollection=' + (plan.status || 'unknown') + '\tdue=' + source.decision.due + '\treason=' + source.decision.reason + '\tnextRunAt=' + (source.decision.nextRunAt || 'none') + '\tretryAt=' + (source.decision.retryAt || 'none'));
       });
     }).catch(function (error) {
       console.error(error && error.stack ? error.stack : error);
@@ -2707,6 +2710,9 @@ function parseArgs(args) {
     } else if (item === '--source-failure-max-retry-backoff-ms') {
       options.sourceFailureMaxRetryBackoffMs = args[index + 1];
       index += 1;
+    } else if (item === '--collection-status') {
+      options.collectionStatus = args[index + 1];
+      index += 1;
     } else if (item === '--force') {
       options.force = args[index + 1];
       index += 1;
@@ -3200,6 +3206,16 @@ function formatSchemaDrift(schemaDrift) {
   return parts.join(' ');
 }
 
+function compactCliCountMap(counts) {
+  const entries = Object.entries(counts || {}).filter(function (entry) {
+    return entry[1] > 0;
+  });
+  if (entries.length === 0) return 'none';
+  return entries.map(function (entry) {
+    return entry[0] + '=' + entry[1];
+  }).join(', ');
+}
+
 function printHelp() {
   console.log('Usage:');
   console.log('  node src/presentation/cli/threadtrace.js list-adapters');
@@ -3221,7 +3237,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js operations-overview [--forum nga] [--source-key key] [--source-id id] [--running-stale-after-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-readiness [--forum nga] [--source-key key] [--source-id id] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-lifecycle-report [--forum nga] [--source-type type] [--enabled true] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
-  console.log('  node src/presentation/cli/threadtrace.js source-schedule-report [--forum nga] [--source-type type] [--enabled true] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js source-schedule-report [--forum nga] [--source-type type] [--enabled true] [--collection-status due,retry-waiting] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-attention-report [--forum nga] [--source-key key] [--source-id id] [--source-failure-retry-backoff-ms ms] [--running-stale-after-ms ms] [--json true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-type-operations-report [--forum nga] [--source-type type] [--module-path file] [--json true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-drilldown [--source-id id | --source-key key] [--json true] [--store-dir dir] [--limit n]');

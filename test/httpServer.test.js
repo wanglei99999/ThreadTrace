@@ -296,6 +296,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /renderContextReviewResultEventSynthesis/);
     assert.match(webAppJs, /renderAuthorReviewQueueEventSynthesis/);
     assert.match(webAppJs, /renderSourceOperationsDrilldown/);
+    assert.match(webAppJs, /renderCollectionStatusOverview/);
     assert.match(webAppJs, /api\/context-review-results/);
     assert.ok(openApi.paths['/api/events/dispatch'].post.requestBody.content['application/json'].schema.properties.sourceId);
     assert.ok(openApi.paths['/api/events/dispatch'].post.requestBody.content['application/json'].schema.properties.sourceKey);
@@ -683,6 +684,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/sources/schedule']);
     assert.equal(openApi.paths['/api/sources/lifecycle'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceLifecycleReport');
     assert.equal(openApi.paths['/api/sources/schedule'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceScheduleReport');
+    assert.ok(openApi.paths['/api/sources/schedule'].get.parameters.find(function (parameter) {
+      return parameter.name === 'collectionStatus';
+    }));
     assert.equal(openApi.components.schemas.SourceLifecycleReport.properties.summary.$ref, '#/components/schemas/SourceLifecycleSummary');
     assert.equal(openApi.components.schemas.SourceLifecycleReport.properties.blockedDisables.items.$ref, '#/components/schemas/SourceLifecycleBlockedDisable');
     assert.equal(openApi.components.schemas.SourceLifecycleReport.properties.sources.items.$ref, '#/components/schemas/SourceLifecycleItem');
@@ -691,6 +695,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.components.schemas.SourceLifecycleItem.properties.disableGuard.$ref, '#/components/schemas/SourceDisableGuard');
     assert.equal(openApi.components.schemas.SourceLifecycleItem.properties.failureRetry.$ref, '#/components/schemas/SourceFailureRetryPlan');
     assert.equal(openApi.components.schemas.SourceScheduleReport.properties.summary.$ref, '#/components/schemas/SourceScheduleSummary');
+    assert.equal(openApi.components.schemas.SourceScheduleReport.properties.unfilteredSummary.$ref, '#/components/schemas/SourceScheduleSummary');
+    assert.equal(openApi.components.schemas.SourceScheduleSummary.properties.byCollectionStatus.additionalProperties.type, 'number');
     assert.equal(openApi.components.schemas.SourceScheduleReport.properties.dueSources.items.$ref, '#/components/schemas/SourceScheduleItem');
     assert.equal(openApi.components.schemas.SourceScheduleReport.properties.skippedSources.items.$ref, '#/components/schemas/SourceScheduleItem');
     assert.equal(openApi.components.schemas.SourceScheduleItem.properties.schedule.$ref, '#/components/schemas/SourceScheduleConfig');
@@ -2258,6 +2264,7 @@ test('http server can register sources and run source ingest tasks', async funct
     });
     const lifecycle = await getJson(baseUrl + '/api/sources/lifecycle?now=2026-06-19T10:00:00.000Z');
     const schedule = await getJson(baseUrl + '/api/sources/schedule?now=2026-06-19T10:00:00.000Z');
+    const dueSchedule = await getJson(baseUrl + '/api/sources/schedule?now=2026-06-19T10:00:00.000Z&collectionStatus=due');
     const sourcesAfterDisableDryRun = await getJson(baseUrl + '/api/sources');
     const dueResult = await postJson(baseUrl + '/api/sources/tasks/ingest-due', {});
     const skippedDueResult = await postJson(baseUrl + '/api/sources/tasks/ingest-due', {});
@@ -2337,8 +2344,12 @@ test('http server can register sources and run source ingest tasks', async funct
     assert.equal(lifecycle.sources[0].id, registerResult.source.id);
     assert.equal(lifecycle.sources[0].disableGuard.canDisable, true);
     assert.equal(schedule.summary.total, 1);
+    assert.equal(schedule.summary.byCollectionStatus.due, 1);
     assert.equal(schedule.sources[0].id, registerResult.source.id);
     assert.equal(schedule.sources[0].decision.reason, 'never-finished');
+    assert.deepEqual(dueSchedule.collectionStatus, ['due']);
+    assert.equal(dueSchedule.summary.total, 1);
+    assert.equal(dueSchedule.unfilteredSummary.total, 1);
     assert.equal(sourcesAfterDisableDryRun.sources[0].enabled, true);
     assert.equal(dueResult.task.type, 'ingest-due-sources');
     assert.equal(dueResult.dueCount, 1);

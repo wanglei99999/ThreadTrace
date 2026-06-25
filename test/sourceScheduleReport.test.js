@@ -51,6 +51,9 @@ test('source schedule report previews due and skipped source decisions', async f
   assert.equal(report.summary.byReason['interval-elapsed'], 1);
   assert.equal(report.summary.byReason['waiting-failure-backoff'], 1);
   assert.equal(report.summary.byReason['source-disabled'], 1);
+  assert.equal(report.summary.byCollectionStatus.due, 1);
+  assert.equal(report.summary.byCollectionStatus['retry-waiting'], 1);
+  assert.equal(report.summary.byCollectionStatus.disabled, 1);
   assert.equal(report.dueSources[0].id, 'source-due');
   assert.equal(report.dueSources[0].decision.nextRunAt, '2026-06-19T09:30:00.000Z');
   assert.equal(report.dueSources[0].collectionPlan.status, 'due');
@@ -60,6 +63,48 @@ test('source schedule report previews due and skipped source decisions', async f
   assert.equal(report.skippedSources[0].decision.retryAt, '2026-06-19T10:01:00.000Z');
   assert.equal(report.skippedSources[0].decision.backoffMs, 120000);
   assert.equal(report.skippedSources[0].collectionPlan.status, 'retry-waiting');
+});
+
+test('source schedule report filters by collection status while preserving unfiltered summary', async function () {
+  const report = await getSourceScheduleReport({
+    now: '2026-06-19T10:00:00.000Z',
+    collectionStatus: 'retry-waiting,disabled',
+    sourceFailureRetryBackoffMs: 60 * 1000,
+    sourceFailureMaxRetryBackoffMs: 60 * 60 * 1000,
+    sourceRepository: {
+      async saveSource() {},
+      async findSource() {},
+      async listSources() {
+        return [
+          source('source-due', {
+            schedule: { intervalMinutes: 60 },
+            runState: { status: 'completed', lastFinishedAt: '2026-06-19T08:30:00.000Z' }
+          }),
+          source('source-waiting-retry', {
+            schedule: { nextRunAt: '2026-06-19T09:00:00.000Z' },
+            runState: {
+              status: 'failed',
+              failureCount: 2,
+              lastFinishedAt: '2026-06-19T09:59:00.000Z'
+            }
+          }),
+          source('source-disabled', {
+            enabled: false,
+            schedule: { intervalMinutes: 1 }
+          })
+        ];
+      }
+    }
+  });
+
+  assert.deepEqual(report.collectionStatus, ['retry-waiting', 'disabled']);
+  assert.equal(report.summary.total, 2);
+  assert.equal(report.summary.due, 0);
+  assert.equal(report.summary.byCollectionStatus['retry-waiting'], 1);
+  assert.equal(report.summary.byCollectionStatus.disabled, 1);
+  assert.equal(report.unfilteredSummary.total, 3);
+  assert.equal(report.unfilteredSummary.byCollectionStatus.due, 1);
+  assert.deepEqual(report.sources.map(function (item) { return item.id; }), ['source-waiting-retry', 'source-disabled']);
 });
 
 function source(id, overrides) {

@@ -1380,6 +1380,7 @@ function createThreadTraceRuntime(options) {
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
         sourceType: safeRequest.sourceType,
         enabled: safeRequest.enabled,
+        collectionStatus: safeRequest.collectionStatus,
         limit: safeRequest.limit || 100,
         sourceRunStaleAfterMs: resolveSourceRunStaleAfterMs(safeRequest, runtimeConfig),
         sourceFailureRetryBackoffMs: resolveSourceFailureRetryBackoffMs(safeRequest, runtimeConfig),

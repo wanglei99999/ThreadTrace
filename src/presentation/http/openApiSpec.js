@@ -2703,6 +2703,7 @@ function createOpenApiSpec() {
             { name: 'forum', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
             { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
             { name: 'enabled', in: 'query', required: false, schema: { type: 'boolean' } },
+            { name: 'collectionStatus', in: 'query', required: false, schema: { type: 'string', example: 'due,retry-waiting' } },
             { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
             { name: 'sourceRunStaleAfterMs', in: 'query', required: false, schema: { type: 'number', example: 600000 } },
             { name: 'sourceFailureRetryBackoffMs', in: 'query', required: false, schema: { type: 'number', example: 60000 } },
@@ -4060,6 +4061,10 @@ function createOpenApiSpec() {
             byReason: {
               type: 'object',
               additionalProperties: { type: 'number' }
+            },
+            byCollectionStatus: {
+              type: 'object',
+              additionalProperties: { type: 'number' }
             }
           }
         },
@@ -4072,7 +4077,12 @@ function createOpenApiSpec() {
             sourceRunStaleAfterMs: { type: 'number', example: 600000 },
             sourceFailureRetryBackoffMs: { type: 'number', example: 60000 },
             sourceFailureMaxRetryBackoffMs: { type: 'number', example: 3600000 },
+            collectionStatus: {
+              type: 'array',
+              items: { type: 'string' }
+            },
             summary: { $ref: '#/components/schemas/SourceScheduleSummary' },
+            unfilteredSummary: { $ref: '#/components/schemas/SourceScheduleSummary' },
             dueSources: {
               type: 'array',
               items: { $ref: '#/components/schemas/SourceScheduleItem' }

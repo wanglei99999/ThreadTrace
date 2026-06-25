@@ -3721,6 +3721,7 @@ function renderSourceOperations(result) {
   const attentionItems = attention.sources || buildSourceAttention(result);
   const sourceAttentionAlertableCount = countAlertableSourceAttention(attentionItems);
   const sourceTypeOperationsAlertableCount = countAlertableSourceTypeOperations(sourceTypeOperations.sourceTypes || []);
+  const collectionSummary = schedule.summary && schedule.summary.byCollectionStatus || {};
   const panels = [
     panel('Source operations', [
       '<div class="summary-strip">',
@@ -3729,6 +3730,8 @@ function renderSourceOperations(result) {
       summaryTile('Enabled', String(lifecycleSummary.enabled || 0) + '/' + String(lifecycleSummary.total || 0)),
       summaryTile('Due now', String(scheduleSummary.due || 0)),
       summaryTile('Skipped', String(scheduleSummary.skipped || 0)),
+      summaryTile('Plan retry', String(collectionSummary['retry-waiting'] || 0), (collectionSummary['retry-waiting'] || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('Unscheduled', String(collectionSummary.unscheduled || 0), (collectionSummary.unscheduled || 0) > 0 ? 'warn' : 'ok'),
       summaryTile('Retry wait', String(lifecycleSummary.failureRetryWaiting || 0), lifecycleSummary.failureRetryWaiting > 0 ? 'warn' : 'ok'),
       summaryTile('Disable blocked', String(lifecycleSummary.disableBlocked || 0), lifecycleSummary.disableBlocked > 0 ? 'warn' : 'ok'),
       summaryTile('Alertable', String(alertableCount), alertableCount > 0 ? 'warn' : 'ok'),
@@ -3742,10 +3745,13 @@ function renderSourceOperations(result) {
       renderSourceAttentionEventControls(sourceAttentionAlertableCount),
       renderSourceTypeOperationsEventControls(sourceTypeOperationsAlertableCount)
     ].join(''), 'wide'),
+    panel('Collection status', renderCollectionStatusOverview(schedule), 'wide'),
     panel('Source attention', renderSourceAttentionRows(attentionItems), 'wide'),
     panel('Source type operations', renderSourceTypeOperations(sourceTypeOperations), 'wide'),
     panel('Source type readiness', renderSourceTypeReadiness(sourceTypeReadiness), 'wide'),
     panel('Due sources', renderScheduleDecisionRows(schedule.dueSources || [], 'No due sources.', true), 'wide'),
+    panel('Retry waiting sources', renderScheduleDecisionRows(filterScheduleSourcesByCollectionStatus(schedule.sources || [], 'retry-waiting'), 'No retry-waiting sources.', false), 'wide'),
+    panel('Unscheduled or disabled sources', renderScheduleDecisionRows(filterScheduleSourcesByCollectionStatus(schedule.sources || [], ['unscheduled', 'disabled']), 'No unscheduled or disabled sources.', false), 'wide'),
     panel('Skipped sources', renderScheduleDecisionRows((schedule.skippedSources || []).slice(0, 10), 'No skipped sources.', false), 'wide'),
     panel('Lifecycle attention', renderLifecycleAttentionRows(lifecycle.sources || []), 'wide')
   ];
@@ -4390,6 +4396,29 @@ function renderReasonTags(byReason) {
   return reasons.map(function (reason) {
     return '<span class="tag">' + escapeHtml(reason + ': ' + byReason[reason]) + '</span>';
   }).join('');
+}
+
+function renderCollectionStatusOverview(schedule) {
+  const summary = schedule && schedule.summary || {};
+  const byStatus = summary.byCollectionStatus || {};
+  const statuses = ['due', 'retry-waiting', 'scheduled', 'running', 'unscheduled', 'disabled', 'failed-waiting'];
+  const statusTags = statuses.filter(function (status) {
+    return (byStatus[status] || 0) > 0;
+  }).map(function (status) {
+    return '<span class="tag">' + escapeHtml(status + ': ' + byStatus[status]) + '</span>';
+  }).join('');
+  const filtered = schedule && schedule.collectionStatus && schedule.collectionStatus.length
+    ? '<small>' + escapeHtml('filter=' + schedule.collectionStatus.join(',')) + '</small>'
+    : '';
+  return '<div class="tag-list reason-tags">' + (statusTags || '<span class="tag">no collection statuses</span>') + '</div>' + filtered;
+}
+
+function filterScheduleSourcesByCollectionStatus(sources, statuses) {
+  const wanted = new Set(Array.isArray(statuses) ? statuses : [statuses]);
+  return (sources || []).filter(function (source) {
+    const plan = source.collectionPlan || {};
+    return wanted.has(plan.status);
+  }).slice(0, 10);
 }
 
 function renderScheduleDecisionRows(sources, emptyText, runnable) {

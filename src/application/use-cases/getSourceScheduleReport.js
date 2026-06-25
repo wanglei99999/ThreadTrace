@@ -18,22 +18,25 @@ async function getSourceScheduleReport(options) {
   const sourceReports = sources.map(function (source) {
     return summarizeSourceSchedule(source, now, safeOptions);
   });
+  const filteredSourceReports = filterSourcesByCollectionStatus(sourceReports, safeOptions.collectionStatus);
 
   return {
     generatedAt: now,
     status: 'ok',
     windowLimit: limit,
+    collectionStatus: normalizeCollectionStatusFilter(safeOptions.collectionStatus),
     sourceRunStaleAfterMs: safeOptions.sourceRunStaleAfterMs,
     sourceFailureRetryBackoffMs: safeOptions.sourceFailureRetryBackoffMs,
     sourceFailureMaxRetryBackoffMs: safeOptions.sourceFailureMaxRetryBackoffMs,
-    summary: summarizeScheduleSources(sourceReports),
-    dueSources: sourceReports.filter(function (source) {
+    summary: summarizeScheduleSources(filteredSourceReports),
+    unfilteredSummary: summarizeScheduleSources(sourceReports),
+    dueSources: filteredSourceReports.filter(function (source) {
       return source.decision.due;
     }),
-    skippedSources: sourceReports.filter(function (source) {
+    skippedSources: filteredSourceReports.filter(function (source) {
       return !source.decision.due;
     }),
-    sources: sourceReports
+    sources: filteredSourceReports
   };
 }
 
@@ -65,8 +68,26 @@ function summarizeScheduleSources(sources) {
     skipped: sources.filter(function (source) {
       return !source.decision.due;
     }).length,
-    byReason: countByReason(sources)
+    byReason: countByReason(sources),
+    byCollectionStatus: countByCollectionStatus(sources)
   };
+}
+
+function filterSourcesByCollectionStatus(sources, filter) {
+  const statuses = normalizeCollectionStatusFilter(filter);
+  if (statuses.length === 0) return sources;
+  const wanted = new Set(statuses);
+  return sources.filter(function (source) {
+    return wanted.has(source.collectionPlan && source.collectionPlan.status || 'unknown');
+  });
+}
+
+function normalizeCollectionStatusFilter(filter) {
+  if (!filter) return [];
+  const values = Array.isArray(filter) ? filter : String(filter).split(',');
+  return values.map(function (value) {
+    return String(value || '').trim();
+  }).filter(Boolean);
 }
 
 function summarizeDecision(decision) {
@@ -105,6 +126,14 @@ function countByReason(sources) {
   return sources.reduce(function (result, source) {
     const reason = source.decision.reason || 'unknown';
     result[reason] = (result[reason] || 0) + 1;
+    return result;
+  }, {});
+}
+
+function countByCollectionStatus(sources) {
+  return sources.reduce(function (result, source) {
+    const status = source.collectionPlan && source.collectionPlan.status || 'unknown';
+    result[status] = (result[status] || 0) + 1;
     return result;
   }, {});
 }
