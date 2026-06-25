@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshSourcesButton').addEventListener('click', loadSources);
   document.getElementById('refreshSourceOperationsButton').addEventListener('click', loadSourceOperations);
   document.getElementById('runLlmPreflightButton').addEventListener('click', runLlmPreflight);
+  document.getElementById('runDemoCycleButton').addEventListener('click', runDemoCycle);
   document.getElementById('loadConnectorModuleCatalogButton').addEventListener('click', loadConnectorModuleCatalogFromOnboardingForm);
   document.getElementById('onboardingResult').addEventListener('click', handleOnboardingAction);
   document.getElementById('sourceOnboardingRecipe').addEventListener('click', handleOnboardingAction);
@@ -1698,6 +1699,27 @@ async function runLlmPreflight() {
     return requestJson('/api/llm/preflight', {});
   }, renderLlmPreflightReport);
   await loadSystemStatus();
+}
+
+async function runDemoCycle() {
+  const form = new FormData(document.getElementById('sourceForm'));
+  const request = {
+    provider: 'mock',
+    limit: 10,
+    drilldownLimit: 20
+  };
+  if (form.get('forum')) request.sourceKey = form.get('forum');
+  await renderAsync('sourceOperationActionResult', function () {
+    return requestJson('/api/demo/source-cycle', request, {
+      acceptErrorStatus: true
+    });
+  }, renderSourceDemoCycleReport);
+  await loadSystemStatus();
+  await loadTasks();
+  await loadSources();
+  await loadSourceOperations();
+  await loadEvents();
+  await loadRawPages();
 }
 
 async function runDueCollectionFromButton(button) {
@@ -3404,6 +3426,81 @@ function renderLlmPreflightReport(report) {
       return (action.severity || 'info') + ' | ' + (action.key || 'action') + ' | ' + (action.summary || '') + ' | ' + (action.commands || []).join(' | ');
     })), 'wide')
   ].join('');
+}
+
+function renderSourceDemoCycleReport(report) {
+  const summary = report.summary || {};
+  const pipeline = report.pipeline || {};
+  const acknowledgement = report.acknowledgement || {};
+  return [
+    panel('Demo cycle', [
+      '<div class="summary-strip">',
+      summaryTile('Status', report.status || 'unknown', statusVariant(report.status)),
+      summaryTile('Due', summary.dueCount || 0, summary.dueCount > 0 ? 'ok' : 'muted'),
+      summaryTile('Completed', summary.completedCount || 0, summary.failedCount > 0 ? 'warn' : 'ok'),
+      summaryTile('Events', summary.sourceChangedEventCount || 0, summary.sourceChangedEventCount > 0 ? 'ok' : 'muted'),
+      '</div>',
+      metric('Task', report.task && report.task.id || 'none'),
+      metric('Trace', report.traceId || 'none'),
+      metric('Primary source', formatSourceScope(report.primarySource)),
+      metric('Open events', summary.openEventCount === undefined ? 'unknown' : summary.openEventCount),
+      metric('Ack', acknowledgement.status || 'not-run'),
+      renderBatchTaskControls(pipeline.task)
+    ].join(''), 'wide'),
+    panel('Demo cycle pipeline', [
+      metric('Batch task', pipeline.task && pipeline.task.id || 'none'),
+      metric('Sources', pipeline.sourceCount || 0),
+      metric('Skipped', pipeline.skippedCount || 0),
+      metric('Failed', pipeline.failedCount || 0),
+      renderSourceOperationResultRows(pipeline.results || []),
+      renderSourceOperationSkippedRows(pipeline.skipped || [])
+    ].join(''), 'wide'),
+    panel('Source changed events', renderDemoCycleEvents(report.sourceChangedEvents || []), 'wide'),
+    acknowledgement.status ? panel('Acknowledgement', renderDemoCycleAcknowledgement(acknowledgement), 'wide') : '',
+    report.drilldown ? panel('Demo cycle drilldown', [
+      metric('Status', report.drilldown.status || 'unknown'),
+      metric('Latest event', report.drilldown.health && report.drilldown.health.events && report.drilldown.health.events.latest ? report.drilldown.health.events.latest.id : 'none'),
+      metric('Latest task', report.drilldown.health && report.drilldown.health.tasks && report.drilldown.health.tasks.latest ? report.drilldown.health.tasks.latest.id : 'none'),
+      renderSourceDrilldownButtonForScope(report.primarySource || {})
+    ].join(''), 'wide') : '',
+    panel('Demo cycle actions', evidenceList((report.nextActions || []).map(function (action) {
+      return (action.severity || 'info') + ' | ' + (action.key || 'action') + ' | ' + (action.summary || '') + ' | ' + (action.commands || []).join(' | ');
+    })), 'wide')
+  ].join('');
+}
+
+function renderDemoCycleEvents(events) {
+  if (!events.length) return '<div class="muted">No source-changed event was generated in this cycle.</div>';
+  return '<div class="source-operation-result-list">' + events.map(function (event) {
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(event.title || event.id || 'source-changed') + '</strong>' +
+      '<small>' + escapeHtml([event.id, event.deliveryStatus || 'pending', event.acknowledgedAt ? 'ack=' + event.acknowledgedAt : 'open'].filter(Boolean).join(' | ')) + '</small>' +
+      '<small>' + escapeHtml(event.summary || '') + '</small>' +
+      '</span><span class="button-group source-op-buttons">' +
+      renderEventDetailButtonControl(event) +
+      (event.acknowledgedAt ? '' : '<button class="inline-button" type="button" data-action="ack-event" data-event-id="' + escapeHtml(event.id || '') + '">Acknowledge</button>') +
+      renderEventTaskDetailButton(event) +
+      '</span></div>';
+  }).join('') + '</div>';
+}
+
+function renderDemoCycleAcknowledgement(result) {
+  return [
+    '<div class="summary-strip">',
+    summaryTile('Status', result.status || 'unknown', statusVariant(result.status)),
+    summaryTile('Candidates', result.candidateCount || 0, result.candidateCount > 0 ? 'warn' : 'muted'),
+    summaryTile('Acknowledged', result.acknowledgedCount || 0, result.acknowledgedCount > 0 ? 'ok' : 'muted'),
+    summaryTile('Skipped', result.skippedCount || 0, result.skippedCount > 0 ? 'warn' : 'muted'),
+    '</div>',
+    evidenceList((result.results || []).map(function (item) {
+      return (item.status || 'unknown') + ' | ' + (item.eventId || '') + (item.reason ? ' | ' + item.reason : '');
+    }))
+  ].join('');
+}
+
+function formatSourceScope(scope) {
+  const safeScope = scope || {};
+  return [safeScope.sourceId, safeScope.sourceKey].filter(Boolean).join(' / ') || 'all sources';
 }
 
 function formatLlmUsage(usage) {

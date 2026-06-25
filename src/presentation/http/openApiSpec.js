@@ -3087,6 +3087,59 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/demo/source-cycle': {
+        post: {
+          summary: 'Run an end-to-end source demo cycle from due insight pipeline to event review evidence',
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    sourceId: { type: 'string', example: 'tracked-source-nga-001' },
+                    sourceKey: { type: 'string', example: 'nga' },
+                    forum: { type: 'string', example: 'nga' },
+                    limit: { type: 'number', example: 10 },
+                    drilldownLimit: { type: 'number', example: 20 },
+                    now: { type: 'string', example: '2026-06-25T10:00:00.000Z' },
+                    provider: { type: 'string', example: 'mock' },
+                    traceId: { type: 'string', example: 'demo-cycle-001' },
+                    acknowledgeEvents: { type: 'boolean', example: false },
+                    executeAcknowledgement: { type: 'boolean', example: false },
+                    acknowledgedBy: { type: 'string', example: 'web' },
+                    acknowledgementNote: { type: 'string' },
+                    sourceRunStaleAfterMs: { type: 'number', example: 600000 },
+                    sourceFailureRetryBackoffMs: { type: 'number', example: 60000 },
+                    sourceFailureMaxRetryBackoffMs: { type: 'number', example: 3600000 },
+                    semanticEnrichmentEnabled: { type: 'boolean' },
+                    semanticSkipIfUnchanged: { type: 'boolean' },
+                    storeDir: { type: 'string', example: 'D:/Coding/GitCoding/ThreadTrace/data/store' }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Demo cycle report',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/SourceDemoCycleReport' }
+                }
+              }
+            },
+            503: {
+              description: 'At least one due source pipeline failed',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/SourceDemoCycleReport' }
+                }
+              }
+            }
+          }
+        }
+      },
       '/api/index-directory': {
         post: {
           summary: 'Index posts from a saved HTML directory into the retrieval index',
@@ -3169,6 +3222,37 @@ function createOpenApiSpec() {
             usage: { type: 'object', additionalProperties: true },
             outputPreview: { type: 'object', additionalProperties: true },
             error: { type: 'object', additionalProperties: true },
+            nextActions: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true }
+            }
+          }
+        },
+        SourceDemoCycleReport: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-25T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail', 'noop', 'review'] },
+            traceId: { type: 'string', example: 'source-demo-cycle:tracked-source-nga-001:2026-06-25T10:00:00.000Z' },
+            primarySource: { $ref: '#/components/schemas/SourceScope' },
+            summary: {
+              type: 'object',
+              additionalProperties: true
+            },
+            task: { $ref: '#/components/schemas/TaskRecord' },
+            pipeline: {
+              type: 'object',
+              additionalProperties: true
+            },
+            sourceChangedEvents: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/NotificationEvent' }
+            },
+            acknowledgement: {
+              type: 'object',
+              additionalProperties: true
+            },
+            drilldown: { $ref: '#/components/schemas/SourceOperationsDrilldown' },
             nextActions: {
               type: 'array',
               items: { type: 'object', additionalProperties: true }

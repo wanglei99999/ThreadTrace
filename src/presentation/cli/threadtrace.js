@@ -2592,6 +2592,56 @@ function main(argv) {
     return;
   }
 
+  if (command === 'run-demo-cycle') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.runSourceDemoCycle({
+      sourceId: options.sourceId,
+      forum: options.forum,
+      sourceKey: options.sourceKey,
+      limit: options.limit ? Number(options.limit) : 10,
+      drilldownLimit: options.drilldownLimit ? Number(options.drilldownLimit) : undefined,
+      now: options.now,
+      provider: options.provider || defaultLlmProvider,
+      traceId: options.traceId,
+      acknowledgeEvents: isTruthyOption(options.acknowledgeEvents),
+      executeAcknowledgement: isTruthyOption(options.executeAcknowledgement),
+      acknowledgedBy: options.acknowledgedBy || options.by,
+      acknowledgementNote: options.acknowledgementNote || options.note,
+      sourceRunStaleAfterMs: options.sourceRunStaleAfterMs ? Number(options.sourceRunStaleAfterMs) : undefined,
+      sourceFailureRetryBackoffMs: options.sourceFailureRetryBackoffMs ? Number(options.sourceFailureRetryBackoffMs) : undefined,
+      sourceFailureMaxRetryBackoffMs: options.sourceFailureMaxRetryBackoffMs ? Number(options.sourceFailureMaxRetryBackoffMs) : undefined,
+      baseReportType: options.baseReportType,
+      semanticEnrichmentEnabled: parseOptionalBoolean(options.semanticEnrichmentEnabled),
+      semanticSkipIfUnchanged: parseOptionalBoolean(options.semanticSkipIfUnchanged),
+      storeDir
+    }).then(function (result) {
+      if (isTruthyOption(options.json)) {
+        console.log(JSON.stringify(result, null, 2));
+        if (result.status === 'fail') process.exitCode = 2;
+        return;
+      }
+      console.log('Demo cycle: ' + result.status);
+      console.log('Task: ' + result.task.id);
+      console.log('Trace: ' + result.traceId);
+      console.log('Sources: total=' + result.summary.sourceCount + ', due=' + result.summary.dueCount + ', completed=' + result.summary.completedCount + ', failed=' + result.summary.failedCount);
+      console.log('Source changed events: ' + result.summary.sourceChangedEventCount);
+      console.log('Open events: ' + (result.summary.openEventCount === undefined ? 'unknown' : result.summary.openEventCount));
+      if (result.acknowledgement) {
+        console.log('Acknowledgement: ' + result.acknowledgement.status + ', acknowledged=' + result.acknowledgement.acknowledgedCount + ', candidates=' + result.acknowledgement.candidateCount);
+      }
+      result.sourceChangedEvents.forEach(function (event) {
+        console.log('event\t' + event.id + '\t' + event.deliveryStatus + '\t' + (event.acknowledgedAt || 'open') + '\t' + event.summary);
+      });
+      result.nextActions.forEach(printActionWithDetails);
+      if (result.status === 'fail') process.exitCode = 2;
+      if (result.status === 'warn' || result.status === 'review') process.exitCode = 1;
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'interpret-text-dir') {
     const inputDir = options.input || defaultInputDir;
     const text = options.text;
@@ -3273,6 +3323,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js source-attention-report [--forum nga] [--source-key key] [--source-id id] [--source-failure-retry-backoff-ms ms] [--running-stale-after-ms ms] [--json true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-type-operations-report [--forum nga] [--source-type type] [--module-path file] [--json true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-drilldown [--source-id id | --source-key key] [--json true] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js run-demo-cycle [--source-id id] [--source-key key] [--provider mock] [--acknowledge-events true] [--execute-acknowledgement true] [--json true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-type-drilldown --source-type type [--forum nga] [--json true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js trace-context [--task-id id | --request-id id | --trace-id id | --idempotency-key key] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js operations-runbook [--forum nga] [--source-run-stale-after-ms ms] [--source-failure-retry-backoff-ms ms] [--running-stale-after-ms ms] [--event-limit n] [--store-dir dir] [--limit n]');

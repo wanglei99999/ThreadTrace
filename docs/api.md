@@ -204,6 +204,19 @@ Request body:
 
 The response includes `status`, `provider`, `traceId`, `checks`, `validation`, `usage`, `outputPreview`, `error`, and `nextActions`. A failing provider configuration, provider call, or output validation returns HTTP `503` with the same report shape.
 
+### `POST /api/demo/source-cycle`
+
+Runs the v0.2 demo loop for one source scope: due source insight pipeline, semantic enrichment, generated `source-changed` notification evidence, source operations drill-down, and optional acknowledgement preview/execution.
+
+Request body:
+- `sourceId` / `sourceKey` / `forum`: optional source scope. Omit to scan due sources.
+- `provider`: optional LLM provider, defaults to `mock`.
+- `traceId`: optional audit trace id shared by pipeline tasks.
+- `acknowledgeEvents`: optional boolean. When true, the response includes an acknowledgement step for generated `source-changed` events.
+- `executeAcknowledgement`: optional boolean. Defaults to false so acknowledgement is preview-only unless explicitly executed.
+
+The response includes a durable `source-demo-cycle` task, the due pipeline batch, generated source-changed events, optional acknowledgement result, source drill-down/timeline evidence, and next actions. HTTP `503` means at least one due source pipeline failed.
+
 ### `POST /api/interpret-text`
 
 对一条新发言做语境还原。

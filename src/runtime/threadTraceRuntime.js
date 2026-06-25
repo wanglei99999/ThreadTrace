@@ -26,6 +26,7 @@ const { listSourceInsightPipelineRuns } = require('../application/use-cases/list
 const { runEnabledSourcesIngestTasks } = require('../application/use-cases/runEnabledSourcesIngestTasks');
 const { runDueSourcesIngestTasks } = require('../application/use-cases/runDueSourcesIngestTasks');
 const { runDueSourceInsightPipelineTasks } = require('../application/use-cases/runDueSourceInsightPipelineTasks');
+const { runSourceDemoCycle } = require('../application/use-cases/runSourceDemoCycle');
 const { acknowledgeNotificationEvent } = require('../application/use-cases/acknowledgeNotificationEvent');
 const { acknowledgeNotificationEvents } = require('../application/use-cases/acknowledgeNotificationEvents');
 const { archiveNotificationEvents } = require('../application/use-cases/archiveNotificationEvents');
@@ -2062,6 +2063,53 @@ function createThreadTraceRuntime(options) {
         semanticEnrichmentEnabled: safeRequest.semanticEnrichmentEnabled,
         semanticSkipIfUnchanged: safeRequest.semanticSkipIfUnchanged,
         requestId: safeRequest.requestId,
+        idempotencyKey: safeRequest.idempotencyKey
+      });
+    },
+
+    async runSourceDemoCycle(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      const runtime = this;
+      return runSourceDemoCycle({
+        taskRepository: repositories.taskRepository,
+        runDueSourceInsightPipelineTasks(pipelineRequest) {
+          return runtime.runDueSourceInsightPipelineTasks(Object.assign({}, pipelineRequest, {
+            storeDir: safeRequest.storeDir
+          }));
+        },
+        getSourceOperationsDrilldown(drilldownRequest) {
+          return runtime.getSourceOperationsDrilldown(Object.assign({}, drilldownRequest, {
+            storeDir: safeRequest.storeDir,
+            taskLimit: safeRequest.taskLimit,
+            eventLimit: safeRequest.eventLimit,
+            pipelineLimit: safeRequest.pipelineLimit,
+            workerStaleAfterMs: safeRequest.workerStaleAfterMs
+          }));
+        },
+        acknowledgeNotificationEvents(acknowledgementRequest) {
+          return runtime.acknowledgeNotificationEvents(Object.assign({}, acknowledgementRequest, {
+            storeDir: safeRequest.storeDir
+          }));
+        },
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        provider: safeRequest.provider || 'mock',
+        limit: safeRequest.limit,
+        drilldownLimit: safeRequest.drilldownLimit,
+        acknowledgeEvents: safeRequest.acknowledgeEvents,
+        executeAcknowledgement: safeRequest.executeAcknowledgement,
+        acknowledgedBy: safeRequest.acknowledgedBy,
+        acknowledgementNote: safeRequest.acknowledgementNote,
+        now: safeRequest.now,
+        sourceRunStaleAfterMs: resolveSourceRunStaleAfterMs(safeRequest, runtimeConfig),
+        sourceFailureRetryBackoffMs: resolveSourceFailureRetryBackoffMs(safeRequest, runtimeConfig),
+        sourceFailureMaxRetryBackoffMs: resolveSourceFailureMaxRetryBackoffMs(safeRequest, runtimeConfig),
+        baseReportType: safeRequest.baseReportType,
+        semanticEnrichmentEnabled: safeRequest.semanticEnrichmentEnabled,
+        semanticSkipIfUnchanged: safeRequest.semanticSkipIfUnchanged,
+        requestId: safeRequest.requestId,
+        traceId: safeRequest.traceId,
         idempotencyKey: safeRequest.idempotencyKey
       });
     },

@@ -2556,6 +2556,49 @@ test('http server runs due source insight pipeline batches', async function () {
   }
 });
 
+test('http server runs source demo cycle and exposes web controls', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-http-source-demo-cycle-'));
+  const server = createThreadTraceServer({
+    defaultInputDir: path.resolve(__dirname, '..', 'example'),
+    storeDir: tempDir
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const registerResult = await postJsonWithStatus(baseUrl + '/api/sources', {
+      forum: 'nga',
+      displayName: 'NGA sample archive',
+      inputDir: path.resolve(__dirname, '..', 'example'),
+      intervalMinutes: 60
+    }, 201);
+    const result = await postJson(baseUrl + '/api/demo/source-cycle', {
+      sourceId: registerResult.source.id,
+      provider: 'mock',
+      traceId: 'http-demo-cycle',
+      now: '2026-06-25T10:00:00.000Z'
+    });
+    const openApi = await getJson(baseUrl + '/openapi.json');
+    const homeHtml = await getText(baseUrl + '/', 'text/html');
+    const webAppJs = await getText(baseUrl + '/app.js', 'text/javascript');
+
+    assert.equal(result.status, 'ok');
+    assert.equal(result.task.status, 'completed');
+    assert.equal(result.task.type, 'source-demo-cycle');
+    assert.equal(result.pipeline.completedCount, 1);
+    assert.equal(result.sourceChangedEvents.length, 1);
+    assert.equal(result.drilldown.sourceFound, true);
+    assert.ok(openApi.paths['/api/demo/source-cycle']);
+    assert.equal(openApi.paths['/api/demo/source-cycle'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceDemoCycleReport');
+    assert.ok(openApi.components.schemas.SourceDemoCycleReport);
+    assert.match(homeHtml, /runDemoCycleButton/);
+    assert.match(webAppJs, /renderSourceDemoCycleReport/);
+  } finally {
+    await close(server);
+  }
+});
+
 test('http server exposes raw page crawl, list, and replay APIs', async function () {
   const calls = [];
   const server = createThreadTraceServer({

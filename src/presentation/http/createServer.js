@@ -1547,6 +1547,35 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/api/demo/source-cycle') {
+    const body = await readJsonBody(request, context.maxBodyBytes);
+    const result = await context.runtime.runSourceDemoCycle({
+      sourceId: body.sourceId,
+      forum: body.forum,
+      sourceKey: body.sourceKey,
+      limit: body.limit,
+      drilldownLimit: body.drilldownLimit,
+      now: body.now,
+      provider: body.provider || 'mock',
+      traceId: body.traceId,
+      acknowledgeEvents: body.acknowledgeEvents === true,
+      executeAcknowledgement: body.executeAcknowledgement === true || body.ackDryRun === false,
+      acknowledgedBy: body.acknowledgedBy,
+      acknowledgementNote: body.acknowledgementNote,
+      sourceRunStaleAfterMs: body.sourceRunStaleAfterMs,
+      sourceFailureRetryBackoffMs: body.sourceFailureRetryBackoffMs,
+      sourceFailureMaxRetryBackoffMs: body.sourceFailureMaxRetryBackoffMs,
+      baseReportType: body.baseReportType,
+      semanticEnrichmentEnabled: body.semanticEnrichmentEnabled,
+      semanticSkipIfUnchanged: body.semanticSkipIfUnchanged,
+      storeDir: body.storeDir || context.storeDir,
+      requestId: context.requestId,
+      idempotencyKey: context.idempotencyKey
+    });
+    writeJson(response, result.status === 'fail' ? 503 : 200, result);
+    return;
+  }
+
   const sourceIngestMatch = url.pathname.match(/^\/api\/sources\/([^/]+)\/tasks\/ingest$/);
   if (request.method === 'POST' && sourceIngestMatch) {
     const body = await readJsonBody(request, context.maxBodyBytes);
