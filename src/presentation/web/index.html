@@ -36,17 +36,22 @@
       <section class="view-panel" id="historyView">
         <div id="historyCockpit" class="cockpit-grid"></div>
         <form id="analyzeForm" class="control-strip entry-card history-entry-card" data-title="Evidence intake">
-          <label>
-            <span>论坛</span>
-            <select name="forum" id="historyForum"></select>
-          </label>
-          <label class="grow">
+          <div class="history-source-strip">
+            <span>Source</span>
+            <label>
+              <span>论坛</span>
+              <select name="forum" id="historyForum"></select>
+            </label>
+          </div>
+          <label class="grow history-directory-field">
             <span>保存页目录</span>
             <input name="inputDir" value="example" autocomplete="off">
           </label>
-          <button type="submit">分析目录</button>
-          <button id="enrichHistoryButton" class="secondary-button" type="button">语义增强</button>
-          <button id="refreshAuthorIntelligenceButton" class="secondary-button" type="button">作者情报</button>
+          <div class="history-command-shelf" data-label="Runbook">
+            <button type="submit">分析目录</button>
+            <button id="enrichHistoryButton" class="secondary-button" type="button">语义增强</button>
+            <button id="refreshAuthorIntelligenceButton" class="secondary-button" type="button">作者情报</button>
+          </div>
         </form>
         <div id="authorIntelligenceResult" class="result-grid"></div>
         <div id="historyResult" class="result-grid"></div>
