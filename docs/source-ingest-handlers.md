@@ -127,6 +127,7 @@ GET /api/source-ingest-handlers
 GET /api/contracts/connector-module
 POST /api/connectors/modules/validate
 GET /api/connectors/catalog
+GET /api/connectors/source-type-readiness
 GET /api/connectors/readiness
 POST /api/sources/validate
 ```
@@ -138,6 +139,7 @@ CLI discovery uses the same catalog:
 ```powershell
 node src/presentation/cli/threadtrace.js connector-catalog --source-type normalized-thread-json
 node src/presentation/cli/threadtrace.js connector-catalog --module-path docs/examples/external-connector-package/index.cjs --source-type package-normalized-feed --json true
+node src/presentation/cli/threadtrace.js source-type-readiness --source-type normalized-thread-json --json true
 ```
 
 `/api/connectors/catalog` combines source types with registered forum adapters, including `compatibleSourceKeys` for handler types that require an adapter.
@@ -150,6 +152,12 @@ Each catalog source type also includes `onboardingRecipe`. The recipe is the sou
 - `rolloutManifestTemplate` with conservative defaults (`ingest.dryRun=true` and `operations-worker` topology)
 
 Treat the recipe as the first screen for future source onboarding. It keeps RSS/API/JSON/package connectors on the same path as built-in forum handlers while still letting custom modules supply their own `sourceType` and location schema.
+
+`/api/connectors/source-type-readiness` is the operations view of the same catalog. It groups readiness by `sourceType`, counts registered and enabled tracked sources, flags source types that have no tracked sources yet, and separates stored sources whose `sourceType` is not registered in the current runtime. The matching CLI command is:
+
+```powershell
+node src/presentation/cli/threadtrace.js source-type-readiness --forum nga
+```
 
 `/api/connectors/readiness` combines the catalog with stored source diagnostics. It reports loaded connector modules, each module's safe contract summary, each connector's handler registration, adapter coverage, configured source count, status counts, and per-source checks. The matching CLI command is:
 

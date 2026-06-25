@@ -292,8 +292,24 @@ async function routeRequest(request, response, context) {
 
   if (request.method === 'GET' && url.pathname === '/api/connectors/catalog') {
     writeJson(response, 200, context.runtime.getSourceConnectorCatalog({
+      modulePath: url.searchParams.get('modulePath') || url.searchParams.get('connectorModulePath') || undefined,
       now: url.searchParams.get('now') || undefined
     }));
+    return;
+  }
+
+  if (request.method === 'GET' && url.pathname === '/api/connectors/source-type-readiness') {
+    const enabledParam = url.searchParams.get('enabled');
+    const readiness = await context.runtime.getSourceTypeReadiness({
+      sourceKey: url.searchParams.get('sourceKey') || url.searchParams.get('forum') || undefined,
+      sourceType: url.searchParams.get('sourceType') || undefined,
+      enabled: enabledParam === null ? undefined : enabledParam === 'true',
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 200,
+      now: url.searchParams.get('now') || undefined,
+      modulePath: url.searchParams.get('modulePath') || url.searchParams.get('connectorModulePath') || undefined,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, readiness.status === 'fail' ? 503 : 200, readiness);
     return;
   }
 

@@ -29,6 +29,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     const adapterDiagnostics = await getJson(baseUrl + '/api/adapters/diagnostics?now=2026-06-19T10:00:00.000Z');
     const handlers = await getJson(baseUrl + '/api/source-ingest-handlers');
     const connectorCatalog = await getJson(baseUrl + '/api/connectors/catalog?now=2026-06-19T10:00:00.000Z');
+    const sourceTypeReadiness = await getJson(baseUrl + '/api/connectors/source-type-readiness?now=2026-06-19T10:00:00.000Z');
     const connectorReadiness = await getJson(baseUrl + '/api/connectors/readiness?now=2026-06-19T10:00:00.000Z');
     const openApi = await getJson(baseUrl + '/openapi.json');
     const notificationSynthesisPolicy = await getJson(baseUrl + '/api/events/synthesis-policy?priorityScoreThreshold=85&now=2026-06-25T10:00:00.000Z');
@@ -129,7 +130,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(homeHtml, /onboardingResult/);
     assert.match(webAppJs, /rolloutManifestDraft/);
     assert.match(webAppJs, /onboardingRecipeManifestDraft/);
+    assert.match(webAppJs, /sourceTypeReadiness/);
     assert.match(webAppJs, /renderSourceOnboardingRecipe/);
+    assert.match(webAppJs, /renderSourceTypeReadiness/);
     assert.match(webAppJs, /load-rollout-manifest-draft/);
     assert.match(webAppJs, /load-onboarding-recipe-manifest/);
     assert.match(homeHtml, /modulePath/);
@@ -358,6 +361,11 @@ test('http server exposes health, adapters, and context APIs', async function ()
           return step.key === 'preflight' && step.api === 'POST /api/sources/onboarding/preflight';
         });
     }));
+    assert.equal(sourceTypeReadiness.summary.sourceTypeCount, 3);
+    assert.equal(sourceTypeReadiness.summary.warnSourceTypeCount, 3);
+    assert.equal(sourceTypeReadiness.sourceTypes.find(function (sourceType) {
+      return sourceType.sourceType === 'saved-html-directory';
+    }).status, 'warn');
     assert.equal(connectorReadiness.generatedAt, '2026-06-19T10:00:00.000Z');
     assert.equal(connectorReadiness.status, 'ok');
     assert.ok(connectorReadiness.connectors.some(function (connector) {
@@ -515,6 +523,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.components.schemas.SourceConnectorCatalog.properties.sourceTypes.items.$ref, '#/components/schemas/SourceConnectorCatalogSourceType');
     assert.equal(openApi.components.schemas.SourceConnectorCatalogSourceType.properties.onboardingRecipe.$ref, '#/components/schemas/SourceOnboardingRecipe');
     assert.equal(openApi.components.schemas.SourceOnboardingRecipe.properties.recommendedFlow.items.$ref, '#/components/schemas/SourceOnboardingRecipeFlowStep');
+    assert.ok(openApi.paths['/api/connectors/source-type-readiness']);
+    assert.equal(openApi.paths['/api/connectors/source-type-readiness'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceTypeReadinessReport');
+    assert.equal(openApi.components.schemas.SourceTypeReadinessReport.properties.sourceTypes.items.$ref, '#/components/schemas/SourceTypeReadinessItem');
     assert.ok(openApi.paths['/api/connectors/readiness']);
     assert.ok(openApi.paths['/api/connectors/modules/validate']);
     assert.ok(openApi.paths['/api/connectors/rollout-plan']);

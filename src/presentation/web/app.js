@@ -5,7 +5,8 @@ const state = {
   sourceTypes: [],
   currentView: 'history',
   rolloutManifestDraft: undefined,
-  onboardingRecipeManifestDraft: undefined
+  onboardingRecipeManifestDraft: undefined,
+  sourceTypeReadiness: undefined
 };
 
 const views = {
@@ -835,13 +836,17 @@ async function loadSourceOperations() {
       }),
       fetchJson('/api/operations/source-attention?limit=100', {
         acceptErrorStatus: true
+      }),
+      fetchJson('/api/connectors/source-type-readiness?limit=200', {
+        acceptErrorStatus: true
       })
     ]).then(function (results) {
       return {
         lifecycle: results[0],
         schedule: results[1],
         runbook: results[2],
-        attention: results[3]
+        attention: results[3],
+        sourceTypeReadiness: results[4]
       };
     });
   }, renderSourceOperations);
@@ -2599,6 +2604,7 @@ function renderSourceOperations(result) {
   const schedule = result.schedule || {};
   const runbook = result.runbook || {};
   const attention = result.attention || {};
+  const sourceTypeReadiness = result.sourceTypeReadiness || {};
   const lifecycleSummary = lifecycle.summary || {};
   const scheduleSummary = schedule.summary || {};
   const actions = runbook.actions || [];
@@ -2629,6 +2635,7 @@ function renderSourceOperations(result) {
       renderSourceAttentionEventControls(sourceAttentionAlertableCount)
     ].join(''), 'wide'),
     panel('Source attention', renderSourceAttentionRows(attentionItems), 'wide'),
+    panel('Source type readiness', renderSourceTypeReadiness(sourceTypeReadiness), 'wide'),
     panel('Due sources', renderScheduleDecisionRows(schedule.dueSources || [], 'No due sources.', true), 'wide'),
     panel('Skipped sources', renderScheduleDecisionRows((schedule.skippedSources || []).slice(0, 10), 'No skipped sources.', false), 'wide'),
     panel('Lifecycle attention', renderLifecycleAttentionRows(lifecycle.sources || []), 'wide')
@@ -2637,6 +2644,51 @@ function renderSourceOperations(result) {
     panels.push(panel('Source runbook actions', renderRunbookActionRows(sourceActions), 'wide'));
   }
   return panels.join('');
+}
+
+function renderSourceTypeReadiness(report) {
+  const summary = report.summary || {};
+  const panels = [
+    '<div class="summary-strip">',
+    summaryTile('Types', String(summary.sourceTypeCount || 0), (summary.failSourceTypeCount || 0) > 0 ? 'fail' : 'ok'),
+    summaryTile('Ready', String(summary.readySourceTypeCount || 0), (summary.readySourceTypeCount || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('Warn', String(summary.warnSourceTypeCount || 0), (summary.warnSourceTypeCount || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('Fail', String(summary.failSourceTypeCount || 0), (summary.failSourceTypeCount || 0) > 0 ? 'fail' : 'ok'),
+    summaryTile('Unknown', String(summary.unknownSourceTypeCount || 0), (summary.unknownSourceTypeCount || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('Sources', String(summary.sourceCount || 0), (summary.sourceCount || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('Enabled', String(summary.enabledSourceCount || 0), (summary.enabledSourceCount || 0) > 0 ? 'ok' : 'muted'),
+    '</div>',
+    renderSourceTypeReadinessRows(report.sourceTypes || []),
+    renderSourceTypeReadinessUnknownRows(report.unknownSourceTypes || [])
+  ];
+  if ((report.nextActions || []).length > 0) {
+    panels.push('<div class="tag-list reason-tags">' + evidenceList(report.nextActions.slice(0, 10).map(function (action) {
+      return action.severity + ' | ' + action.summary;
+    })) + '</div>');
+  }
+  return panels.join('');
+}
+
+function renderSourceTypeReadinessRows(sourceTypes) {
+  if (!sourceTypes.length) return '<div class="muted">No registered source types.</div>';
+  return sourceTypes.map(function (sourceType) {
+    const compatible = sourceType.compatibleSourceKeys && sourceType.compatibleSourceKeys.length ? sourceType.compatibleSourceKeys.join(',') : 'none';
+    const checks = (sourceType.checks || []).map(function (check) {
+      return check.status + ' | ' + check.key + ' | ' + check.summary;
+    });
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(sourceType.sourceType) + '</strong>' +
+      '<small>' + escapeHtml((sourceType.description || '') + ' | sources=' + sourceType.sourceCount + ' | enabled=' + sourceType.enabledSourceCount + ' | compatible=' + compatible) + '</small>' +
+      '<small>' + escapeHtml(checks.join(' || ')) + '</small>' +
+      '</span>' + statusBadge(sourceType.status || 'unknown', statusVariant(sourceType.status)) + '</div>';
+  }).join('');
+}
+
+function renderSourceTypeReadinessUnknownRows(sourceTypes) {
+  if (!sourceTypes.length) return '';
+  return '<div class="tag-list reason-tags">' + evidenceList(sourceTypes.map(function (sourceType) {
+    return 'unknown | ' + sourceType.sourceType + ' | sources=' + sourceType.sourceCount + ' | enabled=' + sourceType.enabledSourceCount;
+  })) + '</div>';
 }
 
 function buildSourceAttention(result) {

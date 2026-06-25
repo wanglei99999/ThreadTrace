@@ -1960,6 +1960,46 @@ function main(argv) {
     return;
   }
 
+  if (command === 'source-type-readiness') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.getSourceTypeReadiness({
+      sourceKey: options.sourceKey || options.forum,
+      sourceType: options.sourceType,
+      enabled: options.enabled === undefined ? undefined : options.enabled === 'true',
+      limit: options.limit ? Number(options.limit) : 200,
+      modulePath: options.modulePath,
+      now: options.now,
+      storeDir
+    }).then(function (readiness) {
+      if (isTruthyOption(options.json)) {
+        console.log(JSON.stringify(readiness, null, 2));
+        return;
+      }
+      console.log('Source type readiness: ' + readiness.status);
+      console.log('Source types: total=' + readiness.summary.sourceTypeCount + ', ready=' + readiness.summary.readySourceTypeCount + ', warn=' + readiness.summary.warnSourceTypeCount + ', fail=' + readiness.summary.failSourceTypeCount + ', unknown=' + readiness.summary.unknownSourceTypeCount);
+      console.log('Sources: total=' + readiness.summary.sourceCount + ', enabled=' + readiness.summary.enabledSourceCount);
+      console.log('Modules: ' + (readiness.modules ? readiness.modules.count : 0) + ', errors=' + (readiness.modules ? readiness.modules.errorCount : 0));
+      ((readiness.modules && readiness.modules.errors) || []).forEach(function (error) {
+        console.log('  module-error\t' + error.modulePath + '\t' + error.message);
+      });
+      readiness.sourceTypes.forEach(function (sourceType) {
+        console.log(sourceType.status + '\t' + sourceType.sourceType + '\tsources=' + sourceType.sourceCount + '\tenabled=' + sourceType.enabledSourceCount + '\tcompatible=' + (sourceType.compatibleSourceKeys && sourceType.compatibleSourceKeys.length ? sourceType.compatibleSourceKeys.join(',') : 'none'));
+      });
+      if ((readiness.unknownSourceTypes || []).length > 0) {
+        readiness.unknownSourceTypes.forEach(function (sourceType) {
+          console.log(sourceType.status + '\tunknown\t' + sourceType.sourceType + '\tsources=' + sourceType.sourceCount);
+        });
+      }
+      if (readiness.status === 'fail') {
+        process.exitCode = 2;
+      }
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'run-source-task') {
     if (!options.sourceId) {
       throw new Error('run-source-task requires --source-id.');
@@ -2795,6 +2835,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js reset-source-failure --source-id id [--execute true] [--retry-now true] [--next-run-at iso] [--reset-by user] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-diagnostics [--forum nga] [--enabled true] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js source-type-readiness [--forum nga] [--source-type type] [--module-path file] [--json true] [--enabled true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js connector-catalog [--source-type type] [--module-path file] [--json true] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js thread-snapshot-contract');
   console.log('  node src/presentation/cli/threadtrace.js connector-module-contract');

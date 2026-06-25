@@ -62,6 +62,7 @@ const { getDeploymentChecklist } = require('../application/use-cases/getDeployme
 const { getOperationsRunbook } = require('../application/use-cases/getOperationsRunbook');
 const { getSourceConnectorCatalog } = require('../application/use-cases/getSourceConnectorCatalog');
 const { getConnectorReadiness } = require('../application/use-cases/getConnectorReadiness');
+const { getSourceTypeReadiness } = require('../application/use-cases/getSourceTypeReadiness');
 const { getSourceOnboardingPreflight } = require('../application/use-cases/getSourceOnboardingPreflight');
 const { getConnectorRolloutPlan } = require('../application/use-cases/getConnectorRolloutPlan');
 const { getWorkerTopologyPlan } = require('../application/use-cases/getWorkerTopologyPlan');
@@ -468,6 +469,37 @@ function createThreadTraceRuntime(options) {
         sourceKey: safeRequest.sourceKey || safeRequest.forum,
         enabled: safeRequest.enabled,
         limit: safeRequest.limit || 100,
+        now: safeRequest.now
+      });
+    },
+
+    async getSourceTypeReadiness(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      const modulePath = safeRequest.modulePath || safeRequest.connectorModulePath;
+      const readinessSourceIngestHandlerRegistry = modulePath ? createDefaultSourceIngestHandlerRegistry() : sourceIngestHandlerRegistry;
+      const readinessForumAdapterRegistry = modulePath ? createDefaultForumAdapterRegistry() : forumAdapterRegistry;
+      const connectorModuleReport = modulePath
+        ? loadConnectorModulesReport({
+          modulePaths: [modulePath],
+          cwd: safeOptions.cwd,
+          forumAdapterRegistry: readinessForumAdapterRegistry,
+          sourceIngestHandlerRegistry: readinessSourceIngestHandlerRegistry,
+          runtimeConfig,
+          reload: true
+        })
+        : { modules: [], errors: [] };
+      return getSourceTypeReadiness({
+        sourceRepository: repositories.sourceRepository,
+        sourceIngestHandlerRegistry: readinessSourceIngestHandlerRegistry,
+        forumAdapterRegistry: readinessForumAdapterRegistry,
+        getAdapter: readinessForumAdapterRegistry.get,
+        connectorModuleReport,
+        modulePath,
+        sourceType: safeRequest.sourceType,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 200,
         now: safeRequest.now
       });
     },

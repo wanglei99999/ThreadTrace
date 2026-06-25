@@ -475,6 +475,7 @@ function createOpenApiSpec() {
         get: {
           summary: 'List source connector catalog',
           parameters: [
+            { name: 'modulePath', in: 'query', required: false, schema: { type: 'string', example: 'D:/connectors/custom-forum.cjs' } },
             { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } }
           ],
           responses: {
@@ -484,6 +485,42 @@ function createOpenApiSpec() {
                 'application/json': {
                   schema: {
                     $ref: '#/components/schemas/SourceConnectorCatalog'
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      '/api/connectors/source-type-readiness': {
+        get: {
+          summary: 'Summarize source type readiness across catalog coverage and tracked source diagnostics',
+          parameters: [
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceType', in: 'query', required: false, schema: { type: 'string', example: 'saved-html-directory' } },
+            { name: 'enabled', in: 'query', required: false, schema: { type: 'boolean' } },
+            { name: 'modulePath', in: 'query', required: false, schema: { type: 'string', example: 'D:/connectors/custom-forum.cjs' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Source type readiness report',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceTypeReadinessReport'
+                  }
+                }
+              }
+            },
+            503: {
+              description: 'At least one source type is failing readiness',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/SourceTypeReadinessReport'
                   }
                 }
               }
@@ -3994,6 +4031,93 @@ function createOpenApiSpec() {
             adapters: {
               type: 'array',
               items: { $ref: '#/components/schemas/SourceConnectorCatalogAdapter' }
+            }
+          }
+        },
+        SourceTypeReadinessCheck: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', example: 'sourceType.inventory' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            value: {},
+            summary: { type: 'string' }
+          }
+        },
+        SourceTypeReadinessSummary: {
+          type: 'object',
+          properties: {
+            sourceTypeCount: { type: 'number', example: 3 },
+            readySourceTypeCount: { type: 'number', example: 1 },
+            warnSourceTypeCount: { type: 'number', example: 2 },
+            failSourceTypeCount: { type: 'number', example: 0 },
+            unknownSourceTypeCount: { type: 'number', example: 0 },
+            sourceCount: { type: 'number', example: 5 },
+            enabledSourceCount: { type: 'number', example: 4 }
+          }
+        },
+        SourceTypeReadinessItem: {
+          type: 'object',
+          properties: {
+            sourceType: { type: 'string', example: 'saved-html-directory' },
+            description: { type: 'string' },
+            requiresAdapter: { type: 'boolean', example: true },
+            compatibleSourceKeys: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['nga']
+            },
+            capabilities: {
+              type: 'object',
+              additionalProperties: true
+            },
+            locationSchema: {
+              type: 'object',
+              additionalProperties: true
+            },
+            onboardingRecipe: { $ref: '#/components/schemas/SourceOnboardingRecipe' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            sourceCount: { type: 'number', example: 1 },
+            enabledSourceCount: { type: 'number', example: 1 },
+            statusCounts: {
+              type: 'object',
+              additionalProperties: { type: 'number' },
+              example: { ok: 1, warn: 0, fail: 0 }
+            },
+            checks: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceTypeReadinessCheck' }
+            },
+            sources: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true }
+            },
+            nextActions: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true }
+            }
+          }
+        },
+        SourceTypeReadinessReport: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-19T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            summary: { $ref: '#/components/schemas/SourceTypeReadinessSummary' },
+            sourceTypes: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceTypeReadinessItem' }
+            },
+            unknownSourceTypes: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/SourceTypeReadinessItem' }
+            },
+            nextActions: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true }
+            },
+            catalog: {
+              type: 'object',
+              additionalProperties: true
             }
           }
         },

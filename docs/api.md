@@ -36,6 +36,12 @@ Lists registered source ingest handlers and forum adapters. Each `sourceTypes[]`
 
 `onboardingRecipe` exposes required and optional location fields, adapter guidance, the recommended catalog -> preflight -> dry-run -> rollout flow, and a conservative `rolloutManifestTemplate` using `ingest.dryRun=true` plus the `operations-worker` topology.
 
+### `GET /api/connectors/source-type-readiness`
+
+Groups connector readiness by `sourceType`. Optional filters: `sourceKey` / `forum`, `sourceType`, `enabled`, `modulePath`, `limit`, `now`, and `storeDir`.
+
+The report includes source type counts, enabled source counts, per-type status/checks, unknown stored source types that are not registered in the current runtime, and next actions for onboarding or connector repair.
+
 ### `GET /openapi.json`
 
 返回 OpenAPI 3.0 契约，便于前端、测试工具或后续 SDK 生成器消费。
