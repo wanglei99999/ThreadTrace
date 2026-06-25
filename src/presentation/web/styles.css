@@ -353,6 +353,124 @@ textarea:focus-visible {
   transform: translateY(-1px);
 }
 
+.entry-card {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.entry-card::before {
+  content: attr(data-title);
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  max-width: calc(100% - 28px);
+  padding: 5px 8px;
+  border: 1px solid rgba(20, 114, 95, 0.24);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  z-index: 1;
+}
+
+.entry-card::after {
+  content: "";
+  position: absolute;
+  top: 16px;
+  right: 14px;
+  width: 64px;
+  height: 18px;
+  background:
+    linear-gradient(90deg, rgba(20, 114, 95, 0.2) 0 18px, transparent 18px 23px),
+    linear-gradient(90deg, rgba(36, 95, 159, 0.18) 0 12px, transparent 12px 17px),
+    linear-gradient(90deg, rgba(241, 189, 82, 0.64) 0 16px, transparent 16px);
+  background-position: 0 2px, 28px 7px, 48px 12px;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.history-entry-card,
+.context-entry-card,
+.search-index-card,
+.search-query-card {
+  padding-top: 48px;
+}
+
+.history-entry-card {
+  min-height: 126px;
+}
+
+.history-entry-card label.grow {
+  flex-basis: 460px;
+}
+
+.history-entry-card button[type="submit"] {
+  min-width: 126px;
+}
+
+.context-entry-card {
+  gap: 13px;
+}
+
+.context-entry-card::before {
+  border-color: rgba(36, 95, 159, 0.24);
+  background: var(--info-soft);
+  color: #154d88;
+}
+
+.context-entry-card > label.full {
+  padding-top: 2px;
+}
+
+.context-entry-card textarea {
+  min-height: 132px;
+  border-color: rgba(36, 95, 159, 0.16);
+  background:
+    linear-gradient(90deg, rgba(36, 95, 159, 0.045) 1px, transparent 1px),
+    linear-gradient(180deg, #ffffff, #fbfcfc);
+  background-size: 32px 100%, 100% 100%;
+  font-size: 17px;
+  line-height: 1.65;
+}
+
+.context-entry-card button[type="submit"] {
+  justify-self: start;
+  min-width: 154px;
+}
+
+.search-workbench {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.46fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.search-index-card {
+  align-content: start;
+}
+
+.search-query-card {
+  align-content: start;
+}
+
+.search-query-card::before {
+  border-color: rgba(241, 189, 82, 0.35);
+  background: rgba(241, 189, 82, 0.12);
+  color: #ffe4a3;
+}
+
+.search-query-card label.grow {
+  flex-basis: 420px;
+}
+
 .system-status-grid {
   grid-template-columns: repeat(auto-fit, minmax(142px, 1fr));
   gap: 8px;
@@ -1101,6 +1219,11 @@ textarea:focus-visible {
   padding: 14px;
 }
 
+.control-strip.entry-card,
+.stacked-form.entry-card {
+  padding: 48px 14px 14px;
+}
+
 #systemView .collection-card {
   padding: 46px 14px 14px;
 }
@@ -1192,6 +1315,56 @@ textarea:focus {
 input::placeholder,
 textarea::placeholder {
   color: #657872;
+}
+
+.control-strip.history-entry-card {
+  border-color: rgba(8, 56, 48, 0.18);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.99), rgba(242, 250, 247, 0.94) 50%, rgba(238, 246, 255, 0.9)),
+    var(--panel);
+}
+
+.stacked-form.context-entry-card {
+  border-color: rgba(36, 95, 159, 0.2);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.99), rgba(238, 246, 255, 0.93) 48%, rgba(255, 247, 226, 0.58)),
+    var(--panel);
+}
+
+.control-strip.search-index-card {
+  border-color: rgba(20, 114, 95, 0.2);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.99), rgba(242, 250, 247, 0.95) 58%, rgba(238, 246, 255, 0.76)),
+    var(--panel);
+}
+
+.control-strip.search-query-card {
+  border-color: rgba(12, 23, 21, 0.2);
+  background:
+    linear-gradient(135deg, rgba(12, 23, 21, 0.96), rgba(13, 56, 49, 0.93) 56%, rgba(36, 95, 159, 0.8)),
+    var(--sidebar);
+  color: #f8fbfa;
+  box-shadow: 0 20px 44px rgba(10, 27, 24, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.control-strip.search-query-card label span {
+  color: #bdd5ce;
+}
+
+.control-strip.search-query-card input {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.control-strip.search-query-card input::placeholder {
+  color: #c7d9d4;
+}
+
+.control-strip.search-query-card input:focus {
+  border-color: rgba(241, 189, 82, 0.52);
+  box-shadow: 0 0 0 3px rgba(241, 189, 82, 0.13);
 }
 
 form button[type="submit"],
@@ -3071,6 +3244,10 @@ pre {
     grid-template-columns: 1fr;
   }
 
+  .search-workbench {
+    grid-template-columns: 1fr;
+  }
+
   .rollout-card-dryrun,
   .rollout-card-plan,
   .rollout-card-worker,
@@ -3185,6 +3362,15 @@ pre {
     align-items: start;
   }
 
+  .control-strip.entry-card,
+  .stacked-form.entry-card {
+    padding: 44px 12px 12px;
+  }
+
+  .entry-card::after {
+    width: 48px;
+  }
+
   .history-report-hero {
     grid-template-columns: 1fr;
     padding: 18px;
@@ -3252,6 +3438,24 @@ pre {
   .control-strip {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .control-strip.entry-card {
+    flex-direction: row;
+    align-items: end;
+  }
+
+  .control-strip.entry-card label {
+    flex: 1 1 180px;
+    min-width: 0;
+  }
+
+  .control-strip.entry-card label.grow {
+    flex-basis: 260px;
+  }
+
+  .control-strip.entry-card label.compact {
+    flex-basis: 132px;
   }
 
   .collection-workflow {
@@ -3636,6 +3840,23 @@ pre {
     white-space: normal;
     text-align: center;
     line-height: 1.15;
+  }
+
+  .control-strip.entry-card button[type="submit"],
+  .control-strip.entry-card .secondary-button,
+  .stacked-form.entry-card button[type="submit"] {
+    flex: 1 1 136px;
+    width: auto;
+    min-width: 0;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.15;
+  }
+
+  .history-entry-card button[type="submit"],
+  .search-query-card button[type="submit"],
+  .context-entry-card button[type="submit"] {
+    flex-basis: 100%;
   }
 
   .collection-card button[type="submit"],

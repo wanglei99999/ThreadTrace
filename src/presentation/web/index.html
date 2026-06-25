@@ -35,7 +35,7 @@
 
       <section class="view-panel" id="historyView">
         <div id="historyCockpit" class="cockpit-grid"></div>
-        <form id="analyzeForm" class="control-strip">
+        <form id="analyzeForm" class="control-strip entry-card history-entry-card" data-title="Evidence intake">
           <label>
             <span>论坛</span>
             <select name="forum" id="historyForum"></select>
@@ -53,7 +53,7 @@
       </section>
 
       <section class="view-panel hidden" id="contextView">
-        <form id="contextForm" class="stacked-form">
+        <form id="contextForm" class="stacked-form entry-card context-entry-card" data-title="Context restore">
           <div class="control-strip">
             <label>
               <span>论坛</span>
@@ -84,7 +84,8 @@
       </section>
 
       <section class="view-panel hidden" id="searchView">
-        <form id="indexForm" class="control-strip">
+        <div class="search-workbench">
+        <form id="indexForm" class="control-strip entry-card search-index-card" data-title="Index refresh">
           <label>
             <span>论坛</span>
             <select name="forum" id="searchForum"></select>
@@ -95,7 +96,7 @@
           </label>
           <button type="submit">更新索引</button>
         </form>
-        <form id="searchForm" class="control-strip">
+        <form id="searchForm" class="control-strip entry-card search-query-card" data-title="Evidence search">
           <label class="grow">
             <span>检索问题</span>
             <input name="text" value="科技" autocomplete="off">
@@ -106,6 +107,7 @@
           </label>
           <button type="submit">搜索证据</button>
         </form>
+        </div>
         <div id="searchResult" class="result-grid"></div>
       </section>
 
