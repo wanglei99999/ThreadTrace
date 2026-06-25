@@ -112,6 +112,7 @@ function bindForms() {
         inputDir: form.get('inputDir')
       });
     }, renderHistoryReport);
+    scrollResultIntoView('historyResult');
   });
 
   document.getElementById('contextForm').addEventListener('submit', async function (event) {
@@ -126,6 +127,7 @@ function bindForms() {
         text: form.get('text')
       });
     }, renderContextReport);
+    scrollResultIntoView('contextResult');
   });
 
   document.getElementById('taskForm').addEventListener('submit', async function (event) {
@@ -2364,14 +2366,19 @@ async function renderAsync(targetId, task, renderer) {
   }
 }
 
+function scrollResultIntoView(targetId) {
+  const target = document.getElementById(targetId);
+  if (!target) return;
+  const motion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+  target.scrollIntoView({
+    block: 'start',
+    behavior: motion
+  });
+}
+
 function renderHistoryReport(report) {
   const panels = [
-    panel('主题概览', [
-      metric('标题', report.thread.title),
-      metric('楼层', report.thread.parsedPostCount),
-      metric('作者数', report.authorStats.length),
-      metric('页数', report.thread.totalPages || '未知')
-    ].join('')),
+    renderHistoryReportHero(report),
     renderPrimaryAuthorProfile(report.primaryAuthorProfile),
     renderEvidenceReliability(report.evidenceReliability),
     panel('实体线索', tagList((report.entityCandidates || []).slice(0, 12).map(function (entity) {
@@ -2393,6 +2400,44 @@ function renderHistoryReport(report) {
     panels.push(renderSemanticInsights(report.semanticInsights));
   }
   return panels.join('');
+}
+
+function renderHistoryReportHero(report) {
+  const thread = report.thread || {};
+  const reliability = report.evidenceReliability || {};
+  const primary = report.primaryAuthorProfile || {};
+  const author = primary.author || {};
+  const signals = [
+    report.entityCandidates ? report.entityCandidates.length + ' entities' : undefined,
+    report.opinionCandidates ? report.opinionCandidates.length + ' opinions' : undefined,
+    report.opinionChains ? report.opinionChains.length + ' chains' : undefined,
+    report.implicitReferenceCandidates ? report.implicitReferenceCandidates.length + ' implicit refs' : undefined
+  ].filter(Boolean);
+  return [
+    '<article class="history-report-hero">',
+    '<div class="history-report-main">',
+    '<span class="history-report-kicker">Evidence report</span>',
+    '<h3>' + escapeHtml(thread.title || 'Untitled thread') + '</h3>',
+    '<p>' + escapeHtml(reliability.summary || '已完成保存页解析，下面可以继续查看作者、实体、观点链和原文证据。') + '</p>',
+    '<div class="history-report-tags">' + tagList(signals) + '</div>',
+    '</div>',
+    '<div class="history-report-facts">',
+    historyFact('Posts', thread.parsedPostCount || 0),
+    historyFact('Authors', (report.authorStats || []).length),
+    historyFact('Pages', thread.totalPages || 'unknown'),
+    historyFact('Reliability', reliability.status || 'unknown'),
+    '</div>',
+    '<div class="history-report-author">',
+    '<span>Primary author</span>',
+    '<strong>' + escapeHtml(author.displayName || author.sourceAuthorId || 'unknown') + '</strong>',
+    '<small>' + escapeHtml([primary.postCount ? primary.postCount + ' posts' : undefined, primary.opinionCount ? primary.opinionCount + ' opinions' : undefined, formatStanceSummary(primary.stanceSummary)].filter(Boolean).join(' | ')) + '</small>',
+    '</div>',
+    '</article>'
+  ].join('');
+}
+
+function historyFact(label, value) {
+  return '<div class="history-fact"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(value) + '</strong></div>';
 }
 
 function renderPrimaryAuthorProfile(profile) {
@@ -2800,6 +2845,7 @@ function formatImplicitReferenceSummary(candidate) {
 
 function renderContextReport(report) {
   return [
+    renderContextVerdictHero(report),
     renderInterpretationSummary(report.interpretationSummary),
     panel('新发言', [
       metric('内容', report.newPost.contentText),
@@ -2815,6 +2861,53 @@ function renderContextReport(report) {
       return '#' + item.floor + ' ' + item.author + ' · ' + item.confidence + '：' + item.reasons.join(', ');
     })), 'wide')
   ].join('');
+}
+
+function renderContextVerdictHero(report) {
+  const summary = report.interpretationSummary || {};
+  const match = report.contextMatchSummary || {};
+  const handoff = report.contextReviewHandoff || {};
+  const post = report.newPost || {};
+  const evidencePackage = handoff.evidencePackage || {};
+  const floors = (evidencePackage.floors || []).length > 0 ? '#' + evidencePackage.floors.slice(0, 6).join(' / #') : 'none';
+  const reviewCount = match.reviewRequiredCount || 0;
+  const taskCount = handoff.taskCount || (report.contextReviewTasks || []).length || 0;
+  const highPriorityCount = handoff.highPriorityTaskCount || 0;
+  const tags = [
+    summary.evidenceLevel ? 'evidence ' + summary.evidenceLevel : undefined,
+    summary.confidence !== undefined ? 'confidence ' + summary.confidence : undefined,
+    match.topEntity ? 'entity ' + match.topEntity : undefined,
+    match.topRelationType ? 'relation ' + match.topRelationType : undefined
+  ].filter(Boolean);
+  const reviewTone = highPriorityCount > 0 || reviewCount > 0 ? 'warn' : statusVariant(summary.status || match.status || handoff.status);
+  return [
+    '<article class="context-verdict-hero">',
+    '<section class="context-verdict-main">',
+    '<div class="context-verdict-header">',
+    '<span class="context-verdict-label">Context verdict</span>',
+    statusBadge(summary.status || match.status || 'interpreted', reviewTone),
+    '</div>',
+    '<h3>' + escapeHtml(summary.summary || '已完成语境召回，等待进一步核验。') + '</h3>',
+    '<p>' + escapeHtml(post.contentText || '暂无新发言内容。') + '</p>',
+    '<div class="context-verdict-tags">' + tagList(tags) + '</div>',
+    '</section>',
+    '<aside class="context-verdict-rail">',
+    contextVerdictSignal('Matches', match.total || (report.contextChainMatches || []).length || 0, statusVariant(match.status)),
+    contextVerdictSignal('Review', reviewCount, reviewCount > 0 ? 'warn' : 'ok'),
+    contextVerdictSignal('Tasks', taskCount, taskCount > 0 ? 'warn' : 'muted'),
+    contextVerdictSignal('Floors', floors, floors === 'none' ? 'muted' : 'ok'),
+    '</aside>',
+    '<section class="context-verdict-next">',
+    '<span>Next action</span>',
+    '<strong>' + escapeHtml(handoff.recommendedNextAction || 'Inspect matched evidence and decide whether to create review work.') + '</strong>',
+    '<small>' + escapeHtml(highPriorityCount > 0 ? highPriorityCount + ' high priority review tasks' : 'No high priority review tasks') + '</small>',
+    '</section>',
+    '</article>'
+  ].join('');
+}
+
+function contextVerdictSignal(label, value, variant) {
+  return '<div class="context-verdict-signal ' + statusClassName(variant) + '"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(value) + '</strong></div>';
 }
 
 function renderContextReviewHandoff(handoff) {
