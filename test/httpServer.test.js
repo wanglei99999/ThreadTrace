@@ -353,6 +353,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.scope.$ref, '#/components/schemas/SourceScope');
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.attention.properties.signals.items.$ref, '#/components/schemas/SourceAttentionSignal');
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.attention.properties.reportSummary.$ref, '#/components/schemas/SourceAttentionSummary');
+    assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.timeline.items.properties.kind.type, 'string');
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.recent.properties.workerRuns.items.$ref, '#/components/schemas/WorkerRun');
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.health.properties.authorReviewQueue.$ref, '#/components/schemas/AuthorReviewQueueSummary');
     assert.equal(openApi.components.schemas.SourceOperationsDrilldown.properties.health.properties.notificationEventActions.type, 'object');

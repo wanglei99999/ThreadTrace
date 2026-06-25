@@ -57,6 +57,17 @@ async function getSourceOperationsDrilldown(options) {
     health: summaries,
     attention,
     nextActions: buildNextActions(sourceResolution, summaries, attention),
+    timeline: buildOperationsTimeline({
+      tasks,
+      events: events.all,
+      workerRuns,
+      workerLeases,
+      reviewActionExecutions: safeOptions.reviewActionExecutions && safeOptions.reviewActionExecutions.executions || [],
+      notificationEventActionExecutions: safeOptions.notificationEventActionExecutions && safeOptions.notificationEventActionExecutions.executions || [],
+      now,
+      workerStaleAfterMs: safeOptions.workerStaleAfterMs,
+      limit: safeOptions.timelineLimit || 20
+    }),
     recent: {
       tasks: tasks.slice(0, 10).map(summarizeTask),
       events: events.all.slice(0, 10),
@@ -334,6 +345,114 @@ function summarizeSourceAttention(sourceAttentionReport, scope) {
   };
 }
 
+function buildOperationsTimeline(options) {
+  const safeOptions = options || {};
+  const staleAfterMs = safeOptions.workerStaleAfterMs || 5 * 60 * 1000;
+  const now = safeOptions.now;
+  const items = [];
+  (safeOptions.tasks || []).forEach(function (task) {
+    const scoped = taskScope(task);
+    items.push(timelineItem({
+      kind: 'task',
+      id: task.id,
+      status: task.status,
+      severity: task.status === 'failed' ? 'warning' : task.status === 'running' ? 'info' : 'ok',
+      timestamp: task.updatedAt || task.finishedAt || task.startedAt || task.createdAt,
+      title: task.type || 'task',
+      summary: task.error && task.error.message,
+      sourceId: scoped.sourceId,
+      sourceKey: scoped.sourceKey,
+      reference: task.id
+    }));
+  });
+  (safeOptions.events || []).forEach(function (event) {
+    items.push(timelineItem({
+      kind: 'notification-event',
+      id: event.id,
+      status: event.acknowledgedAt ? 'acknowledged' : event.deliveryStatus,
+      severity: event.deliveryStatus === 'failed' && !event.acknowledgedAt ? 'warning' : 'info',
+      timestamp: event.updatedAt || event.lastDeliveredAt || event.createdAt || event.nextDeliveryAt,
+      title: event.type || 'notification-event',
+      summary: event.title || event.summary,
+      sourceId: event.sourceId,
+      sourceKey: event.sourceKey,
+      reference: event.id
+    }));
+  });
+  (safeOptions.workerRuns || []).forEach(function (run) {
+    const scoped = deriveWorkerRunSourceScope(run);
+    const stale = run.status === 'running' && isStaleWorkerRun(run, now, staleAfterMs);
+    items.push(timelineItem({
+      kind: 'worker-run',
+      id: run.id,
+      status: stale ? 'stale' : run.status,
+      severity: stale ? 'critical' : run.status === 'failed' ? 'warning' : run.status === 'running' ? 'info' : 'ok',
+      timestamp: run.updatedAt || run.heartbeatAt || run.finishedAt || run.startedAt,
+      title: run.workerType || 'worker-run',
+      summary: run.error && run.error.message || run.workerId,
+      sourceId: scoped.sourceId,
+      sourceKey: scoped.sourceKey,
+      reference: run.id
+    }));
+  });
+  (safeOptions.workerLeases || []).forEach(function (lease) {
+    const scoped = lease.scope || parseWorkerLeaseKey(lease.leaseKey).scope;
+    const expired = lease.expired === undefined ? isExpiredLease(lease, now) : lease.expired;
+    items.push(timelineItem({
+      kind: 'worker-lease',
+      id: lease.leaseKey,
+      status: expired ? 'expired' : 'active',
+      severity: expired ? 'warning' : 'ok',
+      timestamp: lease.updatedAt || lease.acquiredAt || lease.expiresAt,
+      title: lease.workerType || 'worker-lease',
+      summary: lease.ownerId,
+      sourceId: scoped && scoped.sourceId,
+      sourceKey: scoped && scoped.sourceKey,
+      reference: lease.leaseKey
+    }));
+  });
+  (safeOptions.reviewActionExecutions || []).forEach(function (execution) {
+    items.push(actionExecutionTimelineItem('review-action-execution', execution, execution.action || execution.actionKey || 'review-action'));
+  });
+  (safeOptions.notificationEventActionExecutions || []).forEach(function (execution) {
+    items.push(actionExecutionTimelineItem('notification-event-action-execution', execution, execution.actionKey || execution.action || 'notification-event-action'));
+  });
+  return items
+    .filter(function (item) { return item.timestamp; })
+    .sort(compareTimelineDesc)
+    .slice(0, safeOptions.limit || 20);
+}
+
+function actionExecutionTimelineItem(kind, execution, title) {
+  return timelineItem({
+    kind,
+    id: execution.key || execution.id,
+    status: execution.staleRunning ? 'stale' : execution.status,
+    severity: execution.status === 'failed' || execution.staleRunning ? 'critical' : execution.status === 'running' ? 'info' : 'ok',
+    timestamp: execution.updatedAt || execution.completedAt || execution.failedAt || execution.createdAt,
+    title,
+    summary: execution.error && execution.error.message || execution.eventId || execution.taskId,
+    sourceId: execution.sourceId,
+    sourceKey: execution.sourceKey,
+    reference: execution.eventId || execution.taskId || execution.key || execution.id
+  });
+}
+
+function timelineItem(item) {
+  return {
+    kind: item.kind,
+    id: item.id,
+    status: item.status || 'unknown',
+    severity: item.severity || 'info',
+    timestamp: item.timestamp,
+    title: item.title,
+    summary: item.summary,
+    sourceId: item.sourceId,
+    sourceKey: item.sourceKey,
+    reference: item.reference
+  };
+}
+
 function findSourceAttentionItem(items, scope) {
   if (!scope || (!scope.sourceId && !scope.sourceKey)) return undefined;
   return (items || []).find(function (item) {
@@ -489,6 +608,10 @@ function compareCreatedDesc(a, b) {
 
 function compareStartedDesc(a, b) {
   return String(b.startedAt || '').localeCompare(String(a.startedAt || ''));
+}
+
+function compareTimelineDesc(a, b) {
+  return String(b.timestamp || '').localeCompare(String(a.timestamp || ''));
 }
 
 function isEventDue(event, now) {

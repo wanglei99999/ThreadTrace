@@ -138,7 +138,7 @@ test('source operations drilldown aggregates source-scoped health and recent rec
       count: 1,
       staleRunningCount: 0,
       executions: [
-        { id: 'execution-1', status: 'completed', sourceId: 'source-1', sourceKey: 'nga' }
+        { id: 'execution-1', status: 'completed', sourceId: 'source-1', sourceKey: 'nga', taskId: 'review-task-1', updatedAt: '2026-06-18T09:53:00.000Z' }
       ]
     },
     notificationEventActionExecutions: {
@@ -151,7 +151,8 @@ test('source operations drilldown aggregates source-scoped health and recent rec
           status: 'failed',
           eventId: 'event-1',
           sourceId: 'source-1',
-          sourceKey: 'nga'
+          sourceKey: 'nga',
+          updatedAt: '2026-06-18T09:58:00.000Z'
         },
         {
           key: 'notification-event-action:v1:event.acknowledge:event-2',
@@ -160,6 +161,7 @@ test('source operations drilldown aggregates source-scoped health and recent rec
           eventId: 'event-2',
           sourceId: 'source-1',
           sourceKey: 'nga',
+          updatedAt: '2026-06-18T09:57:00.000Z',
           staleRunning: true
         }
       ]
@@ -235,6 +237,20 @@ test('source operations drilldown aggregates source-scoped health and recent rec
   assert.equal(report.recent.workerRuns.length, 1);
   assert.equal(report.recent.workerLeases.length, 1);
   assert.equal(report.recent.notificationEventActionExecutions[0].eventId, 'event-1');
+  assert.deepEqual(report.timeline.slice(0, 4).map(function (item) { return item.kind; }), [
+    'notification-event-action-execution',
+    'notification-event-action-execution',
+    'notification-event',
+    'review-action-execution'
+  ]);
+  assert.equal(report.timeline[0].severity, 'critical');
+  assert.equal(report.timeline[0].reference, 'event-1');
+  assert.ok(report.timeline.some(function (item) {
+    return item.kind === 'worker-run' && item.status === 'stale' && item.severity === 'critical';
+  }));
+  assert.ok(report.timeline.some(function (item) {
+    return item.kind === 'worker-lease' && item.status === 'expired';
+  }));
 });
 
 test('source operations drilldown warns for unresolved source scope', async function () {

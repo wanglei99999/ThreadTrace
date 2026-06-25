@@ -4185,6 +4185,7 @@ function renderSourceOperationsDrilldown(report) {
     ].join(''), 'wide'),
     panel('Source attention details', renderSourceDrilldownAttention(attention), 'wide'),
     panel('Source next actions', renderSourceDrilldownActions(report.nextActions || []), 'wide'),
+    panel('Source operations timeline', evidenceList((report.timeline || []).map(formatSourceTimelineRow)), 'wide'),
     panel('Recent source tasks', evidenceList((recent.tasks || []).map(formatSourceDrilldownTaskRow)), 'wide'),
     panel('Recent source events', evidenceList((recent.events || []).map(formatSourceDrilldownEventRow)), 'wide'),
     panel('Recent source workers', evidenceList((recent.workerRuns || []).map(formatWorkerRunRow).concat((recent.workerLeases || []).map(formatWorkerLeaseRow))), 'wide')
@@ -4301,6 +4302,18 @@ function formatSourceDrilldownEventRow(event) {
     event.nextDeliveryAt || event.createdAt || 'unknown-time',
     event.title || event.summary || event.id || 'unknown-event'
   ].join(' | ');
+}
+
+function formatSourceTimelineRow(item) {
+  return [
+    item.timestamp || 'unknown-time',
+    item.severity || 'info',
+    item.kind || 'item',
+    item.status || 'unknown-status',
+    item.title || item.reference || item.id || 'unknown',
+    item.sourceId || item.sourceKey || 'unknown-source',
+    item.summary || item.reference || item.id || ''
+  ].filter(Boolean).join(' | ');
 }
 
 function renderRunbookEventControls(alertableCount) {

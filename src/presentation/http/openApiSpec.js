@@ -6164,6 +6164,25 @@ function createOpenApiSpec() {
               type: 'array',
               items: { type: 'object', additionalProperties: true }
             },
+            timeline: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  kind: { type: 'string', example: 'worker-run' },
+                  id: { type: 'string' },
+                  status: { type: 'string' },
+                  severity: { type: 'string', enum: ['critical', 'warning', 'info', 'ok', 'muted'] },
+                  timestamp: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+                  title: { type: 'string' },
+                  summary: { type: 'string' },
+                  sourceId: { type: 'string' },
+                  sourceKey: { type: 'string' },
+                  reference: { type: 'string' }
+                },
+                additionalProperties: true
+              }
+            },
             recent: {
               type: 'object',
               properties: {
