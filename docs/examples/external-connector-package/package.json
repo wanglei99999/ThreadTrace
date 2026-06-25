@@ -8,5 +8,31 @@
   "scripts": {
     "validate": "node ../../../src/presentation/cli/threadtrace.js validate-connector-module --module-path ./index.cjs",
     "dry-run": "node ../../../src/presentation/cli/threadtrace.js source-ingest-dry-run --module-path ./index.cjs --forum external-package --source-type package-normalized-feed --input-file ../external-thread.sample.json"
+  },
+  "threadtraceConnector": {
+    "version": "1.0",
+    "displayName": "External Connector Package Template",
+    "packageType": "normalized-thread-json",
+    "categories": ["api", "archive", "json-package"],
+    "sourceTypes": [
+      {
+        "sourceType": "package-normalized-feed",
+        "displayName": "Package Normalized Feed",
+        "description": "Ingest canonical ThreadTrace ThreadSnapshot JSON emitted by an external collector.",
+        "kind": "normalized-thread-json",
+        "locationExample": "sample-location.json",
+        "rolloutManifestExample": "../external-package-rollout-manifest.sample.json"
+      }
+    ],
+    "capabilities": {
+      "acceptsCanonicalSnapshot": true,
+      "readsLocalFiles": true,
+      "fetchesRemote": false,
+      "packageTemplate": true
+    },
+    "rollout": {
+      "recommendedManifest": "../external-package-rollout-manifest.sample.json",
+      "validationCommand": "node ../../../src/presentation/cli/threadtrace.js validate-connector-module --module-path ./index.cjs"
+    }
   }
 }

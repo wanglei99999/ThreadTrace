@@ -1,5 +1,6 @@
 'use strict';
 
+const fs = require('fs');
 const path = require('path');
 
 function loadConnectorModules(options) {
@@ -25,6 +26,7 @@ function loadConnectorModulesReport(options) {
         sourceIngestHandlerRegistry: safeOptions.sourceIngestHandlerRegistry,
         runtimeConfig: safeOptions.runtimeConfig
       });
+      registration.packageManifest = loadConnectorPackageManifest(resolvedPath);
       modules.push(registration);
     } catch (error) {
       errors.push({
@@ -124,6 +126,50 @@ function summarizeSourceIngestHandler(handler) {
   };
 }
 
+function loadConnectorPackageManifest(modulePath) {
+  const packagePath = findNearestPackageJson(path.dirname(modulePath));
+  if (!packagePath) {
+    return {
+      found: false
+    };
+  }
+  try {
+    const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+    const manifest = packageJson.threadtraceConnector || packageJson.threadtrace || packageJson.connector;
+    if (!manifest) {
+      return {
+        found: false,
+        packagePath
+      };
+    }
+    return {
+      found: true,
+      packagePath,
+      packageName: packageJson.name,
+      packageVersion: packageJson.version,
+      manifest
+    };
+  } catch (error) {
+    return {
+      found: false,
+      packagePath,
+      error: error && error.message ? error.message : String(error)
+    };
+  }
+}
+
+function findNearestPackageJson(startDir) {
+  let current = path.resolve(startDir);
+  const root = path.parse(current).root;
+  while (current && current !== root) {
+    const candidate = path.join(current, 'package.json');
+    if (fs.existsSync(candidate)) return candidate;
+    current = path.dirname(current);
+  }
+  const rootCandidate = path.join(root, 'package.json');
+  return fs.existsSync(rootCandidate) ? rootCandidate : undefined;
+}
+
 function normalizeModuleExport(value) {
   if (value && value.__esModule && value.default) return value.default;
   if (value && value.default && !value.register && !value.forumAdapters && !value.sourceIngestHandlers) return value.default;
@@ -138,5 +184,6 @@ function toArray(value) {
 module.exports = {
   loadConnectorModules,
   loadConnectorModulesReport,
-  applyConnectorModule
+  applyConnectorModule,
+  loadConnectorPackageManifest
 };

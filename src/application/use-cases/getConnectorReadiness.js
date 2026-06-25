@@ -52,7 +52,8 @@ function summarizeConnectorModules(connectorModules, connectorModuleErrors) {
       forumAdapterDetails,
       sourceIngestHandlers: connectorModule.sourceIngestHandlers || [],
       sourceIngestHandlerDetails,
-      contractSummary: summarizeModuleContracts(forumAdapterDetails, sourceIngestHandlerDetails)
+      contractSummary: summarizeModuleContracts(forumAdapterDetails, sourceIngestHandlerDetails),
+      packageManifest: summarizePackageManifest(connectorModule.packageManifest)
     };
   });
   return {
@@ -60,6 +61,32 @@ function summarizeConnectorModules(connectorModules, connectorModuleErrors) {
     errorCount: (connectorModuleErrors || []).length,
     errors: connectorModuleErrors || [],
     modules
+  };
+}
+
+function summarizePackageManifest(packageManifest) {
+  const safePackageManifest = packageManifest || {};
+  if (!safePackageManifest.found) {
+    return {
+      found: false,
+      packagePath: safePackageManifest.packagePath
+    };
+  }
+  const manifest = safePackageManifest.manifest || {};
+  return {
+    found: true,
+    packagePath: safePackageManifest.packagePath,
+    packageName: safePackageManifest.packageName,
+    packageVersion: safePackageManifest.packageVersion,
+    manifestVersion: manifest.version,
+    displayName: manifest.displayName,
+    packageType: manifest.packageType,
+    categories: manifest.categories || [],
+    sourceTypes: (manifest.sourceTypes || []).map(function (sourceType) {
+      return typeof sourceType === 'string' ? { sourceType } : sourceType;
+    }),
+    capabilities: manifest.capabilities || {},
+    rollout: manifest.rollout
   };
 }
 
@@ -146,5 +173,6 @@ function aggregateStatus(statuses) {
 module.exports = {
   getConnectorReadiness,
   summarizeConnector,
-  summarizeConnectorModules
+  summarizeConnectorModules,
+  summarizePackageManifest
 };

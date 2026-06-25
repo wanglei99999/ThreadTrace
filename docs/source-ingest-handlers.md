@@ -105,6 +105,34 @@ module.exports = defineConnectorModule({
 
 The factory creates a no-adapter handler, requires the configured input file location field, marks the handler as accepting canonical snapshots, and reuses ThreadTrace's standard normalized JSON ingest task.
 
+Package-style connectors can also declare `threadtraceConnector` metadata in `package.json`. This manifest is optional for legacy modules, but recommended for any connector package intended to be shared, reviewed, or deployed repeatedly:
+
+```json
+{
+  "name": "@threadtrace/example-connector",
+  "main": "index.cjs",
+  "threadtraceConnector": {
+    "version": "1.0",
+    "displayName": "Example Connector",
+    "packageType": "normalized-thread-json",
+    "categories": ["api", "archive", "json-package"],
+    "sourceTypes": [
+      {
+        "sourceType": "example-normalized-feed",
+        "displayName": "Example Normalized Feed",
+        "kind": "normalized-thread-json",
+        "locationExample": "sample-location.json"
+      }
+    ],
+    "capabilities": {
+      "acceptsCanonicalSnapshot": true
+    }
+  }
+}
+```
+
+Module validation loads this manifest from the package next to the connector entrypoint and verifies that declared `sourceTypes` / adapters match the runtime registrations. This keeps package documentation, onboarding UI, rollout plans, and actual code aligned.
+
 Fetch the machine-readable connector module contract before implementing a custom package:
 
 ```powershell

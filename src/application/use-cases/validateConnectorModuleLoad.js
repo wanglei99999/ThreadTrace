@@ -12,7 +12,7 @@ function validateConnectorModuleLoad(options) {
     check('connectorModule.path', safeOptions.modulePath ? 'ok' : 'fail', safeOptions.modulePath || 'missing', 'Connector module path is configured.'),
     check('connectorModule.load', errors.length === 0 ? 'ok' : 'fail', errors.length === 0 ? 'loaded' : errors[0].message, 'Connector module can be loaded.'),
     check('connectorModule.registrations', registrationCount > 0 ? 'ok' : 'fail', registrationCount, 'Connector module registers at least one adapter or source ingest handler.')
-  ].concat(registrationContractChecks(modules));
+  ].concat(registrationContractChecks(modules), packageManifestChecks(modules));
 
   return {
     generatedAt: safeOptions.now || new Date().toISOString(),
@@ -21,6 +21,7 @@ function validateConnectorModuleLoad(options) {
     modulePath: safeOptions.modulePath,
     checks,
     contractSummary: summarizeContracts(modules),
+    packageManifests: summarizePackageManifests(modules),
     modules,
     errors
   };
@@ -122,6 +123,109 @@ function summarizeContracts(modules) {
   };
 }
 
+function packageManifestChecks(modules) {
+  const summaries = summarizePackageManifests(modules);
+  if (summaries.length === 0) {
+    return [
+      check(
+        'connectorPackage.manifest',
+        'ok',
+        { manifestCount: 0 },
+        'Connector package manifest is optional for legacy modules.'
+      )
+    ];
+  }
+
+  const failures = summaries.filter(function (summary) {
+    return summary.status === 'fail';
+  });
+  return [
+    check(
+      'connectorPackage.manifest',
+      failures.length > 0 ? 'fail' : 'ok',
+      {
+        manifestCount: summaries.length,
+        failures
+      },
+      'Connector package manifests match runtime registrations.'
+    )
+  ];
+}
+
+function summarizePackageManifests(modules) {
+  return (modules || []).map(function (moduleReport) {
+    const packageManifest = moduleReport.packageManifest || {};
+    if (!packageManifest.found) return undefined;
+    const manifest = packageManifest.manifest || {};
+    const declaredSourceTypes = extractDeclaredSourceTypes(manifest);
+    const declaredAdapters = extractDeclaredAdapters(manifest);
+    const registeredSourceTypes = moduleReport.sourceIngestHandlers || [];
+    const registeredAdapters = moduleReport.forumAdapters || [];
+    const missingSourceTypes = declaredSourceTypes.filter(function (sourceType) {
+      return !registeredSourceTypes.includes(sourceType);
+    });
+    const undeclaredSourceTypes = registeredSourceTypes.filter(function (sourceType) {
+      return !declaredSourceTypes.includes(sourceType);
+    });
+    const missingAdapters = declaredAdapters.filter(function (sourceKey) {
+      return !registeredAdapters.includes(sourceKey);
+    });
+    const undeclaredAdapters = registeredAdapters.filter(function (sourceKey) {
+      return !declaredAdapters.includes(sourceKey);
+    });
+    const requiredFailures = requiredManifestFailures(manifest);
+    const status = missingSourceTypes.length || undeclaredSourceTypes.length ||
+      missingAdapters.length || undeclaredAdapters.length || requiredFailures.length
+      ? 'fail'
+      : 'ok';
+    return {
+      status,
+      modulePath: moduleReport.modulePath,
+      packagePath: packageManifest.packagePath,
+      packageName: packageManifest.packageName,
+      packageVersion: packageManifest.packageVersion,
+      manifestVersion: manifest.version,
+      packageType: manifest.packageType,
+      displayName: manifest.displayName,
+      declaredSourceTypes,
+      registeredSourceTypes,
+      declaredAdapters,
+      registeredAdapters,
+      missingSourceTypes,
+      undeclaredSourceTypes,
+      missingAdapters,
+      undeclaredAdapters,
+      requiredFailures,
+      capabilities: manifest.capabilities || {},
+      rollout: manifest.rollout
+    };
+  }).filter(Boolean);
+}
+
+function extractDeclaredSourceTypes(manifest) {
+  return (manifest.sourceTypes || []).map(function (item) {
+    return typeof item === 'string' ? item : item && item.sourceType;
+  }).filter(Boolean);
+}
+
+function extractDeclaredAdapters(manifest) {
+  return (manifest.adapters || manifest.forumAdapters || []).map(function (item) {
+    return typeof item === 'string' ? item : item && item.sourceKey;
+  }).filter(Boolean);
+}
+
+function requiredManifestFailures(manifest) {
+  const failures = [];
+  if (!manifest.version) failures.push('version');
+  if (!manifest.displayName) failures.push('displayName');
+  if (!Array.isArray(manifest.sourceTypes) || manifest.sourceTypes.length === 0) failures.push('sourceTypes');
+  (manifest.sourceTypes || []).forEach(function (item, index) {
+    const sourceType = typeof item === 'string' ? item : item && item.sourceType;
+    if (!sourceType) failures.push('sourceTypes[' + index + '].sourceType');
+  });
+  return failures;
+}
+
 function missingAdapterFields(adapter) {
   const missing = [];
   if (!adapter.sourceKey) missing.push('sourceKey');
@@ -180,5 +284,6 @@ function aggregateStatus(checks) {
 }
 
 module.exports = {
-  validateConnectorModuleLoad
+  validateConnectorModuleLoad,
+  summarizePackageManifests
 };

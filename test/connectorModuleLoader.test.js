@@ -258,10 +258,67 @@ test('documented external connector package validates and dry-runs sample JSON',
   assert.equal(validation.valid, true);
   assert.equal(validation.contractSummary.sourceIngestHandlers[0].sourceType, 'package-normalized-feed');
   assert.equal(validation.contractSummary.sourceIngestHandlers[0].capabilities.packageTemplate, true);
+  assert.equal(validation.packageManifests[0].status, 'ok');
+  assert.equal(validation.packageManifests[0].packageName, '@threadtrace/example-external-connector-package');
+  assert.deepEqual(validation.packageManifests[0].declaredSourceTypes, ['package-normalized-feed']);
+  assert.equal(validation.packageManifests[0].capabilities.acceptsCanonicalSnapshot, true);
   assert.equal(dryRun.status, 'ok');
   assert.equal(dryRun.thread.sourceThreadId, 'external-thread-1');
   assert.equal(dryRun.repositoryWrites.threadSnapshots, 1);
   assert.equal(dryRun.repositoryWrites.reports, 1);
+});
+
+test('connector module validation fails when package manifest does not match registrations', async function () {
+  const tempDir = await makeWorkspaceTempDir('threadtrace-connector-package-manifest-mismatch-');
+  const packageDir = path.join(tempDir, 'connector-package');
+  await fs.mkdir(packageDir, { recursive: true });
+  const modulePath = path.join(packageDir, 'index.cjs');
+  await fs.writeFile(path.join(packageDir, 'package.json'), JSON.stringify({
+    name: '@threadtrace/mismatch-connector',
+    version: '0.1.0',
+    main: 'index.cjs',
+    threadtraceConnector: {
+      version: '1.0',
+      displayName: 'Mismatch Connector',
+      packageType: 'normalized-thread-json',
+      sourceTypes: [
+        {
+          sourceType: 'declared-feed',
+          displayName: 'Declared Feed'
+        }
+      ]
+    }
+  }, null, 2), 'utf8');
+  await fs.writeFile(modulePath, [
+    "'use strict';",
+    "module.exports = {",
+    "  sourceIngestHandlers: [{",
+    "    sourceType: 'registered-feed',",
+    "    requiresAdapter: false,",
+    "    description: 'Registered feed not declared by package manifest.',",
+    "    locationSchema: { required: ['inputFile'], properties: { inputFile: { type: 'string' } } },",
+    "    async run() { throw new Error('not used in this test'); }",
+    "  }]",
+    "};",
+    ""
+  ].join('\n'), 'utf8');
+
+  const runtime = createThreadTraceRuntime({
+    storeDir: path.join(tempDir, 'store')
+  });
+  const validation = runtime.validateConnectorModule({
+    modulePath,
+    now: '2026-06-25T10:00:00.000Z'
+  });
+  const manifestCheck = validation.checks.find(function (check) {
+    return check.key === 'connectorPackage.manifest';
+  });
+
+  assert.equal(validation.valid, false);
+  assert.equal(validation.status, 'fail');
+  assert.equal(manifestCheck.status, 'fail');
+  assert.deepEqual(validation.packageManifests[0].missingSourceTypes, ['declared-feed']);
+  assert.deepEqual(validation.packageManifests[0].undeclaredSourceTypes, ['registered-feed']);
 });
 
 test('connector module validation reloads changed module files', async function () {

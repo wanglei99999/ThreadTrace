@@ -21,6 +21,13 @@ test('connector rollout plan aggregates rollout steps and next actions', functio
       status: 'ok',
       modulePath: 'D:/connectors/external.cjs',
       errors: [],
+      packageManifests: [
+        {
+          status: 'ok',
+          packageName: '@threadtrace/external',
+          declaredSourceTypes: ['external-feed']
+        }
+      ],
       modules: [
         {
           modulePath: 'D:/connectors/external.cjs',
@@ -94,6 +101,9 @@ test('connector rollout plan aggregates rollout steps and next actions', functio
   assert.equal(plan.sourceType, 'external-feed');
   assert.equal(plan.modulePath, 'D:/connectors/external.cjs');
   assert.equal(plan.steps.length, 6);
+  assert.equal(plan.steps.find(function (step) {
+    return step.key === 'connectorModule.validation';
+  }).evidence.packageManifests[0].packageName, '@threadtrace/external');
   assert.equal(plan.steps.find(function (step) {
     return step.key === 'source.onboardingPreflight';
   }).status, 'fail');

@@ -5,7 +5,7 @@ This directory is a package-style connector template for future forums, channels
 ## Files
 
 - `index.cjs`: connector module entrypoint. It uses `register(context)`, the `src/connectors/connectorSdk` helpers, and registers one canonical JSON `SourceIngestHandler`.
-- `package.json`: package metadata and local validation scripts.
+- `package.json`: package metadata, local validation scripts, and the `threadtraceConnector` manifest used by module validation.
 - `sample-location.json`: source `location` payload for onboarding preflight or rollout manifests.
 - `../external-thread.sample.json`: canonical sample thread payload used by the dry-run command.
 
@@ -25,6 +25,8 @@ node src/presentation/cli/threadtrace.js connector-catalog --module-path docs/ex
 ```
 
 The JSON output includes `onboardingRecipe.requiredLocationFields`, `recommendedFlow`, and a conservative `rolloutManifestTemplate` that can seed rollout planning after real source values are filled in.
+
+`validate-connector-module` also checks that `package.json.threadtraceConnector.sourceTypes[]` matches the handler registrations. This lets operators and future package catalogs trust the package manifest without reading connector source code first.
 
 From this package directory:
 

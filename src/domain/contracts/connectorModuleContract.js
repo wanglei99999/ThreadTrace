@@ -61,7 +61,18 @@ function getConnectorModuleContract() {
       forumAdapters: 'Registered forum adapter sourceKey values.',
       forumAdapterDetails: 'Registered forum adapter contract metadata safe for diagnostics.',
       sourceIngestHandlers: 'Registered source ingest handler sourceType values.',
-      sourceIngestHandlerDetails: 'Registered source ingest handler contract metadata safe for diagnostics.'
+      sourceIngestHandlerDetails: 'Registered source ingest handler contract metadata safe for diagnostics.',
+      packageManifest: 'Optional threadtraceConnector package.json metadata loaded next to the module entrypoint.'
+    },
+    packageManifest: {
+      packageJsonField: 'threadtraceConnector',
+      required: ['version', 'displayName', 'sourceTypes'],
+      sourceTypeRequired: ['sourceType'],
+      optional: ['packageType', 'categories', 'adapters', 'capabilities', 'rollout'],
+      notes: [
+        'When present, declared sourceTypes and adapters must match runtime registrations.',
+        'Use package metadata for marketplace, rollout, onboarding, and operations UI surfaces.'
+      ]
     },
     validation: {
       requiredChecks: [
@@ -70,7 +81,8 @@ function getConnectorModuleContract() {
         'connectorModule.registrations',
         'connectorModule.uniqueRegistrations',
         'connectorModule.adapterContracts',
-        'connectorModule.handlerContracts'
+        'connectorModule.handlerContracts',
+        'connectorPackage.manifest'
       ],
       contractSummary: 'Validation responses include registered adapter and source-ingest handler metadata for release review.'
     },

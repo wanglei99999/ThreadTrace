@@ -64,6 +64,7 @@ function moduleValidationSummary(report) {
     valid: report.valid,
     modulePath: report.modulePath,
     errorCount: (report.errors || []).length,
+    packageManifests: report.packageManifests || [],
     modules: (report.modules || []).map(function (item) {
       return {
         modulePath: item.modulePath,

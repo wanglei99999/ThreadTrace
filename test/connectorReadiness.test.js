@@ -44,7 +44,28 @@ test('connector readiness summarizes handlers, adapter coverage, and configured 
             }
           }
         ],
-        sourceIngestHandlers: ['external-feed']
+        sourceIngestHandlers: ['external-feed'],
+        packageManifest: {
+          found: true,
+          packagePath: 'D:/connectors/package.json',
+          packageName: '@threadtrace/external-feed',
+          packageVersion: '0.1.0',
+          manifest: {
+            version: '1.0',
+            displayName: 'External Feed',
+            packageType: 'api',
+            categories: ['api'],
+            sourceTypes: [
+              {
+                sourceType: 'external-feed',
+                displayName: 'External Feed'
+              }
+            ],
+            capabilities: {
+              fetchesRemote: true
+            }
+          }
+        }
       }
     ],
     sourceRepository: fakeSourceRepository([
@@ -71,6 +92,9 @@ test('connector readiness summarizes handlers, adapter coverage, and configured 
   assert.equal(readiness.modules.count, 1);
   assert.equal(readiness.modules.modules[0].sourceIngestHandlers[0], 'external-feed');
   assert.equal(readiness.modules.modules[0].contractSummary.forumAdapterCount, 1);
+  assert.equal(readiness.modules.modules[0].packageManifest.packageName, '@threadtrace/external-feed');
+  assert.equal(readiness.modules.modules[0].packageManifest.sourceTypes[0].sourceType, 'external-feed');
+  assert.equal(readiness.modules.modules[0].packageManifest.capabilities.fetchesRemote, true);
   assert.equal(readiness.modules.modules[0].contractSummary.sourceIngestHandlers[0].sourceType, 'external-feed');
   assert.deepEqual(readiness.modules.modules[0].contractSummary.sourceIngestHandlers[0].requiredLocationFields, ['feedUrl']);
   assert.equal(savedHtml.status, 'ok');

@@ -436,6 +436,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(connectorModuleContract.version, '1.0.0');
     assert.ok(connectorModuleContract.sdk.helpers.includes('defineSourceIngestHandler(options)'));
     assert.ok(connectorModuleContract.sdk.helpers.includes('defineNormalizedThreadJsonHandler(options)'));
+    assert.equal(connectorModuleContract.packageManifest.packageJsonField, 'threadtraceConnector');
     assert.ok(connectorModuleContract.sourceIngestHandler.required.includes('sourceType'));
     assert.equal(contextReviewHandoffContract.version, '1.0.0');
     assert.ok(contextReviewHandoffContract.schema.required.includes('openTasks'));
