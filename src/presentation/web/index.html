@@ -298,11 +298,19 @@
             <span>数量</span>
             <input name="limit" value="10" inputmode="numeric" autocomplete="off">
           </label>
-          <button type="button" class="secondary-button" id="previewAckEventsButton">Preview ack</button>
-          <button type="button" class="secondary-button" id="ackVisibleEventsButton">Ack execute</button>
-          <button type="button" class="secondary-button" id="previewEventArchiveButton">Archive check</button>
-          <button type="button" class="secondary-button" id="archiveEventsButton">Archive handled</button>
-          <button type="submit">筛选事件</button>
+          <div class="event-triage-command-shelf" aria-label="Event triage commands">
+            <div class="event-triage-command-group event-triage-query" data-label="Query">
+              <button type="submit">筛选事件</button>
+            </div>
+            <div class="event-triage-command-group" data-label="Ack">
+              <button type="button" class="secondary-button" id="previewAckEventsButton">Preview ack</button>
+              <button type="button" class="secondary-button" id="ackVisibleEventsButton">Ack execute</button>
+            </div>
+            <div class="event-triage-command-group" data-label="Archive">
+              <button type="button" class="secondary-button" id="previewEventArchiveButton">Archive check</button>
+              <button type="button" class="secondary-button" id="archiveEventsButton">Archive handled</button>
+            </div>
+          </div>
         </form>
         <form id="contextReviewResultForm" class="control-strip event-card event-card-review" data-title="Human decision">
           <label class="full">
