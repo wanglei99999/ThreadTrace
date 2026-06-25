@@ -52,6 +52,39 @@ node src/presentation/cli/threadtrace.js connector-readiness
 
 Connector modules may export `sourceIngestHandlers`, `forumAdapters`, or a `register(context)` function that calls `context.registerSourceIngestHandler(...)` and `context.registerForumAdapter(...)`.
 
+New connector modules should prefer the lightweight SDK helpers in `src/connectors/connectorSdk`:
+
+```js
+const path = require('path');
+const {
+  defineConnectorModule,
+  defineSourceIngestHandler,
+  defineLocationSchema
+} = require(path.join(process.env.THREADTRACE_ROOT || process.cwd(), 'src/connectors/connectorSdk'));
+
+module.exports = defineConnectorModule({
+  sourceIngestHandlers: [
+    defineSourceIngestHandler({
+      sourceType: 'external-feed',
+      requiresAdapter: false,
+      description: 'Ingest an external feed into ThreadTrace.',
+      locationSchema: defineLocationSchema({
+        required: ['feedUrl'],
+        properties: {
+          feedUrl: { type: 'string', format: 'uri' }
+        }
+      }),
+      capabilities: { fetchesRemote: true },
+      async run(context) {
+        throw new Error('implement ingestion here');
+      }
+    })
+  ]
+});
+```
+
+The SDK validates required metadata at module authoring time and normalizes `locationSchema`, `capabilities`, and adapter requirements. Bare object modules remain supported for compatibility.
+
 Fetch the machine-readable connector module contract before implementing a custom package:
 
 ```powershell

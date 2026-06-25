@@ -7,16 +7,20 @@ function register(context) {
 }
 
 function createNormalizedPackageHandler() {
+  const {
+    defineLocationSchema,
+    defineSourceIngestHandler
+  } = requireThreadTraceModule('src/connectors/connectorSdk');
   const { runIngestNormalizedThreadJsonTask } = requireThreadTraceModule('src/application/use-cases/runIngestNormalizedThreadJsonTask');
   const { assertAnalysisReportRepository } = requireThreadTraceModule('src/application/ports/analysisReportRepository');
   const { assertTaskRepository } = requireThreadTraceModule('src/application/ports/taskRepository');
   const { assertThreadRepository } = requireThreadTraceModule('src/application/ports/threadRepository');
 
-  return {
+  return defineSourceIngestHandler({
     sourceType: 'package-normalized-feed',
     requiresAdapter: false,
     description: 'Package-style connector template for ingesting canonical ThreadTrace ThreadSnapshot JSON files.',
-    locationSchema: {
+    locationSchema: defineLocationSchema({
       required: ['inputFile'],
       properties: {
         inputFile: {
@@ -29,7 +33,7 @@ function createNormalizedPackageHandler() {
           description: 'Optional human label for the upstream collector or channel.'
         }
       }
-    },
+    }),
     capabilities: {
       readsLocalFiles: true,
       fetchesRemote: false,
@@ -50,7 +54,7 @@ function createNormalizedPackageHandler() {
         idempotencyKey: context.idempotencyKey
       });
     }
-  };
+  });
 }
 
 function requireThreadTraceModule(relativePath) {

@@ -1,17 +1,22 @@
 'use strict';
 
+const {
+  defineConnectorModule,
+  defineLocationSchema,
+  defineSourceIngestHandler
+} = require('../../src/connectors/connectorSdk');
 const { runIngestNormalizedThreadJsonTask } = require('../../src/application/use-cases/runIngestNormalizedThreadJsonTask');
 const { assertAnalysisReportRepository } = require('../../src/application/ports/analysisReportRepository');
 const { assertTaskRepository } = require('../../src/application/ports/taskRepository');
 const { assertThreadRepository } = require('../../src/application/ports/threadRepository');
 
-module.exports = {
+module.exports = defineConnectorModule({
   sourceIngestHandlers: [
-    {
+    defineSourceIngestHandler({
       sourceType: 'external-normalized-feed',
       requiresAdapter: false,
       description: 'Example external connector that ingests a canonical ThreadTrace ThreadSnapshot JSON file.',
-      locationSchema: {
+      locationSchema: defineLocationSchema({
         required: ['inputFile'],
         properties: {
           inputFile: {
@@ -20,7 +25,7 @@ module.exports = {
             description: 'Path to a normalized ThreadSnapshot JSON file produced by an external collector.'
           }
         }
-      },
+      }),
       capabilities: {
         readsLocalFiles: true,
         fetchesRemote: false,
@@ -40,6 +45,6 @@ module.exports = {
           idempotencyKey: context.idempotencyKey
         });
       }
-    }
+    })
   ]
-};
+});

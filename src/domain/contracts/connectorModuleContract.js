@@ -28,6 +28,16 @@ function getConnectorModuleContract() {
       registerForumAdapter: 'registerForumAdapter(adapter) -> adapter',
       registerSourceIngestHandler: 'registerSourceIngestHandler(handler) -> handler'
     },
+    sdk: {
+      module: 'src/connectors/connectorSdk',
+      helpers: [
+        'defineConnectorModule(options)',
+        'defineSourceIngestHandler(options)',
+        'defineForumAdapter(options)',
+        'defineLocationSchema(options)'
+      ],
+      description: 'Optional authoring helpers that validate and normalize connector modules before runtime registration.'
+    },
     forumAdapter: {
       required: ['sourceKey', 'displayName', 'parseSavedHtml'],
       optional: ['capabilities', 'fetchThread'],
@@ -70,18 +80,21 @@ function getConnectorModuleContract() {
     },
     example: [
       "'use strict';",
-      'module.exports = {',
-      '  sourceIngestHandlers: [{',
+      "const path = require('path');",
+      "const threadTraceRoot = process.env.THREADTRACE_ROOT || process.cwd();",
+      "const { defineConnectorModule, defineSourceIngestHandler, defineLocationSchema } = require(path.join(threadTraceRoot, 'src/connectors/connectorSdk'));",
+      'module.exports = defineConnectorModule({',
+      '  sourceIngestHandlers: [defineSourceIngestHandler({',
       "    sourceType: 'external-feed',",
       '    requiresAdapter: false,',
       "    description: 'Ingest an external feed into ThreadTrace.',",
-      "    locationSchema: { required: ['feedUrl'], properties: { feedUrl: { type: 'string', format: 'uri' } } },",
+      "    locationSchema: defineLocationSchema({ required: ['feedUrl'], properties: { feedUrl: { type: 'string', format: 'uri' } } }),",
       '    capabilities: { fetchesRemote: true },',
       '    async run(context) {',
       "      throw new Error('implement ingestion here');",
       '    }',
-      '  }]',
-      '};'
+      '  })]',
+      '});'
     ].join('\n')
   };
 }
