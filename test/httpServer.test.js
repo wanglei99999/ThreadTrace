@@ -337,6 +337,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.equal(openApi.components.schemas.WorkerRun.properties.scoped.type, 'boolean');
     assert.equal(openApi.paths['/api/operations/source-drilldown'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceOperationsDrilldown');
     assert.equal(openApi.paths['/api/operations/source-drilldown'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/SourceOperationsDrilldown');
+    assert.equal(openApi.paths['/api/operations/source-collection-health'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceCollectionHealthProfile');
+    assert.equal(openApi.paths['/api/operations/source-collection-health'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/SourceCollectionHealthProfile');
+    assert.ok(openApi.components.schemas.SourceCollectionHealthProfile);
     assert.ok(openApi.paths['/api/operations/source-drilldown'].get.parameters.find(function (parameter) {
       return parameter.name === 'attentionLimit';
     }));
@@ -1142,6 +1145,51 @@ test('http server exposes source operations drilldown API', async function () {
             workerLeases: []
           }
         };
+      },
+      async getSourceCollectionHealthProfile(request) {
+        calls.push(Object.assign({ profile: true }, request));
+        return {
+          generatedAt: request.now || '2026-06-18T10:00:00.000Z',
+          status: 'warn',
+          scope: {
+            sourceId: request.sourceId,
+            sourceKey: request.sourceKey
+          },
+          sourceFound: true,
+          source: {
+            id: request.sourceId,
+            sourceKey: request.sourceKey,
+            displayName: 'NGA sample'
+          },
+          automation: {
+            status: 'due',
+            schedule: {
+              due: true,
+              reason: 'interval-elapsed'
+            }
+          },
+          incremental: {
+            cursor: { present: true },
+            incremental: { newPostCount: 4 }
+          },
+          replay: {
+            available: true,
+            evidenceKinds: ['task', 'cursor'],
+            rawPageHashCount: 0
+          },
+          operations: {
+            tasks: { failed: 1 },
+            events: { failed: 1 },
+            workers: { runs: { stale: 0 }, leases: { expired: 0 } },
+            timelineCount: 2
+          },
+          checks: [
+            { key: 'operations.tasks', area: 'operations', status: 'warn', value: 'failed=1', summary: 'Recent source tasks are not failing.' }
+          ],
+          nextActions: [
+            { key: 'collectionHealth.operations.tasks', severity: 'warning' }
+          ]
+        };
       }
     }
   });
@@ -1151,6 +1199,8 @@ test('http server exposes source operations drilldown API', async function () {
 
   try {
     const report = await getJson(baseUrl + '/api/operations/source-drilldown?sourceKey=nga&sourceId=source-1&limit=10&timelineLimit=7&attentionLimit=5&taskScanLimit=20&leaseScanLimit=30&sourceFailureRetryBackoffMs=60000');
+    const health = await getJson(baseUrl + '/api/operations/source-collection-health?sourceKey=nga&sourceId=source-1&limit=10&timelineLimit=7&attentionLimit=5&taskScanLimit=20&leaseScanLimit=30&sourceFailureRetryBackoffMs=60000');
+    const webAppJs = await getText(baseUrl + '/app.js', 'text/javascript');
 
     assert.equal(report.status, 'warn');
     assert.equal(report.scope.sourceId, 'source-1');
@@ -1165,6 +1215,18 @@ test('http server exposes source operations drilldown API', async function () {
     assert.equal(calls[0].taskScanLimit, 20);
     assert.equal(calls[0].leaseScanLimit, 30);
     assert.equal(calls[0].sourceFailureRetryBackoffMs, 60000);
+    assert.equal(health.status, 'warn');
+    assert.equal(health.scope.sourceId, 'source-1');
+    assert.equal(health.automation.status, 'due');
+    assert.equal(health.replay.available, true);
+    assert.equal(health.checks[0].key, 'operations.tasks');
+    assert.equal(calls[1].profile, true);
+    assert.equal(calls[1].sourceKey, 'nga');
+    assert.equal(calls[1].sourceId, 'source-1');
+    assert.equal(calls[1].limit, 10);
+    assert.equal(calls[1].timelineLimit, 7);
+    assert.match(webAppJs, /renderSourceCollectionHealthProfile/);
+    assert.match(webAppJs, /load-source-collection-health/);
   } finally {
     await close(server);
   }

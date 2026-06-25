@@ -66,6 +66,7 @@ const { getSourceOperationsCockpit } = require('../application/use-cases/getSour
 const { getSourceOperationsCockpitActionPlan } = require('../application/use-cases/getSourceOperationsCockpitActionPlan');
 const { getOperationalOverview } = require('../application/use-cases/getOperationalOverview');
 const { getSourceOperationsDrilldown } = require('../application/use-cases/getSourceOperationsDrilldown');
+const { getSourceCollectionHealthProfile } = require('../application/use-cases/getSourceCollectionHealthProfile');
 const { getSourceTypeOperationsDrilldown } = require('../application/use-cases/getSourceTypeOperationsDrilldown');
 const { getNotificationEventOverview } = require('../application/use-cases/getNotificationEventOverview');
 const { getAuthorIntelligenceDashboard } = require('../application/use-cases/getAuthorIntelligenceDashboard');
@@ -1411,6 +1412,33 @@ function createThreadTraceRuntime(options) {
         sourceAttentionReport,
         now: safeRequest.now
       }));
+    },
+
+    async getSourceCollectionHealthProfile(request) {
+      const safeRequest = request || {};
+      const runtime = this;
+      return getSourceCollectionHealthProfile({
+        sourceId: safeRequest.sourceId,
+        sourceKey: safeRequest.sourceKey || safeRequest.forum,
+        limit: safeRequest.limit || 50,
+        timelineLimit: safeRequest.timelineLimit,
+        attentionLimit: safeRequest.attentionLimit,
+        taskScanLimit: safeRequest.taskScanLimit,
+        leaseScanLimit: safeRequest.leaseScanLimit,
+        sourceRunStaleAfterMs: resolveSourceRunStaleAfterMs(safeRequest, runtimeConfig),
+        sourceFailureRetryBackoffMs: resolveSourceFailureRetryBackoffMs(safeRequest, runtimeConfig),
+        sourceFailureMaxRetryBackoffMs: resolveSourceFailureMaxRetryBackoffMs(safeRequest, runtimeConfig),
+        runningStaleAfterMs: safeRequest.runningStaleAfterMs,
+        workerStaleAfterMs: safeRequest.workerStaleAfterMs,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir,
+        includeDrilldown: safeRequest.includeDrilldown,
+        getSourceOperationsDrilldown(drilldownRequest) {
+          return runtime.getSourceOperationsDrilldown(Object.assign({}, drilldownRequest, {
+            storeDir: safeRequest.storeDir
+          }));
+        }
+      });
     },
 
     async getSourceTypeOperationsDrilldown(request) {

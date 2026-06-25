@@ -344,6 +344,10 @@ function bindForms() {
       await loadSourceOperationsDrilldownFromButton(button);
       return;
     }
+    if (button.dataset.action === 'load-source-collection-health') {
+      await loadSourceCollectionHealthFromButton(button);
+      return;
+    }
     if (button.dataset.action === 'load-source-cockpit-action-plan') {
       await loadSourceCockpitActionPlanFromButton(button);
       return;
@@ -374,6 +378,10 @@ function bindForms() {
     }
     if (button.dataset.action === 'load-source-drilldown') {
       await loadSourceOperationsDrilldownFromButton(button);
+      return;
+    }
+    if (button.dataset.action === 'load-source-collection-health') {
+      await loadSourceCollectionHealthFromButton(button);
       return;
     }
     if (button.dataset.action === 'load-source-type-drilldown') {
@@ -428,6 +436,10 @@ function bindForms() {
       await loadSourceOperationsDrilldownFromButton(button);
       return;
     }
+    if (button.dataset.action === 'load-source-collection-health') {
+      await loadSourceCollectionHealthFromButton(button);
+      return;
+    }
     if (button.dataset.action === 'set-source-enabled') {
       await setSourceEnabledFromButton(button);
     }
@@ -459,6 +471,10 @@ function bindForms() {
     }
     if (button.dataset.action === 'load-source-drilldown') {
       await loadSourceOperationsDrilldownFromButton(button);
+      return;
+    }
+    if (button.dataset.action === 'load-source-collection-health') {
+      await loadSourceCollectionHealthFromButton(button);
       return;
     }
     if (button.dataset.action === 'prepare-event-action-intent') {
@@ -890,6 +906,10 @@ async function handleRolloutReadinessAction(event) {
   }
   if (button.dataset.action === 'load-source-drilldown') {
     await loadSourceOperationsDrilldownFromButton(button);
+    return;
+  }
+  if (button.dataset.action === 'load-source-collection-health') {
+    await loadSourceCollectionHealthFromButton(button);
     return;
   }
   if (button.dataset.action === 'load-source-type-drilldown') {
@@ -1951,6 +1971,18 @@ async function loadSourceOperationsDrilldownFromButton(button) {
       acceptErrorStatus: true
     });
   }, renderSourceOperationsDrilldown);
+}
+
+async function loadSourceCollectionHealthFromButton(button) {
+  const query = new URLSearchParams();
+  appendOptionalQuery(query, 'sourceId', button.dataset.sourceId);
+  appendOptionalQuery(query, 'sourceKey', button.dataset.sourceKey);
+  query.set('limit', button.dataset.limit || '50');
+  await renderAsync('sourceOperationActionResult', function () {
+    return fetchJson('/api/operations/source-collection-health?' + query.toString(), {
+      acceptErrorStatus: true
+    });
+  }, renderSourceCollectionHealthProfile);
 }
 
 async function loadSourceTypeOperationsDrilldownFromButton(button) {
@@ -4400,7 +4432,8 @@ function renderSourceCockpitActionButton(action, item) {
   const sourceKey = escapeHtml(source.sourceKey || '');
   const sourceType = escapeHtml(item.sourceType || source.sourceType || '');
   if (action.key === 'source.drilldown') {
-    return '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-drilldown" data-source-id="' + sourceId + '" data-source-key="' + sourceKey + '" data-limit="50">Open</button>';
+    return '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-drilldown" data-source-id="' + sourceId + '" data-source-key="' + sourceKey + '" data-limit="50">Open</button>' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-collection-health" data-source-id="' + sourceId + '" data-source-key="' + sourceKey + '" data-limit="50">Health</button>';
   }
   if (action.key === 'source.run-ingest') {
     return '<button class="inline-button" type="button" data-action="run-source" data-source-id="' + sourceId + '">Run</button>';
@@ -4821,6 +4854,40 @@ function firstText(items) {
   return (items || []).find(function (item) {
     return typeof item === 'string' && item.length > 0;
   });
+}
+
+function renderSourceCollectionHealthProfile(profile) {
+  const automation = profile.automation || {};
+  const schedule = automation.schedule || {};
+  const incremental = profile.incremental || {};
+  const cursor = incremental.cursor || {};
+  const diff = incremental.incremental || {};
+  const replay = profile.replay || {};
+  const operations = profile.operations || {};
+  const workers = operations.workers || { runs: {}, leases: {} };
+  return [
+    panel('Source collection health', [
+      '<div class="summary-strip">',
+      summaryTile('Status', profile.status || 'unknown', statusVariant(profile.status)),
+      summaryTile('Automation', automation.status || 'unknown', collectionStatusVariant(automation.status)),
+      summaryTile('Due', schedule.due ? 'yes' : 'no', schedule.due ? 'warn' : 'ok'),
+      summaryTile('Cursor', cursor.present ? 'yes' : 'no', cursor.present ? 'ok' : 'warn'),
+      summaryTile('Replay', replay.available ? 'yes' : 'no', replay.available ? 'ok' : 'warn'),
+      summaryTile('Stale runs', String(workers.runs && workers.runs.stale || 0), workers.runs && workers.runs.stale > 0 ? 'fail' : 'ok'),
+      '</div>',
+      metric('Source', [profile.source && profile.source.displayName, profile.source && profile.source.id, profile.source && profile.source.sourceKey, profile.source && profile.source.sourceType].filter(Boolean).join(' | ') || 'unknown'),
+      metric('Schedule', ['reason=' + (schedule.reason || 'unknown'), schedule.nextRunAt ? 'next=' + schedule.nextRunAt : undefined, schedule.retryAt ? 'retry=' + schedule.retryAt : undefined].filter(Boolean).join(' | ')),
+      metric('Incremental', ['changed=' + String(diff.lastChanged), 'newPosts=' + (diff.newPostCount || 0), 'nextPosts=' + (diff.nextPostCount || 0)].join(' | ')),
+      metric('Replay evidence', [(replay.evidenceKinds || []).join(',') || 'none', 'rawPages=' + (replay.rawPageHashCount || 0), replay.taskId ? 'task=' + replay.taskId : undefined].filter(Boolean).join(' | ')),
+      metric('Operations', ['tasksFailed=' + (operations.tasks && operations.tasks.failed || 0), 'eventsOpen=' + (operations.events && operations.events.unacknowledged || 0), 'eventsFailed=' + (operations.events && operations.events.failed || 0), 'timeline=' + (operations.timelineCount || 0)].join(' | '))
+    ].join(''), 'wide'),
+    panel('Collection health checks', evidenceList((profile.checks || []).map(function (check) {
+      return check.status + ' | ' + check.area + ' | ' + check.key + ' | ' + check.summary + ' | ' + check.value;
+    })), 'wide'),
+    panel('Collection health actions', evidenceList((profile.nextActions || []).map(function (action) {
+      return (action.severity || 'info') + ' | ' + (action.key || 'action') + ' | ' + (action.summary || '') + ' | ' + (action.recommendedCommand || (action.commands || []).join(' | '));
+    })), 'wide')
+  ].join('');
 }
 
 function renderSourceOperationsDrilldown(report) {
@@ -5405,7 +5472,8 @@ function renderLifecycleCommandRows(commands) {
 function renderSourceDrilldownButton(source) {
   const sourceId = escapeHtml(source.id || '');
   const sourceKey = escapeHtml(source.sourceKey || '');
-  return '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-drilldown" data-source-id="' + sourceId + '" data-source-key="' + sourceKey + '" data-limit="50">Ops</button>';
+  return '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-drilldown" data-source-id="' + sourceId + '" data-source-key="' + sourceKey + '" data-limit="50">Ops</button>' +
+    '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-collection-health" data-source-id="' + sourceId + '" data-source-key="' + sourceKey + '" data-limit="50">Health</button>';
 }
 
 function renderSourceDrilldownButtonForScope(scope) {
@@ -6270,7 +6338,8 @@ function renderNotificationSourceHotspots(hotspots) {
 
 function renderEventSourceDrilldownButton(source) {
   if (!source || (!source.sourceId && !source.sourceKey)) return '';
-  return '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-drilldown" data-source-id="' + escapeHtml(source.sourceId || '') + '" data-source-key="' + escapeHtml(source.sourceKey || '') + '" data-limit="50">Ops</button>';
+  return '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-drilldown" data-source-id="' + escapeHtml(source.sourceId || '') + '" data-source-key="' + escapeHtml(source.sourceKey || '') + '" data-limit="50">Ops</button>' +
+    '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-collection-health" data-source-id="' + escapeHtml(source.sourceId || '') + '" data-source-key="' + escapeHtml(source.sourceKey || '') + '" data-limit="50">Health</button>';
 }
 
 function eventMetadata(event) {

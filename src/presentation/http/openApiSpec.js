@@ -1328,6 +1328,46 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/operations/source-collection-health': {
+        get: {
+          summary: 'Get source collection automation health across schedule, cursor, replay, workers, tasks, and events',
+          parameters: [
+            { name: 'sourceId', in: 'query', required: false, schema: { type: 'string', example: 'tracked-source-nga-001' } },
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'timelineLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'attentionLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'taskScanLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'leaseScanLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'includeDrilldown', in: 'query', required: false, schema: { type: 'boolean' } },
+            { name: 'sourceRunStaleAfterMs', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'sourceFailureRetryBackoffMs', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'sourceFailureMaxRetryBackoffMs', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'workerStaleAfterMs', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'runningStaleAfterMs', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Source collection health is ok or has warnings',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/SourceCollectionHealthProfile' }
+                }
+              }
+            },
+            503: {
+              description: 'Source collection health contains failing signals',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/SourceCollectionHealthProfile' }
+                }
+              }
+            }
+          }
+        }
+      },
       '/api/operations/source-type-drilldown': {
         get: {
           summary: 'Get source-type operational drill-down across sources, workers, tasks, events, and source-type operations',
@@ -6904,6 +6944,68 @@ function createOpenApiSpec() {
                 }
               },
               additionalProperties: true
+            }
+          }
+        },
+        SourceCollectionHealthProfile: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            scope: { $ref: '#/components/schemas/SourceScope' },
+            sourceFound: { type: 'boolean', example: true },
+            source: { type: 'object', additionalProperties: true },
+            automation: {
+              type: 'object',
+              properties: {
+                status: { type: 'string', example: 'scheduled' },
+                strategy: { type: 'object', additionalProperties: true },
+                schedule: { type: 'object', additionalProperties: true },
+                lastRun: { type: 'object', additionalProperties: true }
+              },
+              additionalProperties: true
+            },
+            incremental: {
+              type: 'object',
+              properties: {
+                cursor: { type: 'object', additionalProperties: true },
+                incremental: { type: 'object', additionalProperties: true }
+              },
+              additionalProperties: true
+            },
+            replay: {
+              type: 'object',
+              properties: {
+                available: { type: 'boolean', example: true },
+                taskId: { type: 'string' },
+                cursorFingerprint: { type: 'string' },
+                rawPageHashCount: { type: 'number' },
+                pageNumbers: { type: 'array', items: { type: 'number' } },
+                sourceUrls: { type: 'array', items: { type: 'string' } },
+                evidenceKinds: { type: 'array', items: { type: 'string' } },
+                location: { type: 'object', additionalProperties: true }
+              },
+              additionalProperties: true
+            },
+            operations: { type: 'object', additionalProperties: true },
+            checks: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  key: { type: 'string', example: 'collection.replayEvidence' },
+                  area: { type: 'string', example: 'replay' },
+                  status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+                  value: { type: 'string' },
+                  summary: { type: 'string' }
+                },
+                additionalProperties: true
+              }
+            },
+            drilldown: { $ref: '#/components/schemas/SourceOperationsDrilldown' },
+            nextActions: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true }
             }
           }
         },

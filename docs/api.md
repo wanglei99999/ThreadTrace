@@ -852,6 +852,12 @@ now=2026-06-18T10:00:00.000Z
 
 The response is exposed in OpenAPI as `SourceOperationsDrilldown` and reuses `SourceScope`, `WorkerRun`, `WorkerLease`, `SourceAttentionSignal`, and `SourceAttentionSummary`. The `attention` field contains the matching source attention item when available, including `attentionRank`, `priorityScore`, `severity`, `recommendedNextAction`, and `recommendedCommand`; the first drill-down next action mirrors that recommendation so operators can move from source list to single-source remediation without rejoining reports. The `timeline` field merges recent source-scoped tasks, notification events, worker runs, worker leases, review action executions, and notification event action executions in reverse chronological order for operator triage. HTTP `503` means the source drill-down found a failing signal, such as stale worker runs, stale review action executions, or stale notification event action executions. Warnings return `200`.
 
+### `GET /api/operations/source-collection-health`
+
+Returns a source-scoped collection health profile for one source id or source key. It reuses source drill-down evidence but reshapes it into production-readiness checks for scheduled automation: source resolution, enabled state, schedule/next run, retry/backoff, cursor and incremental diff, replay evidence, last run, tasks, events, worker runs, worker leases, and timeline evidence.
+
+Query parameters mirror `GET /api/operations/source-drilldown` and add `includeDrilldown=true` when callers also need the raw drill-down evidence. The response is exposed in OpenAPI as `SourceCollectionHealthProfile`. HTTP `503` means the profile has failing health checks, such as stale source-scoped worker runs. Warnings return `200`.
+
 ### `GET /api/operations/worker-topology-plan`
 
 Returns a read-only worker deployment topology plan for choosing between the combined operations worker and split due-source / notification-event workers.

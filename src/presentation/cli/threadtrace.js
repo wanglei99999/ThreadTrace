@@ -861,6 +861,53 @@ function main(argv) {
     return;
   }
 
+  if (command === 'source-collection-health') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.getSourceCollectionHealthProfile({
+      sourceId: options.sourceId,
+      sourceKey: options.sourceKey || options.forum,
+      limit: options.limit ? Number(options.limit) : 50,
+      timelineLimit: options.timelineLimit ? Number(options.timelineLimit) : undefined,
+      attentionLimit: options.attentionLimit ? Number(options.attentionLimit) : undefined,
+      taskScanLimit: options.taskScanLimit ? Number(options.taskScanLimit) : undefined,
+      leaseScanLimit: options.leaseScanLimit ? Number(options.leaseScanLimit) : undefined,
+      sourceRunStaleAfterMs: options.sourceRunStaleAfterMs ? Number(options.sourceRunStaleAfterMs) : undefined,
+      sourceFailureRetryBackoffMs: options.sourceFailureRetryBackoffMs ? Number(options.sourceFailureRetryBackoffMs) : undefined,
+      sourceFailureMaxRetryBackoffMs: options.sourceFailureMaxRetryBackoffMs ? Number(options.sourceFailureMaxRetryBackoffMs) : undefined,
+      workerStaleAfterMs: options.workerStaleAfterMs ? Number(options.workerStaleAfterMs) : undefined,
+      runningStaleAfterMs: options.runningStaleAfterMs ? Number(options.runningStaleAfterMs) : undefined,
+      now: options.now,
+      storeDir
+    }).then(function (profile) {
+      if (isTruthyOption(options.json)) {
+        console.log(JSON.stringify(profile, null, 2));
+        if (profile.status === 'fail') process.exitCode = 2;
+        if (profile.status === 'warn') process.exitCode = 1;
+        return;
+      }
+      const automation = profile.automation || {};
+      const schedule = automation.schedule || {};
+      const replay = profile.replay || {};
+      const operations = profile.operations || {};
+      const workers = operations.workers || { runs: {}, leases: {} };
+      console.log('Source collection health: ' + profile.status + '\t' + (profile.source && (profile.source.id || profile.source.sourceKey) || 'unknown-source'));
+      console.log('Automation: status=' + (automation.status || 'unknown') + ', due=' + Boolean(schedule.due) + ', reason=' + (schedule.reason || 'unknown') + ', next=' + (schedule.nextRunAt || 'none'));
+      console.log('Incremental: cursor=' + Boolean(profile.incremental && profile.incremental.cursor && profile.incremental.cursor.present) + ', changed=' + (profile.incremental && profile.incremental.incremental && profile.incremental.incremental.lastChanged) + ', newPosts=' + (profile.incremental && profile.incremental.incremental && profile.incremental.incremental.newPostCount || 0));
+      console.log('Replay: available=' + Boolean(replay.available) + ', kinds=' + (replay.evidenceKinds || []).join(',') + ', rawPages=' + (replay.rawPageHashCount || 0));
+      console.log('Operations: tasksFailed=' + (operations.tasks && operations.tasks.failed || 0) + ', eventsOpen=' + (operations.events && operations.events.unacknowledged || 0) + ', workerStale=' + (workers.runs && workers.runs.stale || 0) + ', leasesExpired=' + (workers.leases && workers.leases.expired || 0));
+      profile.checks.forEach(function (check) {
+        console.log(check.status + '\t' + check.area + '\t' + check.key + '\t' + check.summary + '\t' + check.value);
+      });
+      profile.nextActions.forEach(printActionWithDetails);
+      if (profile.status === 'fail') process.exitCode = 2;
+      if (profile.status === 'warn') process.exitCode = 1;
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'trace-context') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.getTaskTraceContext({
@@ -3471,6 +3518,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js source-type-operations-report [--forum nga] [--source-type type] [--module-path file] [--json true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-cockpit-action-plan [--rank 1 | --item-id id] [--source-key key] [--source-type type] [--provider mock] [--json true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-drilldown [--source-id id | --source-key key] [--json true] [--store-dir dir] [--limit n]');
+  console.log('  node src/presentation/cli/threadtrace.js source-collection-health [--source-id id | --source-key key] [--json true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js run-demo-cycle [--source-id id] [--source-key key] [--provider mock] [--acknowledge-events true] [--execute-acknowledgement true] [--json true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-type-drilldown --source-type type [--forum nga] [--json true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js trace-context [--task-id id | --request-id id | --trace-id id | --idempotency-key key] [--store-dir dir] [--limit n]');

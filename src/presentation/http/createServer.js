@@ -726,6 +726,28 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/operations/source-collection-health') {
+    const report = await context.runtime.getSourceCollectionHealthProfile({
+      sourceId: url.searchParams.get('sourceId') || undefined,
+      sourceKey: url.searchParams.get('sourceKey') || url.searchParams.get('forum') || undefined,
+      limit: url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : 50,
+      timelineLimit: url.searchParams.get('timelineLimit') ? Number(url.searchParams.get('timelineLimit')) : undefined,
+      attentionLimit: url.searchParams.get('attentionLimit') ? Number(url.searchParams.get('attentionLimit')) : undefined,
+      taskScanLimit: url.searchParams.get('taskScanLimit') ? Number(url.searchParams.get('taskScanLimit')) : undefined,
+      leaseScanLimit: url.searchParams.get('leaseScanLimit') ? Number(url.searchParams.get('leaseScanLimit')) : undefined,
+      sourceRunStaleAfterMs: url.searchParams.get('sourceRunStaleAfterMs') ? Number(url.searchParams.get('sourceRunStaleAfterMs')) : undefined,
+      sourceFailureRetryBackoffMs: url.searchParams.get('sourceFailureRetryBackoffMs') ? Number(url.searchParams.get('sourceFailureRetryBackoffMs')) : undefined,
+      sourceFailureMaxRetryBackoffMs: url.searchParams.get('sourceFailureMaxRetryBackoffMs') ? Number(url.searchParams.get('sourceFailureMaxRetryBackoffMs')) : undefined,
+      runningStaleAfterMs: url.searchParams.get('runningStaleAfterMs') ? Number(url.searchParams.get('runningStaleAfterMs')) : undefined,
+      workerStaleAfterMs: url.searchParams.get('workerStaleAfterMs') ? Number(url.searchParams.get('workerStaleAfterMs')) : undefined,
+      includeDrilldown: url.searchParams.get('includeDrilldown') === 'true',
+      now: url.searchParams.get('now') || undefined,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, report.status === 'fail' ? 503 : 200, report);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/operations/source-type-drilldown') {
     const enabledParam = url.searchParams.get('enabled');
     const report = await context.runtime.getSourceTypeOperationsDrilldown({

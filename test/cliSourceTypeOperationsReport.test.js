@@ -241,3 +241,36 @@ test('CLI prints source operations drilldown as JSON', async function () {
   }));
   assert.equal(result.stderr, '');
 });
+
+test('CLI prints source collection health profile as JSON', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-cli-source-collection-health-'));
+  const root = path.resolve(__dirname, '..');
+  const scriptPath = path.join(root, 'src', 'presentation', 'cli', 'threadtrace.js');
+
+  await assert.rejects(execFileAsync(process.execPath, [
+    scriptPath,
+    'source-collection-health',
+    '--store-dir',
+    tempDir,
+    '--source-key',
+    'missing',
+    '--json',
+    'true',
+    '--now',
+    '2026-06-25T10:00:00.000Z'
+  ], {
+    cwd: root,
+    timeout: 20000
+  }), function (error) {
+    const profile = JSON.parse(error.stdout);
+    assert.equal(error.code, 2);
+    assert.equal(profile.status, 'fail');
+    assert.equal(profile.scope.sourceKey, 'missing');
+    assert.equal(profile.sourceFound, false);
+    assert.equal(profile.checks.find(function (item) {
+      return item.key === 'source.resolved';
+    }).status, 'fail');
+    assert.equal(error.stderr, '');
+    return true;
+  });
+});
