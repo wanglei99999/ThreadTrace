@@ -527,6 +527,15 @@ function handleOnboardingAction(event) {
       sourceType: button.dataset.sourceType
     });
   }
+  if (button.dataset.action === 'load-connector-package-manifest') {
+    loadConnectorPackageRecommendedManifest({
+      packageName: button.dataset.packageName,
+      modulePath: button.dataset.modulePath,
+      sourceType: button.dataset.sourceType
+    }).catch(function (error) {
+      renderError('onboardingResult', error);
+    });
+  }
 }
 
 function fillRolloutManifestForms(manifest) {
@@ -567,6 +576,34 @@ function fillSourceOnboardingFromConnectorPackage(selection) {
   if (adapter && adapter.sourceKey && form.elements.forum) form.elements.forum.value = adapter.sourceKey;
   renderSourceOnboardingRecipeFromForm();
   if (state.onboardingRecipeManifestDraft) fillRolloutManifestForms(state.onboardingRecipeManifestDraft);
+}
+
+async function loadConnectorPackageRecommendedManifest(selection) {
+  const safeSelection = selection || {};
+  fillSourceOnboardingFromConnectorPackage(safeSelection);
+  const connectorPackage = findConnectorPackageForSourceType(
+    safeSelection.sourceType,
+    safeSelection.packageName,
+    safeSelection.modulePath
+  );
+  const modulePath = safeSelection.modulePath || connectorPackage && connectorPackage.modulePath;
+  const query = new URLSearchParams();
+  if (modulePath) query.set('modulePath', modulePath);
+  if (safeSelection.packageName || connectorPackage && connectorPackage.packageName) {
+    query.set('packageName', safeSelection.packageName || connectorPackage.packageName);
+  }
+  if (safeSelection.sourceType) query.set('sourceType', safeSelection.sourceType);
+  const result = await fetchJson('/api/connectors/packages/recommended-manifest?' + query.toString(), {
+    acceptErrorStatus: true
+  });
+  if (result.error) throw new Error(result.error.message || 'Recommended manifest could not be loaded.');
+  state.onboardingRecipeManifestDraft = result.manifest;
+  fillRolloutManifestForms(result.manifest);
+  document.getElementById('onboardingResult').innerHTML = panel('Recommended manifest loaded', [
+    metric('Package', result.packageName || 'unknown'),
+    metric('Source type', result.sourceType || 'unknown'),
+    metric('Manifest path', result.manifestPath || result.recommendedManifest || 'unknown')
+  ].join(''), 'wide');
 }
 
 function parseOptionalLocationJson(value) {
@@ -2047,8 +2084,17 @@ function renderConnectorPackageUseButtons(connectorPackage, selectedSourceType) 
     return '<button class="inline-button secondary-inline-button" type="button" data-action="use-connector-package"' +
       ' data-package-name="' + escapeHtml(connectorPackage.packageName || '') + '"' +
       ' data-module-path="' + escapeHtml(connectorPackage.modulePath || '') + '"' +
-      ' data-source-type="' + escapeHtml(item.sourceType || '') + '">Use package</button>';
+      ' data-source-type="' + escapeHtml(item.sourceType || '') + '">Use package</button>' +
+      renderConnectorPackageManifestButton(connectorPackage, item.sourceType);
   }).join('');
+}
+
+function renderConnectorPackageManifestButton(connectorPackage, sourceType) {
+  if (!connectorPackage || !connectorPackage.rollout || !connectorPackage.rollout.recommendedManifest) return '';
+  return '<button class="inline-button secondary-inline-button" type="button" data-action="load-connector-package-manifest"' +
+    ' data-package-name="' + escapeHtml(connectorPackage.packageName || '') + '"' +
+    ' data-module-path="' + escapeHtml(connectorPackage.modulePath || '') + '"' +
+    ' data-source-type="' + escapeHtml(sourceType || '') + '">Load manifest</button>';
 }
 
 function buildOnboardingRecipeManifest(template, sourceKey, options) {

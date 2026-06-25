@@ -298,6 +298,16 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/connectors/packages/recommended-manifest') {
+    writeJson(response, 200, context.runtime.getConnectorPackageRecommendedManifest({
+      modulePath: url.searchParams.get('modulePath') || url.searchParams.get('connectorModulePath') || undefined,
+      packageName: url.searchParams.get('packageName') || undefined,
+      sourceType: url.searchParams.get('sourceType') || undefined,
+      now: url.searchParams.get('now') || undefined
+    }));
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/connectors/source-type-readiness') {
     const enabledParam = url.searchParams.get('enabled');
     const readiness = await context.runtime.getSourceTypeReadiness({

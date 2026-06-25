@@ -64,6 +64,7 @@ const { getRuntimeDiagnostics } = require('../application/use-cases/getRuntimeDi
 const { getDeploymentChecklist } = require('../application/use-cases/getDeploymentChecklist');
 const { getOperationsRunbook } = require('../application/use-cases/getOperationsRunbook');
 const { getSourceConnectorCatalog } = require('../application/use-cases/getSourceConnectorCatalog');
+const { getConnectorPackageRecommendedManifest } = require('../application/use-cases/getConnectorPackageRecommendedManifest');
 const { getConnectorReadiness } = require('../application/use-cases/getConnectorReadiness');
 const { getSourceTypeReadiness } = require('../application/use-cases/getSourceTypeReadiness');
 const { getSourceOnboardingPreflight } = require('../application/use-cases/getSourceOnboardingPreflight');
@@ -457,6 +458,30 @@ function createThreadTraceRuntime(options) {
         forumAdapterRegistry: catalogForumAdapterRegistry,
         connectorModules: catalogConnectorModuleReport.modules,
         connectorModuleErrors: catalogConnectorModuleReport.errors,
+        now: safeRequest.now
+      });
+    },
+
+    getConnectorPackageRecommendedManifest(request) {
+      const safeRequest = request || {};
+      const modulePath = safeRequest.modulePath || safeRequest.connectorModulePath;
+      const connectorModuleReport = modulePath
+        ? loadConnectorModulesReport({
+          modulePaths: [modulePath],
+          cwd: safeOptions.cwd,
+          forumAdapterRegistry: createDefaultForumAdapterRegistry(),
+          sourceIngestHandlerRegistry: createDefaultSourceIngestHandlerRegistry(),
+          runtimeConfig,
+          reload: true
+        })
+        : { modules: [], errors: [] };
+      return getConnectorPackageRecommendedManifest({
+        cwd: safeOptions.cwd || process.cwd(),
+        modulePath: modulePath ? path.resolve(safeOptions.cwd || process.cwd(), modulePath) : undefined,
+        packageName: safeRequest.packageName,
+        sourceType: safeRequest.sourceType,
+        connectorModules: connectorModuleReport.modules,
+        connectorModuleErrors: connectorModuleReport.errors,
         now: safeRequest.now
       });
     },

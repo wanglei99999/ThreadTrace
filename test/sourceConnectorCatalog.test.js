@@ -64,3 +64,24 @@ test('runtime connector catalog includes connector package manifest metadata', f
   assert.equal(sourceType.package.capabilities.rssTemplate, true);
   assert.deepEqual(catalog.moduleErrors, []);
 });
+
+test('runtime loads connector package recommended manifest', function () {
+  const cwd = path.resolve(__dirname, '..');
+  const runtime = createThreadTraceRuntime({
+    cwd
+  });
+  const result = runtime.getConnectorPackageRecommendedManifest({
+    modulePath: 'docs/examples/rss-archive-connector-package/index.cjs',
+    packageName: '@threadtrace/example-rss-archive-connector-package',
+    sourceType: 'rss-archive-normalized-feed',
+    now: '2026-06-25T10:00:00.000Z'
+  });
+
+  assert.equal(result.generatedAt, '2026-06-25T10:00:00.000Z');
+  assert.equal(result.status, 'ok');
+  assert.equal(result.packageName, '@threadtrace/example-rss-archive-connector-package');
+  assert.equal(result.sourceType, 'rss-archive-normalized-feed');
+  assert.equal(result.recommendedManifest, '../rss-archive-rollout-manifest.sample.json');
+  assert.equal(result.manifest.source.sourceType, 'rss-archive-normalized-feed');
+  assert.equal(result.manifest.connector.modulePath, 'docs/examples/rss-archive-connector-package/index.cjs');
+});

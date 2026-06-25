@@ -492,6 +492,29 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/connectors/packages/recommended-manifest': {
+        get: {
+          summary: 'Load a connector package recommended rollout manifest',
+          parameters: [
+            { name: 'modulePath', in: 'query', required: true, schema: { type: 'string', example: 'docs/examples/rss-archive-connector-package/index.cjs' } },
+            { name: 'packageName', in: 'query', required: false, schema: { type: 'string', example: '@threadtrace/example-rss-archive-connector-package' } },
+            { name: 'sourceType', in: 'query', required: false, schema: { type: 'string', example: 'rss-archive-normalized-feed' } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-25T10:00:00.000Z' } }
+          ],
+          responses: {
+            200: {
+              description: 'Connector package recommended rollout manifest',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/ConnectorPackageRecommendedManifest'
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       '/api/connectors/source-type-readiness': {
         get: {
           summary: 'Summarize source type readiness across catalog coverage and tracked source diagnostics',
@@ -4316,6 +4339,24 @@ function createOpenApiSpec() {
             adapters: {
               type: 'array',
               items: { $ref: '#/components/schemas/SourceConnectorPackageAdapter' }
+            }
+          }
+        },
+        ConnectorPackageRecommendedManifest: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-25T10:00:00.000Z' },
+            status: { type: 'string', example: 'ok' },
+            modulePath: { type: 'string', example: 'D:/connectors/rss-archive/index.cjs' },
+            packagePath: { type: 'string', example: 'D:/connectors/rss-archive/package.json' },
+            packageName: { type: 'string', example: '@threadtrace/example-rss-archive-connector-package' },
+            packageVersion: { type: 'string', example: '0.1.0' },
+            sourceType: { type: 'string', example: 'rss-archive-normalized-feed' },
+            recommendedManifest: { type: 'string', example: '../rss-archive-rollout-manifest.sample.json' },
+            manifestPath: { type: 'string', example: 'D:/connectors/rss-archive-rollout-manifest.sample.json' },
+            manifest: {
+              type: 'object',
+              additionalProperties: true
             }
           }
         },

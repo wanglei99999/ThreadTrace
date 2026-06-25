@@ -559,6 +559,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.deepEqual(openApi.components.schemas.SourceConnectorPackage.properties.categories.example, ['rss', 'api', 'archive', 'json-package']);
     assert.equal(openApi.components.schemas.SourceConnectorCatalogSourceType.properties.onboardingRecipe.$ref, '#/components/schemas/SourceOnboardingRecipe');
     assert.equal(openApi.components.schemas.SourceOnboardingRecipe.properties.recommendedFlow.items.$ref, '#/components/schemas/SourceOnboardingRecipeFlowStep');
+    assert.ok(openApi.paths['/api/connectors/packages/recommended-manifest']);
+    assert.equal(openApi.paths['/api/connectors/packages/recommended-manifest'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/ConnectorPackageRecommendedManifest');
+    assert.equal(openApi.components.schemas.ConnectorPackageRecommendedManifest.properties.manifest.type, 'object');
     assert.ok(openApi.paths['/api/connectors/source-type-readiness']);
     assert.equal(openApi.paths['/api/connectors/source-type-readiness'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceTypeReadinessReport');
     assert.equal(openApi.components.schemas.SourceTypeReadinessReport.properties.sourceTypes.items.$ref, '#/components/schemas/SourceTypeReadinessItem');
@@ -1598,6 +1601,40 @@ test('http server validates connector module files', async function () {
   }
 });
 
+test('http server loads connector package recommended manifests', async function () {
+  const server = createThreadTraceServer({
+    defaultInputDir: path.resolve(__dirname, '..', 'example')
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+  const modulePath = 'docs/examples/rss-archive-connector-package/index.cjs';
+
+  try {
+    const recommendedManifest = await getJson(
+      baseUrl +
+      '/api/connectors/packages/recommended-manifest?modulePath=' + encodeURIComponent(modulePath) +
+      '&packageName=' + encodeURIComponent('@threadtrace/example-rss-archive-connector-package') +
+      '&sourceType=rss-archive-normalized-feed' +
+      '&now=2026-06-25T10:00:00.000Z'
+    );
+    const missingPath = await getJsonWithStatus(
+      baseUrl + '/api/connectors/packages/recommended-manifest',
+      400
+    );
+
+    assert.equal(recommendedManifest.generatedAt, '2026-06-25T10:00:00.000Z');
+    assert.equal(recommendedManifest.status, 'ok');
+    assert.equal(recommendedManifest.packageName, '@threadtrace/example-rss-archive-connector-package');
+    assert.equal(recommendedManifest.sourceType, 'rss-archive-normalized-feed');
+    assert.equal(recommendedManifest.manifest.source.sourceType, 'rss-archive-normalized-feed');
+    assert.equal(recommendedManifest.manifest.connector.modulePath, modulePath);
+    assert.equal(missingPath.error.code, 'connector_module_path_required');
+  } finally {
+    await close(server);
+  }
+});
+
 test('http server source onboarding preflight can simulate connector modules', async function () {
   const tempDir = await makeWorkspaceTempDir('threadtrace-http-source-onboarding-module-');
   const modulePath = path.join(tempDir, 'externalConnector.cjs');
@@ -2615,8 +2652,12 @@ function close(server) {
 }
 
 async function getJson(url) {
+  return getJsonWithStatus(url, 200);
+}
+
+async function getJsonWithStatus(url, status) {
   const response = await fetch(url);
-  assert.equal(response.status, 200);
+  assert.equal(response.status, status);
   return response.json();
 }
 
