@@ -520,6 +520,13 @@ function handleOnboardingAction(event) {
   if (button.dataset.action === 'load-onboarding-recipe-manifest') {
     fillRolloutManifestForms(state.onboardingRecipeManifestDraft);
   }
+  if (button.dataset.action === 'use-connector-package') {
+    fillSourceOnboardingFromConnectorPackage({
+      packageName: button.dataset.packageName,
+      modulePath: button.dataset.modulePath,
+      sourceType: button.dataset.sourceType
+    });
+  }
 }
 
 function fillRolloutManifestForms(manifest) {
@@ -534,6 +541,32 @@ function fillRolloutManifestForms(manifest) {
     const textarea = document.querySelector('#' + formId + ' textarea[name="manifestJson"]');
     if (textarea) textarea.value = text;
   });
+}
+
+function fillSourceOnboardingFromConnectorPackage(selection) {
+  const safeSelection = selection || {};
+  const connectorPackage = findConnectorPackageForSourceType(
+    safeSelection.sourceType,
+    safeSelection.packageName,
+    safeSelection.modulePath
+  );
+  const sourceTypeInfo = findConnectorPackageSourceType(connectorPackage, safeSelection.sourceType);
+  const sourceType = safeSelection.sourceType || sourceTypeInfo && sourceTypeInfo.sourceType;
+  const form = document.getElementById('sourceOnboardingForm');
+  if (!form || !sourceType) return;
+  if (form.elements.sourceType) form.elements.sourceType.value = sourceType;
+  if (form.elements.modulePath && (safeSelection.modulePath || connectorPackage && connectorPackage.modulePath)) {
+    form.elements.modulePath.value = safeSelection.modulePath || connectorPackage.modulePath;
+  }
+  if (form.elements.displayName) {
+    form.elements.displayName.value = sourceTypeInfo && sourceTypeInfo.displayName ||
+      connectorPackage && connectorPackage.displayName ||
+      sourceType;
+  }
+  const adapter = connectorPackage && connectorPackage.adapters && connectorPackage.adapters[0];
+  if (adapter && adapter.sourceKey && form.elements.forum) form.elements.forum.value = adapter.sourceKey;
+  renderSourceOnboardingRecipeFromForm();
+  if (state.onboardingRecipeManifestDraft) fillRolloutManifestForms(state.onboardingRecipeManifestDraft);
 }
 
 function parseOptionalLocationJson(value) {
@@ -563,6 +596,29 @@ function inferLocationField(sourceType, locationValue) {
 function findSourceTypeSpec(sourceType) {
   return (state.sourceTypes || []).find(function (item) {
     return item.sourceType === sourceType;
+  });
+}
+
+function findConnectorPackageForSourceType(sourceType, packageName, modulePath) {
+  const packages = state.connectorPackages || [];
+  return packages.find(function (connectorPackage) {
+    if (!connectorPackage) return false;
+    if (packageName && connectorPackage.packageName !== packageName) return false;
+    if (modulePath && connectorPackage.modulePath !== modulePath) return false;
+    if (sourceType && !findConnectorPackageSourceType(connectorPackage, sourceType)) return false;
+    return true;
+  }) || packages.find(function (connectorPackage) {
+    if (!sourceType || !findConnectorPackageSourceType(connectorPackage, sourceType)) return false;
+    return !packageName || connectorPackage.packageName === packageName;
+  });
+}
+
+function findConnectorPackageSourceType(connectorPackage, sourceType) {
+  if (!connectorPackage) return undefined;
+  const sourceTypes = connectorPackage.sourceTypes || [];
+  if (!sourceType) return sourceTypes[0];
+  return sourceTypes.find(function (item) {
+    return item && item.sourceType === sourceType;
   });
 }
 
@@ -1881,7 +1937,13 @@ function renderSourceOnboardingRecipe(sourceTypeSpec, selectedSourceKey) {
   const recipe = sourceTypeSpec.onboardingRecipe || {};
   const compatibleSourceKeys = recipe.compatibleSourceKeys || [];
   const sourceKey = selectedSourceKey || compatibleSourceKeys[0] || '<source-key>';
-  const manifest = buildOnboardingRecipeManifest(recipe.rolloutManifestTemplate, sourceKey);
+  const connectorPackage = findConnectorPackageForSourceType(
+    sourceTypeSpec.sourceType,
+    sourceTypeSpec.package && sourceTypeSpec.package.packageName
+  );
+  const manifest = buildOnboardingRecipeManifest(recipe.rolloutManifestTemplate, sourceKey, {
+    connectorPackage
+  });
   state.onboardingRecipeManifestDraft = manifest;
   const requiredFields = recipe.requiredLocationFields || [];
   const optionalFields = recipe.optionalLocationFields || [];
@@ -1920,7 +1982,8 @@ function renderConnectorCatalogPanels(sourceTypeSpec) {
     panels.push(panel('Connector package', [
       renderConnectorPackageSummary(sourceTypeSpec.package),
       renderConnectorPackageCategories(sourceTypeSpec.package.categories),
-      metric('Recommended manifest', sourceTypeSpec.package.rollout && sourceTypeSpec.package.rollout.recommendedManifest || 'none')
+      metric('Recommended manifest', sourceTypeSpec.package.rollout && sourceTypeSpec.package.rollout.recommendedManifest || 'none'),
+      renderConnectorPackageUseButtons(sourceTypeSpec.package, sourceTypeSpec.sourceType)
     ].join(''), 'wide'));
   } else if ((state.connectorPackages || []).length > 0) {
     panels.push(panel('Connector packages', renderConnectorPackageCatalogRows(state.connectorPackages), 'wide'));
@@ -1966,11 +2029,30 @@ function renderConnectorPackageCatalogRows(packages) {
         connectorPackage.packageType,
         (connectorPackage.categories || []).join(',')
       ].filter(Boolean).join(' | ')) + '</small>' +
-      '</span>' + statusBadge('package', 'ok') + '</div>';
+      '</span><span class="button-group source-op-buttons">' +
+      renderConnectorPackageUseButtons(connectorPackage) +
+      statusBadge('package', 'ok') +
+      '</span></div>';
   }).join('');
 }
 
-function buildOnboardingRecipeManifest(template, sourceKey) {
+function renderConnectorPackageUseButtons(connectorPackage, selectedSourceType) {
+  if (!connectorPackage) return '';
+  const sourceTypes = selectedSourceType
+    ? [{ sourceType: selectedSourceType }]
+    : connectorPackage.sourceTypes || [];
+  return sourceTypes.filter(function (item) {
+    return item && item.sourceType;
+  }).map(function (item) {
+    return '<button class="inline-button secondary-inline-button" type="button" data-action="use-connector-package"' +
+      ' data-package-name="' + escapeHtml(connectorPackage.packageName || '') + '"' +
+      ' data-module-path="' + escapeHtml(connectorPackage.modulePath || '') + '"' +
+      ' data-source-type="' + escapeHtml(item.sourceType || '') + '">Use package</button>';
+  }).join('');
+}
+
+function buildOnboardingRecipeManifest(template, sourceKey, options) {
+  const safeOptions = options || {};
   const manifest = clonePlainObject(template || {});
   manifest.version = manifest.version || '1.0';
   manifest.source = manifest.source || {};
@@ -1986,6 +2068,11 @@ function buildOnboardingRecipeManifest(template, sourceKey) {
     topology: 'operations-worker',
     sourceTaskMode: 'ingest'
   };
+  if (safeOptions.connectorPackage && safeOptions.connectorPackage.modulePath) {
+    manifest.connector = Object.assign({}, manifest.connector || {}, {
+      modulePath: safeOptions.connectorPackage.modulePath
+    });
+  }
   return manifest;
 }
 
