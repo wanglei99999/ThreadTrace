@@ -2300,7 +2300,7 @@ function createOpenApiSpec() {
       '/api/sources/onboarding/preflight': {
         post: {
           summary: 'Run source onboarding preflight across catalog, readiness, source draft, and optional ThreadSnapshot JSON',
-          description: 'Returns steps, composed subreports, nextActions, and rolloutManifestDraft. Source registration failures carry detail actions with evidenceSummary for connector-specific missing location fields.',
+          description: 'Returns steps, composed subreports, nextActions, and rolloutManifestDraft. Source fields can be supplied directly or derived from a rollout manifest. Source registration failures carry detail actions with evidenceSummary for connector-specific missing location fields.',
           requestBody: {
             required: true,
             content: {
@@ -2309,6 +2309,11 @@ function createOpenApiSpec() {
                   type: 'object',
                   properties: {
                     id: { type: 'string' },
+                    manifest: {
+                      type: 'object',
+                      description: 'Optional rollout manifest. When present, source and connector fields are derived from manifest.source and manifest.connector unless explicit request fields override them.',
+                      additionalProperties: true
+                    },
                     forum: { type: 'string', example: 'nga' },
                     sourceKey: { type: 'string', example: 'nga' },
                     sourceType: { type: 'string', example: 'normalized-thread-json' },

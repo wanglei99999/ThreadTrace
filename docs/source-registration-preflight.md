@@ -36,6 +36,33 @@ node src/presentation/cli/threadtrace.js source-onboarding-preflight --forum ext
 
 `--location-json` is also available for shells where inline JSON quoting is comfortable.
 
+When a connector package already provides a rollout manifest, pass it directly to the onboarding preflight:
+
+```powershell
+node src/presentation/cli/threadtrace.js source-onboarding-preflight --manifest-file docs/examples/rss-archive-rollout-manifest.sample.json
+```
+
+```http
+POST /api/sources/onboarding/preflight
+content-type: application/json
+
+{
+  "manifest": {
+    "version": "1.0",
+    "source": {
+      "sourceKey": "rss-archive",
+      "sourceType": "rss-archive-normalized-feed",
+      "location": {
+        "inputFile": "docs/examples/external-thread.sample.json"
+      }
+    },
+    "connector": {
+      "modulePath": "docs/examples/rss-archive-connector-package/index.cjs"
+    }
+  }
+}
+```
+
 ## HTTP Entry
 
 ```http

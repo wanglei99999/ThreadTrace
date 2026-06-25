@@ -536,11 +536,21 @@ function createThreadTraceRuntime(options) {
 
     async getSourceOnboardingPreflight(request) {
       const safeRequest = request || {};
-      const sourceType = safeRequest.sourceType || 'saved-html-directory';
-      const sourceInput = Object.assign(buildSourceRegistrationInput(safeRequest), {
+      const effectiveRequest = safeRequest.manifest
+        ? mergeDefined(buildManifestConnectorRolloutRequest({
+          manifest: safeRequest.manifest,
+          now: safeRequest.now || safeRequest.manifest.now,
+          storeDir: safeRequest.storeDir || (safeRequest.manifest.deployment && safeRequest.manifest.deployment.storeDir),
+          limit: safeRequest.limit || (safeRequest.manifest.deployment && safeRequest.manifest.deployment.limit),
+          runningStaleAfterMs: safeRequest.runningStaleAfterMs,
+          workerStaleAfterMs: safeRequest.workerStaleAfterMs
+        }), safeRequest, ['manifest'])
+        : safeRequest;
+      const sourceType = effectiveRequest.sourceType || 'saved-html-directory';
+      const sourceInput = Object.assign(buildSourceRegistrationInput(effectiveRequest), {
         sourceType
       });
-      const modulePath = safeRequest.modulePath || safeRequest.connectorModulePath;
+      const modulePath = effectiveRequest.modulePath || effectiveRequest.connectorModulePath;
       const preflightForumAdapterRegistry = modulePath ? createDefaultForumAdapterRegistry() : forumAdapterRegistry;
       const preflightSourceIngestHandlerRegistry = modulePath ? createDefaultSourceIngestHandlerRegistry() : sourceIngestHandlerRegistry;
       const connectorModuleReport = modulePath
@@ -557,15 +567,17 @@ function createThreadTraceRuntime(options) {
         ? validateConnectorModuleLoad({
           modulePath: path.resolve(safeOptions.cwd || process.cwd(), modulePath),
           report: connectorModuleReport,
-          now: safeRequest.now
+          now: effectiveRequest.now
         })
         : undefined;
       const catalog = getSourceConnectorCatalog({
         sourceIngestHandlerRegistry: preflightSourceIngestHandlerRegistry,
         forumAdapterRegistry: preflightForumAdapterRegistry,
-        now: safeRequest.now
+        connectorModules: connectorModuleReport ? connectorModuleReport.modules : connectorModules,
+        connectorModuleErrors: connectorModuleReport ? connectorModuleReport.errors : connectorModuleErrors,
+        now: effectiveRequest.now
       });
-      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      const repositories = createRepositoriesFor(effectiveRequest.storeDir);
       const connectorReadiness = await getConnectorReadiness({
         sourceRepository: repositories.sourceRepository,
         sourceIngestHandlerRegistry: preflightSourceIngestHandlerRegistry,
@@ -573,16 +585,16 @@ function createThreadTraceRuntime(options) {
         getAdapter: preflightForumAdapterRegistry.get,
         connectorModules: connectorModuleReport ? connectorModuleReport.modules : connectorModules,
         connectorModuleErrors: connectorModuleReport ? connectorModuleReport.errors : connectorModuleErrors,
-        sourceKey: safeRequest.sourceKey || safeRequest.forum,
-        enabled: safeRequest.enabled,
-        limit: safeRequest.limit || 100,
-        now: safeRequest.now
+        sourceKey: effectiveRequest.sourceKey || effectiveRequest.forum,
+        enabled: effectiveRequest.enabled,
+        limit: effectiveRequest.limit || 100,
+        now: effectiveRequest.now
       });
       const sourceValidation = validateTrackedSourceRegistration({
         sourceIngestHandlerRegistry: preflightSourceIngestHandlerRegistry,
         getAdapter: preflightForumAdapterRegistry.get,
-        allowUnknownSourceType: safeRequest.allowUnknownSourceType,
-        now: safeRequest.now,
+        allowUnknownSourceType: effectiveRequest.allowUnknownSourceType,
+        now: effectiveRequest.now,
         source: sourceInput
       });
       const threadJsonInputFile = sourceInput.inputFile || (sourceInput.location && sourceInput.location.inputFile);
@@ -591,13 +603,13 @@ function createThreadTraceRuntime(options) {
           forum: sourceInput.sourceKey,
           sourceKey: sourceInput.sourceKey,
           inputFile: threadJsonInputFile,
-          now: safeRequest.now
+          now: effectiveRequest.now
         })
         : undefined;
 
       return getSourceOnboardingPreflight({
-        now: safeRequest.now,
-        sourceKey: sourceInput.sourceKey || safeRequest.forum,
+        now: effectiveRequest.now,
+        sourceKey: sourceInput.sourceKey || effectiveRequest.forum,
         sourceType,
         catalog,
         connectorReadiness,
@@ -2373,6 +2385,16 @@ function buildManifestWorkerTopologyRequest(options) {
 
 function firstDefined(primary, fallback) {
   return primary === undefined ? fallback : primary;
+}
+
+function mergeDefined(base, overrides, skippedKeys) {
+  const result = Object.assign({}, base || {});
+  const skip = new Set(skippedKeys || []);
+  Object.keys(overrides || {}).forEach(function (key) {
+    if (skip.has(key)) return;
+    if (overrides[key] !== undefined) result[key] = overrides[key];
+  });
+  return result;
 }
 
 function buildManifestSourceRegistrationRequest(manifest) {

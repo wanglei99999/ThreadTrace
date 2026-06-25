@@ -1256,6 +1256,7 @@ async function routeRequest(request, response, context) {
   if (request.method === 'POST' && url.pathname === '/api/sources/onboarding/preflight') {
     const body = await readJsonBody(request, context.maxBodyBytes);
     const result = await context.runtime.getSourceOnboardingPreflight({
+      manifest: body.manifest,
       id: body.id,
       forum: body.forum,
       sourceKey: body.sourceKey,

@@ -165,6 +165,28 @@ test('runtime source onboarding preflight can simulate an external connector mod
   }), false);
 });
 
+test('runtime source onboarding preflight can read rollout manifests', async function () {
+  const cwd = path.resolve(__dirname, '..');
+  const tempDir = await makeWorkspaceTempDir('threadtrace-source-onboarding-manifest-');
+  const manifest = JSON.parse(await fs.readFile(path.join(cwd, 'docs', 'examples', 'rss-archive-rollout-manifest.sample.json'), 'utf8'));
+  const runtime = createThreadTraceRuntime({
+    cwd,
+    storeDir: path.join(tempDir, 'store')
+  });
+  const preflight = await runtime.getSourceOnboardingPreflight({
+    manifest,
+    now: '2026-06-25T10:00:00.000Z'
+  });
+
+  assert.equal(preflight.status, 'ok');
+  assert.equal(preflight.sourceKey, 'rss-archive');
+  assert.equal(preflight.sourceType, 'rss-archive-normalized-feed');
+  assert.equal(preflight.connectorModuleValidation.valid, true);
+  assert.equal(preflight.catalog.sourceType.package.packageName, '@threadtrace/example-rss-archive-connector-package');
+  assert.equal(preflight.sourceValidation.source.location.inputFile, 'docs/examples/external-thread.sample.json');
+  assert.equal(preflight.rolloutManifestDraft.connector.modulePath, path.resolve(cwd, 'docs/examples/rss-archive-connector-package/index.cjs'));
+});
+
 test('source onboarding preflight surfaces source validation next-action details', async function () {
   const tempDir = await makeWorkspaceTempDir('threadtrace-source-onboarding-actions-');
   const modulePath = path.join(tempDir, 'externalConnector.cjs');

@@ -1620,10 +1620,13 @@ function main(argv) {
   }
 
   if (command === 'source-onboarding-preflight') {
-    const sourceType = options.sourceType || (options.inputFile ? 'normalized-thread-json' : 'saved-html-directory');
-    const inputDir = options.input || (sourceType === 'saved-html-directory' ? defaultInputDir : undefined);
+    const manifest = options.manifestFile ? parseManifestOption(options) : undefined;
+    const manifestSource = manifest && manifest.source || {};
+    const sourceType = options.sourceType || manifestSource.sourceType || (options.inputFile ? 'normalized-thread-json' : 'saved-html-directory');
+    const inputDir = options.input || manifestSource.inputDir || (sourceType === 'saved-html-directory' && !manifest ? defaultInputDir : undefined);
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.getSourceOnboardingPreflight({
+      manifest,
       id: options.sourceId,
       forum: options.forum,
       sourceKey: options.sourceKey,
@@ -3018,7 +3021,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js archive-events [--execute true] [--source-key key] [--delivery-statuses delivered,resolved] [--older-than-days n] [--by user] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js validate-source [--forum nga] [--source-type type] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--name name] [--allow-unknown-source-type true|false] [--interval-minutes n] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js validate-thread-json --input-file file [--forum sourceKey] [--now iso]');
-  console.log('  node src/presentation/cli/threadtrace.js source-onboarding-preflight [--forum nga] [--source-type type] [--module-path file] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--store-dir dir] [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js source-onboarding-preflight [--manifest-file file] [--forum nga] [--source-type type] [--module-path file] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js source-ingest-dry-run [--forum nga] [--source-type type] [--module-path file] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--allow-remote-fetch true] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js connector-rollout-plan [--forum nga] [--source-type type] [--module-path file] [--location-json json | --location-file file] [--input dir] [--input-file file] [--url url] [--dry-run-ingest true] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js rollout-manifest-plan --manifest-file file [--store-dir dir] [--now iso]');

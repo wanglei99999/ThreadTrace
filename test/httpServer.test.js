@@ -633,6 +633,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/sources/onboarding/preflight']);
     assert.equal(openApi.paths['/api/sources/onboarding/preflight'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceOnboardingPreflight');
     assert.equal(openApi.paths['/api/sources/onboarding/preflight'].post.responses[503].content['application/json'].schema.$ref, '#/components/schemas/SourceOnboardingPreflight');
+    assert.equal(openApi.paths['/api/sources/onboarding/preflight'].post.requestBody.content['application/json'].schema.properties.manifest.type, 'object');
     assert.equal(openApi.components.schemas.SourceOnboardingPreflight.properties.steps.items.$ref, '#/components/schemas/SourceOnboardingPreflightStep');
     assert.equal(openApi.components.schemas.SourceOnboardingPreflight.properties.nextActions.items.$ref, '#/components/schemas/SourceOnboardingPreflightAction');
     assert.equal(openApi.components.schemas.SourceOnboardingPreflight.properties.catalog.$ref, '#/components/schemas/SourceOnboardingCatalogSummary');
@@ -1676,6 +1677,33 @@ test('http server source onboarding preflight can simulate connector modules', a
     assert.equal(preflight.catalog.sourceType.sourceType, 'http-onboarding-feed');
     assert.equal(preflight.rolloutManifestDraft.source.location.feedUrl, 'https://example.test/feed');
     assert.equal(preflight.rolloutManifestDraft.connector.modulePath, path.resolve(modulePath));
+  } finally {
+    await close(server);
+  }
+});
+
+test('http server source onboarding preflight accepts rollout manifests', async function () {
+  const root = path.resolve(__dirname, '..');
+  const manifest = JSON.parse(await fs.readFile(path.join(root, 'docs', 'examples', 'rss-archive-rollout-manifest.sample.json'), 'utf8'));
+  const server = createThreadTraceServer({
+    defaultInputDir: path.resolve(__dirname, '..', 'example')
+  });
+  await listen(server, 0);
+  const address = server.address();
+  const baseUrl = 'http://127.0.0.1:' + address.port;
+
+  try {
+    const preflight = await postJson(baseUrl + '/api/sources/onboarding/preflight', {
+      manifest,
+      now: '2026-06-25T10:00:00.000Z'
+    });
+
+    assert.equal(preflight.status, 'ok');
+    assert.equal(preflight.sourceKey, 'rss-archive');
+    assert.equal(preflight.sourceType, 'rss-archive-normalized-feed');
+    assert.equal(preflight.connectorModuleValidation.valid, true);
+    assert.equal(preflight.sourceValidation.source.location.inputFile, 'docs/examples/external-thread.sample.json');
+    assert.equal(preflight.rolloutManifestDraft.connector.modulePath, path.resolve(root, 'docs/examples/rss-archive-connector-package/index.cjs'));
   } finally {
     await close(server);
   }

@@ -447,7 +447,7 @@ Validates a tracked source draft without saving it. The response includes `valid
 
 ### `POST /api/sources/onboarding/preflight`
 
-Runs a read-only onboarding preflight across connector catalog support, connector readiness, source draft validation, optional connector module simulation, ThreadSnapshot contract availability, and optional normalized JSON validation. The response includes `steps`, composed subreports, `nextActions`, and a `rolloutManifestDraft` that can be passed to `/api/operations/rollout-manifest-plan`, `/api/operations/resource-provisioning-plan`, `/api/deployment/gate`, or `/api/operations/rollout-manifest/apply`. `nextActions` may include lower-level `details` from source validation with `evidenceSummary` for missing connector-specific location fields.
+Runs a read-only onboarding preflight across connector catalog support, connector readiness, source draft validation, optional connector module simulation, ThreadSnapshot contract availability, and optional normalized JSON validation. Source fields can be supplied directly, or as `{ "manifest": { ... } }` to derive the draft from `manifest.source` and `manifest.connector`. The response includes `steps`, composed subreports, `nextActions`, and a `rolloutManifestDraft` that can be passed to `/api/operations/rollout-manifest-plan`, `/api/operations/resource-provisioning-plan`, `/api/deployment/gate`, or `/api/operations/rollout-manifest/apply`. `nextActions` may include lower-level `details` from source validation with `evidenceSummary` for missing connector-specific location fields.
 
 ### `GET /api/deployment/checklist`
 
