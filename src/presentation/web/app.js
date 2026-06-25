@@ -1389,44 +1389,179 @@ async function loadSystemStatus() {
     const notificationDiagnostics = await fetchJson('/api/notifications/diagnostics', {
       acceptErrorStatus: true
     });
-    const resourceStatusRows = diagnostics.configuration.storageMode === 'postgres'
-      ? [statusRow('Postgres', diagnosticStatus(diagnostics, 'resources.postgres'))]
-      : [
-        statusRow('Input dir', diagnosticStatus(diagnostics, 'resources.inputDir')),
-        statusRow('Store dir', diagnosticStatus(diagnostics, 'resources.storeDir'))
-      ];
-    const rows = [
-      statusRow('服务', health.ok ? '运行中' : '异常'),
-      statusRow('诊断', diagnostics.status),
-      statusRow('Deploy', deploymentChecklist.status),
-      statusRow('Readiness', readinessStatusSummary(operationsReadiness)),
-      statusRow('Runbook', operationsRunbook.status + ' · ' + operationsRunbook.actionCount),
-      statusRow('存储', overview.storageMode),
-      statusRow('Adapters', adapterDiagnostics.status + ' · ' + adapterDiagnostics.adapterCount),
-      statusRow('Source config', sourceDiagnostics.status + ' · ' + sourceDiagnostics.sourceCount),
-      statusRow('Notify', diagnosticStatus(notificationDiagnostics, 'notifications.channel') + ' · ' + notificationDiagnostics.channel),
-      statusRow('Source mode', diagnostics.configuration.workers.sourceTaskMode),
-      statusRow('Worker runs', workerRunStatusSummary(overview.workers)),
-      statusRow('Worker leases', workerLeaseStatusSummary(overview.workers && overview.workers.leases)),
-      statusRow('LLM', diagnostics.configuration.llm.provider),
-    ].concat(resourceStatusRows, [
-      statusRow('适配器', String((adapters.adapters || []).length)),
-      statusRow('API 契约', openApi.openapi),
-      statusRow('端点', String(Object.keys(openApi.paths || {}).length)),
-      statusRow('来源', overview.sources.enabled + '/' + overview.sources.total + ' · due ' + overview.sources.due),
-      statusRow('任务', 'running ' + overview.tasks.running + ' · failed ' + overview.tasks.failed),
-      statusRow('事件', 'pending ' + overview.events.pending + ' · failed ' + overview.events.failed + ' · open ' + overview.events.unacknowledged),
-      statusRow('Author queue', authorReviewQueueStatusSummary(overview.authorReviewQueue)),
-      statusRow('Review actions', reviewActionStatusSummary(overview.reviewActions)),
-      statusRow('Event actions', eventActionStatusSummary(overview.notificationEventActions)),
-      statusRow('原始页', String(overview.rawPages.total)),
-      statusRow('生成时间', overview.generatedAt)
-    ]);
-    target.innerHTML = rows.join('');
+    diagnostics.configuration = diagnostics.configuration || {};
+    diagnostics.configuration.workers = diagnostics.configuration.workers || {};
+    diagnostics.configuration.llm = diagnostics.configuration.llm || {};
+    overview.sources = overview.sources || {};
+    overview.tasks = overview.tasks || {};
+    overview.events = overview.events || {};
+    overview.workers = overview.workers || {};
+    overview.rawPages = overview.rawPages || {};
+    target.innerHTML = renderSystemStatusDashboard({
+      health,
+      adapters,
+      openApi,
+      overview,
+      adapterDiagnostics,
+      diagnostics,
+      sourceDiagnostics,
+      deploymentChecklist,
+      operationsReadiness,
+      operationsRunbook,
+      notificationDiagnostics
+    });
     document.getElementById('runbookResult').innerHTML = renderOperationsReadiness(operationsReadiness) + renderWorkerRunOverview(overview.workers) + renderWorkerLeaseOverview(overview.workers && overview.workers.leases) + renderOperationsRunbook(operationsRunbook);
   } catch (error) {
     target.innerHTML = '<div class="error">' + escapeHtml(error.message) + '</div>';
   }
+}
+
+function renderSystemStatusDashboard(report) {
+  const health = report.health || {};
+  const adapters = report.adapters || {};
+  const openApi = report.openApi || {};
+  const overview = report.overview || {};
+  const diagnostics = report.diagnostics || {};
+  const config = diagnostics.configuration || {};
+  const workersConfig = config.workers || {};
+  const llmConfig = config.llm || {};
+  const adapterDiagnostics = report.adapterDiagnostics || {};
+  const sourceDiagnostics = report.sourceDiagnostics || {};
+  const deploymentChecklist = report.deploymentChecklist || {};
+  const operationsReadiness = report.operationsReadiness || {};
+  const operationsRunbook = report.operationsRunbook || {};
+  const notificationDiagnostics = report.notificationDiagnostics || {};
+  const sources = overview.sources || {};
+  const tasks = overview.tasks || {};
+  const events = overview.events || {};
+  const workers = overview.workers || {};
+  const rawPages = overview.rawPages || {};
+  const authorQueue = overview.authorReviewQueue || {};
+  const variant = systemStatusVariant(report);
+  const resourceSignals = systemResourceSignals(config, diagnostics);
+  return [
+    '<article class="system-runtime-hero ' + statusClassName(variant) + '">',
+    '<section class="system-runtime-main">',
+    '<div class="system-runtime-header">',
+    '<span class="system-runtime-label">Runtime pulse</span>',
+    statusBadge(systemStatusLabel(variant), variant),
+    '</div>',
+    '<h3>' + escapeHtml(systemStatusHeadline(variant, operationsRunbook, deploymentChecklist, operationsReadiness)) + '</h3>',
+    '<p>' + escapeHtml([
+      'service=' + (health.ok ? 'running' : 'attention'),
+      'storage=' + (overview.storageMode || config.storageMode || 'unknown'),
+      'sourceMode=' + (workersConfig.sourceTaskMode || 'unknown'),
+      'generated=' + (overview.generatedAt || diagnostics.generatedAt || deploymentChecklist.generatedAt || 'pending')
+    ].join(' | ')) + '</p>',
+    '</section>',
+    '<aside class="system-runtime-pressure">',
+    systemRuntimeSignal('Sources', String(sources.enabled || 0) + '/' + String(sources.total || 0), 'due ' + String(sources.due || 0) + ' | failed ' + String(sources.failed || 0), sourcePressureVariant(sources)),
+    systemRuntimeSignal('Tasks', 'running ' + String(tasks.running || 0), 'failed ' + String(tasks.failed || 0) + ' | total ' + String(tasks.total || 0), taskPressureVariant(tasks)),
+    systemRuntimeSignal('Events', 'pending ' + String(events.pending || 0), 'failed ' + String(events.failed || 0) + ' | open ' + String(events.unacknowledged || 0), eventPressureVariant(events, {})),
+    systemRuntimeSignal('Workers', 'running ' + String(workers.running || 0), 'stale ' + String(workers.stale || 0) + ' | leases ' + String(workers.leases && workers.leases.active || 0), workerPressureVariant(workers)),
+    '</aside>',
+    '<section class="system-runtime-stack">',
+    systemRuntimeMini('Readiness', readinessStatusSummary(operationsReadiness), statusVariant(operationsReadiness.status)),
+    systemRuntimeMini('Runbook', (operationsRunbook.status || 'unknown') + ' | actions ' + String(operationsRunbook.actionCount || 0), statusVariant(operationsRunbook.status)),
+    systemRuntimeMini('Deploy', deploymentChecklist.status || 'unknown', statusVariant(deploymentChecklist.status)),
+    systemRuntimeMini('LLM', llmConfig.provider || 'unknown', statusVariant(diagnostics.status)),
+    systemRuntimeMini('Adapters', (adapterDiagnostics.status || 'unknown') + ' | ' + String(adapterDiagnostics.adapterCount || (adapters.adapters || []).length || 0), statusVariant(adapterDiagnostics.status)),
+    systemRuntimeMini('Sources config', (sourceDiagnostics.status || 'unknown') + ' | ' + String(sourceDiagnostics.sourceCount || 0), statusVariant(sourceDiagnostics.status)),
+    systemRuntimeMini('Notify', diagnosticStatus(notificationDiagnostics, 'notifications.channel') + ' | ' + (notificationDiagnostics.channel || 'unknown'), statusVariant(diagnosticStatus(notificationDiagnostics, 'notifications.channel'))),
+    resourceSignals.map(function (signal) {
+      return systemRuntimeMini(signal.label, signal.value, statusVariant(signal.value));
+    }).join(''),
+    '</section>',
+    '<section class="system-runtime-foot">',
+    '<span>System surface</span>',
+    '<strong>' + escapeHtml([
+      'API ' + (openApi.openapi || 'unknown'),
+      'paths ' + String(Object.keys(openApi.paths || {}).length),
+      'rawPages ' + String(rawPages.total || 0)
+    ].join(' | ')) + '</strong>',
+    '<small>' + escapeHtml([
+      'authorQueue=' + authorReviewQueueStatusSummary(authorQueue),
+      'reviewActions=' + reviewActionStatusSummary(overview.reviewActions),
+      'eventActions=' + eventActionStatusSummary(overview.notificationEventActions)
+    ].join(' | ')) + '</small>',
+    '</section>',
+    '</article>'
+  ].join('');
+}
+
+function systemStatusVariant(report) {
+  const overview = report.overview || {};
+  const health = report.health || {};
+  const statuses = [
+    health.ok ? 'ok' : 'fail',
+    report.diagnostics && report.diagnostics.status,
+    report.deploymentChecklist && report.deploymentChecklist.status,
+    report.operationsReadiness && report.operationsReadiness.status,
+    report.operationsRunbook && report.operationsRunbook.status,
+    report.adapterDiagnostics && report.adapterDiagnostics.status,
+    report.sourceDiagnostics && report.sourceDiagnostics.status
+  ];
+  if ((overview.events && overview.events.failed || 0) > 0) statuses.push('fail');
+  if ((overview.tasks && overview.tasks.failed || 0) > 0) statuses.push('warn');
+  if ((overview.workers && overview.workers.stale || 0) > 0) statuses.push('warn');
+  if ((overview.sources && overview.sources.total || 0) === 0) statuses.push('warn');
+  if (statuses.some(function (status) { return statusVariant(status) === 'fail'; })) return 'fail';
+  if (statuses.some(function (status) { return statusVariant(status) === 'warn'; })) return 'warn';
+  if (statuses.some(Boolean)) return 'ok';
+  return 'muted';
+}
+
+function systemStatusLabel(variant) {
+  if (variant === 'fail') return 'action';
+  if (variant === 'warn') return 'watch';
+  if (variant === 'ok') return 'steady';
+  return 'pending';
+}
+
+function systemStatusHeadline(variant, runbook, deploymentChecklist, readiness) {
+  if (variant === 'fail') return 'Runtime needs operator attention before the next cycle.';
+  if (variant === 'warn') {
+    const action = (runbook.actions || []).find(function (item) {
+      return item.severity === 'critical' || item.severity === 'warning';
+    });
+    if (action && action.summary) return action.summary;
+    const checklist = (deploymentChecklist.items || []).find(function (item) {
+      return item.status === 'fail' || item.status === 'warn';
+    });
+    if (checklist && checklist.summary) return checklist.summary;
+    const readinessCheck = (readiness.checks || []).find(function (item) {
+      return item.status === 'fail' || item.status === 'warn';
+    });
+    if (readinessCheck && readinessCheck.summary) return readinessCheck.summary;
+    return 'Runtime is usable, with a few signals worth watching.';
+  }
+  if (variant === 'ok') return 'Runtime is steady and ready for daily source work.';
+  return 'Runtime telemetry is loading.';
+}
+
+function systemRuntimeSignal(label, value, detail, variant) {
+  return '<div class="system-runtime-signal ' + statusClassName(variant) + '">' +
+    '<span>' + escapeHtml(label) + '</span>' +
+    '<strong>' + escapeHtml(value) + '</strong>' +
+    '<small>' + escapeHtml(detail || '') + '</small>' +
+    '</div>';
+}
+
+function systemRuntimeMini(label, value, variant) {
+  return '<div class="system-runtime-mini ' + statusClassName(variant) + '">' +
+    '<span>' + escapeHtml(label) + '</span>' +
+    '<strong>' + escapeHtml(value || 'unknown') + '</strong>' +
+    '</div>';
+}
+
+function systemResourceSignals(config, diagnostics) {
+  if ((config.storageMode || '') === 'postgres') {
+    return [{ label: 'Postgres', value: diagnosticStatus(diagnostics, 'resources.postgres') }];
+  }
+  return [
+    { label: 'Input dir', value: diagnosticStatus(diagnostics, 'resources.inputDir') },
+    { label: 'Store dir', value: diagnosticStatus(diagnostics, 'resources.storeDir') }
+  ];
 }
 
 async function loadHistoryCockpit() {
@@ -7382,10 +7517,6 @@ function tagList(items) {
   return '<div class="tag-list">' + items.map(function (item) {
     return '<span class="tag">' + escapeHtml(item) + '</span>';
   }).join('') + '</div>';
-}
-
-function statusRow(label, value) {
-  return '<div class="status-row"><span class="muted">' + escapeHtml(label) + '</span><strong>' + escapeHtml(value) + '</strong></div>';
 }
 
 function reviewActionStatusSummary(reviewActions) {
