@@ -90,6 +90,32 @@ create index if not exists idx_context_review_action_executions_updated on conte
 create index if not exists idx_context_review_action_executions_source_key on context_review_action_executions((coalesce(request->>'sourceKey', request->'actionGate'->>'sourceKey', request->'actionGate'->'actionPlan'->>'sourceKey')));
 create index if not exists idx_context_review_action_executions_source_id on context_review_action_executions((coalesce(request->>'sourceId', request->'actionGate'->>'sourceId', request->'actionGate'->'actionPlan'->>'sourceId')));
 
+create table if not exists notification_event_action_executions (
+  execution_key text primary key,
+  action_key text not null,
+  status text not null,
+  event_id text not null,
+  actor text,
+  source_id text,
+  source_key text,
+  source_scope jsonb not null default '{}'::jsonb,
+  request_hash text not null,
+  intent jsonb not null default '{}'::jsonb,
+  result jsonb,
+  error jsonb,
+  attempt_count integer not null default 1,
+  created_at timestamptz not null,
+  updated_at timestamptz not null,
+  completed_at timestamptz,
+  failed_at timestamptz
+);
+
+create index if not exists idx_notification_event_action_executions_action_status on notification_event_action_executions(action_key, status);
+create index if not exists idx_notification_event_action_executions_event on notification_event_action_executions(event_id);
+create index if not exists idx_notification_event_action_executions_source on notification_event_action_executions(source_id);
+create index if not exists idx_notification_event_action_executions_source_key on notification_event_action_executions(source_key);
+create index if not exists idx_notification_event_action_executions_updated on notification_event_action_executions(updated_at desc);
+
 create table if not exists author_review_queue_items (
   id text primary key,
   status text not null,

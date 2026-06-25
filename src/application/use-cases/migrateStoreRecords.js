@@ -11,6 +11,9 @@ const { assertWorkerRunRepository } = require('../ports/workerRunRepository');
 const {
   assertContextReviewActionExecutionRepository
 } = require('../ports/contextReviewActionExecutionRepository');
+const {
+  assertNotificationEventActionExecutionRepository
+} = require('../ports/notificationEventActionExecutionRepository');
 
 async function migrateStoreRecords(options) {
   const safeOptions = options || {};
@@ -29,6 +32,7 @@ async function migrateStoreRecords(options) {
       rawThreadPages: 0,
       workerRuns: 0,
       reviewActionExecutions: 0,
+      notificationEventActionExecutions: 0,
       authorReviewQueueItems: 0
     }
   };
@@ -77,9 +81,21 @@ async function migrateStoreRecords(options) {
     await migrateCollection({
       items: await source.contextReviewActionExecutionRepository.listExecutions({ limit }),
       save: dryRun ? undefined : function (execution) {
-        return migrateExecutionRecord(target.contextReviewActionExecutionRepository, execution);
+        return migrateContextReviewExecutionRecord(target.contextReviewActionExecutionRepository, execution);
       },
       count: function (count) { summary.migrated.reviewActionExecutions = count; }
+    });
+  }
+  if (source.notificationEventActionExecutionRepository) {
+    if (!dryRun && !target.notificationEventActionExecutionRepository) {
+      throw new Error('Target repository set must include notificationEventActionExecutionRepository when source notification event action executions are migrated.');
+    }
+    await migrateCollection({
+      items: await source.notificationEventActionExecutionRepository.listExecutions({ limit }),
+      save: dryRun ? undefined : function (execution) {
+        return migrateNotificationEventActionExecutionRecord(target.notificationEventActionExecutionRepository, execution);
+      },
+      count: function (count) { summary.migrated.notificationEventActionExecutions = count; }
     });
   }
   if (source.authorReviewQueueRepository) {
@@ -96,7 +112,7 @@ async function migrateStoreRecords(options) {
   return summary;
 }
 
-async function migrateExecutionRecord(repository, execution) {
+async function migrateContextReviewExecutionRecord(repository, execution) {
   if (!repository) return;
   const claimed = await repository.claimExecution({
     key: execution.key,
@@ -119,6 +135,50 @@ async function migrateExecutionRecord(repository, execution) {
   } else if (execution.status === 'failed') {
     await repository.failExecution(execution.key, executionError(execution), {
       taskId: execution.taskId,
+      failedAt: execution.failedAt,
+      updatedAt: execution.updatedAt,
+      now: execution.updatedAt
+    });
+  }
+}
+
+async function migrateNotificationEventActionExecutionRecord(repository, execution) {
+  if (!repository) return;
+  const claimed = await repository.claimExecution({
+    key: execution.key,
+    actionKey: execution.actionKey,
+    eventId: execution.eventId,
+    actor: execution.actor,
+    sourceId: execution.sourceId,
+    sourceKey: execution.sourceKey,
+    sourceScope: execution.sourceScope,
+    requestHash: execution.requestHash,
+    intent: execution.intent,
+    createdAt: execution.createdAt,
+    updatedAt: execution.updatedAt,
+    now: execution.updatedAt || execution.createdAt
+  });
+  if (!claimed.claimed && claimed.record && claimed.record.status === 'completed') return;
+  if (execution.status === 'completed') {
+    await repository.completeExecution(execution.key, execution.result || {}, {
+      eventId: execution.eventId,
+      actionKey: execution.actionKey,
+      actor: execution.actor,
+      sourceId: execution.sourceId,
+      sourceKey: execution.sourceKey,
+      sourceScope: execution.sourceScope,
+      completedAt: execution.completedAt,
+      updatedAt: execution.updatedAt,
+      now: execution.updatedAt
+    });
+  } else if (execution.status === 'failed') {
+    await repository.failExecution(execution.key, notificationEventActionExecutionError(execution), {
+      eventId: execution.eventId,
+      actionKey: execution.actionKey,
+      actor: execution.actor,
+      sourceId: execution.sourceId,
+      sourceKey: execution.sourceKey,
+      sourceScope: execution.sourceScope,
       failedAt: execution.failedAt,
       updatedAt: execution.updatedAt,
       now: execution.updatedAt
@@ -156,6 +216,9 @@ function assertRepositorySet(repositories, optional) {
   if (safeRepositories.contextReviewActionExecutionRepository) {
     result.contextReviewActionExecutionRepository = assertContextReviewActionExecutionRepository(safeRepositories.contextReviewActionExecutionRepository);
   }
+  if (safeRepositories.notificationEventActionExecutionRepository) {
+    result.notificationEventActionExecutionRepository = assertNotificationEventActionExecutionRepository(safeRepositories.notificationEventActionExecutionRepository);
+  }
   if (safeRepositories.authorReviewQueueRepository) {
     result.authorReviewQueueRepository = assertAuthorReviewQueueRepository(safeRepositories.authorReviewQueueRepository);
   }
@@ -167,6 +230,14 @@ function executionError(execution) {
   const error = new Error(execution && execution.error && execution.error.message
     ? execution.error.message
     : 'Migrated failed context review action execution.');
+  if (execution && execution.error && execution.error.stack) error.stack = execution.error.stack;
+  return error;
+}
+
+function notificationEventActionExecutionError(execution) {
+  const error = new Error(execution && execution.error && execution.error.message
+    ? execution.error.message
+    : 'Migrated failed notification event action execution.');
   if (execution && execution.error && execution.error.stack) error.stack = execution.error.stack;
   return error;
 }

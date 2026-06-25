@@ -31,6 +31,27 @@ test('migrate store records supports dry-run and writes through repository ports
         updatedAt: '2026-06-21T10:01:00.000Z',
         completedAt: '2026-06-21T10:01:00.000Z'
       }
+    ],
+    notificationActionExecutions: [
+      {
+        key: 'notification-event-action:v1:event-1:event.acknowledge',
+        actionKey: 'event.acknowledge',
+        status: 'completed',
+        eventId: 'event-1',
+        actor: 'operator-a',
+        sourceId: 'source-1',
+        sourceKey: 'nga',
+        sourceScope: {
+          sourceId: 'source-1',
+          sourceKey: 'nga'
+        },
+        requestHash: 'hash-2',
+        intent: { intent: { id: 'intent-1' } },
+        result: { event: { id: 'event-1', acknowledgedAt: '2026-06-25T10:01:00.000Z' } },
+        createdAt: '2026-06-25T10:00:00.000Z',
+        updatedAt: '2026-06-25T10:01:00.000Z',
+        completedAt: '2026-06-25T10:01:00.000Z'
+      }
     ]
   });
   const targetRepositories = fakeRepositorySet({});
@@ -55,8 +76,10 @@ test('migrate store records supports dry-run and writes through repository ports
   assert.equal(targetRepositories.saved.rawPages.length, 1);
   assert.equal(targetRepositories.saved.workerRuns.length, 1);
   assert.equal(targetRepositories.saved.executions.length, 1);
+  assert.equal(targetRepositories.saved.notificationActionExecutions.length, 1);
   assert.equal(targetRepositories.saved.authorReviewItems.length, 1);
   assert.equal(dryRun.migrated.reviewActionExecutions, 1);
+  assert.equal(dryRun.migrated.notificationEventActionExecutions, 1);
   assert.equal(dryRun.migrated.authorReviewQueueItems, 1);
   assert.equal(migrated.dryRun, false);
 });
@@ -115,6 +138,7 @@ function fakeRepositorySet(records) {
     rawPages: [],
     workerRuns: [],
     executions: [],
+    notificationActionExecutions: [],
     authorReviewItems: []
   };
 
@@ -185,6 +209,37 @@ function fakeRepositorySet(records) {
         return saved.executions.find(function (item) { return item.key === key; });
       },
       async listExecutions() { return safeRecords.executions || []; }
+    },
+    notificationEventActionExecutionRepository: {
+      async claimExecution(record) {
+        saved.notificationActionExecutions.push(Object.assign({}, record, {
+          status: 'running'
+        }));
+        return {
+          claimed: true,
+          record
+        };
+      },
+      async completeExecution(key, result, metadata) {
+        const execution = saved.notificationActionExecutions.find(function (item) { return item.key === key; });
+        Object.assign(execution, metadata || {}, {
+          status: 'completed',
+          result
+        });
+        return execution;
+      },
+      async failExecution(key, error, metadata) {
+        const execution = saved.notificationActionExecutions.find(function (item) { return item.key === key; });
+        Object.assign(execution, metadata || {}, {
+          status: 'failed',
+          error: { message: error.message }
+        });
+        return execution;
+      },
+      async findExecution(key) {
+        return saved.notificationActionExecutions.find(function (item) { return item.key === key; });
+      },
+      async listExecutions() { return safeRecords.notificationActionExecutions || []; }
     },
     authorReviewQueueRepository: {
       async saveItem(item) { saved.authorReviewItems.push(item); },

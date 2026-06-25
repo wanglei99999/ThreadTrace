@@ -1238,6 +1238,9 @@ function main(argv) {
       console.log('Events: ' + summary.migrated.notificationEvents);
       console.log('Raw pages: ' + summary.migrated.rawThreadPages);
       console.log('Worker runs: ' + summary.migrated.workerRuns);
+      console.log('Review action executions: ' + summary.migrated.reviewActionExecutions);
+      console.log('Notification event action executions: ' + summary.migrated.notificationEventActionExecutions);
+      console.log('Author review queue items: ' + summary.migrated.authorReviewQueueItems);
     }).catch(function (error) {
       console.error(error && error.stack ? error.stack : error);
       process.exitCode = 1;

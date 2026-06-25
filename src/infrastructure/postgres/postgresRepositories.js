@@ -4,6 +4,7 @@ const { createPostgresAnalysisReportRepository } = require('./postgresAnalysisRe
 const { createPostgresAuthorReviewQueueRepository } = require('./postgresAuthorReviewQueueRepository');
 const { createPostgresContextReviewActionExecutionRepository } = require('./postgresContextReviewActionExecutionRepository');
 const { createPostgresContextReviewResultRepository } = require('./postgresContextReviewResultRepository');
+const { createPostgresNotificationEventActionExecutionRepository } = require('./postgresNotificationEventActionExecutionRepository');
 const { createPostgresNotificationEventRepository } = require('./postgresNotificationEventRepository');
 const { createPostgresRawThreadPageRepository } = require('./postgresRawThreadPageRepository');
 const { createPostgresSourceRepository } = require('./postgresSourceRepository');
@@ -26,6 +27,7 @@ function createPostgresRepositories(options) {
     workerLeaseRepository: createPostgresWorkerLeaseRepository({ client }),
     contextReviewResultRepository: createPostgresContextReviewResultRepository({ client }),
     contextReviewActionExecutionRepository: createPostgresContextReviewActionExecutionRepository({ client }),
+    notificationEventActionExecutionRepository: createPostgresNotificationEventActionExecutionRepository({ client }),
     authorReviewQueueRepository: createPostgresAuthorReviewQueueRepository({ client })
   };
 }
