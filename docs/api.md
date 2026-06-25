@@ -274,6 +274,12 @@ Optional filters include `type`, `sourceId`, `sourceKey` / `forum`, `acknowledge
 - `deliveryStatus`: 可选，如 `pending`、`delivered`、`failed`。
 - `limit`: 可选，默认 50。
 
+### `GET /api/events/{eventId}`
+
+Returns an operator detail document for a notification outbox event.
+
+The response includes the raw `event`, derived `sourceScope`, optional `relatedTask`, stable API `links`, and recommended `nextActions` such as acknowledging the event, dispatching pending or failed source-scoped events, opening source drilldown, opening task detail, or archiving handled delivered/resolved events. Use this endpoint when a Web console, runbook, or external monitor starts from one concrete event id and needs the surrounding operational context.
+
 ### `GET /api/events/overview`
 
 Summarizes notification outbox health for dashboards and workers. Optional filters mirror `GET /api/events` and add `maxAttempts`, `now`, and `storeDir`. The response includes status, window size, pending/failed/unacknowledged/due counts, retry-exhausted count, next delivery time, oldest open event, counts by type/severity/delivery status/source, `byOpenSourceKey`, `sourceHotspots`, attention samples, and a recommended next action.

@@ -160,6 +160,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /loadTaskDetailFromButton/);
     assert.match(webAppJs, /renderTaskDetail/);
     assert.match(webAppJs, /load-task-detail/);
+    assert.match(webAppJs, /loadEventDetailFromButton/);
+    assert.match(webAppJs, /renderNotificationEventDetail/);
+    assert.match(webAppJs, /load-event-detail/);
     assert.match(webAppJs, /renderTaskTraceButton/);
     assert.match(webAppJs, /renderTaskTraceContext/);
     assert.match(webAppJs, /load-trace-context/);
@@ -563,12 +566,18 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/context-review-results/events']);
     assert.ok(openApi.paths['/api/events/overview']);
     assert.equal(openApi.paths['/api/events'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/NotificationEventListResult');
+    assert.equal(openApi.paths['/api/events/{eventId}'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/NotificationEventDetail');
+    assert.equal(openApi.paths['/api/events/{eventId}'].get.responses[404].$ref, '#/components/responses/NotFound');
     assert.equal(openApi.paths['/api/events/overview'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/NotificationEventOverview');
     assert.equal(openApi.paths['/api/events/dispatch'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/NotificationEventDispatchResult');
     assert.equal(openApi.paths['/api/events/ack'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/NotificationEventAckResult');
     assert.equal(openApi.paths['/api/events/{eventId}/ack'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/NotificationEventAckSingleResult');
     assert.equal(openApi.paths['/api/events/archive'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/NotificationEventArchiveResult');
     assert.equal(openApi.components.schemas.NotificationEventListResult.properties.events.items.$ref, '#/components/schemas/NotificationEvent');
+    assert.equal(openApi.components.schemas.NotificationEventDetail.properties.event.$ref, '#/components/schemas/NotificationEvent');
+    assert.equal(openApi.components.schemas.NotificationEventDetail.properties.sourceScope.$ref, '#/components/schemas/TaskSourceScope');
+    assert.equal(openApi.components.schemas.NotificationEventDetail.properties.links.items.$ref, '#/components/schemas/TaskDetailLink');
+    assert.equal(openApi.components.schemas.NotificationEventDetail.properties.nextActions.items.$ref, '#/components/schemas/TaskDetailAction');
     assert.equal(openApi.components.schemas.NotificationEvent.properties.lastDeliveryError.type, 'object');
     assert.equal(openApi.components.schemas.NotificationEventDispatchResult.properties.results.items.$ref, '#/components/schemas/NotificationEventDispatchItem');
     assert.equal(openApi.components.schemas.NotificationEventDispatchItem.properties.event.$ref, '#/components/schemas/NotificationEvent');
@@ -2217,6 +2226,9 @@ test('http server can register sources and run source ingest tasks', async funct
     const dueResult = await postJson(baseUrl + '/api/sources/tasks/ingest-due', {});
     const skippedDueResult = await postJson(baseUrl + '/api/sources/tasks/ingest-due', {});
     const eventsResult = await getJson(baseUrl + '/api/events');
+    const eventDetail = await getJson(baseUrl + '/api/events/' + encodeURIComponent(eventsResult.events[0].id));
+    const missingEventDetail = await fetch(baseUrl + '/api/events/missing-event');
+    const missingEventDetailBody = await missingEventDetail.json();
     const sourceKeyEventsResult = await getJson(baseUrl + '/api/events?sourceKey=nga');
     const dispatchResult = await postJson(baseUrl + '/api/events/dispatch', {
       sourceId: registerResult.source.id,
@@ -2275,6 +2287,19 @@ test('http server can register sources and run source ingest tasks', async funct
     assert.equal(skippedDueResult.dueCount, 0);
     assert.equal(skippedDueResult.skippedCount, 1);
     assert.equal(eventsResult.events.length, 1);
+    assert.equal(eventDetail.event.id, eventsResult.events[0].id);
+    assert.equal(eventDetail.sourceScope.sourceKey, 'nga');
+    assert.ok(eventDetail.links.some(function (link) {
+      return link.rel === 'self';
+    }));
+    assert.ok(eventDetail.links.some(function (link) {
+      return link.rel === 'source-drilldown';
+    }));
+    assert.ok(eventDetail.nextActions.some(function (action) {
+      return action.key === 'event.acknowledge' || action.key === 'event.source-drilldown';
+    }));
+    assert.equal(missingEventDetail.status, 404);
+    assert.equal(missingEventDetailBody.error.code, 'event_not_found');
     assert.equal(sourceKeyEventsResult.events.length, 1);
     assert.equal(eventsResult.events[0].type, 'source-changed');
     assert.equal(dispatchResult.dispatchedCount, 1);

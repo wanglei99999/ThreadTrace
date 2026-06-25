@@ -30,6 +30,7 @@ const { acknowledgeNotificationEvent } = require('../application/use-cases/ackno
 const { acknowledgeNotificationEvents } = require('../application/use-cases/acknowledgeNotificationEvents');
 const { archiveNotificationEvents } = require('../application/use-cases/archiveNotificationEvents');
 const { dispatchPendingNotificationEvents } = require('../application/use-cases/dispatchPendingNotificationEvents');
+const { getNotificationEventDetail } = require('../application/use-cases/getNotificationEventDetail');
 const { synthesizeRunbookNotificationEvents } = require('../application/use-cases/synthesizeRunbookNotificationEvents');
 const { synthesizeContextReviewResultNotificationEvents } = require('../application/use-cases/synthesizeContextReviewResultNotificationEvents');
 const { synthesizeAuthorReviewQueueNotificationEvents } = require('../application/use-cases/synthesizeAuthorReviewQueueNotificationEvents');
@@ -2047,6 +2048,17 @@ function createThreadTraceRuntime(options) {
         deliveryStatus: safeRequest.deliveryStatus,
         includeArchived: safeRequest.includeArchived,
         limit: safeRequest.limit || 50
+      });
+    },
+
+    async getNotificationEventDetail(request) {
+      const safeRequest = request || {};
+      const repositories = createRepositoriesFor(safeRequest.storeDir);
+      return getNotificationEventDetail({
+        notificationEventRepository: repositories.notificationEventRepository,
+        taskRepository: repositories.taskRepository,
+        eventId: safeRequest.eventId,
+        now: safeRequest.now
       });
     },
 

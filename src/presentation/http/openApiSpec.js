@@ -1889,6 +1889,34 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/events/{eventId}': {
+        get: {
+          summary: 'Get notification event detail with source, task, and operations links',
+          parameters: [
+            { name: 'eventId', in: 'path', required: true, schema: { type: 'string' } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Notification event detail, related task summary, and recommended operations',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/NotificationEventDetail'
+                  }
+                }
+              }
+            },
+            400: {
+              $ref: '#/components/responses/BadRequest'
+            },
+            404: {
+              $ref: '#/components/responses/NotFound'
+            }
+          }
+        }
+      },
       '/api/events/overview': {
         get: {
           summary: 'Summarize notification outbox health and backlog distribution',
@@ -5213,6 +5241,35 @@ function createOpenApiSpec() {
             events: {
               type: 'array',
               items: { $ref: '#/components/schemas/NotificationEvent' }
+            }
+          }
+        },
+        NotificationEventDetail: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string' },
+            event: { $ref: '#/components/schemas/NotificationEvent' },
+            sourceScope: { $ref: '#/components/schemas/TaskSourceScope' },
+            relatedTask: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                type: { type: 'string' },
+                status: { type: 'string' },
+                missing: { type: 'boolean' },
+                createdAt: { type: 'string' },
+                updatedAt: { type: 'string' },
+                finishedAt: { type: 'string' }
+              },
+              additionalProperties: true
+            },
+            links: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/TaskDetailLink' }
+            },
+            nextActions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/TaskDetailAction' }
             }
           }
         },

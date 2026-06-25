@@ -1031,6 +1031,17 @@ async function routeRequest(request, response, context) {
     return;
   }
 
+  const eventDetailMatch = url.pathname.match(/^\/api\/events\/([^/]+)$/);
+  if (request.method === 'GET' && eventDetailMatch) {
+    const result = await context.runtime.getNotificationEventDetail({
+      eventId: decodeURIComponent(eventDetailMatch[1]),
+      now: url.searchParams.get('now') || undefined,
+      storeDir: url.searchParams.get('storeDir') || undefined
+    });
+    writeJson(response, 200, result);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/raw-pages') {
     const pages = await context.runtime.listRawThreadPages({
       forum: url.searchParams.get('forum') || undefined,

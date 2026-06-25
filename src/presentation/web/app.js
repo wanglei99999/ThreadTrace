@@ -384,6 +384,14 @@ function bindForms() {
   document.getElementById('eventResult').addEventListener('click', async function (event) {
     const button = event.target.closest('button[data-action]');
     if (!button) return;
+    if (button.dataset.action === 'load-event-detail') {
+      await loadEventDetailFromButton(button);
+      return;
+    }
+    if (button.dataset.action === 'load-task-detail') {
+      await loadTaskDetailFromButton(button);
+      return;
+    }
     if (button.dataset.action === 'load-source-drilldown') {
       await loadSourceOperationsDrilldownFromButton(button);
       return;
@@ -1491,6 +1499,19 @@ async function loadTaskDetailFromButton(button) {
       acceptErrorStatus: true
     });
   }, renderTaskDetail);
+}
+
+async function loadEventDetailFromButton(button) {
+  const eventId = button.dataset.eventId;
+  if (!eventId) {
+    renderError('eventResult', new Error('No event id is available.'));
+    return;
+  }
+  await renderAsync('eventResult', function () {
+    return fetchJson('/api/events/' + encodeURIComponent(eventId), {
+      acceptErrorStatus: true
+    });
+  }, renderNotificationEventDetail);
 }
 
 function eventFilterFormData() {
@@ -4981,6 +5002,65 @@ function renderEventList(result) {
     listPanel;
 }
 
+function renderNotificationEventDetail(result) {
+  const event = result.event || {};
+  const sourceScope = result.sourceScope || {};
+  const relatedTask = result.relatedTask || {};
+  return [
+    panel('Event detail', [
+      '<div class="summary-strip event-summary-strip">' + [
+        summaryTile('Status', event.deliveryStatus || 'pending', statusVariant(event.deliveryStatus || 'pending')),
+        summaryTile('Severity', event.severity || 'unknown', statusVariant(event.severity)),
+        summaryTile('Type', event.type || 'unknown'),
+        summaryTile('Source', sourceScope.sourceId || sourceScope.sourceKey || 'none', sourceScope.sourceId || sourceScope.sourceKey ? 'ok' : 'muted')
+      ].join('') + '</div>',
+      metric('Event ID', event.id || 'none'),
+      metric('Created', event.createdAt || 'unknown'),
+      metric('Next delivery', event.nextDeliveryAt || 'none'),
+      metric('Attempts', event.deliveryAttempts || 0),
+      metric('Acknowledged', event.acknowledgedAt || 'not acknowledged'),
+      metric('Source scope', formatTaskSourceScope(sourceScope)),
+      metric('Related task', relatedTask.id ? relatedTask.id + (relatedTask.missing ? ' (missing)' : ' | ' + [relatedTask.status, relatedTask.type].filter(Boolean).join('/')) : 'none'),
+      renderNotificationEventDetailButtons(result)
+    ].join(''), 'wide'),
+    panel('Event actions', renderNotificationEventDetailActions(result.nextActions || []), 'wide'),
+    panel('Event payload', '<pre>' + escapeHtml(JSON.stringify({
+      title: event.title,
+      summary: event.summary,
+      payload: event.payload,
+      deliveryResult: event.deliveryResult,
+      lastDeliveryError: event.lastDeliveryError
+    }, null, 2)) + '</pre>', 'wide')
+  ].join('');
+}
+
+function renderNotificationEventDetailButtons(result) {
+  const event = result.event || {};
+  const sourceScope = result.sourceScope || {};
+  const relatedTask = result.relatedTask || {};
+  return '<div class="button-group source-op-buttons">' +
+    renderEventSourceDrilldownButton({
+      sourceId: sourceScope.sourceId,
+      sourceKey: sourceScope.sourceKey
+    }) +
+    (relatedTask.id ? '<button class="inline-button secondary-inline-button" type="button" data-action="load-task-detail" data-task-id="' + escapeHtml(relatedTask.id) + '" data-trace-limit="20">Task</button>' : '') +
+    (event.acknowledgedAt ? '' : '<button class="inline-button" type="button" data-action="ack-event" data-event-id="' + escapeHtml(event.id || '') + '">Acknowledge</button>') +
+    '</div>';
+}
+
+function renderNotificationEventDetailActions(actions) {
+  if (!actions.length) return '<div class="muted">No recommended event actions.</div>';
+  return actions.map(function (action) {
+    return '<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml((action.severity || 'info') + ' | ' + (action.key || 'event.action')) + '</strong>' +
+      '<small>' + escapeHtml(action.summary || '') + '</small>' +
+      (action.command ? '<small>' + escapeHtml(action.command) + '</small>' : '') +
+      '</span>' +
+      statusBadge(action.severity || 'info', action.severity === 'warning' ? 'warn' : statusVariant(action.severity)) +
+      '</div>';
+  }).join('');
+}
+
 function renderNotificationEventOverview(overview) {
   const attention = overview.attention || {};
   return panel('Notification outbox overview', [
@@ -5075,6 +5155,31 @@ function renderNotificationEventRow(event) {
     '<button class="inline-button" type="button" data-action="ack-event" data-event-id="' + escapeHtml(event.id) + '"' + disabled + '>' + ackLabel + '</button>' +
     '</span>';
   return '<div class="action-row event-row"><span><strong>' + escapeHtml(title) + '</strong>' + summary + '<small>' + escapeHtml(meta) + '</small></span>' + controls + '</div>';
+}
+
+function renderNotificationEventRow(event) {
+  const ackLabel = event.acknowledgedAt ? 'Acknowledged' : 'Acknowledge';
+  const disabled = event.acknowledgedAt ? ' disabled' : '';
+  const title = event.title || event.summary || event.id || 'untitled-event';
+  const summary = event.summary && event.summary !== title ? '<small>' + escapeHtml(event.summary) + '</small>' : '';
+  const meta = eventMetadata(event).join(' | ');
+  const controls = '<span class="button-group source-op-buttons">' +
+    renderEventDetailButtonControl(event) +
+    renderEventSourceDrilldownButton(event) +
+    renderEventTaskDetailButton(event) +
+    '<button class="inline-button" type="button" data-action="ack-event" data-event-id="' + escapeHtml(event.id) + '"' + disabled + '>' + ackLabel + '</button>' +
+    '</span>';
+  return '<div class="action-row event-row"><span><strong>' + escapeHtml(title) + '</strong>' + summary + '<small>' + escapeHtml(meta) + '</small></span>' + controls + '</div>';
+}
+
+function renderEventDetailButtonControl(event) {
+  if (!event || !event.id) return '';
+  return '<button class="inline-button secondary-inline-button" type="button" data-action="load-event-detail" data-event-id="' + escapeHtml(event.id) + '">Detail</button>';
+}
+
+function renderEventTaskDetailButton(event) {
+  if (!event || !event.taskId) return '';
+  return '<button class="inline-button secondary-inline-button" type="button" data-action="load-task-detail" data-task-id="' + escapeHtml(event.taskId) + '" data-trace-limit="20">Task</button>';
 }
 
 function renderNotificationSourceHotspots(hotspots) {
