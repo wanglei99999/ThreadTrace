@@ -17,6 +17,15 @@ From the repository root:
 node src/presentation/cli/threadtrace.js validate-connector-module --module-path docs/examples/external-connector-package/index.cjs
 ```
 
+Inspect the package source type and generated onboarding recipe:
+
+```powershell
+node src/presentation/cli/threadtrace.js connector-catalog --module-path docs/examples/external-connector-package/index.cjs --source-type package-normalized-feed
+node src/presentation/cli/threadtrace.js connector-catalog --module-path docs/examples/external-connector-package/index.cjs --source-type package-normalized-feed --json true
+```
+
+The JSON output includes `onboardingRecipe.requiredLocationFields`, `recommendedFlow`, and a conservative `rolloutManifestTemplate` that can seed rollout planning after real source values are filled in.
+
 From this package directory:
 
 ```powershell

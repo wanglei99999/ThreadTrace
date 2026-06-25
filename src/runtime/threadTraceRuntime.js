@@ -435,9 +435,22 @@ function createThreadTraceRuntime(options) {
 
     getSourceConnectorCatalog(request) {
       const safeRequest = request || {};
+      const modulePath = safeRequest.modulePath || safeRequest.connectorModulePath;
+      const catalogForumAdapterRegistry = modulePath ? createDefaultForumAdapterRegistry() : forumAdapterRegistry;
+      const catalogSourceIngestHandlerRegistry = modulePath ? createDefaultSourceIngestHandlerRegistry() : sourceIngestHandlerRegistry;
+      if (modulePath) {
+        loadConnectorModulesReport({
+          modulePaths: [modulePath],
+          cwd: safeOptions.cwd,
+          forumAdapterRegistry: catalogForumAdapterRegistry,
+          sourceIngestHandlerRegistry: catalogSourceIngestHandlerRegistry,
+          runtimeConfig,
+          reload: true
+        });
+      }
       return getSourceConnectorCatalog({
-        sourceIngestHandlerRegistry,
-        forumAdapterRegistry,
+        sourceIngestHandlerRegistry: catalogSourceIngestHandlerRegistry,
+        forumAdapterRegistry: catalogForumAdapterRegistry,
         now: safeRequest.now
       });
     },

@@ -133,6 +133,13 @@ POST /api/sources/validate
 
 Discovery returns each handler's adapter requirement, location schema, and capability flags. UI, API clients, and future connector tooling should use this catalog instead of hard-coding required fields for each `sourceType`.
 
+CLI discovery uses the same catalog:
+
+```powershell
+node src/presentation/cli/threadtrace.js connector-catalog --source-type normalized-thread-json
+node src/presentation/cli/threadtrace.js connector-catalog --module-path docs/examples/external-connector-package/index.cjs --source-type package-normalized-feed --json true
+```
+
 `/api/connectors/catalog` combines source types with registered forum adapters, including `compatibleSourceKeys` for handler types that require an adapter.
 
 Each catalog source type also includes `onboardingRecipe`. The recipe is the source-type playbook that UI, generated clients, and operators can use before writing a source:

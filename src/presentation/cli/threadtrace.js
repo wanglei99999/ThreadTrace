@@ -1858,10 +1858,18 @@ function main(argv) {
   }
 
   if (command === 'connector-catalog') {
-    const catalog = runtime.getSourceConnectorCatalog({
-      now: options.now
-    });
+    const catalog = filterConnectorCatalog(runtime.getSourceConnectorCatalog({
+      now: options.now,
+      modulePath: options.modulePath
+    }), options.sourceType);
+    if (isTruthyOption(options.json)) {
+      console.log(JSON.stringify(catalog, null, 2));
+      return;
+    }
     console.log('Connector catalog: sourceTypes=' + catalog.sourceTypes.length + ', adapters=' + catalog.adapters.length);
+    if (options.modulePath) {
+      console.log('Module: ' + options.modulePath);
+    }
     catalog.sourceTypes.forEach(function (sourceType) {
       const required = sourceType.locationSchema && sourceType.locationSchema.required
         ? sourceType.locationSchema.required.join(',')
@@ -1870,6 +1878,16 @@ function main(argv) {
         ? sourceType.compatibleSourceKeys.join(',')
         : 'none';
       console.log(sourceType.sourceType + '\tadapter=' + sourceType.requiresAdapter + '\trequired=' + required + '\tcompatible=' + compatible);
+      if (sourceType.onboardingRecipe) {
+        const recipe = sourceType.onboardingRecipe;
+        const fields = recipe.requiredLocationFields && recipe.requiredLocationFields.length
+          ? recipe.requiredLocationFields.join(',')
+          : 'none';
+        const flow = (recipe.recommendedFlow || []).map(function (step) {
+          return step.key;
+        }).join('>');
+        console.log('  recipe\tfields=' + fields + '\tflow=' + flow + '\ttemplate=' + (recipe.rolloutManifestTemplate && recipe.rolloutManifestTemplate.name || 'none'));
+      }
     });
     return;
   }
@@ -2473,6 +2491,15 @@ function parseOptionalBoolean(value) {
   return value !== 'false';
 }
 
+function filterConnectorCatalog(catalog, sourceType) {
+  if (!sourceType) return catalog;
+  return Object.assign({}, catalog, {
+    sourceTypes: (catalog.sourceTypes || []).filter(function (item) {
+      return item.sourceType === sourceType;
+    })
+  });
+}
+
 function splitCsv(value) {
   return String(value || '')
     .split(',')
@@ -2768,7 +2795,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js reset-source-failure --source-id id [--execute true] [--retry-now true] [--next-run-at iso] [--reset-by user] [--store-dir dir] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js list-sources [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-diagnostics [--forum nga] [--enabled true] [--store-dir dir]');
-  console.log('  node src/presentation/cli/threadtrace.js connector-catalog [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js connector-catalog [--source-type type] [--module-path file] [--json true] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js thread-snapshot-contract');
   console.log('  node src/presentation/cli/threadtrace.js connector-module-contract');
   console.log('  node src/presentation/cli/threadtrace.js validate-connector-module --module-path file [--now iso]');
