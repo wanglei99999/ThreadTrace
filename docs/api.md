@@ -880,6 +880,8 @@ Query parameters mirror `GET /api/operations/source-drilldown` and add `includeD
 
 Returns a v0.2 unattended automation readiness plan. It composes source schedule, source operations cockpit, representative source collection health, worker topology, and LLM readiness into one set of gates for deciding whether ThreadTrace can run continuously.
 
+The response includes `remediation`, a structured repair plan with dry-run and execute API calls for safe automated fixes. The first supported executable remediation is `configure-source-schedule` for sources that are unscheduled or schedule-disabled; registration, LLM provider, and demo closure gaps remain manual actions with commands until the required external configuration is available.
+
 Useful query parameters: `sourceId` / `sourceKey` / `forum`, `sourceType`, `sourceTaskMode=ingest|insight-pipeline`, `topology=operations-worker|split-workers`, `llmReadinessMode=configuration|preflight|evaluation`, `provider`, `includeInputs=true`, `limit`, and the same stale/backoff timing options used by source operations endpoints.
 
 The response includes `readyForUnattendedRun`, `summary`, `automation.workerCommands`, `checks`, `nextActions`, and optional composed input reports. HTTP `503` means a required automation gate failed, such as no registered source. Warnings return `200`.

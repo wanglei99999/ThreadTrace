@@ -957,6 +957,7 @@ function main(argv) {
       plan.automation.workerCommands.forEach(function (worker) {
         console.log('worker\t' + worker.workerType + '\t' + worker.leaseKey + '\t' + worker.command);
       });
+      printAutomationRemediation(plan.remediation);
       plan.nextActions.forEach(printActionWithDetails);
       if (plan.status === 'fail') process.exitCode = 2;
       if (plan.status === 'warn') process.exitCode = 1;
@@ -3556,6 +3557,17 @@ function formatScheduleSummary(schedule) {
     'next=' + (safeSchedule.nextRunAt || 'none')
   ];
   return parts.join(', ');
+}
+
+function printAutomationRemediation(remediation) {
+  if (!remediation) return;
+  console.log('Remediation: ' + (remediation.status || 'unknown') + ', actions=' + (remediation.actionCount || 0) + ', manual=' + (remediation.manualActionCount || 0) + ', safe=' + Boolean(remediation.safeToAutoApply));
+  (remediation.actions || []).slice(0, 5).forEach(function (action) {
+    console.log('remediate\t' + action.type + '\t' + (action.scope && action.scope.sourceId || '') + '\t' + (action.executeCommand || action.command || ''));
+  });
+  (remediation.manualActions || []).slice(0, 5).forEach(function (action) {
+    console.log('manual\t' + action.checkKey + '\t' + (action.command || ''));
+  });
 }
 
 function isTruthyOption(value) {

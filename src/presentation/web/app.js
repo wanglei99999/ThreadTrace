@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshSourcesButton').addEventListener('click', loadSources);
   document.getElementById('refreshSourceOperationsButton').addEventListener('click', loadSourceOperations);
   document.getElementById('refreshAutomationReadinessButton').addEventListener('click', loadAutomationReadiness);
+  document.getElementById('automationReadinessResult').addEventListener('click', handleAutomationReadinessAction);
   document.getElementById('runLlmReadinessButton').addEventListener('click', runLlmReadiness);
   document.getElementById('runLlmPreflightButton').addEventListener('click', runLlmPreflight);
   document.getElementById('runLlmEvaluationButton').addEventListener('click', runLlmEvaluation);
@@ -650,6 +651,16 @@ function buildSourceOnboardingRequest(form) {
     request.inputDir = locationValue || form.get('inputDir');
   }
   return request;
+}
+
+async function handleAutomationReadinessAction(event) {
+  const button = event.target.closest('button[data-action]');
+  if (!button) return;
+  if (button.dataset.action === 'set-source-schedule') {
+    const execute = button.dataset.execute === 'true';
+    if (execute && !window.confirm('Configure this source schedule?')) return;
+    await setSourceScheduleFromButton(button, execute);
+  }
 }
 
 async function handleOnboardingAction(event) {
@@ -4322,6 +4333,7 @@ function renderAutomationReadinessPlan(plan) {
       metric('Replay evidence', representative.replay && representative.replay.available ? 'available' : 'missing')
     ].join(''), 'wide'),
     panel('Automation gates', renderAutomationReadinessChecks(plan.checks || []), 'wide'),
+    panel('Automation remediation', renderAutomationRemediation(plan.remediation), 'wide'),
     panel('Worker commands', renderAutomationWorkerCommands(plan.automation && plan.automation.workerCommands || []), 'wide'),
     panel('Next actions', renderAutomationNextActions(plan.nextActions || []), 'wide')
   ].join('');
@@ -4347,6 +4359,47 @@ function renderAutomationWorkerCommands(commands) {
       '<small>' + escapeHtml(worker.command || '') + '</small>' +
       '</span></div>';
   }).join('');
+}
+
+function renderAutomationRemediation(remediation) {
+  if (!remediation) return '<div class="muted">No remediation plan returned.</div>';
+  const actions = remediation.actions || [];
+  const manualActions = remediation.manualActions || [];
+  const rows = [
+    '<div class="summary-strip">',
+    summaryTile('Status', remediation.status || 'unknown', statusVariant(remediation.status === 'actionable' ? 'warn' : remediation.status === 'none' ? 'ok' : 'warn')),
+    summaryTile('Actions', String(remediation.actionCount || 0), (remediation.actionCount || 0) > 0 ? 'warn' : 'muted'),
+    summaryTile('Manual', String(remediation.manualActionCount || 0), (remediation.manualActionCount || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('Safe', remediation.safeToAutoApply ? 'yes' : 'no', remediation.safeToAutoApply ? 'ok' : 'muted'),
+    '</div>'
+  ];
+  if (!actions.length && !manualActions.length) {
+    rows.push('<div class="muted">No remediation actions are needed.</div>');
+    return rows.join('');
+  }
+  actions.slice(0, 8).forEach(function (action) {
+    const sourceId = action.scope && action.scope.sourceId;
+    const dryRunButton = sourceId
+      ? '<button class="inline-button secondary-inline-button" type="button" data-action="set-source-schedule" data-source-id="' + escapeHtml(sourceId) + '" data-interval-minutes="60" data-run-now="true" data-execute="false">Schedule check</button>'
+      : '';
+    const executeButton = sourceId
+      ? '<button class="inline-button" type="button" data-action="set-source-schedule" data-source-id="' + escapeHtml(sourceId) + '" data-interval-minutes="60" data-run-now="true" data-execute="true">Schedule now</button>'
+      : '';
+    rows.push('<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(action.type || action.key || 'remediation') + '</strong>' +
+      '<small>' + escapeHtml([action.severity, action.reason, sourceId].filter(Boolean).join(' | ')) + '</small>' +
+      '<small>' + escapeHtml(action.summary || '') + '</small>' +
+      '<small>' + escapeHtml(action.executeCommand || action.command || '') + '</small>' +
+      '</span><span class="button-group">' + dryRunButton + executeButton + '</span></div>');
+  });
+  manualActions.slice(0, 8).forEach(function (action) {
+    rows.push('<div class="action-row ops-row"><span>' +
+      '<strong>' + escapeHtml(action.checkKey || action.key || 'manual') + '</strong>' +
+      '<small>' + escapeHtml(action.summary || '') + '</small>' +
+      '<small>' + escapeHtml(action.command || '') + '</small>' +
+      '</span></div>');
+  });
+  return rows.join('');
 }
 
 function renderAutomationNextActions(actions) {

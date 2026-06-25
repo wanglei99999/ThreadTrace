@@ -357,6 +357,11 @@ test('CLI prints automation readiness plan as JSON', async function () {
     assert.equal(plan.readyForUnattendedRun, false);
     assert.equal(plan.summary.sources.total, 0);
     assert.equal(plan.summary.workers.sourceTaskMode, 'insight-pipeline');
+    assert.equal(plan.remediation.status, 'manual');
+    assert.equal(plan.remediation.actionCount, 0);
+    assert.ok(plan.remediation.manualActions.some(function (action) {
+      return action.checkKey === 'automation.sources.registered';
+    }));
     assert.ok(plan.checks.find(function (item) {
       return item.key === 'automation.sources.registered' && item.status === 'fail';
     }));

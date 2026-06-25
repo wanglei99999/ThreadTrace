@@ -1219,6 +1219,27 @@ test('http server exposes source operations drilldown API', async function () {
               { workerType: 'operations', leaseKey: 'worker:operations:global', command: 'node src/presentation/worker/operationsWorkerMain.js --loop --source-task-mode insight-pipeline' }
             ]
           },
+          remediation: {
+            status: 'actionable',
+            actionCount: 1,
+            executableCount: 1,
+            dryRunCount: 1,
+            manualActionCount: 1,
+            safeToAutoApply: true,
+            actions: [
+              {
+                key: 'automation.remediate.source.schedule.source-1',
+                type: 'configure-source-schedule',
+                severity: 'warning',
+                reason: 'no-schedule',
+                scope: { sourceId: 'source-1', sourceKey: 'nga' },
+                executeCommand: 'node src/presentation/cli/threadtrace.js configure-source-schedule --source-id source-1 --interval-minutes 60 --run-now true --execute true'
+              }
+            ],
+            manualActions: [
+              { key: 'automation.manual.demo.closure', checkKey: 'automation.demo.closure', command: 'node src/presentation/cli/threadtrace.js run-demo-cycle --source-id source-1' }
+            ]
+          },
           checks: [
             { key: 'automation.demo.closure', area: 'demo', status: 'warn', value: 'not-run', summary: 'End-to-end demo cycle closure has been run and reviewed.' }
           ],
@@ -1265,6 +1286,8 @@ test('http server exposes source operations drilldown API', async function () {
     assert.equal(automation.status, 'warn');
     assert.equal(automation.readyForUnattendedRun, false);
     assert.equal(automation.summary.workers.sourceTaskMode, 'insight-pipeline');
+    assert.equal(automation.remediation.status, 'actionable');
+    assert.equal(automation.remediation.actions[0].type, 'configure-source-schedule');
     assert.equal(automation.nextActions[0].key, 'automationReadiness.automation.demo.closure');
     assert.equal(calls[2].automationReadiness, true);
     assert.equal(calls[2].sourceKey, 'nga');
@@ -1274,6 +1297,8 @@ test('http server exposes source operations drilldown API', async function () {
     assert.match(webAppJs, /renderSourceCollectionHealthProfile/);
     assert.match(webAppJs, /load-source-collection-health/);
     assert.match(webAppJs, /renderAutomationReadinessPlan/);
+    assert.match(webAppJs, /renderAutomationRemediation/);
+    assert.match(webAppJs, /automationReadinessResult/);
     assert.match(webAppJs, /refreshAutomationReadinessButton/);
   } finally {
     await close(server);
@@ -1937,6 +1962,9 @@ test('http server exposes deployment checklist API', async function () {
     assert.equal(openApi.paths['/api/operations/automation-readiness'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/AutomationReadinessPlan');
     assert.equal(openApi.paths['/api/operations/automation-readiness'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/AutomationReadinessPlan');
     assert.ok(openApi.components.schemas.AutomationReadinessPlan.properties.automation);
+    assert.equal(openApi.components.schemas.AutomationReadinessPlan.properties.remediation.$ref, '#/components/schemas/AutomationReadinessRemediationPlan');
+    assert.equal(openApi.components.schemas.AutomationReadinessRemediationPlan.properties.actions.items.$ref, '#/components/schemas/AutomationReadinessRemediationAction');
+    assert.equal(openApi.components.schemas.AutomationReadinessRemediationPlan.properties.manualActions.items.$ref, '#/components/schemas/AutomationReadinessManualAction');
     assert.ok(openApi.components.schemas.AutomationReadinessPlan.properties.readyForUnattendedRun);
     assert.equal(openApi.components.schemas.WorkerTopologyWorker.properties.scope.$ref, '#/components/schemas/SourceScope');
     assert.equal(openApi.components.schemas.WorkerTopologyWorker.properties.leaseKey.example, 'worker:due-source:source-id:tracked-source-nga-001');

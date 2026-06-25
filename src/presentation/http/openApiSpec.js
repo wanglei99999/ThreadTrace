@@ -7180,6 +7180,7 @@ function createOpenApiSpec() {
               },
               additionalProperties: true
             },
+            remediation: { $ref: '#/components/schemas/AutomationReadinessRemediationPlan' },
             checks: {
               type: 'array',
               items: {
@@ -7206,6 +7207,55 @@ function createOpenApiSpec() {
               items: { type: 'object', additionalProperties: true }
             }
           }
+        },
+        AutomationReadinessRemediationPlan: {
+          type: 'object',
+          properties: {
+            status: { type: 'string', enum: ['actionable', 'manual', 'none'] },
+            actionCount: { type: 'number', example: 1 },
+            executableCount: { type: 'number', example: 1 },
+            dryRunCount: { type: 'number', example: 1 },
+            manualActionCount: { type: 'number', example: 2 },
+            safeToAutoApply: { type: 'boolean', example: true },
+            actions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/AutomationReadinessRemediationAction' }
+            },
+            manualActions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/AutomationReadinessManualAction' }
+            },
+            nextAction: { type: 'object', additionalProperties: true }
+          }
+        },
+        AutomationReadinessRemediationAction: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', example: 'automation.remediate.source.schedule.source-1' },
+            checkKey: { type: 'string', example: 'automation.sources.scheduled' },
+            type: { type: 'string', example: 'configure-source-schedule' },
+            severity: { type: 'string', enum: ['warning', 'critical'] },
+            summary: { type: 'string' },
+            scope: { $ref: '#/components/schemas/SourceScope' },
+            reason: { type: 'string', example: 'no-schedule' },
+            destructive: { type: 'boolean', example: false },
+            dryRun: { type: 'object', additionalProperties: true },
+            execute: { type: 'object', additionalProperties: true },
+            command: { type: 'string' },
+            executeCommand: { type: 'string' }
+          },
+          additionalProperties: true
+        },
+        AutomationReadinessManualAction: {
+          type: 'object',
+          properties: {
+            key: { type: 'string' },
+            checkKey: { type: 'string' },
+            severity: { type: 'string', enum: ['warning', 'critical'] },
+            summary: { type: 'string' },
+            command: { type: 'string' }
+          },
+          additionalProperties: true
         },
         OperationalOverview: {
           type: 'object',

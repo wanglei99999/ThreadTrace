@@ -37,6 +37,13 @@ function getAutomationReadinessPlan(options) {
       sourceCollectionHealthProfile,
       workerTopologyPlan
     }),
+    remediation: buildRemediationPlan(status, checks, {
+      sourceScheduleReport,
+      sourceCollectionHealthProfile,
+      llmReadinessProfile,
+      demoCycle,
+      scope
+    }),
     checks,
     inputs: {
       scheduleGeneratedAt: sourceScheduleReport.generatedAt,
@@ -155,6 +162,130 @@ function buildAutomationPlan(input) {
       };
     })
   };
+}
+
+function buildRemediationPlan(status, checks, input) {
+  const actions = [];
+  const scheduledCheck = checks.find(function (item) {
+    return item.key === 'automation.sources.scheduled' && item.status !== 'ok';
+  });
+  if (scheduledCheck) {
+    findUnscheduledSources(input.sourceScheduleReport).slice(0, 5).forEach(function (source) {
+      actions.push(sourceScheduleRemediationAction(source, scheduledCheck, input.scope));
+    });
+  }
+
+  const manualActions = buildManualRemediationActions(checks, input);
+  const actionCount = actions.length;
+  const manualActionCount = manualActions.length;
+  return {
+    status: actionCount > 0 ? 'actionable' : status === 'ok' ? 'none' : 'manual',
+    actionCount,
+    executableCount: actions.filter(function (action) { return action.execute; }).length,
+    dryRunCount: actions.filter(function (action) { return action.dryRun; }).length,
+    manualActionCount,
+    safeToAutoApply: actionCount > 0 && actions.every(function (action) { return action.destructive !== true; }),
+    actions,
+    manualActions,
+    nextAction: actions[0] || manualActions[0]
+  };
+}
+
+function findUnscheduledSources(sourceScheduleReport) {
+  const candidates = [].concat(sourceScheduleReport.skippedSources || [], sourceScheduleReport.sources || []);
+  const seen = {};
+  return candidates.filter(function (source) {
+    const compact = compactSource(source);
+    const key = compact.id || compact.sourceKey;
+    if (!key || seen[key]) return false;
+    seen[key] = true;
+    return compact.collectionStatus === 'unscheduled' ||
+      compact.reason === 'no-schedule' ||
+      compact.reason === 'schedule-disabled';
+  }).map(compactSource).filter(function (source) {
+    return source.id;
+  });
+}
+
+function sourceScheduleRemediationAction(source, checkItem, scope) {
+  const body = {
+    intervalMinutes: 60,
+    runNow: true
+  };
+  const path = '/api/sources/' + encodeURIComponent(source.id) + '/schedule';
+  const command = scopedCommand('configure-source-schedule', {
+    sourceId: source.id,
+    sourceKey: source.sourceKey || scope && scope.sourceKey
+  }) + ' --interval-minutes 60 --run-now true';
+  return {
+    key: 'automation.remediate.source.schedule.' + source.id,
+    checkKey: checkItem.key,
+    type: 'configure-source-schedule',
+    severity: checkItem.status === 'fail' ? 'critical' : 'warning',
+    summary: 'Configure a 60 minute schedule and queue an immediate run for this source.',
+    scope: {
+      sourceId: source.id,
+      sourceKey: source.sourceKey,
+      sourceType: source.sourceType
+    },
+    reason: source.reason || source.collectionStatus || 'unscheduled',
+    destructive: false,
+    dryRun: {
+      method: 'POST',
+      path,
+      body: Object.assign({}, body, {
+        execute: false
+      })
+    },
+    execute: {
+      method: 'POST',
+      path,
+      body: Object.assign({}, body, {
+        execute: true
+      })
+    },
+    command: command,
+    executeCommand: command + ' --execute true'
+  };
+}
+
+function buildManualRemediationActions(checks, input) {
+  return checks.filter(function (item) {
+    return item.status === 'fail' || item.status === 'warn';
+  }).map(function (item) {
+    return manualRemediationAction(item, input);
+  }).filter(Boolean);
+}
+
+function manualRemediationAction(checkItem, input) {
+  if (checkItem.key === 'automation.sources.registered') {
+    return {
+      key: 'automation.manual.sources.registered',
+      checkKey: checkItem.key,
+      severity: 'critical',
+      summary: 'Register at least one source before unattended automation can run.',
+      command: commandForCheck(checkItem, input)
+    };
+  }
+  if (checkItem.key === 'automation.llm.readiness') {
+    return {
+      key: 'automation.manual.llm.readiness',
+      checkKey: checkItem.key,
+      severity: checkItem.status === 'fail' ? 'critical' : 'warning',
+      summary: 'Review LLM provider configuration or run preflight/evaluation before enabling semantic automation.',
+      command: commandForCheck(checkItem, input)
+    };
+  }
+  if (checkItem.key === 'automation.demo.closure') {
+    return {
+      key: 'automation.manual.demo.closure',
+      checkKey: checkItem.key,
+      severity: checkItem.status === 'fail' ? 'critical' : 'warning',
+      summary: 'Run the end-to-end demo cycle and review closure evidence before daily unattended use.',
+      command: commandForCheck(checkItem, input)
+    };
+  }
+  return undefined;
 }
 
 function buildNextActions(status, checks, input) {

@@ -74,6 +74,14 @@ test('automation readiness plan highlights missing schedule, mock LLM, and demo 
   assert.equal(plan.summary.sources.byCollectionStatus.unscheduled, 1);
   assert.equal(plan.summary.representativeSource.status, 'warn');
   assert.equal(plan.automation.workerCommands[0].workerType, 'operations');
+  assert.equal(plan.remediation.status, 'actionable');
+  assert.equal(plan.remediation.actionCount, 1);
+  assert.equal(plan.remediation.safeToAutoApply, true);
+  assert.equal(plan.remediation.actions[0].type, 'configure-source-schedule');
+  assert.equal(plan.remediation.actions[0].dryRun.path, '/api/sources/source-1/schedule');
+  assert.equal(plan.remediation.actions[0].dryRun.body.execute, false);
+  assert.equal(plan.remediation.actions[0].execute.body.execute, true);
+  assert.match(plan.remediation.actions[0].executeCommand, /configure-source-schedule --source-id source-1/);
   assert.equal(plan.checks.find(function (item) {
     return item.key === 'automation.sources.scheduled';
   }).status, 'warn');
@@ -157,6 +165,8 @@ test('automation readiness plan reports unattended ready when all gates are gree
   assert.equal(plan.status, 'ok');
   assert.equal(plan.readyForUnattendedRun, true);
   assert.equal(plan.automation.dueSources[0].id, 'source-1');
+  assert.equal(plan.remediation.status, 'none');
+  assert.equal(plan.remediation.actionCount, 0);
   assert.equal(plan.summary.llm.provider, 'openai-compatible');
   assert.equal(plan.nextActions[0].key, 'automationReadiness.ready');
   assert.match(plan.nextActions[0].recommendedCommand, /dueSourceWorkerMain/);
