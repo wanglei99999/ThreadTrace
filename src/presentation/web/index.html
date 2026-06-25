@@ -110,6 +110,24 @@
       </section>
 
       <section class="view-panel hidden" id="systemView">
+        <div class="system-overview">
+          <div class="system-overview-copy">
+            <span>System workbench</span>
+            <h3>运行、接入、事件和发布都在这里收口。</h3>
+            <p>先看运行体征，再进入来源采集、事件处理、审查动作和部署门禁。</p>
+          </div>
+          <nav class="system-rail" aria-label="System sections">
+            <a href="#system-collection">来源采集</a>
+            <a href="#system-operations">运行体征</a>
+            <a href="#system-events">事件审查</a>
+            <a href="#system-rollout">发布资源</a>
+          </nav>
+        </div>
+        <div class="status-list system-status-grid" id="systemStatus"></div>
+        <div class="system-zone-title" id="system-collection">
+          <span>Collection</span>
+          <strong>来源采集与接入</strong>
+        </div>
         <form id="taskForm" class="control-strip">
           <label class="grow">
             <span>保存页目录</span>
@@ -211,10 +229,17 @@
           <button type="submit">接入预检</button>
         </form>
         <div class="result-grid task-grid" id="sourceOnboardingRecipe"></div>
-        <div class="status-list" id="systemStatus"></div>
+        <div class="system-zone-title" id="system-operations">
+          <span>Operations</span>
+          <strong>运行队列、worker 和 runbook</strong>
+        </div>
+        <div class="result-grid task-grid system-runbook-grid" id="runbookResult"></div>
         <div class="result-grid task-grid" id="sourceOperationsResult"></div>
         <div class="result-grid task-grid" id="sourceOperationActionResult"></div>
-        <div class="result-grid task-grid" id="runbookResult"></div>
+        <div class="system-zone-title" id="system-events">
+          <span>Events</span>
+          <strong>通知事件与人工审查</strong>
+        </div>
         <form id="eventFilterForm" class="control-strip">
           <label class="compact">
             <span>事件范围</span>
@@ -309,6 +334,10 @@
           <button id="synthesizeReviewResultEventsButton" class="secondary-button" type="button">Review alert check</button>
           <button id="createReviewResultEventsButton" class="secondary-button" type="button">Create review alerts</button>
         </form>
+        <div class="system-zone-title" id="system-rollout">
+          <span>Rollout</span>
+          <strong>连接器、资源和部署门禁</strong>
+        </div>
         <form id="connectorModuleValidationForm" class="control-strip">
           <label class="grow">
             <span>Connector 模块路径</span>
