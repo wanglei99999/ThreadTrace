@@ -2871,11 +2871,16 @@ test('http server runs source demo cycle and exposes web controls', async functi
     assert.equal(result.pipeline.completedCount, 1);
     assert.equal(result.sourceChangedEvents.length, 1);
     assert.equal(result.drilldown.sourceFound, true);
+    assert.equal(result.closure.status, 'review');
+    assert.equal(result.closure.readyForDailyUse, false);
+    assert.deepEqual(result.closure.summary.missingStepKeys, ['operator-acknowledgement']);
     assert.ok(openApi.paths['/api/demo/source-cycle']);
     assert.equal(openApi.paths['/api/demo/source-cycle'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/SourceDemoCycleReport');
     assert.ok(openApi.components.schemas.SourceDemoCycleReport);
+    assert.ok(openApi.components.schemas.SourceDemoCycleReport.properties.closure);
     assert.match(homeHtml, /runDemoCycleButton/);
     assert.match(webAppJs, /renderSourceDemoCycleReport/);
+    assert.match(webAppJs, /renderDemoCycleClosure/);
   } finally {
     await close(server);
   }

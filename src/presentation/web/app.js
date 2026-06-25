@@ -3693,6 +3693,7 @@ function renderSourceDemoCycleReport(report) {
     ].join(''), 'wide'),
     panel('Source changed events', renderDemoCycleEvents(report.sourceChangedEvents || []), 'wide'),
     acknowledgement.status ? panel('Acknowledgement', renderDemoCycleAcknowledgement(acknowledgement), 'wide') : '',
+    report.closure ? panel('Demo cycle closure', renderDemoCycleClosure(report.closure), 'wide') : '',
     report.drilldown ? panel('Demo cycle drilldown', [
       metric('Status', report.drilldown.status || 'unknown'),
       metric('Latest event', report.drilldown.health && report.drilldown.health.events && report.drilldown.health.events.latest ? report.drilldown.health.events.latest.id : 'none'),
@@ -3703,6 +3704,38 @@ function renderSourceDemoCycleReport(report) {
       return (action.severity || 'info') + ' | ' + (action.key || 'action') + ' | ' + (action.summary || '') + ' | ' + (action.commands || []).join(' | ');
     })), 'wide')
   ].join('');
+}
+
+function renderDemoCycleClosure(closure) {
+  const summary = closure.summary || {};
+  const steps = closure.steps || [];
+  return [
+    '<div class="summary-strip">',
+    summaryTile('Status', closure.status || 'unknown', statusVariant(closure.status)),
+    summaryTile('Ready', closure.readyForDailyUse ? 'yes' : 'no', closure.readyForDailyUse ? 'ok' : 'warn'),
+    summaryTile('Score', String(summary.readinessScore || 0)),
+    summaryTile('Done', String(summary.completed || 0) + '/' + String(summary.total || 0), summary.completed === summary.total ? 'ok' : 'warn'),
+    summaryTile('Missing', String((summary.missingStepKeys || []).length), (summary.missingStepKeys || []).length > 0 ? 'warn' : 'ok'),
+    '</div>',
+    metric('Next', closure.recommendedNextAction || 'none'),
+    '<div class="source-operation-result-list">',
+    steps.map(renderDemoCycleClosureStep).join(''),
+    '</div>'
+  ].join('');
+}
+
+function renderDemoCycleClosureStep(step) {
+  const evidenceText = (step.evidence || []).map(function (item) {
+    return item.key + '=' + item.value;
+  }).join(' | ');
+  return '<div class="action-row ops-row"><span>' +
+    '<strong>' + escapeHtml(step.title || step.key || 'Closure step') + '</strong>' +
+    '<small>' + escapeHtml(step.summary || '') + '</small>' +
+    (evidenceText ? '<small>' + escapeHtml(evidenceText) + '</small>' : '') +
+    (step.nextAction ? '<small>' + escapeHtml('next=' + step.nextAction) + '</small>' : '') +
+    '</span>' +
+    statusBadge(step.status || 'unknown', statusVariant(step.status)) +
+    '</div>';
 }
 
 function renderDemoCycleEvents(events) {
@@ -5512,7 +5545,7 @@ function statusBadge(label, variant) {
 function statusVariant(status) {
   if (status === 'ok' || status === 'noop') return 'ok';
   if (status === 'fail' || status === 'critical') return 'fail';
-  if (status === 'warn' || status === 'warning' || status === 'actionable' || status === 'preview') return 'warn';
+  if (status === 'warn' || status === 'warning' || status === 'review' || status === 'actionable' || status === 'preview') return 'warn';
   return 'muted';
 }
 

@@ -2725,6 +2725,10 @@ function main(argv) {
       console.log('Sources: total=' + result.summary.sourceCount + ', due=' + result.summary.dueCount + ', completed=' + result.summary.completedCount + ', failed=' + result.summary.failedCount);
       console.log('Source changed events: ' + result.summary.sourceChangedEventCount);
       console.log('Open events: ' + (result.summary.openEventCount === undefined ? 'unknown' : result.summary.openEventCount));
+      if (result.closure) {
+        const closureSummary = result.closure.summary || {};
+        console.log('Closure: ' + result.closure.status + ', ready=' + Boolean(result.closure.readyForDailyUse) + ', score=' + (closureSummary.readinessScore || 0) + ', missing=' + (closureSummary.missingStepKeys || []).join(','));
+      }
       if (result.acknowledgement) {
         console.log('Acknowledgement: ' + result.acknowledgement.status + ', acknowledged=' + result.acknowledgement.acknowledgedCount + ', candidates=' + result.acknowledgement.candidateCount);
       }
@@ -2732,6 +2736,9 @@ function main(argv) {
         console.log('event\t' + event.id + '\t' + event.deliveryStatus + '\t' + (event.acknowledgedAt || 'open') + '\t' + event.summary);
       });
       result.nextActions.forEach(printActionWithDetails);
+      if (result.closure && result.closure.recommendedNextAction) {
+        console.log('Closure next: ' + result.closure.recommendedNextAction);
+      }
       if (result.status === 'fail') process.exitCode = 2;
       if (result.status === 'warn' || result.status === 'review') process.exitCode = 1;
     }).catch(function (error) {

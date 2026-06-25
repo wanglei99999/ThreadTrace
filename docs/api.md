@@ -241,7 +241,7 @@ Request body:
 - `acknowledgeEvents`: optional boolean. When true, the response includes an acknowledgement step for generated `source-changed` events.
 - `executeAcknowledgement`: optional boolean. Defaults to false so acknowledgement is preview-only unless explicitly executed.
 
-The response includes a durable `source-demo-cycle` task, the due pipeline batch, generated source-changed events, optional acknowledgement result, source drill-down/timeline evidence, and next actions. HTTP `503` means at least one due source pipeline failed.
+The response includes a durable `source-demo-cycle` task, the due pipeline batch, generated source-changed events, optional acknowledgement result, source drill-down/timeline evidence, a `closure` readiness report, and next actions. The closure report scores the required loop steps: due pipeline, source scope, semantic enrichment, source-changed event evidence, operator drill-down evidence, and operator acknowledgement. A cycle that generates events but does not execute acknowledgement remains `closure.status: "review"` with `readyForDailyUse: false`; executing acknowledgement for the generated events promotes the closure to `ok`. HTTP `503` means at least one due source pipeline failed.
 
 ### `POST /api/interpret-text`
 

@@ -3451,6 +3451,58 @@ function createOpenApiSpec() {
               type: 'object',
               additionalProperties: true
             },
+            closure: {
+              type: 'object',
+              properties: {
+                status: { type: 'string', enum: ['ok', 'review', 'fail'] },
+                readyForDailyUse: { type: 'boolean', example: false },
+                summary: {
+                  type: 'object',
+                  properties: {
+                    total: { type: 'number', example: 6 },
+                    completed: { type: 'number', example: 5 },
+                    warning: { type: 'number', example: 1 },
+                    noop: { type: 'number', example: 0 },
+                    failed: { type: 'number', example: 0 },
+                    readinessScore: { type: 'number', example: 83 },
+                    missingStepKeys: {
+                      type: 'array',
+                      items: { type: 'string' },
+                      example: ['operator-acknowledgement']
+                    }
+                  },
+                  additionalProperties: true
+                },
+                steps: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      key: { type: 'string', example: 'operator-acknowledgement' },
+                      title: { type: 'string', example: 'Operator acknowledgement' },
+                      status: { type: 'string', enum: ['ok', 'warn', 'fail', 'noop'] },
+                      required: { type: 'boolean', example: true },
+                      summary: { type: 'string' },
+                      evidence: {
+                        type: 'array',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            key: { type: 'string' },
+                            value: { type: 'string' }
+                          },
+                          additionalProperties: true
+                        }
+                      },
+                      nextAction: { type: 'string' }
+                    },
+                    additionalProperties: true
+                  }
+                },
+                recommendedNextAction: { type: 'string' }
+              },
+              additionalProperties: true
+            },
             drilldown: { $ref: '#/components/schemas/SourceOperationsDrilldown' },
             nextActions: {
               type: 'array',
