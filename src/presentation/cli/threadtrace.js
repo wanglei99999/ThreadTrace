@@ -2067,6 +2067,21 @@ function main(argv) {
     return;
   }
 
+  if (command === 'connector-package-manifest') {
+    const result = runtime.getConnectorPackageRecommendedManifest({
+      modulePath: options.modulePath || options.inputFile || options.input,
+      packageName: options.packageName,
+      sourceType: options.sourceType,
+      now: options.now
+    });
+    if (isTruthyOption(options.json)) {
+      console.log(JSON.stringify(result, null, 2));
+      return;
+    }
+    console.log(JSON.stringify(result.manifest, null, 2));
+    return;
+  }
+
   if (command === 'thread-snapshot-contract') {
     console.log(JSON.stringify(runtime.getThreadSnapshotJsonContract(), null, 2));
     return;
@@ -2593,6 +2608,9 @@ function parseArgs(args) {
     } else if (item === '--source-type') {
       options.sourceType = args[index + 1];
       index += 1;
+    } else if (item === '--package-name') {
+      options.packageName = args[index + 1];
+      index += 1;
     } else if (item === '--name') {
       options.name = args[index + 1];
       index += 1;
@@ -3015,6 +3033,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js source-diagnostics [--forum nga] [--enabled true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-type-readiness [--forum nga] [--source-type type] [--module-path file] [--json true] [--enabled true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js connector-catalog [--source-type type] [--module-path file] [--json true] [--now iso]');
+  console.log('  node src/presentation/cli/threadtrace.js connector-package-manifest --module-path file [--package-name name] [--source-type type] [--json true] [--now iso]');
   console.log('  node src/presentation/cli/threadtrace.js thread-snapshot-contract');
   console.log('  node src/presentation/cli/threadtrace.js connector-module-contract');
   console.log('  node src/presentation/cli/threadtrace.js validate-connector-module --module-path file [--now iso]');

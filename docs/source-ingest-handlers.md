@@ -126,12 +126,15 @@ Package-style connectors can also declare `threadtraceConnector` metadata in `pa
     ],
     "capabilities": {
       "acceptsCanonicalSnapshot": true
+    },
+    "rollout": {
+      "recommendedManifest": "../example-rollout-manifest.sample.json"
     }
   }
 }
 ```
 
-Module validation loads this manifest from the package next to the connector entrypoint and verifies that declared `sourceTypes` / adapters match the runtime registrations. This keeps package documentation, onboarding UI, rollout plans, and actual code aligned.
+Module validation loads this manifest from the package next to the connector entrypoint and verifies that declared `sourceTypes` / adapters match the runtime registrations. This keeps package documentation, onboarding UI, rollout plans, and actual code aligned. When `rollout.recommendedManifest` is present, operators can load that JSON directly through the API, CLI, or Web onboarding console instead of hand-copying rollout templates.
 
 Fetch the machine-readable connector module contract before implementing a custom package:
 
@@ -156,6 +159,18 @@ content-type: application/json
 {
   "modulePath": "D:/connectors/custom-forum.cjs"
 }
+```
+
+Load a package's recommended rollout manifest for automation or operator handoff:
+
+```powershell
+node src/presentation/cli/threadtrace.js connector-package-manifest `
+  --module-path docs/examples/rss-archive-connector-package/index.cjs `
+  --source-type rss-archive-normalized-feed
+```
+
+```http
+GET /api/connectors/packages/recommended-manifest?modulePath=docs/examples/rss-archive-connector-package/index.cjs&sourceType=rss-archive-normalized-feed
 ```
 
 Validation and onboarding preflight reload the module file for each run, so connector authors can edit a module and immediately re-run the check without restarting ThreadTrace.

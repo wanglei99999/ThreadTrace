@@ -15,6 +15,8 @@ The report does not register sources, mutate runtime connector registries, write
 
 Before building a manifest from scratch, inspect `GET /api/connectors/catalog` and use the selected source type's `onboardingRecipe`. The recipe exposes required location fields, adapter guidance, a recommended catalog -> preflight -> dry-run -> rollout flow, and a conservative manifest template that can be passed into rollout planning after operators fill real source values.
 
+Package-style connectors may also publish `threadtraceConnector.rollout.recommendedManifest`. Use it when available: it is the package author's checked-in rollout example and can be loaded by Web onboarding, `GET /api/connectors/packages/recommended-manifest`, or `connector-package-manifest`.
+
 Module validation in the plan checks both loading and contract shape. A module must register at least one adapter or handler, keep adapter `sourceKey` and handler `sourceType` values unique, and expose the required metadata used by UI and operations tooling (`displayName` for adapters, `description` and `locationSchema.properties` for handlers). If the connector package declares `package.json.threadtraceConnector`, validation also checks that declared `sourceTypes` and adapters match runtime registrations. The returned `contractSummary` and `packageManifests` are safe to show in release notes or operator handoffs.
 
 ## CLI
@@ -37,6 +39,14 @@ node src/presentation/cli/threadtrace.js connector-rollout-plan `
   --module-path docs/examples/external-normalized-feed-connector.cjs `
   --input-file docs/examples/external-thread.sample.json `
   --dry-run-ingest true
+```
+
+Load a package-authored rollout manifest:
+
+```powershell
+node src/presentation/cli/threadtrace.js connector-package-manifest `
+  --module-path docs/examples/rss-archive-connector-package/index.cjs `
+  --source-type rss-archive-normalized-feed
 ```
 
 The command exits with code `2` when any rollout step has `status=fail`, which makes it suitable for release gates and scripted operator checklists.

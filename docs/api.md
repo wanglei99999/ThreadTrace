@@ -38,6 +38,14 @@ When connector modules are loaded from package-style connectors, the response al
 
 `onboardingRecipe` exposes required and optional location fields, adapter guidance, the recommended catalog -> preflight -> dry-run -> rollout flow, and a conservative `rolloutManifestTemplate` using `ingest.dryRun=true` plus the `operations-worker` topology.
 
+### `GET /api/connectors/packages/recommended-manifest`
+
+Loads the JSON rollout manifest referenced by a connector package's `threadtraceConnector.rollout.recommendedManifest`.
+
+Required query parameter: `modulePath`. Optional filters: `packageName`, `sourceType`, and `now`.
+
+The response includes package provenance (`packageName`, `packageVersion`, `modulePath`, `packagePath`), the resolved `manifestPath`, the original `recommendedManifest` value, and the parsed `manifest` object. The path resolver only allows manifests inside the current ThreadTrace workspace or the connector package directory, so this endpoint is safe for operator tooling without becoming a general file reader.
+
 ### `GET /api/connectors/source-type-readiness`
 
 Groups connector readiness by `sourceType`. Optional filters: `sourceKey` / `forum`, `sourceType`, `enabled`, `modulePath`, `limit`, `now`, and `storeDir`.

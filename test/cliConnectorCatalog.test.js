@@ -67,3 +67,61 @@ test('CLI prints connector catalog as JSON with external module recipes', async 
   }));
   assert.equal(result.stderr, '');
 });
+
+test('CLI prints connector package recommended manifest JSON', async function () {
+  const root = path.resolve(__dirname, '..');
+  const scriptPath = path.join(root, 'src', 'presentation', 'cli', 'threadtrace.js');
+
+  const result = await execFileAsync(process.execPath, [
+    scriptPath,
+    'connector-package-manifest',
+    '--module-path',
+    'docs/examples/rss-archive-connector-package/index.cjs',
+    '--package-name',
+    '@threadtrace/example-rss-archive-connector-package',
+    '--source-type',
+    'rss-archive-normalized-feed'
+  ], {
+    cwd: root,
+    timeout: 20000
+  });
+  const manifest = JSON.parse(result.stdout);
+
+  assert.equal(manifest.name, 'rss-archive-normalized-feed-rollout');
+  assert.equal(manifest.source.sourceKey, 'rss-archive');
+  assert.equal(manifest.source.sourceType, 'rss-archive-normalized-feed');
+  assert.equal(manifest.source.location.inputFile, 'docs/examples/external-thread.sample.json');
+  assert.equal(manifest.connector.modulePath, 'docs/examples/rss-archive-connector-package/index.cjs');
+  assert.equal(result.stderr, '');
+});
+
+test('CLI prints connector package recommended manifest envelope as JSON', async function () {
+  const root = path.resolve(__dirname, '..');
+  const scriptPath = path.join(root, 'src', 'presentation', 'cli', 'threadtrace.js');
+
+  const result = await execFileAsync(process.execPath, [
+    scriptPath,
+    'connector-package-manifest',
+    '--module-path',
+    'docs/examples/rss-archive-connector-package/index.cjs',
+    '--source-type',
+    'rss-archive-normalized-feed',
+    '--json',
+    'true',
+    '--now',
+    '2026-06-25T10:00:00.000Z'
+  ], {
+    cwd: root,
+    timeout: 20000
+  });
+  const envelope = JSON.parse(result.stdout);
+
+  assert.equal(envelope.generatedAt, '2026-06-25T10:00:00.000Z');
+  assert.equal(envelope.status, 'ok');
+  assert.equal(envelope.packageName, '@threadtrace/example-rss-archive-connector-package');
+  assert.equal(envelope.sourceType, 'rss-archive-normalized-feed');
+  assert.equal(envelope.recommendedManifest, '../rss-archive-rollout-manifest.sample.json');
+  assert.equal(envelope.manifest.source.sourceType, 'rss-archive-normalized-feed');
+  assert.match(envelope.manifestPath, /rss-archive-rollout-manifest\.sample\.json$/);
+  assert.equal(result.stderr, '');
+});
