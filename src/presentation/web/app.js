@@ -4844,28 +4844,23 @@ function renderSourceOperations(result) {
   const sourceTypeOperationsAlertableCount = countAlertableSourceTypeOperations(sourceTypeOperations.sourceTypes || []);
   const collectionSummary = schedule.summary && schedule.summary.byCollectionStatus || {};
   const panels = [
-    panel('Operator queue', renderSourceOperationsCockpit(cockpit), 'wide'),
-    panel('Source operations', [
-      '<div class="summary-strip">',
-      summaryTile('Lifecycle', lifecycle.status || 'unknown', statusVariant(lifecycle.status)),
-      summaryTile('Schedule', schedule.status || 'unknown', statusVariant(schedule.status)),
-      summaryTile('Enabled', String(lifecycleSummary.enabled || 0) + '/' + String(lifecycleSummary.total || 0)),
-      summaryTile('Due now', String(scheduleSummary.due || 0)),
-      summaryTile('Skipped', String(scheduleSummary.skipped || 0)),
-      summaryTile('Plan retry', String(collectionSummary['retry-waiting'] || 0), (collectionSummary['retry-waiting'] || 0) > 0 ? 'warn' : 'ok'),
-      summaryTile('Unscheduled', String(collectionSummary.unscheduled || 0), (collectionSummary.unscheduled || 0) > 0 ? 'warn' : 'ok'),
-      summaryTile('Retry wait', String(lifecycleSummary.failureRetryWaiting || 0), lifecycleSummary.failureRetryWaiting > 0 ? 'warn' : 'ok'),
-      summaryTile('Disable blocked', String(lifecycleSummary.disableBlocked || 0), lifecycleSummary.disableBlocked > 0 ? 'warn' : 'ok'),
-      summaryTile('Alertable', String(alertableCount), alertableCount > 0 ? 'warn' : 'ok'),
-      summaryTile('Source alerts', String(sourceAttentionAlertableCount), sourceAttentionAlertableCount > 0 ? 'warn' : 'ok'),
-      summaryTile('Runbook', String(runbook.actionCount || actions.length || 0), statusVariant(runbook.status)),
-      '</div>',
-      '<div class="tag-list reason-tags">',
-      renderReasonTags(scheduleSummary.byReason),
-      '</div>',
-      renderRunbookEventControls(alertableCount),
-      renderSourceAttentionEventControls(sourceAttentionAlertableCount),
-      renderSourceTypeOperationsEventControls(sourceTypeOperationsAlertableCount)
+    renderSourceOperationsHero({
+      cockpit,
+      lifecycle,
+      schedule,
+      runbook,
+      attentionItems,
+      sourceTypeOperations,
+      lifecycleSummary,
+      scheduleSummary,
+      collectionSummary,
+      alertableCount,
+      sourceAttentionAlertableCount,
+      sourceTypeOperationsAlertableCount
+    }),
+    panel('Operator queue detail', [
+      renderSourceOperationsCockpitRows(cockpit.queue || []),
+      renderSourceOperationsCockpitNextActions(cockpit.nextActions || [])
     ].join(''), 'wide'),
     panel('Collection status', renderCollectionStatusOverview(schedule), 'wide'),
     panel('Collection actions', renderCollectionActionControls(schedule), 'wide'),
@@ -4882,6 +4877,120 @@ function renderSourceOperations(result) {
     panels.push(panel('Source runbook actions', renderRunbookActionRows(sourceActions), 'wide'));
   }
   return panels.join('');
+}
+
+function renderSourceOperationsHero(view) {
+  const cockpit = view.cockpit || {};
+  const lifecycle = view.lifecycle || {};
+  const schedule = view.schedule || {};
+  const runbook = view.runbook || {};
+  const summary = cockpit.summary || {};
+  const lifecycleSummary = view.lifecycleSummary || {};
+  const scheduleSummary = view.scheduleSummary || {};
+  const collectionSummary = view.collectionSummary || {};
+  const queue = cockpit.queue || [];
+  const alertableCount = view.alertableCount || 0;
+  const sourceAttentionAlertableCount = view.sourceAttentionAlertableCount || 0;
+  const sourceTypeOperationsAlertableCount = view.sourceTypeOperationsAlertableCount || 0;
+  const headline = sourceOperationsHeadline(cockpit, schedule, lifecycle);
+  return [
+    '<article class="source-ops-hero">',
+    '<section class="source-ops-main">',
+    '<div class="source-ops-header">',
+    '<span class="source-ops-label">Source runtime</span>',
+    statusBadge(cockpit.status || lifecycle.status || schedule.status || 'unknown', statusVariant(cockpit.status || lifecycle.status || schedule.status)),
+    '</div>',
+    '<h3>' + escapeHtml(headline) + '</h3>',
+    '<p>' + escapeHtml([
+      'lifecycle=' + (lifecycle.status || 'unknown'),
+      'schedule=' + (schedule.status || 'unknown'),
+      'runbook=' + (runbook.status || 'unknown'),
+      'enabled=' + String(lifecycleSummary.enabled || 0) + '/' + String(lifecycleSummary.total || 0)
+    ].join(' | ')) + '</p>',
+    '<div class="source-ops-actions button-group">' +
+      sourceOpsAlertControl('Runbook check', 'Create runbook alerts', 'synthesize-runbook-events', alertableCount, 'data-limit="100"') +
+      sourceOpsAlertControl('Attention check', 'Create attention alerts', 'synthesize-source-attention-events', sourceAttentionAlertableCount, 'data-limit="100" data-attention-limit="100" data-priority-score-threshold="70"') +
+      sourceOpsAlertControl('Type check', 'Create type alerts', 'synthesize-source-type-operations-events', sourceTypeOperationsAlertableCount, 'data-limit="100" data-source-type-limit="100" data-attention-limit="100" data-priority-score-threshold="70"') +
+    '</div>',
+    '</section>',
+    '<aside class="source-ops-signals">',
+    sourceOpsSignal('Queue', summary.total || 0, statusVariant(cockpit.status)),
+    sourceOpsSignal('Critical', summary.fail || 0, (summary.fail || 0) > 0 ? 'fail' : 'ok'),
+    sourceOpsSignal('Due now', scheduleSummary.due || 0, (scheduleSummary.due || 0) > 0 ? 'warn' : 'ok'),
+    sourceOpsSignal('Runnable', summary.runnable || 0, (summary.runnable || 0) > 0 ? 'ok' : 'muted'),
+    sourceOpsSignal('Retry wait', lifecycleSummary.failureRetryWaiting || 0, (lifecycleSummary.failureRetryWaiting || 0) > 0 ? 'warn' : 'ok'),
+    sourceOpsSignal('Unscheduled', collectionSummary.unscheduled || 0, (collectionSummary.unscheduled || 0) > 0 ? 'warn' : 'ok'),
+    '</aside>',
+    '<section class="source-ops-queue">',
+    '<span>Hot queue</span>',
+    renderSourceOperationsHeroQueue(queue),
+    '</section>',
+    '<section class="source-ops-foot">',
+    '<span>Automation pressure</span>',
+    '<strong>' + escapeHtml([
+      'runbook=' + alertableCount,
+      'sources=' + sourceAttentionAlertableCount,
+      'types=' + sourceTypeOperationsAlertableCount
+    ].join(' | ')) + '</strong>',
+    '<small>' + escapeHtml([
+      'warnings=' + (summary.warning || 0),
+      'skipped=' + (scheduleSummary.skipped || 0),
+      'planRetry=' + (collectionSummary['retry-waiting'] || 0),
+      'disableBlocked=' + (lifecycleSummary.disableBlocked || 0)
+    ].join(' | ')) + '</small>',
+    '</section>',
+    '</article>'
+  ].join('');
+}
+
+function sourceOperationsHeadline(cockpit, schedule, lifecycle) {
+  const summary = cockpit.summary || {};
+  const scheduleSummary = schedule.summary || {};
+  const lifecycleSummary = lifecycle.summary || {};
+  if ((summary.fail || 0) > 0) return 'Critical source work is waiting for a plan.';
+  if ((scheduleSummary.due || 0) > 0) return 'Sources are due now; choose the next run deliberately.';
+  if ((lifecycleSummary.failureRetryWaiting || 0) > 0) return 'Retry windows are open, with recovery work queued.';
+  if ((summary.warning || 0) > 0) return 'Source runtime is stable, but needs attention.';
+  return 'Source runtime is quiet and ready for the next signal.';
+}
+
+function sourceOpsSignal(label, value, variant) {
+  return '<div class="source-ops-signal ' + statusClassName(variant) + '"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(value) + '</strong></div>';
+}
+
+function renderSourceOperationsHeroQueue(queue) {
+  if (!queue || queue.length === 0) {
+    return '<div class="source-ops-empty">No operator queue items.</div>';
+  }
+  return queue.slice(0, 3).map(function (item) {
+    const source = item.source || {};
+    const details = [
+      item.kind,
+      item.scope,
+      'priority=' + (item.priorityScore || 0),
+      item.signalCount !== undefined ? 'signals=' + item.signalCount : undefined,
+      item.recommendedNextAction
+    ].filter(Boolean).join(' | ');
+    return '<div class="source-ops-queue-row">' +
+      '<div>' +
+      '<strong>' + escapeHtml('#' + (item.rank || '?') + ' ' + (item.title || item.id || 'Queue item')) + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '</div>' +
+      '<span class="button-group source-op-buttons">' +
+      renderSourceOperationsCockpitControls(item, source) +
+      statusBadge(item.severity || 'info', attentionStatusVariant(item.severity)) +
+      '</span>' +
+      '</div>';
+  }).join('');
+}
+
+function sourceOpsAlertControl(previewLabel, executeLabel, action, alertableCount, attrs) {
+  const disabled = alertableCount > 0 ? '' : ' disabled';
+  const safeAttrs = attrs || '';
+  return '<span class="source-ops-alert-control">' +
+    '<button class="inline-button secondary-inline-button" type="button" data-action="' + escapeHtml(action) + '" data-execute="false" ' + safeAttrs + '>' + escapeHtml(previewLabel) + '</button>' +
+    '<button class="inline-button warning-inline-button" type="button" data-action="' + escapeHtml(action) + '" data-execute="true" ' + safeAttrs + disabled + '>' + escapeHtml(executeLabel) + '</button>' +
+    '</span>';
 }
 
 function renderSourceOperationsCockpit(cockpit) {
