@@ -14,6 +14,10 @@ const { getForumAdapter } = require('../src/infrastructure/forum-adapters/regist
 const { createLlmProvider } = require('../src/infrastructure/llm/llmProviderFactory');
 const { createMockLlmProvider } = require('../src/infrastructure/llm/mockLlmProvider');
 const { createOpenAiCompatibleLlmProvider } = require('../src/infrastructure/llm/openAiCompatibleLlmProvider');
+const {
+  buildLlmProviderPreflightFailure,
+  runLlmProviderPreflight
+} = require('../src/application/use-cases/runLlmProviderPreflight');
 const { createThreadTraceRuntime } = require('../src/runtime/threadTraceRuntime');
 
 test('mock LLM provider enriches reports with evidence-grounded insights', async function () {
@@ -229,4 +233,73 @@ test('LLM provider factory selects openai-compatible from environment', async fu
   });
 
   assert.equal(result.output.summary, 'factory');
+});
+
+test('LLM provider preflight validates the mock provider sample', async function () {
+  const report = await runLlmProviderPreflight({
+    llmProvider: createMockLlmProvider(),
+    providerKey: 'mock',
+    now: '2026-06-25T10:00:00.000Z',
+    traceId: 'preflight-test'
+  });
+
+  assert.equal(report.status, 'ok');
+  assert.equal(report.provider, 'mock');
+  assert.equal(report.traceId, 'preflight-test');
+  assert.equal(report.validation.status, 'ok');
+  assert.equal(report.outputPreview.entityInsightCount, 1);
+  assert.equal(report.checks.find(function (check) {
+    return check.key === 'llm.semantic.validation';
+  }).status, 'ok');
+});
+
+test('runtime exposes LLM provider preflight', async function () {
+  const runtime = createThreadTraceRuntime({
+    llmProvider: createMockLlmProvider()
+  });
+
+  const report = await runtime.runLlmProviderPreflight({
+    provider: 'mock',
+    now: '2026-06-25T10:00:00.000Z'
+  });
+
+  assert.equal(report.status, 'ok');
+  assert.equal(report.provider, 'mock');
+  assert.equal(report.validation.status, 'ok');
+});
+
+test('LLM provider preflight reports invalid structured output', async function () {
+  const report = await runLlmProviderPreflight({
+    providerKey: 'broken',
+    llmProvider: {
+      async completeStructured() {
+        return {
+          provider: 'broken',
+          output: {
+            summary: 'missing required arrays'
+          }
+        };
+      }
+    },
+    now: '2026-06-25T10:00:00.000Z'
+  });
+
+  assert.equal(report.status, 'fail');
+  assert.equal(report.validation.status, 'fail');
+  assert.match(report.error.message, /Semantic enrichment output validation failed/);
+  assert.equal(report.nextActions[0].key, 'llm.preflight.fix');
+});
+
+test('LLM provider preflight can report provider creation failures', function () {
+  const report = buildLlmProviderPreflightFailure({
+    providerKey: 'openai-compatible',
+    now: '2026-06-25T10:00:00.000Z',
+    error: new Error('missing api key')
+  });
+
+  assert.equal(report.status, 'fail');
+  assert.equal(report.provider, 'openai-compatible');
+  assert.equal(report.checks[0].key, 'llm.provider.created');
+  assert.equal(report.checks[0].status, 'fail');
+  assert.match(report.error.message, /missing api key/);
 });

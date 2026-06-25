@@ -44,6 +44,10 @@ const { getNotificationSynthesisPolicyReport } = require('../application/use-cas
 const { fetchAndStoreThreadPage } = require('../application/use-cases/fetchAndStoreThreadPage');
 const { enrichAnalysisReportWithLlm } = require('../application/use-cases/enrichAnalysisReportWithLlm');
 const { runSemanticEnrichmentTask } = require('../application/use-cases/runSemanticEnrichmentTask');
+const {
+  buildLlmProviderPreflightFailure,
+  runLlmProviderPreflight
+} = require('../application/use-cases/runLlmProviderPreflight');
 const { runRolloutManifestApplyTask } = require('../application/use-cases/runRolloutManifestApplyTask');
 const { disableTrackedSource } = require('../application/use-cases/disableTrackedSource');
 const { runDisableTrackedSourceTask } = require('../application/use-cases/runDisableTrackedSourceTask');
@@ -1167,6 +1171,29 @@ function createThreadTraceRuntime(options) {
         requestId: safeRequest.requestId,
         idempotencyKey: safeRequest.idempotencyKey
       });
+    },
+
+    async runLlmProviderPreflight(request) {
+      const safeRequest = request || {};
+      const providerKey = safeRequest.provider || runtimeConfig.llm.provider || 'mock';
+      try {
+        return runLlmProviderPreflight({
+          llmProvider: createLlmProviderFor(Object.assign({}, safeRequest, {
+            provider: providerKey
+          })),
+          providerKey,
+          traceId: safeRequest.traceId,
+          input: safeRequest.input,
+          now: safeRequest.now
+        });
+      } catch (error) {
+        return buildLlmProviderPreflightFailure({
+          providerKey,
+          traceId: safeRequest.traceId,
+          now: safeRequest.now,
+          error
+        });
+      }
     },
 
     async getOperationalOverview(request) {

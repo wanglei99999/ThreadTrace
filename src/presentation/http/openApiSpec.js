@@ -621,6 +621,45 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/llm/preflight': {
+        post: {
+          summary: 'Run an LLM provider preflight sample and validate structured output',
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    provider: { type: 'string', example: 'mock' },
+                    traceId: { type: 'string', example: 'manual-llm-preflight' },
+                    now: { type: 'string', example: '2026-06-25T10:00:00.000Z' },
+                    input: { type: 'object', additionalProperties: true }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            200: {
+              description: 'Provider returned valid semantic enrichment JSON',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/LlmProviderPreflightReport' }
+                }
+              }
+            },
+            503: {
+              description: 'Provider configuration, call, or structured output validation failed',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/LlmProviderPreflightReport' }
+                }
+              }
+            }
+          }
+        }
+      },
       '/api/interpret-text': {
         post: {
           summary: 'Restore context for a new post text',
@@ -3106,6 +3145,36 @@ function createOpenApiSpec() {
     },
     components: {
       schemas: {
+        LlmProviderPreflightReport: {
+          type: 'object',
+          properties: {
+            generatedAt: { type: 'string', example: '2026-06-25T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            provider: { type: 'string', example: 'mock' },
+            traceId: { type: 'string', example: 'llm-preflight:mock:2026-06-25T10:00:00.000Z' },
+            task: { type: 'string', example: 'thread-history-semantic-enrichment' },
+            schemaVersion: { type: 'string', example: 'semantic-enrichment.v1' },
+            checks: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  key: { type: 'string', example: 'llm.semantic.validation' },
+                  status: { type: 'string', example: 'ok' },
+                  summary: { type: 'string' }
+                }
+              }
+            },
+            validation: { type: 'object', additionalProperties: true },
+            usage: { type: 'object', additionalProperties: true },
+            outputPreview: { type: 'object', additionalProperties: true },
+            error: { type: 'object', additionalProperties: true },
+            nextActions: {
+              type: 'array',
+              items: { type: 'object', additionalProperties: true }
+            }
+          }
+        },
         SourceScope: {
           type: 'object',
           properties: {

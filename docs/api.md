@@ -192,6 +192,18 @@ Dry-runs or executes synthesis of open durable author review queue items into no
 
 Optional filters: `sourceKey` / `forum`, `sourceThreadId`, `status`, `type`, `priority`, `limit`, `staleLimit`, `resolveStale`, `now`, and `storeDir`. By default, stale `author-review-queue` events in the same filter scope are marked `resolved` when the underlying queue item is no longer open. Operator-acknowledged or already delivered events are skipped for audit safety.
 
+### `POST /api/llm/preflight`
+
+Runs a tiny semantic-enrichment sample through the selected LLM provider and validates the returned JSON with the same `semantic-enrichment.v1` contract used by stored semantic reports.
+
+Request body:
+- `provider`: optional, defaults to the runtime LLM provider.
+- `traceId`: optional audit trace id.
+- `now`: optional fixed timestamp for repeatable reports.
+- `input`: optional custom semantic sample payload.
+
+The response includes `status`, `provider`, `traceId`, `checks`, `validation`, `usage`, `outputPreview`, `error`, and `nextActions`. A failing provider configuration, provider call, or output validation returns HTTP `503` with the same report shape.
+
 ### `POST /api/interpret-text`
 
 对一条新发言做语境还原。

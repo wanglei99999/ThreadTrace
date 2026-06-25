@@ -799,11 +799,27 @@ test('http server exposes semantic enrichment API', async function () {
       provider: 'mock',
       traceId: 'http-trace'
     });
+    const preflight = await postJson(baseUrl + '/api/llm/preflight', {
+      provider: 'mock',
+      traceId: 'http-llm-preflight',
+      now: '2026-06-25T10:00:00.000Z'
+    });
+    const openApi = await getJson(baseUrl + '/openapi.json');
+    const homeHtml = await getText(baseUrl + '/', 'text/html');
+    const webAppJs = await getText(baseUrl + '/app.js', 'text/javascript');
 
     assert.equal(enriched.reportType, 'basic-history');
     assert.equal(enriched.semanticInsights.provider, 'mock');
     assert.equal(enriched.semanticInsights.traceId, 'http-trace');
     assert.ok(enriched.semanticInsights.entityInsights.length >= 1);
+    assert.equal(preflight.status, 'ok');
+    assert.equal(preflight.provider, 'mock');
+    assert.equal(preflight.validation.status, 'ok');
+    assert.ok(openApi.paths['/api/llm/preflight']);
+    assert.equal(openApi.paths['/api/llm/preflight'].post.responses[200].content['application/json'].schema.$ref, '#/components/schemas/LlmProviderPreflightReport');
+    assert.ok(openApi.components.schemas.LlmProviderPreflightReport);
+    assert.match(homeHtml, /runLlmPreflightButton/);
+    assert.match(webAppJs, /renderLlmPreflightReport/);
   } finally {
     await close(server);
   }

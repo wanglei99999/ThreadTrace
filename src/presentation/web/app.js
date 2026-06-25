@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshTasksButton').addEventListener('click', loadTasks);
   document.getElementById('refreshSourcesButton').addEventListener('click', loadSources);
   document.getElementById('refreshSourceOperationsButton').addEventListener('click', loadSourceOperations);
+  document.getElementById('runLlmPreflightButton').addEventListener('click', runLlmPreflight);
   document.getElementById('loadConnectorModuleCatalogButton').addEventListener('click', loadConnectorModuleCatalogFromOnboardingForm);
   document.getElementById('onboardingResult').addEventListener('click', handleOnboardingAction);
   document.getElementById('sourceOnboardingRecipe').addEventListener('click', handleOnboardingAction);
@@ -1690,6 +1691,13 @@ async function runDuePipelines() {
   await loadSourceOperations();
   await loadEvents();
   await loadRawPages();
+}
+
+async function runLlmPreflight() {
+  await renderAsync('sourceOperationActionResult', function () {
+    return requestJson('/api/llm/preflight', {});
+  }, renderLlmPreflightReport);
+  await loadSystemStatus();
 }
 
 async function runDueCollectionFromButton(button) {
@@ -3369,6 +3377,43 @@ function renderDueSourcePipelineBatchRunResult(result) {
     renderSourceOperationResultRows(result.results || []),
     renderSourceOperationSkippedRows(result.skipped || [])
   ].join(''), 'wide');
+}
+
+function renderLlmPreflightReport(report) {
+  const validation = report.validation || {};
+  const usage = report.usage || {};
+  const preview = report.outputPreview || {};
+  return [
+    panel('LLM preflight', [
+      '<div class="summary-strip">',
+      summaryTile('Status', report.status || 'unknown', statusVariant(report.status)),
+      summaryTile('Provider', report.provider || 'unknown', report.provider === 'mock' ? 'muted' : 'ok'),
+      summaryTile('Validation', validation.status || 'not-run', statusVariant(validation.status)),
+      summaryTile('Schema', report.schemaVersion || 'unknown', validation.status === 'ok' ? 'ok' : 'muted'),
+      '</div>',
+      metric('Trace', report.traceId || 'none'),
+      metric('Task', report.task || 'unknown'),
+      metric('Usage', formatLlmUsage(usage)),
+      metric('Output', preview.summary || 'none'),
+      report.error ? metric('Error', report.error.message || 'unknown') : ''
+    ].join(''), 'wide'),
+    panel('LLM preflight checks', evidenceList((report.checks || []).map(function (check) {
+      return check.status + ' | ' + check.key + ' | ' + check.summary;
+    })), 'wide'),
+    panel('LLM preflight actions', evidenceList((report.nextActions || []).map(function (action) {
+      return (action.severity || 'info') + ' | ' + (action.key || 'action') + ' | ' + (action.summary || '') + ' | ' + (action.commands || []).join(' | ');
+    })), 'wide')
+  ].join('');
+}
+
+function formatLlmUsage(usage) {
+  const parts = [];
+  if (usage.inputTokens !== undefined) parts.push('input=' + usage.inputTokens);
+  if (usage.outputTokens !== undefined) parts.push('output=' + usage.outputTokens);
+  if (usage.prompt_tokens !== undefined) parts.push('prompt=' + usage.prompt_tokens);
+  if (usage.completion_tokens !== undefined) parts.push('completion=' + usage.completion_tokens);
+  if (usage.total_tokens !== undefined) parts.push('total=' + usage.total_tokens);
+  return parts.length ? parts.join(' | ') : 'none';
 }
 
 function renderBatchTaskControls(task) {
