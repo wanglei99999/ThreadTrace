@@ -35,6 +35,7 @@ async function main() {
         width: 1440,
         height: 1100,
         mobile: false,
+        runPreview: true,
         runAction: true,
         screenshotPath: path.join(outputDir, 'automation-cockpit-cdp-desktop.png')
       });
@@ -44,6 +45,7 @@ async function main() {
         width: 390,
         height: 844,
         mobile: true,
+        runPreview: true,
         screenshotPath: path.join(outputDir, 'automation-cockpit-cdp-mobile.png')
       });
 
@@ -161,8 +163,8 @@ async function verifyViewport(client, options) {
   });
   await client.send('Page.navigate', { url: options.url });
   await waitForCockpit(client);
-  const runbookPreview = options.runAction ? await verifyAutomationRunbookPreview(client) : undefined;
-  if (options.runAction) await waitForCockpit(client);
+  const runbookPreview = options.runPreview ? await verifyAutomationRunbookPreview(client) : undefined;
+  if (options.runPreview || options.runAction) await waitForCockpit(client);
   const actionResult = options.runAction ? await verifyAutomationActionResult(client) : undefined;
   const audit = await evaluateByValue(client, viewportAuditExpression());
   const screenshot = await client.send('Page.captureScreenshot', {
@@ -173,6 +175,7 @@ async function verifyViewport(client, options) {
   const stats = await fs.stat(options.screenshotPath);
   const png = await readPngInfo(options.screenshotPath);
   assertAudit(options.label, audit);
+  assertRunbookPreview(options.label, runbookPreview, options);
   assertScreenshot(options.label, png, stats, options, audit);
   return Object.assign({}, audit, {
     runbookPreview,
@@ -182,6 +185,21 @@ async function verifyViewport(client, options) {
     screenshotWidth: png.width,
     screenshotHeight: png.height
   });
+}
+
+function assertRunbookPreview(label, runbookPreview, options) {
+  if (!options.runPreview) return;
+  const failures = [];
+  if (!runbookPreview) failures.push('missing runbook preview report');
+  else {
+    if (runbookPreview.skipped) failures.push('schedule preview skipped: ' + runbookPreview.reason);
+    if (!runbookPreview.hasResult) failures.push('schedule preview result did not render');
+    if (!runbookPreview.dryRun) failures.push('schedule preview did not stay in dry-run mode');
+    if (!runbookPreview.visible) failures.push('schedule preview result is not visible after click');
+  }
+  if (failures.length > 0) {
+    throw new Error(label + ' Automation Cockpit runbook preview verification failed: ' + failures.join('; '));
+  }
 }
 
 async function waitForCockpit(client) {
