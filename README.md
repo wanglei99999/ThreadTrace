@@ -40,6 +40,18 @@ The verifier uses Chrome DevTools Protocol without third-party packages. It
 checks `/#system`, Automation Cockpit controls, notification/audit pressure,
 horizontal overflow, and writes screenshots under `.tmp/`.
 
+## Automation Cockpit Snapshot
+
+Use the shared Automation Cockpit snapshot from CLI automation or runbooks:
+
+```powershell
+npm run operations:automation-cockpit -- --json true
+```
+
+The same snapshot powers the Web cockpit and `/api/operations/automation-cockpit`.
+It combines readiness gates, notification outbox pressure, review action audit
+pressure, action executions, and notification channel diagnostics.
+
 运行到期来源 Worker：
 
 ```powershell
