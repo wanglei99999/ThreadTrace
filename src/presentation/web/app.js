@@ -2369,31 +2369,37 @@ async function runDuePipelines() {
 }
 
 async function runLlmPreflight(targetId) {
-  await renderAsync(targetId || 'sourceOperationActionResult', function () {
+  const resolvedTargetId = targetId || 'sourceOperationActionResult';
+  await renderAsync(resolvedTargetId, function () {
     return requestJson('/api/llm/preflight', {});
-  }, renderLlmPreflightReport);
+  }, renderLlmPreflightReport, automationActionRenderOptions(resolvedTargetId));
   await loadSystemStatus();
   await loadAutomationReadiness();
+  refocusAutomationActionResult(resolvedTargetId);
 }
 
 async function runLlmReadiness(targetId) {
-  await renderAsync(targetId || 'sourceOperationActionResult', function () {
+  const resolvedTargetId = targetId || 'sourceOperationActionResult';
+  await renderAsync(resolvedTargetId, function () {
     return requestJson('/api/llm/readiness', {
       llmReadinessMode: 'configuration'
     }, {
       acceptErrorStatus: true
     });
-  }, renderLlmReadinessProfile);
+  }, renderLlmReadinessProfile, automationActionRenderOptions(resolvedTargetId));
   await loadSystemStatus();
   await loadAutomationReadiness();
+  refocusAutomationActionResult(resolvedTargetId);
 }
 
 async function runLlmEvaluation(targetId) {
-  await renderAsync(targetId || 'sourceOperationActionResult', function () {
+  const resolvedTargetId = targetId || 'sourceOperationActionResult';
+  await renderAsync(resolvedTargetId, function () {
     return requestJson('/api/llm/evaluate', {});
-  }, renderLlmEvaluationReport);
+  }, renderLlmEvaluationReport, automationActionRenderOptions(resolvedTargetId));
   await loadSystemStatus();
   await loadAutomationReadiness();
+  refocusAutomationActionResult(resolvedTargetId);
 }
 
 async function runDemoCycle(targetId) {
@@ -2404,11 +2410,12 @@ async function runDemoCycle(targetId) {
     drilldownLimit: 20
   };
   if (form.get('forum')) request.sourceKey = form.get('forum');
-  await renderAsync(targetId || 'sourceOperationActionResult', function () {
+  const resolvedTargetId = targetId || 'sourceOperationActionResult';
+  await renderAsync(resolvedTargetId, function () {
     return requestJson('/api/demo/source-cycle', request, {
       acceptErrorStatus: true
     });
-  }, renderSourceDemoCycleReport);
+  }, renderSourceDemoCycleReport, automationActionRenderOptions(resolvedTargetId));
   await loadSystemStatus();
   await loadTasks();
   await loadSources();
@@ -2416,6 +2423,7 @@ async function runDemoCycle(targetId) {
   await loadAutomationReadiness();
   await loadEvents();
   await loadRawPages();
+  refocusAutomationActionResult(resolvedTargetId);
 }
 
 async function runDueCollectionFromButton(button) {
@@ -2509,19 +2517,21 @@ async function resetSourceFailureFromButton(button, execute) {
 
 async function setSourceScheduleFromButton(button, execute, targetId) {
   const sourceId = button.dataset.sourceId;
-  await renderAsync(targetId || 'sourceOperationActionResult', function () {
+  const resolvedTargetId = targetId || 'sourceOperationActionResult';
+  await renderAsync(resolvedTargetId, function () {
     return requestJson('/api/sources/' + encodeURIComponent(sourceId) + '/schedule', {
       execute,
       intervalMinutes: Number(button.dataset.intervalMinutes) || 60,
       runNow: button.dataset.runNow !== 'false',
       scheduleEnabled: button.dataset.scheduleEnabled === 'false' ? false : true
     });
-  }, renderSourceScheduleUpdateResult);
+  }, renderSourceScheduleUpdateResult, automationActionRenderOptions(resolvedTargetId));
   await loadSystemStatus();
   await loadTasks();
   await loadSources();
   await loadSourceOperations();
   await loadAutomationReadiness();
+  refocusAutomationActionResult(resolvedTargetId);
 }
 
 async function loadSourceOperationsDrilldownFromButton(button) {
@@ -2666,14 +2676,18 @@ async function archiveHandledEvents(execute) {
   }
 }
 
-async function renderAsync(targetId, task, renderer) {
+async function renderAsync(targetId, task, renderer, options) {
+  const safeOptions = options || {};
   const target = document.getElementById(targetId);
+  if (safeOptions.focus) focusResultTarget(targetId);
   target.innerHTML = renderFeedbackState('loading', '分析中...');
   try {
     const result = await task();
     target.innerHTML = renderer(result);
+    if (safeOptions.focus) focusResultTarget(targetId);
   } catch (error) {
     renderError(targetId, error);
+    if (safeOptions.focus) focusResultTarget(targetId);
   }
 }
 
@@ -2685,6 +2699,26 @@ function scrollResultIntoView(targetId) {
     block: 'start',
     behavior: motion
   });
+}
+
+function automationActionRenderOptions(targetId) {
+  return {
+    focus: targetId === 'automationActionResult'
+  };
+}
+
+function refocusAutomationActionResult(targetId) {
+  if (targetId === 'automationActionResult') focusResultTarget(targetId);
+}
+
+function focusResultTarget(targetId) {
+  const target = document.getElementById(targetId);
+  if (!target) return;
+  target.classList.remove('result-focus-pulse');
+  scrollResultIntoView(targetId);
+  window.setTimeout(function () {
+    target.classList.add('result-focus-pulse');
+  }, 0);
 }
 
 function renderHistoryReport(report) {

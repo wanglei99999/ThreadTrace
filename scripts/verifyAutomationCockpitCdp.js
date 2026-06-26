@@ -287,7 +287,9 @@ async function verifyAutomationRunbookPreview(client) {
       '(() => {',
       "  const result = document.querySelector('#automationActionResult');",
       "  const text = result ? result.innerText : '';",
-      "  return text.includes('Source schedule') && text.includes('dry-run');",
+      "  const rect = result ? result.getBoundingClientRect() : null;",
+      "  const visible = rect ? rect.bottom > 0 && rect.top < window.innerHeight : false;",
+      "  return text.includes('Source schedule') && text.includes('dry-run') && visible;",
       '})()'
     ].join('\n'));
   }, 30000, 'Timed out waiting for Automation Cockpit runbook schedule preview.');
@@ -295,11 +297,15 @@ async function verifyAutomationRunbookPreview(client) {
     '(() => {',
     "  const result = document.querySelector('#automationActionResult');",
     "  const text = result ? result.innerText : '';",
+    "  const rect = result ? result.getBoundingClientRect() : null;",
     '  return {',
     '    skipped: false,',
     "    hasResult: text.includes('Source schedule'),",
     "    dryRun: text.includes('dry-run'),",
-    "    changed: text.includes('Changed')",
+    "    changed: text.includes('Changed'),",
+    "    resultTop: rect ? Math.round(rect.top) : null,",
+    "    resultBottom: rect ? Math.round(rect.bottom) : null,",
+    "    visible: rect ? rect.bottom > 0 && rect.top < window.innerHeight : false",
     '  };',
     '})()'
   ].join('\n'));

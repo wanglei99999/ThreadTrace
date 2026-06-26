@@ -3460,6 +3460,28 @@ form button[type="submit"]:hover {
   display: none;
 }
 
+.automation-action-grid.result-focus-pulse {
+  animation: action-result-focus 1.6s ease-out;
+}
+
+@keyframes action-result-focus {
+  0% {
+    filter: drop-shadow(0 0 0 rgba(20, 114, 95, 0));
+  }
+  24% {
+    filter: drop-shadow(0 18px 34px rgba(20, 114, 95, 0.18));
+  }
+  100% {
+    filter: drop-shadow(0 0 0 rgba(20, 114, 95, 0));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .automation-action-grid.result-focus-pulse {
+    animation: none;
+  }
+}
+
 .automation-action-grid .panel {
   border-color: rgba(36, 95, 159, 0.18);
   background:
