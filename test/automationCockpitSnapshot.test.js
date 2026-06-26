@@ -108,6 +108,22 @@ test('automation cockpit snapshot aggregates readiness and operating pressure', 
   assert.equal(snapshot.operatorRunbook.dryRunCommandCount, 1);
   assert.equal(snapshot.operatorRunbook.executeCommandCount, 1);
   assert.equal(snapshot.operatorRunbook.copyOnlyCommandCount, 4);
+  assert.equal(snapshot.attentionQueue.status, 'warn');
+  assert.equal(snapshot.attentionQueue.itemCount, 4);
+  assert.equal(snapshot.attentionQueue.warningCount, 4);
+  assert.equal(snapshot.attentionQueue.criticalCount, 0);
+  assert.equal(snapshot.attentionQueue.highestSeverity, 'warning');
+  assert.equal(snapshot.attentionQueue.nextItem.rank, 1);
+  assert.equal(snapshot.attentionQueue.items[0].id, 'freshness');
+  assert.ok(snapshot.attentionQueue.items.some(function (item) {
+    return item.id === 'pressure.outbox' && item.area === 'notifications';
+  }));
+  assert.ok(snapshot.attentionQueue.items.some(function (item) {
+    return item.id === 'pressure.audit' && item.area === 'review-audit';
+  }));
+  assert.ok(snapshot.attentionQueue.items.some(function (item) {
+    return item.id === 'runbook.actionable' && /actionable=2/.test(item.summary);
+  }));
   assert.equal(snapshot.operatorRunbook.sections.find(function (section) {
     return section.key === 'workers';
   }).commands[0].command, 'node src/presentation/worker/operationsWorkerMain.js --loop');
@@ -154,4 +170,7 @@ test('automation cockpit snapshot fails when any component fails', function () {
   assert.equal(snapshot.readyForUnattendedRun, false);
   assert.equal(snapshot.operatingPressure.status, 'fail');
   assert.equal(snapshot.operatingPressure.outbox.status, 'fail');
+  assert.equal(snapshot.attentionQueue.status, 'fail');
+  assert.equal(snapshot.attentionQueue.criticalCount, 1);
+  assert.equal(snapshot.attentionQueue.items[0].id, 'pressure.outbox');
 });

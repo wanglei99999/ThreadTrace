@@ -5393,6 +5393,7 @@ function renderAutomationReadinessPlan(input) {
   const plan = cockpit.plan;
   return [
     renderAutomationCockpitHero(plan, cockpit),
+    panel('Attention queue', renderAutomationAttentionQueue(cockpit.attentionQueue), 'wide automation-attention-panel'),
     panel('Snapshot freshness', renderAutomationFreshness(cockpit.freshness), 'wide automation-freshness-panel'),
     panel('Notification and audit pressure', renderAutomationOperatingPressure(cockpit), 'wide automation-pressure-panel'),
     panel('Automation gates', renderAutomationReadinessChecks(plan.checks || []), 'wide automation-gates-panel'),
@@ -5412,6 +5413,7 @@ function normalizeAutomationCockpitInput(input) {
       reviewActionAuditOverview: safeInput.reviewActionAuditOverview || {},
       reviewActionExecutions: safeInput.reviewActionExecutions || {},
       notificationDiagnostics: safeInput.notificationDiagnostics || {},
+      attentionQueue: safeInput.attentionQueue || {},
       freshness: safeInput.freshness || {},
       operatorRunbook: safeInput.operatorRunbook || {}
     };
@@ -5422,6 +5424,7 @@ function normalizeAutomationCockpitInput(input) {
     reviewActionAuditOverview: {},
     reviewActionExecutions: {},
     notificationDiagnostics: {},
+    attentionQueue: {},
     freshness: {},
     operatorRunbook: {}
   };
@@ -5570,6 +5573,36 @@ function renderAutomationRunPath(summary, plan, cockpit) {
       '<small>' + escapeHtml(row.detail) + '</small>' +
       '</div>';
   }).join('');
+}
+
+function renderAutomationAttentionQueue(queue) {
+  const safeQueue = queue || {};
+  const items = safeQueue.items || [];
+  const rows = [
+    '<div class="summary-strip">',
+    summaryTile('Status', safeQueue.status || 'unknown', statusVariant(safeQueue.status)),
+    summaryTile('Items', String(safeQueue.itemCount || items.length || 0), (safeQueue.itemCount || items.length || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('Critical', String(safeQueue.criticalCount || 0), (safeQueue.criticalCount || 0) > 0 ? 'fail' : 'ok'),
+    summaryTile('Warning', String(safeQueue.warningCount || 0), (safeQueue.warningCount || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('Top', safeQueue.highestSeverity || 'ok', safeQueue.highestSeverity === 'critical' ? 'fail' : safeQueue.highestSeverity === 'warning' ? 'warn' : 'ok'),
+    '</div>'
+  ];
+  if (items.length === 0) {
+    rows.push(emptySignal('No cockpit attention items right now.', 'Clear'));
+    return rows.join('');
+  }
+  rows.push('<div class="automation-attention-list">' + items.slice(0, 8).map(function (item) {
+    const variant = item.severity === 'critical' ? 'fail' : item.severity === 'warning' ? 'warn' : statusVariant(item.status);
+    return '<div class="action-row ops-row automation-attention-row ' + statusClassName(variant) + '">' +
+      '<span>' +
+      '<strong>' + escapeHtml('#' + (item.rank || '?') + ' ' + (item.title || item.id || 'Attention item')) + '</strong>' +
+      '<small>' + escapeHtml((item.area || 'cockpit') + ' | ' + (item.summary || 'Review this cockpit signal.')) + '</small>' +
+      '<small>' + escapeHtml(item.nextAction || 'Review the related cockpit panel.') + '</small>' +
+      '</span>' +
+      statusBadge(item.severity || item.status || 'info', variant) +
+      '</div>';
+  }).join('') + '</div>');
+  return rows.join('');
 }
 
 function renderAutomationOperatingPressure(cockpit) {

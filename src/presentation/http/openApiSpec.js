@@ -7309,9 +7309,40 @@ function createOpenApiSpec() {
             reviewActionExecutions: { $ref: '#/components/schemas/ContextReviewActionExecutionListResult' },
             notificationDiagnostics: { type: 'object', additionalProperties: true },
             operatingPressure: { $ref: '#/components/schemas/AutomationCockpitOperatingPressure' },
+            attentionQueue: { $ref: '#/components/schemas/AutomationCockpitAttentionQueue' },
             freshness: { $ref: '#/components/schemas/AutomationCockpitFreshness' },
             operatorRunbook: { $ref: '#/components/schemas/AutomationCockpitOperatorRunbook' }
           }
+        },
+        AutomationCockpitAttentionQueue: {
+          type: 'object',
+          properties: {
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            itemCount: { type: 'number', example: 3 },
+            criticalCount: { type: 'number', example: 1 },
+            warningCount: { type: 'number', example: 2 },
+            highestSeverity: { type: 'string', enum: ['ok', 'info', 'warning', 'critical'] },
+            nextItem: { $ref: '#/components/schemas/AutomationCockpitAttentionItem' },
+            items: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/AutomationCockpitAttentionItem' }
+            }
+          },
+          additionalProperties: true
+        },
+        AutomationCockpitAttentionItem: {
+          type: 'object',
+          properties: {
+            rank: { type: 'number', example: 1 },
+            id: { type: 'string', example: 'pressure.outbox' },
+            area: { type: 'string', example: 'notifications' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            severity: { type: 'string', enum: ['info', 'warning', 'critical'] },
+            title: { type: 'string', example: 'Notification outbox' },
+            summary: { type: 'string' },
+            nextAction: { type: 'string' }
+          },
+          additionalProperties: true
         },
         AutomationCockpitFreshness: {
           type: 'object',

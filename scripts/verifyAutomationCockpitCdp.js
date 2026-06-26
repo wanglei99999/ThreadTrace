@@ -230,6 +230,7 @@ function viewportAuditExpression() {
     '(() => {',
     '  const doc = document.documentElement;',
     "  const hero = document.querySelector('.automation-cockpit-hero');",
+    "  const attention = document.querySelector('.automation-attention-panel');",
     "  const pressure = document.querySelector('.automation-pressure-panel');",
     "  const action = document.querySelector('#automationActionResult');",
     "  const status = document.querySelector('#systemStatus');",
@@ -242,6 +243,7 @@ function viewportAuditExpression() {
     '    hash: location.hash,',
     "    title: document.querySelector('#viewTitle')?.textContent || '',",
     '    hasHero: Boolean(hero),',
+    '    hasAttentionQueue: Boolean(attention),',
     '    hasPressure: Boolean(pressure),',
     '    hasActionResult: Boolean(action),',
     "    cockpitBusy: document.querySelector('#automationReadinessResult')?.getAttribute('aria-busy') || 'unset',",
@@ -258,10 +260,12 @@ function viewportAuditExpression() {
     "    bodyTextIncludesOutbox: bodyText.includes('Notification outbox'),",
     "    bodyTextIncludesAudit: bodyText.includes('Review audit ledger'),",
     "    bodyTextIncludesRunbook: bodyText.includes('Operator runbook'),",
+    "    bodyTextIncludesAttentionQueue: bodyText.includes('Attention queue'),",
     "    bodyTextIncludesActionable: bodyText.includes('Actionable'),",
     "    bodyTextIncludesFreshness: bodyText.includes('Snapshot freshness'),",
     "    bodyTextHasMojibake: mojibakeMarkers.some((marker) => bodyText.includes(marker)),",
     "    runbookCommandCount: document.querySelectorAll('.automation-runbook-command-row').length,",
+    "    attentionQueueRowCount: document.querySelectorAll('.automation-attention-row').length,",
     "    runbookCopyButtonCount: document.querySelectorAll('.automation-runbook-panel button[data-action=\"copy-lifecycle-command\"]').length,",
     "    runbookScheduleCommandCount: Array.from(document.querySelectorAll('.automation-runbook-command-row code')).filter((code) => code.textContent.includes('configure-source-schedule')).length,",
     "    runbookScheduleButtonCount: document.querySelectorAll('.automation-runbook-panel button[data-action=\"set-source-schedule\"]').length",
@@ -522,6 +526,7 @@ function assertAudit(label, audit) {
   const failures = [];
   if (audit.hash !== '#system') failures.push('expected #system hash');
   if (!audit.hasHero) failures.push('missing automation cockpit hero');
+  if (!audit.hasAttentionQueue) failures.push('missing automation attention queue');
   if (!audit.hasPressure) failures.push('missing notification/audit pressure panel');
   if (!audit.hasActionResult) failures.push('missing automation action result container');
   if (audit.cockpitBusy === 'true') failures.push('automation cockpit result is still busy');
@@ -533,6 +538,7 @@ function assertAudit(label, audit) {
   if (!audit.bodyTextIncludesOutbox) failures.push('missing Notification outbox text');
   if (!audit.bodyTextIncludesAudit) failures.push('missing Review audit ledger text');
   if (!audit.bodyTextIncludesRunbook) failures.push('missing Operator runbook text');
+  if (!audit.bodyTextIncludesAttentionQueue) failures.push('missing Attention queue text');
   if (!audit.bodyTextIncludesActionable) failures.push('missing Actionable runbook summary text');
   if (!audit.bodyTextIncludesFreshness) failures.push('missing Snapshot freshness text');
   if (!audit.headlineText) failures.push('missing automation cockpit headline text');

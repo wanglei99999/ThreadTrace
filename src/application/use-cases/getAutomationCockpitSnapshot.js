@@ -40,6 +40,13 @@ function getAutomationCockpitSnapshot(input) {
     reviewActionExecutions,
     notificationDiagnostics
   });
+  const attentionQueue = buildAttentionQueue({
+    status,
+    plan,
+    operatingPressure,
+    freshness,
+    operatorRunbook
+  });
   return {
     schemaVersion: 'automation-cockpit-snapshot.v1',
     generatedAt,
@@ -53,6 +60,7 @@ function getAutomationCockpitSnapshot(input) {
     operatingPressure,
     freshness,
     operatorRunbook,
+    attentionQueue,
     summary: {
       readinessStatus: plan.status || 'unknown',
       notificationStatus: notificationOverview.status || 'unknown',
@@ -65,6 +73,115 @@ function getAutomationCockpitSnapshot(input) {
       executionCount: reviewActionExecutions.count
     }
   };
+}
+
+function buildAttentionQueue(input) {
+  const plan = input.plan || {};
+  const pressure = input.operatingPressure || {};
+  const freshness = input.freshness || {};
+  const runbook = input.operatorRunbook || {};
+  const outbox = pressure.outbox || {};
+  const audit = pressure.audit || {};
+  const executions = pressure.executions || {};
+  const channel = pressure.channel || {};
+  const items = [];
+
+  if (normalizeStatus(plan.status) !== 'ok') {
+    items.push(attentionItem('readiness', 'readiness', plan.status, 'Automation readiness', plan.readyForUnattendedRun
+      ? 'Readiness has warnings even though unattended mode was requested.'
+      : 'Automation is not ready for unattended operation.', firstPlanNextAction(plan)));
+  }
+  if (normalizeStatus(outbox.status) !== 'ok') {
+    items.push(attentionItem('pressure.outbox', 'notifications', outbox.status, 'Notification outbox', [
+      'open=' + firstNumber(outbox.openCount, 0),
+      'due=' + firstNumber(outbox.dueCount, 0),
+      'failed=' + firstNumber(outbox.failedCount, 0),
+      'retryExhausted=' + firstNumber(outbox.retryExhaustedCount, 0)
+    ].join(' | '), outbox.recommendedNextAction || 'Review open and failed notification events.'));
+  }
+  if (normalizeStatus(audit.status) !== 'ok') {
+    items.push(attentionItem('pressure.audit', 'review-audit', audit.status, 'Review audit ledger', [
+      'audits=' + firstNumber(audit.auditCount, 0),
+      'tasks=' + firstNumber(audit.taskCount, 0),
+      'plannedClosure=' + firstNumber(audit.plannedClosureCount, 0),
+      'plannedMerge=' + firstNumber(audit.plannedMergeCandidateCount, 0)
+    ].join(' | '), audit.recommendedNextAction || 'Review audit ledger pressure before executing actions.'));
+  }
+  if (normalizeStatus(executions.status) !== 'ok') {
+    items.push(attentionItem('pressure.executions', 'executions', executions.status, 'Action execution ledger', [
+      'count=' + firstNumber(executions.count, 0),
+      'stale=' + firstNumber(executions.staleRunningCount, 0),
+      'failed=' + firstNumber(executions.failedCount, 0)
+    ].join(' | '), 'Inspect stale or failed automation action executions.'));
+  }
+  if (normalizeStatus(channel.status) !== 'ok') {
+    items.push(attentionItem('pressure.channel', 'notifications', channel.status, 'Notification channel', [
+      'channel=' + (channel.channel || 'unknown'),
+      'failedChecks=' + firstNumber(channel.failedCheckCount, 0),
+      'warnChecks=' + firstNumber(channel.warnCheckCount, 0)
+    ].join(' | '), 'Run notification diagnostics before relying on delivery.'));
+  }
+  if (normalizeStatus(freshness.status) !== 'ok') {
+    items.push(attentionItem('freshness', 'freshness', freshness.status, 'Snapshot freshness', [
+      'present=' + firstNumber(freshness.presentSourceCount, 0) + '/' + firstNumber(freshness.sourceCount, 0),
+      'missing=' + firstNumber(freshness.missingSourceCount, 0),
+      'spanMs=' + (freshness.spanMs === undefined ? 'unknown' : freshness.spanMs)
+    ].join(' | '), (freshness.missingSources || []).length > 0
+      ? 'Refresh missing inputs: ' + freshness.missingSources.join(', ')
+      : 'Refresh stale cockpit inputs.'));
+  }
+  if ((runbook.actionableCommandCount || 0) > 0) {
+    items.push(attentionItem('runbook.actionable', 'runbook', runbook.status, 'Operator runbook', [
+      'actionable=' + firstNumber(runbook.actionableCommandCount, 0),
+      'dryRun=' + firstNumber(runbook.dryRunCommandCount, 0),
+      'execute=' + firstNumber(runbook.executeCommandCount, 0)
+    ].join(' | '), runbook.nextCommand && runbook.nextCommand.command || 'Review operator runbook commands.'));
+  }
+
+  const sortedItems = items.sort(function (left, right) {
+    const severityDiff = severityRank(right.severity) - severityRank(left.severity);
+    if (severityDiff !== 0) return severityDiff;
+    return String(left.id).localeCompare(String(right.id));
+  }).map(function (item, index) {
+    return Object.assign({ rank: index + 1 }, item);
+  });
+  const status = sortedItems.length === 0
+    ? 'ok'
+    : aggregateStatus(sortedItems.map(function (item) { return item.status; }));
+  return {
+    status,
+    itemCount: sortedItems.length,
+    criticalCount: sortedItems.filter(function (item) { return item.severity === 'critical'; }).length,
+    warningCount: sortedItems.filter(function (item) { return item.severity === 'warning'; }).length,
+    highestSeverity: sortedItems[0] && sortedItems[0].severity || 'ok',
+    nextItem: sortedItems[0],
+    items: sortedItems
+  };
+}
+
+function attentionItem(id, area, status, title, summary, nextAction) {
+  const normalized = normalizeStatus(status);
+  return {
+    id,
+    area,
+    status: normalized,
+    severity: normalized === 'fail' ? 'critical' : normalized === 'warn' ? 'warning' : 'info',
+    title,
+    summary,
+    nextAction
+  };
+}
+
+function severityRank(severity) {
+  if (severity === 'critical') return 3;
+  if (severity === 'warning') return 2;
+  if (severity === 'info') return 1;
+  return 0;
+}
+
+function firstPlanNextAction(plan) {
+  const action = (plan.nextActions || [])[0];
+  return action && (action.summary || action.recommendedCommand || action.command || action.key) || 'Review automation readiness checks.';
 }
 
 function buildOperatingPressure(input) {

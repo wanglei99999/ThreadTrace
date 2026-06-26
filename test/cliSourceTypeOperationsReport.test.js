@@ -418,6 +418,12 @@ test('CLI prints automation cockpit snapshot as JSON', async function () {
     assert.ok(snapshot.freshness);
     assert.ok(snapshot.freshness.sourceCount >= snapshot.freshness.presentSourceCount);
     assert.ok(Array.isArray(snapshot.freshness.sources));
+    assert.ok(snapshot.attentionQueue);
+    assert.ok(Array.isArray(snapshot.attentionQueue.items));
+    assert.equal(snapshot.attentionQueue.itemCount, snapshot.attentionQueue.items.length);
+    assert.ok(snapshot.attentionQueue.items.some(function (item) {
+      return item.id === 'readiness' || item.id === 'freshness';
+    }));
     assert.ok(snapshot.operatorRunbook.commandCount >= 3);
     assert.ok(snapshot.operatorRunbook.actionableCommandCount >= 0);
     assert.equal(snapshot.operatorRunbook.commandCount, snapshot.operatorRunbook.actionableCommandCount + snapshot.operatorRunbook.copyOnlyCommandCount);

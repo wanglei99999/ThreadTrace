@@ -3536,6 +3536,29 @@ form button[type="submit"]:hover {
   border-color: rgba(20, 114, 95, 0.18);
 }
 
+.automation-attention-panel {
+  border-color: rgba(36, 95, 159, 0.22);
+}
+
+.automation-attention-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.automation-attention-row {
+  align-items: start;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(240, 247, 255, 0.76) 58%, rgba(255, 247, 230, 0.56));
+}
+
+.automation-attention-row span,
+.automation-attention-row strong,
+.automation-attention-row small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .automation-freshness-row {
   align-items: start;
   background:
