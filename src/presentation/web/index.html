@@ -20,12 +20,12 @@
         <button class="nav-item active" data-view="history">历史分析</button>
         <button class="nav-item" data-view="context">新发言解读</button>
         <button class="nav-item" data-view="search">历史检索</button>
-        <button class="nav-item" data-view="system">系统状态</button>
+        <button class="nav-item" data-view="system">工作台</button>
       </nav>
       <div class="sidebar-status" aria-label="工作台状态">
-        <span>Local cockpit</span>
-        <strong>Evidence first</strong>
-        <small>file store · mock LLM · source-ready</small>
+        <span>私人工作区</span>
+        <strong>证据优先</strong>
+        <small>本地资料 · 智能复核 · 来源就绪</small>
       </div>
     </aside>
 
@@ -33,23 +33,23 @@
       <section class="toolbar">
         <div class="toolbar-copy">
           <div class="toolbar-meta" aria-label="当前工作模式">
-            <span id="viewMode">Evidence intake</span>
-            <span id="viewFocus">Local archive</span>
+            <span id="viewMode">资料入口</span>
+            <span id="viewFocus">本地资料</span>
           </div>
           <h2 id="viewTitle">历史分析</h2>
           <p id="viewSubtitle">解析保存页目录，生成作者、实体、观点和证据概览。</p>
         </div>
         <div class="toolbar-actions">
-          <span class="toolbar-runtime">localhost · 3019</span>
+          <span class="toolbar-runtime">本地运行</span>
           <button id="refreshAdaptersButton" class="icon-button" type="button" title="刷新适配器" aria-label="刷新适配器">↻</button>
         </div>
       </section>
 
       <section class="view-panel" id="historyView">
         <div id="historyCockpit" class="cockpit-grid"></div>
-        <form id="analyzeForm" class="control-strip entry-card history-entry-card" data-title="Evidence intake">
+        <form id="analyzeForm" class="control-strip entry-card history-entry-card" data-title="资料入口">
           <div class="history-source-strip">
-            <span>Source</span>
+            <span>来源</span>
             <label>
               <span>论坛</span>
               <select name="forum" id="historyForum"></select>
@@ -59,7 +59,7 @@
             <span>保存页目录</span>
             <input name="inputDir" value="example" autocomplete="off">
           </label>
-          <div class="history-command-shelf" data-label="Runbook">
+          <div class="history-command-shelf" data-label="操作">
             <button type="submit">分析目录</button>
             <button id="enrichHistoryButton" class="secondary-button" type="button">语义增强</button>
             <button id="refreshAuthorIntelligenceButton" class="secondary-button" type="button">作者情报</button>
@@ -70,7 +70,7 @@
       </section>
 
       <section class="view-panel hidden" id="contextView">
-        <form id="contextForm" class="stacked-form entry-card context-entry-card" data-title="Context restore">
+        <form id="contextForm" class="stacked-form entry-card context-entry-card" data-title="语境还原">
           <div class="control-strip context-source-strip">
             <label>
               <span>论坛</span>
@@ -95,7 +95,7 @@
             <span>新发言</span>
             <textarea name="text" rows="4">科技后面看量确认</textarea>
           </label>
-          <div class="context-command-shelf" data-label="Restore">
+          <div class="context-command-shelf" data-label="还原">
             <button type="submit">还原语境</button>
           </div>
         </form>
@@ -104,10 +104,10 @@
 
       <section class="view-panel hidden" id="searchView">
         <div class="search-workbench">
-          <form id="indexForm" class="control-strip entry-card search-index-card" data-title="Index refresh">
+          <form id="indexForm" class="control-strip entry-card search-index-card" data-title="索引更新">
             <div class="search-card-kicker">
-              <span>Archive</span>
-              <strong>local pages</strong>
+              <span>资料库</span>
+              <strong>本地页面</strong>
             </div>
             <label>
               <span>论坛</span>
@@ -117,7 +117,7 @@
               <span>保存页目录</span>
               <input name="inputDir" value="example" autocomplete="off">
             </label>
-            <div class="search-command-shelf" data-label="Index">
+            <div class="search-command-shelf" data-label="索引">
               <button type="submit">更新索引</button>
               <span>raw → searchable</span>
             </div>
@@ -127,10 +127,10 @@
             <i></i>
             <span>02</span>
           </div>
-          <form id="searchForm" class="control-strip entry-card search-query-card" data-title="Evidence search">
+          <form id="searchForm" class="control-strip entry-card search-query-card" data-title="证据检索">
             <div class="search-card-kicker">
-              <span>Recall</span>
-              <strong>floor evidence</strong>
+              <span>召回</span>
+              <strong>楼层证据</strong>
             </div>
             <label class="grow search-query-input">
               <span>检索问题</span>
@@ -144,9 +144,9 @@
               <button type="submit">搜索证据</button>
             </div>
             <div class="search-hit-schema" aria-hidden="true">
-              <span>floor</span>
-              <span>author</span>
-              <span>score</span>
+              <span>楼层</span>
+              <span>作者</span>
+              <span>相关度</span>
             </div>
           </form>
         </div>
@@ -156,26 +156,26 @@
       <section class="view-panel hidden" id="systemView">
         <div class="system-overview">
           <div class="system-overview-copy">
-            <span>System workbench</span>
-            <h3>运行、接入、事件和发布都在这里收口。</h3>
-            <p>先看运行体征，再进入来源采集、事件处理、审查动作和部署门禁。</p>
+            <span>工作台</span>
+            <h3>来源、提醒、复核和发布都在这里收口。</h3>
+            <p>先看今天有没有需要处理的路径，再进入来源采集、提醒整理、人工复核和发布检查。</p>
           </div>
-          <nav class="system-rail" aria-label="System sections">
+          <nav class="system-rail" aria-label="工作台分区">
             <a href="#system-collection">来源采集</a>
-            <a href="#system-operations">运行体征</a>
-            <a href="#system-events">事件审查</a>
-            <a href="#system-rollout">发布资源</a>
+            <a href="#system-operations">运行概览</a>
+            <a href="#system-events">提醒处理</a>
+            <a href="#system-rollout">发布检查</a>
           </nav>
         </div>
         <div class="result-grid task-grid automation-cockpit-grid" id="automationReadinessResult"></div>
         <div class="result-grid task-grid automation-action-grid" id="automationActionResult"></div>
         <div class="status-list system-status-grid" id="systemStatus"></div>
         <div class="system-zone-title" id="system-collection">
-          <span>Collection</span>
+          <span>来源</span>
           <strong>来源采集与接入</strong>
         </div>
         <div class="collection-workflow">
-        <form id="taskForm" class="control-strip collection-card collection-card-archive" data-title="Archive ingest">
+        <form id="taskForm" class="control-strip collection-card collection-card-archive" data-title="资料导入">
           <label class="grow">
             <span>保存页目录</span>
             <input name="inputDir" value="example" autocomplete="off">
@@ -183,7 +183,7 @@
           <button type="submit">运行导入任务</button>
           <button id="refreshTasksButton" class="secondary-button" type="button">刷新任务</button>
         </form>
-        <form id="sourceForm" class="control-strip collection-card collection-card-source" data-title="Tracked source">
+        <form id="sourceForm" class="control-strip collection-card collection-card-source" data-title="跟踪来源">
           <label>
             <span>论坛</span>
             <select name="forum" id="sourceForum"></select>
@@ -201,30 +201,30 @@
             <input name="intervalMinutes" value="60" inputmode="numeric" autocomplete="off">
           </label>
           <button type="submit">保存来源</button>
-          <div class="source-command-shelf" aria-label="Source commands">
-            <div class="source-command-group" data-label="Source">
+          <div class="source-command-shelf" aria-label="来源操作">
+            <div class="source-command-group" data-label="来源">
               <button id="refreshSourcesButton" class="secondary-button" type="button">刷新来源</button>
-              <button id="refreshSourceOperationsButton" class="secondary-button" type="button">Source ops</button>
-              <button id="runDemoCycleButton" class="secondary-button" type="button">Demo cycle</button>
+              <button id="refreshSourceOperationsButton" class="secondary-button" type="button">来源概览</button>
+              <button id="runDemoCycleButton" class="secondary-button" type="button">试跑闭环</button>
             </div>
-            <div class="source-command-group" data-label="Automation">
-              <button id="refreshAutomationReadinessButton" class="secondary-button" type="button">Automation readiness</button>
+            <div class="source-command-group" data-label="自动运行">
+              <button id="refreshAutomationReadinessButton" class="secondary-button" type="button">运行准备</button>
               <button id="runSourcesButton" class="secondary-button" type="button">运行全部</button>
               <button id="runDueSourcesButton" class="secondary-button" type="button">运行到期</button>
               <button id="runDuePipelinesButton" class="secondary-button" type="button">洞察到期</button>
             </div>
-            <div class="source-command-group" data-label="LLM">
-              <button id="runLlmReadinessButton" class="secondary-button" type="button">LLM readiness</button>
-              <button id="runLlmPreflightButton" class="secondary-button" type="button">LLM preflight</button>
-              <button id="runLlmEvaluationButton" class="secondary-button" type="button">LLM evaluate</button>
+            <div class="source-command-group" data-label="智能助手">
+              <button id="runLlmReadinessButton" class="secondary-button" type="button">助手状态</button>
+              <button id="runLlmPreflightButton" class="secondary-button" type="button">助手预检</button>
+              <button id="runLlmEvaluationButton" class="secondary-button" type="button">质量评估</button>
             </div>
-            <div class="source-command-group" data-label="Events">
+            <div class="source-command-group" data-label="提醒">
               <button id="refreshEventsButton" class="secondary-button" type="button">刷新事件</button>
               <button id="dispatchEventsButton" class="secondary-button" type="button">投递事件</button>
             </div>
           </div>
         </form>
-        <form id="threadUrlForm" class="control-strip collection-card collection-card-url" data-title="Thread URL">
+        <form id="threadUrlForm" class="control-strip collection-card collection-card-url" data-title="在线主题">
           <label>
             <span>论坛</span>
             <select name="forum" id="threadUrlForum"></select>
@@ -242,18 +242,18 @@
             <input name="intervalMinutes" value="60" inputmode="numeric" autocomplete="off">
           </label>
           <label class="compact">
-            <span>Start page</span>
+            <span>起始页</span>
             <input name="startPage" value="1" inputmode="numeric" autocomplete="off">
           </label>
           <label class="compact">
-            <span>Pages</span>
+            <span>页数</span>
             <input name="pageCount" value="1" inputmode="numeric" autocomplete="off">
           </label>
           <button type="submit">保存 URL 来源</button>
           <button id="crawlUrlButton" class="secondary-button" type="button">抓取页面</button>
           <button id="refreshRawPagesButton" class="secondary-button" type="button">刷新原始页</button>
         </form>
-        <form id="sourceOnboardingForm" class="control-strip collection-card collection-card-onboarding" data-title="Connector preflight">
+        <form id="sourceOnboardingForm" class="control-strip collection-card collection-card-onboarding" data-title="接入预检">
           <label>
             <span>接入论坛</span>
             <input name="forum" id="onboardingForum" list="forumSuggestions" value="nga" autocomplete="off">
@@ -270,7 +270,7 @@
             <span>可选模块路径</span>
             <input name="modulePath" placeholder="D:/connectors/custom-forum.cjs" autocomplete="off">
           </label>
-          <button id="loadConnectorModuleCatalogButton" class="secondary-button" type="button">Load module catalog</button>
+          <button id="loadConnectorModuleCatalogButton" class="secondary-button" type="button">加载模块目录</button>
           <label class="grow">
             <span>本地目录</span>
             <input name="inputDir" value="example" autocomplete="off">
@@ -280,7 +280,7 @@
             <input name="locationValue" placeholder="D:/feeds/thread.json or https://..." autocomplete="off">
           </label>
           <label class="full">
-            <span>Location JSON</span>
+            <span>位置 JSON</span>
             <textarea name="locationJson" rows="3" placeholder='{"feedUrl":"https://example.test/feed"}'></textarea>
           </label>
           <button type="submit">接入预检</button>
@@ -288,18 +288,18 @@
         </div>
         <div class="result-grid task-grid" id="sourceOnboardingRecipe"></div>
         <div class="system-zone-title" id="system-operations">
-          <span>Operations</span>
+          <span>运行</span>
           <strong>运行队列、worker 和 runbook</strong>
         </div>
         <div class="result-grid task-grid system-runbook-grid" id="runbookResult"></div>
         <div class="result-grid task-grid" id="sourceOperationsResult"></div>
         <div class="result-grid task-grid" id="sourceOperationActionResult"></div>
         <div class="system-zone-title" id="system-events">
-          <span>Events</span>
+          <span>提醒</span>
           <strong>通知事件与人工审查</strong>
         </div>
         <div class="event-review-workflow">
-        <form id="eventFilterForm" class="control-strip event-card event-card-filter" data-title="Event triage">
+        <form id="eventFilterForm" class="control-strip event-card event-card-filter" data-title="提醒筛选">
           <label class="compact">
             <span>事件范围</span>
             <select name="acknowledged">
@@ -331,34 +331,34 @@
             </select>
           </label>
           <label class="compact">
-            <span>Source key</span>
+            <span>来源代号</span>
             <input name="sourceKey" placeholder="nga" autocomplete="off">
           </label>
           <label class="compact">
-            <span>Source ID</span>
+            <span>来源 ID</span>
             <input name="sourceId" placeholder="source-1" autocomplete="off">
           </label>
           <label class="compact">
             <span>数量</span>
             <input name="limit" value="10" inputmode="numeric" autocomplete="off">
           </label>
-          <div class="event-triage-command-shelf" aria-label="Event triage commands">
-            <div class="event-triage-command-group event-triage-query" data-label="Query">
+          <div class="event-triage-command-shelf" aria-label="提醒筛选操作">
+            <div class="event-triage-command-group event-triage-query" data-label="筛选">
               <button type="submit">筛选事件</button>
             </div>
-            <div class="event-triage-command-group" data-label="Ack">
-              <button type="button" class="secondary-button" id="previewAckEventsButton">Preview ack</button>
-              <button type="button" class="secondary-button" id="ackVisibleEventsButton">Ack execute</button>
+            <div class="event-triage-command-group" data-label="确认">
+              <button type="button" class="secondary-button" id="previewAckEventsButton">预览确认</button>
+              <button type="button" class="secondary-button" id="ackVisibleEventsButton">确认所选</button>
             </div>
-            <div class="event-triage-command-group" data-label="Archive">
-              <button type="button" class="secondary-button" id="previewEventArchiveButton">Archive check</button>
-              <button type="button" class="secondary-button" id="archiveEventsButton">Archive handled</button>
+            <div class="event-triage-command-group" data-label="归档">
+              <button type="button" class="secondary-button" id="previewEventArchiveButton">归档检查</button>
+              <button type="button" class="secondary-button" id="archiveEventsButton">归档已处理</button>
             </div>
           </div>
         </form>
-        <form id="contextReviewResultForm" class="control-strip event-card event-card-review" data-title="Human decision">
+        <form id="contextReviewResultForm" class="control-strip event-card event-card-review" data-title="人工复核">
           <label class="full">
-            <span>Context review result JSON</span>
+            <span>复核结果 JSON</span>
             <textarea name="resultJson" rows="10" spellcheck="false">{
   "version": "1.0.0",
   "handoffVersion": "1.0.0",
@@ -390,162 +390,162 @@
   "evidenceRefs": []
 }</textarea>
           </label>
-          <div class="review-command-shelf" aria-label="Review commands">
-            <div class="review-command-group review-command-primary" data-label="Decision">
-              <button type="submit">Store review result</button>
-              <button id="refreshReviewResultsButton" class="secondary-button" type="button">Review overview</button>
+          <div class="review-command-shelf" aria-label="复核操作">
+            <div class="review-command-group review-command-primary" data-label="决策">
+              <button type="submit">保存复核结果</button>
+              <button id="refreshReviewResultsButton" class="secondary-button" type="button">复核概览</button>
             </div>
-            <div class="review-command-group" data-label="Plan">
-              <button id="refreshReviewActionPlanButton" class="secondary-button" type="button">Review action plan</button>
-              <button id="refreshReviewActionGateButton" class="secondary-button" type="button">Review gate</button>
-              <button id="runReviewActionApplyButton" class="secondary-button" type="button">Dry-run review apply</button>
+            <div class="review-command-group" data-label="计划">
+              <button id="refreshReviewActionPlanButton" class="secondary-button" type="button">后续计划</button>
+              <button id="refreshReviewActionGateButton" class="secondary-button" type="button">合并检查</button>
+              <button id="runReviewActionApplyButton" class="secondary-button" type="button">预演应用</button>
             </div>
-            <div class="review-command-group" data-label="Audit">
-              <button id="refreshReviewActionAuditsButton" class="secondary-button" type="button">Review action audits</button>
-              <button id="refreshReviewActionExecutionsButton" class="secondary-button" type="button">Review action executions</button>
-              <button id="refreshReviewActionExecutorDiagnosticsButton" class="secondary-button" type="button">Review executor diagnostics</button>
+            <div class="review-command-group" data-label="审计">
+              <button id="refreshReviewActionAuditsButton" class="secondary-button" type="button">复核审计</button>
+              <button id="refreshReviewActionExecutionsButton" class="secondary-button" type="button">执行记录</button>
+              <button id="refreshReviewActionExecutorDiagnosticsButton" class="secondary-button" type="button">执行诊断</button>
             </div>
-            <div class="review-command-group" data-label="Alerts">
-              <button id="synthesizeReviewResultEventsButton" class="secondary-button" type="button">Review alert check</button>
-              <button id="createReviewResultEventsButton" class="secondary-button" type="button">Create review alerts</button>
+            <div class="review-command-group" data-label="提醒">
+              <button id="synthesizeReviewResultEventsButton" class="secondary-button" type="button">提醒预览</button>
+              <button id="createReviewResultEventsButton" class="secondary-button" type="button">创建复核提醒</button>
             </div>
           </div>
         </form>
         </div>
         <div class="system-zone-title" id="system-rollout">
-          <span>Rollout</span>
+          <span>发布</span>
           <strong>连接器、资源和部署门禁</strong>
         </div>
         <div class="rollout-workbench">
           <section class="rollout-stage rollout-stage-intake" data-stage="01">
             <div class="rollout-stage-head">
-              <span>Validate</span>
-              <strong>connector intake</strong>
+              <span>校验</span>
+              <strong>接入入口</strong>
             </div>
-            <form id="connectorModuleValidationForm" class="control-strip rollout-card rollout-card-module" data-title="Module scan">
+            <form id="connectorModuleValidationForm" class="control-strip rollout-card rollout-card-module" data-title="模块扫描">
               <label class="grow">
                 <span>Connector 模块路径</span>
                 <input name="modulePath" placeholder="D:/connectors/custom-forum.cjs" autocomplete="off">
               </label>
-              <div class="rollout-command-shelf" data-label="Module">
+              <div class="rollout-command-shelf" data-label="模块">
                 <button type="submit">验证模块</button>
               </div>
             </form>
-            <form id="sourceDryRunForm" class="control-strip rollout-card rollout-card-dryrun" data-title="Source rehearsal">
+            <form id="sourceDryRunForm" class="control-strip rollout-card rollout-card-dryrun" data-title="来源试跑">
               <label>
-                <span>Dry-run forum</span>
+                <span>试跑论坛</span>
                 <input name="forum" id="dryRunForum" list="forumSuggestions" value="nga" autocomplete="off">
               </label>
               <label>
-                <span>Source type</span>
+                <span>来源类型</span>
                 <input name="sourceType" list="sourceTypeSuggestions" value="saved-html-directory" autocomplete="off">
               </label>
               <label class="grow">
-                <span>Name</span>
+                <span>名称</span>
                 <input name="displayName" value="Dry-run source" autocomplete="off">
               </label>
               <label class="grow">
-                <span>Module path</span>
+                <span>模块路径</span>
                 <input name="modulePath" placeholder="D:/connectors/custom-forum.cjs" autocomplete="off">
               </label>
               <label class="grow">
-                <span>Input dir</span>
+                <span>本地目录</span>
                 <input name="inputDir" value="example" autocomplete="off">
               </label>
               <label class="grow">
-                <span>JSON file / URL</span>
+                <span>JSON 文件 / URL</span>
                 <input name="locationValue" placeholder="D:/feeds/thread.json or https://..." autocomplete="off">
               </label>
               <label class="full rollout-json-field">
-                <span>Location JSON</span>
+                <span>位置 JSON</span>
                 <textarea name="locationJson" rows="3" placeholder='{"feedUrl":"https://example.test/feed"}'></textarea>
               </label>
-              <div class="rollout-command-shelf" data-label="Rehearsal">
-                <button type="submit">Source dry-run</button>
+              <div class="rollout-command-shelf" data-label="试跑">
+                <button type="submit">来源试跑</button>
               </div>
             </form>
-            <form id="connectorRolloutForm" class="control-strip rollout-card rollout-card-plan" data-title="Rollout graph">
+            <form id="connectorRolloutForm" class="control-strip rollout-card rollout-card-plan" data-title="发布路径">
               <label>
-                <span>Rollout forum</span>
+                <span>发布论坛</span>
                 <input name="forum" id="rolloutForum" list="forumSuggestions" value="nga" autocomplete="off">
               </label>
               <label>
-                <span>Source type</span>
+                <span>来源类型</span>
                 <input name="sourceType" list="sourceTypeSuggestions" value="saved-html-directory" autocomplete="off">
               </label>
               <label class="grow">
-                <span>Name</span>
+                <span>名称</span>
                 <input name="displayName" value="Rollout source" autocomplete="off">
               </label>
               <label class="grow">
-                <span>Module path</span>
+                <span>模块路径</span>
                 <input name="modulePath" placeholder="D:/connectors/custom-forum.cjs" autocomplete="off">
               </label>
               <label class="grow">
-                <span>Input dir</span>
+                <span>本地目录</span>
                 <input name="inputDir" value="example" autocomplete="off">
               </label>
               <label class="grow">
-                <span>JSON file / URL</span>
+                <span>JSON 文件 / URL</span>
                 <input name="locationValue" placeholder="D:/feeds/thread.json or https://..." autocomplete="off">
               </label>
               <label class="compact">
-                <span>Dry-run</span>
+                <span>预演</span>
                 <select name="dryRunIngest">
                   <option value="true">true</option>
                   <option value="false">false</option>
                 </select>
               </label>
               <label class="full rollout-json-field">
-                <span>Location JSON</span>
+                <span>位置 JSON</span>
                 <textarea name="locationJson" rows="3" placeholder='{"feedUrl":"https://example.test/feed"}'></textarea>
               </label>
-              <div class="rollout-command-shelf" data-label="Graph">
-                <button type="submit">Rollout plan</button>
+              <div class="rollout-command-shelf" data-label="路径">
+                <button type="submit">发布计划</button>
               </div>
             </form>
           </section>
           <section class="rollout-stage rollout-stage-runtime" data-stage="02">
             <div class="rollout-stage-head">
-              <span>Runtime</span>
-              <strong>worker route</strong>
+              <span>运行</span>
+              <strong>执行路径</strong>
             </div>
-            <form id="workerTopologyForm" class="control-strip rollout-card rollout-card-worker" data-title="Worker topology">
+            <form id="workerTopologyForm" class="control-strip rollout-card rollout-card-worker" data-title="执行拓扑">
               <label>
-                <span>Topology</span>
+                <span>拓扑</span>
                 <select name="topology">
                   <option value="operations-worker">operations-worker</option>
                   <option value="split-workers">split-workers</option>
                 </select>
               </label>
               <label>
-                <span>Source mode</span>
+                <span>来源模式</span>
                 <select name="sourceTaskMode">
                   <option value="ingest">ingest</option>
                   <option value="insight-pipeline">insight-pipeline</option>
                 </select>
               </label>
               <label>
-                <span>Source key</span>
+                <span>来源代号</span>
                 <input name="sourceKey" value="nga" autocomplete="off">
               </label>
               <label>
-                <span>Source ID</span>
+                <span>来源 ID</span>
                 <input name="sourceId" placeholder="optional tracked source id" autocomplete="off">
               </label>
-              <div class="rollout-command-shelf" data-label="Worker">
-                <button type="submit">Worker plan</button>
+              <div class="rollout-command-shelf" data-label="执行">
+                <button type="submit">执行计划</button>
               </div>
             </form>
           </section>
           <section class="rollout-stage rollout-stage-manifest" data-stage="03">
             <div class="rollout-stage-head">
-              <span>Gate</span>
-              <strong>manifest checks</strong>
+              <span>门禁</span>
+              <strong>清单检查</strong>
             </div>
-            <form id="rolloutManifestForm" class="control-strip rollout-card rollout-card-manifest" data-title="Manifest plan">
+            <form id="rolloutManifestForm" class="control-strip rollout-card rollout-card-manifest" data-title="发布清单">
               <label class="full rollout-json-field">
-                <span>Rollout manifest JSON</span>
+                <span>发布清单 JSON</span>
                 <textarea name="manifestJson" rows="9" spellcheck="false">{
   "version": "1.0",
   "name": "nga-sample-rollout",
@@ -564,13 +564,13 @@
   }
 }</textarea>
               </label>
-              <div class="rollout-command-shelf" data-label="Manifest">
-                <button type="submit">Manifest plan</button>
+              <div class="rollout-command-shelf" data-label="清单">
+                <button type="submit">清单计划</button>
               </div>
             </form>
-            <form id="resourceProvisioningForm" class="control-strip rollout-card rollout-card-resource" data-title="Resource map">
+            <form id="resourceProvisioningForm" class="control-strip rollout-card rollout-card-resource" data-title="资源映射">
               <label class="full rollout-json-field">
-                <span>Resource manifest JSON</span>
+                <span>资源清单 JSON</span>
                 <textarea name="manifestJson" rows="9" spellcheck="false">{
   "version": "1.0",
   "name": "nga-sample-rollout",
@@ -589,13 +589,13 @@
   }
 }</textarea>
               </label>
-              <div class="rollout-command-shelf" data-label="Resource">
-                <button type="submit">Resource plan</button>
+              <div class="rollout-command-shelf" data-label="资源">
+                <button type="submit">资源计划</button>
               </div>
             </form>
-            <form id="deploymentGateForm" class="control-strip rollout-card rollout-card-gate" data-title="Deployment gate">
+            <form id="deploymentGateForm" class="control-strip rollout-card rollout-card-gate" data-title="发布门禁">
               <label class="full rollout-json-field">
-                <span>Deployment gate manifest JSON</span>
+                <span>发布门禁清单 JSON</span>
                 <textarea name="manifestJson" rows="9" spellcheck="false">{
   "version": "1.0",
   "name": "nga-sample-rollout",
@@ -616,7 +616,7 @@
               </label>
               <div class="rollout-gate-controls">
                 <label class="compact">
-                  <span>LLM mode</span>
+                  <span>助手模式</span>
                   <select name="llmReadinessMode">
                     <option value="configuration">configuration</option>
                     <option value="preflight">preflight</option>
@@ -624,27 +624,27 @@
                   </select>
                 </label>
                 <label class="compact">
-                  <span>LLM provider</span>
+                  <span>助手提供方</span>
                   <select name="provider">
                     <option value="mock">mock</option>
                     <option value="openai-compatible">openai-compatible</option>
                   </select>
                 </label>
-                <div class="rollout-command-shelf" data-label="Gate">
-                  <button type="submit">Deployment gate</button>
-                  <button id="runRolloutReadinessButton" class="secondary-button" type="button">Run rollout checks</button>
+                <div class="rollout-command-shelf" data-label="门禁">
+                  <button type="submit">发布门禁</button>
+                  <button id="runRolloutReadinessButton" class="secondary-button" type="button">运行发布检查</button>
                 </div>
               </div>
             </form>
           </section>
           <section class="rollout-stage rollout-stage-apply" data-stage="04">
             <div class="rollout-stage-head">
-              <span>Apply</span>
-              <strong>audited execution</strong>
+              <span>应用</span>
+              <strong>审计执行</strong>
             </div>
-            <form id="rolloutApplyForm" class="control-strip rollout-card rollout-card-apply" data-title="Apply audit">
+            <form id="rolloutApplyForm" class="control-strip rollout-card rollout-card-apply" data-title="应用审计">
               <label class="full rollout-json-field">
-                <span>Apply manifest JSON</span>
+                <span>应用清单 JSON</span>
                 <textarea name="manifestJson" rows="9" spellcheck="false">{
   "version": "1.0",
   "name": "nga-sample-rollout",
@@ -665,14 +665,14 @@
               </label>
               <div class="rollout-gate-controls">
                 <label class="compact">
-                  <span>Execute</span>
+                  <span>执行</span>
                   <select name="execute">
                     <option value="false">false</option>
                     <option value="true">true</option>
                   </select>
                 </label>
-                <div class="rollout-command-shelf" data-label="Audit">
-                  <button type="submit">Apply manifest</button>
+                <div class="rollout-command-shelf" data-label="审计">
+                  <button type="submit">应用清单</button>
                 </div>
               </div>
             </form>

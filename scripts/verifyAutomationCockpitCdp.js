@@ -275,12 +275,12 @@ function assertAutomationAutoRefreshToggle(label, autoRefreshToggle) {
   const restored = autoRefreshToggle.restored || {};
   const failures = [];
   if (enabled.ariaPressed !== 'true') failures.push('aria-pressed did not become true');
-  if (!enabled.ariaLabel || !enabled.ariaLabel.startsWith('Auto refresh On every 60 seconds.')) failures.push('aria-label did not become On');
+  if (!enabled.ariaLabel || !enabled.ariaLabel.startsWith('自动刷新开，每 60 秒更新。')) failures.push('aria-label did not become On');
   if (enabled.dataEnabled !== 'true') failures.push('data-enabled did not become true');
   if (!enabled.activeClass) failures.push('active class was not applied');
   if (enabled.stored !== 'true') failures.push('localStorage was not set true');
   if (restored.ariaPressed !== 'false') failures.push('aria-pressed did not restore false');
-  if (!restored.ariaLabel || !restored.ariaLabel.startsWith('Auto refresh Off every 60 seconds.')) failures.push('aria-label did not restore Off');
+  if (!restored.ariaLabel || !restored.ariaLabel.startsWith('自动刷新关，每 60 秒更新。')) failures.push('aria-label did not restore Off');
   if (restored.dataEnabled !== 'false') failures.push('data-enabled did not restore false');
   if (restored.activeClass) failures.push('active class remained after restore');
   if (restored.stored !== 'false') failures.push('localStorage was not restored false');
@@ -313,9 +313,9 @@ async function verifyAutomationActionHistoryRestore(client, url) {
     "    action: 'Restored history',",
     "    status: 'ok',",
     "    mode: 'restore-check',",
-    "    changed: 'No change',",
-    "    subject: 'Automation cockpit',",
-    "    next: 'Confirm local action history survives page reload.',",
+    "    changed: '无变化',",
+    "    subject: '自动运行概览',",
+    "    next: '确认本地动作历史会在刷新后保留。',",
     "    recordedAt: '" + recordedAt + "'",
     '  };',
     "  window.localStorage.setItem('threadtrace.automationCockpit.actionHistory', JSON.stringify([item]));",
@@ -329,7 +329,7 @@ async function verifyAutomationActionHistoryRestore(client, url) {
       '(() => {',
       "  const result = document.querySelector('#automationActionResult');",
       "  const text = result ? result.innerText : '';",
-      "  return Boolean(result && text.includes('Action history') && text.includes('Restored history'));",
+      "  return Boolean(result && text.includes('动作历史') && text.includes('Restored history'));",
       '})()'
     ].join('\n'));
   }, 30000, 'Timed out waiting for restored Automation Cockpit action history.');
@@ -339,7 +339,7 @@ async function verifyAutomationActionHistoryRestore(client, url) {
     "  const text = result ? result.innerText : '';",
     "  const rows = result ? result.querySelectorAll('.automation-action-history-row') : [];",
     '  return {',
-    "    hasHistory: text.includes('Action history'),",
+    "    hasHistory: text.includes('动作历史'),",
     "    hasSeed: text.includes('Restored history'),",
     '    rowCount: rows.length',
     '  };',
@@ -464,12 +464,12 @@ function viewportAuditExpression() {
     '    statusTop: statusRect ? Math.round(statusRect.top) : null,',
     '    headlineText,',
     "    headlineHasMojibake: mojibakeMarkers.some((marker) => headlineText.includes(marker)),",
-    "    bodyTextIncludesOutbox: bodyText.includes('Notification outbox'),",
-    "    bodyTextIncludesAudit: bodyText.includes('Review audit ledger'),",
-    "    bodyTextIncludesRunbook: bodyText.includes('Operator runbook'),",
-    "    bodyTextIncludesAttentionQueue: bodyText.includes('Attention queue'),",
+    "    bodyTextIncludesOutbox: bodyText.includes('提醒箱'),",
+    "    bodyTextIncludesAudit: bodyText.includes('复核审计'),",
+    "    bodyTextIncludesRunbook: bodyText.includes('操作清单'),",
+    "    bodyTextIncludesAttentionQueue: bodyText.includes('待处理路径'),",
     "    bodyTextIncludesActionable: bodyText.includes('Actionable'),",
-    "    bodyTextIncludesFreshness: bodyText.includes('Snapshot freshness'),",
+    "    bodyTextIncludesFreshness: bodyText.includes('快照新鲜度'),",
     "    bodyTextHasMojibake: mojibakeMarkers.some((marker) => bodyText.includes(marker)),",
     "    runbookCommandCount: document.querySelectorAll('.automation-runbook-command-row').length,",
     "    attentionQueueRowCount: document.querySelectorAll('.automation-attention-row').length,",
@@ -489,14 +489,14 @@ async function verifyAutomationActionResult(client) {
   const clicked = await evaluateByValue(client, [
     '(() => {',
     "  const buttons = Array.from(document.querySelectorAll('.automation-cockpit-hero button'));",
-    "  const button = buttons.find((candidate) => candidate.textContent.trim() === 'LLM readiness');",
+    "  const button = buttons.find((candidate) => candidate.textContent.trim() === '助手状态');",
     '  if (!button) return false;',
     '  button.click();',
     '  return true;',
     '})()'
   ].join('\n'));
   if (!clicked) {
-    throw new Error('Could not click Automation Cockpit LLM readiness button.');
+    throw new Error('Could not click Automation Cockpit assistant status button.');
   }
   await waitFor(async function () {
     return evaluateByValue(client, [
@@ -506,7 +506,7 @@ async function verifyAutomationActionResult(client) {
       "  const commandRows = result ? result.querySelectorAll('.automation-action-command-row .lifecycle-command-row') : [];",
       "  const copyButtons = result ? result.querySelectorAll('button[data-action=\"copy-lifecycle-command\"],button[data-action=\"copy-command\"]') : [];",
       "  const historyRows = result ? result.querySelectorAll('.automation-action-history-row') : [];",
-      "  return Boolean(result && text.includes('Last action') && text.includes('Action history') && text.includes('LLM readiness') && commandRows.length > 0 && copyButtons.length > 0 && historyRows.length > 0);",
+      "  return Boolean(result && text.includes('最近动作') && text.includes('动作历史') && text.includes('助手状态') && commandRows.length > 0 && copyButtons.length > 0 && historyRows.length > 0);",
       '})()'
     ].join('\n'));
   }, 30000, 'Timed out waiting for Automation Cockpit action commands.');
@@ -521,9 +521,9 @@ async function verifyAutomationActionResult(client) {
     "  try { storedHistory = JSON.parse(window.localStorage.getItem('threadtrace.automationCockpit.actionHistory') || '[]'); } catch (error) {}",
     '  return {',
     '    hasResult: Boolean(result),',
-    "    hasSummary: text.includes('Last action'),",
-    "    hasHistory: text.includes('Action history'),",
-    "    hasActionLabel: text.includes('LLM readiness'),",
+    "    hasSummary: text.includes('最近动作'),",
+    "    hasHistory: text.includes('动作历史'),",
+    "    hasActionLabel: text.includes('助手状态'),",
     '    rowCount: rows.length,',
     '    commandCount: commands.length,',
     '    commands: commands.slice(0, 5),',
@@ -536,7 +536,7 @@ async function verifyAutomationActionResult(client) {
   ].join('\n'));
   report.clearHistory = await verifyAutomationActionHistoryClear(client);
   if (!report.hasHistory || report.historyCount <= 0 || report.storedHistoryCount <= 0) {
-    throw new Error('Automation Cockpit action history did not record the LLM readiness action.');
+    throw new Error('Automation Cockpit action history did not record the assistant status action.');
   }
   if (!report.clearHistory.clicked || !report.clearHistory.removed || report.clearHistory.storedHistoryCount !== 0) {
     throw new Error('Automation Cockpit action history clear did not reset the local history.');
@@ -599,21 +599,21 @@ async function verifyAutomationLoadingState(client) {
   const clicked = await evaluateByValue(client, [
     '(() => {',
     "  const buttons = Array.from(document.querySelectorAll('.automation-cockpit-hero button'));",
-    "  const button = buttons.find((candidate) => candidate.textContent.trim() === 'LLM preflight');",
+    "  const button = buttons.find((candidate) => candidate.textContent.trim() === '助手预检');",
     '  if (!button) return false;',
     '  button.click();',
     '  return true;',
     '})()'
   ].join('\n'));
   if (!clicked) {
-    throw new Error('Could not click Automation Cockpit LLM preflight button.');
+    throw new Error('Could not click Automation Cockpit assistant preflight button.');
   }
   await waitFor(async function () {
     return evaluateByValue(client, [
       '(() => {',
       "  const result = document.querySelector('#automationActionResult');",
       "  const text = result ? result.innerText : '';",
-      "  return Boolean(result && result.getAttribute('aria-busy') === 'true' && text.includes('Running LLM preflight...'));",
+      "  return Boolean(result && result.getAttribute('aria-busy') === 'true' && text.includes('正在进行助手预检...'));",
       '})()'
     ].join('\n'));
   }, 10000, 'Timed out waiting for Automation Cockpit loading state.');
@@ -623,7 +623,7 @@ async function verifyAutomationLoadingState(client) {
     "  const text = result ? result.innerText : '';",
     '  return {',
     "    busy: result ? result.getAttribute('aria-busy') : 'missing',",
-    "    hasLoadingMessage: text.includes('Running LLM preflight...'),",
+    "    hasLoadingMessage: text.includes('正在进行助手预检...'),",
     "    hasMojibake: text.includes('\\u9352') || text.includes('\\u55d8'),",
     "    preview: text.slice(0, 120)",
     '  };',
@@ -688,7 +688,7 @@ async function verifyAutomationRefreshLoadingState(client) {
       '(() => {',
       "  const result = document.querySelector('#automationReadinessResult');",
       "  const text = result ? result.innerText : '';",
-      "  return Boolean(result && result.getAttribute('aria-busy') === 'true' && text.includes('Refreshing automation cockpit...'));",
+      "  return Boolean(result && result.getAttribute('aria-busy') === 'true' && text.includes('正在刷新自动运行概览...'));",
       '})()'
     ].join('\n'));
   }, 10000, 'Timed out waiting for Automation Cockpit refresh loading state.');
@@ -698,7 +698,7 @@ async function verifyAutomationRefreshLoadingState(client) {
     "  const text = result ? result.innerText : '';",
     '  return {',
     "    busy: result ? result.getAttribute('aria-busy') : 'missing',",
-    "    hasLoadingMessage: text.includes('Refreshing automation cockpit...'),",
+    "    hasLoadingMessage: text.includes('正在刷新自动运行概览...'),",
     "    hasMojibake: text.includes('\\u9352') || text.includes('\\u55d8'),",
     "    preview: text.slice(0, 120)",
     '  };',
@@ -901,7 +901,7 @@ async function verifyAutomationFreshnessRefreshAction(client) {
       '(() => {',
       "  const result = document.querySelector('#automationReadinessResult');",
       "  const text = result ? result.innerText : '';",
-      "  return Boolean(result && result.getAttribute('aria-busy') === 'true' && text.includes('Refreshing automation cockpit...'));",
+      "  return Boolean(result && result.getAttribute('aria-busy') === 'true' && text.includes('正在刷新自动运行概览...'));",
       '})()'
     ].join('\n'));
   }, 10000, 'Timed out waiting for Automation Cockpit freshness refresh loading state.');
@@ -914,7 +914,7 @@ async function verifyAutomationFreshnessRefreshAction(client) {
     '    skipped: false,',
     '    label: ' + JSON.stringify(clicked.label) + ',',
     "    busy: result ? result.getAttribute('aria-busy') : 'missing',",
-    "    hasLoadingMessage: text.includes('Refreshing automation cockpit...'),",
+    "    hasLoadingMessage: text.includes('正在刷新自动运行概览...'),",
     "    hasMojibake: text.includes('\\u9352') || text.includes('\\u55d8'),",
     "    preview: text.slice(0, 120)",
     '  };',
@@ -975,7 +975,7 @@ async function verifyAutomationRunbookPreview(client) {
       "  const text = result ? result.innerText : '';",
       "  const rect = result ? result.getBoundingClientRect() : null;",
       "  const visible = rect ? rect.bottom > 0 && rect.top < window.innerHeight : false;",
-      "  return text.includes('Last action') && text.includes('Source schedule') && text.includes('dry-run') && visible;",
+      "  return text.includes('最近动作') && text.includes('Source schedule') && text.includes('dry-run') && visible;",
       '})()'
     ].join('\n'));
   }, 30000, 'Timed out waiting for Automation Cockpit runbook schedule preview: ' + JSON.stringify(await automationActionDiagnostic(client)));
@@ -986,7 +986,7 @@ async function verifyAutomationRunbookPreview(client) {
     "  const rect = result ? result.getBoundingClientRect() : null;",
     '  return {',
     '    skipped: false,',
-    "    hasSummary: text.includes('Last action'),",
+    "    hasSummary: text.includes('最近动作'),",
     "    hasResult: text.includes('Source schedule'),",
     "    dryRun: text.includes('dry-run'),",
     "    changed: text.includes('Changed'),",
@@ -1023,13 +1023,13 @@ async function automationActionDiagnostic(client) {
 
 async function verifyAutomationPressureAction(client) {
   return {
-    outbox: await verifyAutomationPressureActionButton(client, 'outbox-overview', 'Outbox overview', 'Notification outbox'),
-    ack: await verifyAutomationPressureActionButton(client, 'ack-preview', 'Acknowledgement preview', 'Notification acknowledgement preview'),
-    dispatch: await verifyAutomationPressureActionButton(client, 'dispatch-preview', 'Dispatch preview', 'Notification dispatch preview'),
-    audits: await verifyAutomationPressureActionButton(client, 'audit-overview', 'Review audits', 'Review action audits'),
-    gate: await verifyAutomationPressureActionButton(client, 'gate-preview', 'Gate preview', 'Review action gate'),
-    executions: await verifyAutomationPressureActionButton(client, 'execution-overview', 'Review executions', 'Review action executions'),
-    executor: await verifyAutomationPressureActionButton(client, 'executor-diagnostics', 'Executor diagnostics', 'Review executor diagnostics')
+    outbox: await verifyAutomationPressureActionButton(client, 'outbox-overview', '提醒箱概览', '提醒箱'),
+    ack: await verifyAutomationPressureActionButton(client, 'ack-preview', '确认预览', '提醒确认预览'),
+    dispatch: await verifyAutomationPressureActionButton(client, 'dispatch-preview', '投递预览', '提醒投递预览'),
+    audits: await verifyAutomationPressureActionButton(client, 'audit-overview', '复核审计', '复核审计'),
+    gate: await verifyAutomationPressureActionButton(client, 'gate-preview', '门禁预览', '复核动作门禁'),
+    executions: await verifyAutomationPressureActionButton(client, 'execution-overview', '复核执行', '复核执行'),
+    executor: await verifyAutomationPressureActionButton(client, 'executor-diagnostics', '执行诊断', '复核执行诊断')
   };
 }
 
@@ -1057,7 +1057,7 @@ async function verifyAutomationPressureActionButton(client, actionKey, actionLab
       "  const text = result ? result.innerText : '';",
       "  const rect = result ? result.getBoundingClientRect() : null;",
       "  const visible = rect ? rect.bottom > 0 && rect.top < window.innerHeight : false;",
-      "  return Boolean(result && text.includes('Last action') && text.includes(" + JSON.stringify(actionLabel) + ") && text.includes(" + JSON.stringify(panelText) + ") && visible);",
+      "  return Boolean(result && text.includes('最近动作') && text.includes(" + JSON.stringify(actionLabel) + ") && text.includes(" + JSON.stringify(panelText) + ") && visible);",
       '})()'
     ].join('\n'));
   }, 30000, 'Timed out waiting for Automation Cockpit pressure action result: ' + actionKey + '.');
@@ -1071,7 +1071,7 @@ async function verifyAutomationPressureActionButton(client, actionKey, actionLab
     '    skipped: false,',
     '    action: ' + JSON.stringify(clicked.action) + ',',
     '    label: ' + JSON.stringify(clicked.label) + ',',
-    "    hasResult: text.includes('Last action') && text.includes(" + JSON.stringify(actionLabel) + "),",
+    "    hasResult: text.includes('最近动作') && text.includes(" + JSON.stringify(actionLabel) + "),",
     "    hasPanel: text.includes(" + JSON.stringify(panelText) + "),",
     "    visible: rect ? rect.bottom > 0 && rect.top < window.innerHeight : false",
     '  };',
@@ -1182,7 +1182,7 @@ async function verifyAutomationAttentionAction(client) {
       "  const text = result ? result.innerText : '';",
       "  const rect = result ? result.getBoundingClientRect() : null;",
       "  const visible = rect ? rect.bottom > 0 && rect.top < window.innerHeight : false;",
-      "  return Boolean(result && text.includes('Last action') && text.includes('Source schedule') && text.includes('dry-run') && visible);",
+      "  return Boolean(result && text.includes('最近动作') && text.includes('Source schedule') && text.includes('dry-run') && visible);",
       '})()'
     ].join('\n'));
   }, 30000, 'Timed out waiting for Automation Cockpit attention action result.');
@@ -1196,7 +1196,7 @@ async function verifyAutomationAttentionAction(client) {
     '    skipped: false,',
     '    action: ' + JSON.stringify(clicked.action) + ',',
     '    label: ' + JSON.stringify(clicked.label) + ',',
-    "    hasResult: text.includes('Last action') && text.includes('Source schedule'),",
+    "    hasResult: text.includes('最近动作') && text.includes('Source schedule'),",
     "    dryRun: text.includes('dry-run'),",
     "    visible: rect ? rect.bottom > 0 && rect.top < window.innerHeight : false",
     '  };',
@@ -1217,7 +1217,7 @@ async function evaluateByValue(client, expression, awaitPromise) {
 }
 
 function assertAudit(label, audit) {
-  const requiredButtons = ['Refresh', 'LLM readiness', 'LLM preflight', 'LLM evaluate', 'Demo cycle'];
+  const requiredButtons = ['刷新', '助手状态', '助手预检', '质量评估', '试跑闭环'];
   const failures = [];
   if (audit.hash !== '#system') failures.push('expected #system hash');
   if (!audit.hasHero) failures.push('missing automation cockpit hero');
@@ -1230,12 +1230,12 @@ function assertAudit(label, audit) {
   requiredButtons.forEach(function (button) {
     if (!audit.buttons.includes(button)) failures.push('missing button: ' + button);
   });
-  if (!audit.bodyTextIncludesOutbox) failures.push('missing Notification outbox text');
-  if (!audit.bodyTextIncludesAudit) failures.push('missing Review audit ledger text');
-  if (!audit.bodyTextIncludesRunbook) failures.push('missing Operator runbook text');
-  if (!audit.bodyTextIncludesAttentionQueue) failures.push('missing Attention queue text');
+  if (!audit.bodyTextIncludesOutbox) failures.push('missing notification outbox text');
+  if (!audit.bodyTextIncludesAudit) failures.push('missing review audit text');
+  if (!audit.bodyTextIncludesRunbook) failures.push('missing operator runbook text');
+  if (!audit.bodyTextIncludesAttentionQueue) failures.push('missing attention queue text');
   if (!audit.bodyTextIncludesActionable) failures.push('missing Actionable runbook summary text');
-  if (!audit.bodyTextIncludesFreshness) failures.push('missing Snapshot freshness text');
+  if (!audit.bodyTextIncludesFreshness) failures.push('missing snapshot freshness text');
   if (!audit.headlineText) failures.push('missing automation cockpit headline text');
   if (audit.headlineHasMojibake) failures.push('automation cockpit headline contains mojibake: ' + audit.headlineText);
   if (audit.bodyTextHasMojibake) failures.push('body text contains mojibake');

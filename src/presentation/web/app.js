@@ -27,26 +27,26 @@ const views = {
   history: {
     title: '历史分析',
     subtitle: '解析保存页目录，生成作者、实体、观点和证据概览。',
-    mode: 'Evidence intake',
-    focus: 'Local archive'
+    mode: '资料入口',
+    focus: '本地资料'
   },
   context: {
     title: '新发言解读',
     subtitle: '输入一条新发言，召回相关历史楼层和匹配理由。',
-    mode: 'Context restore',
-    focus: 'Author lens'
+    mode: '语境还原',
+    focus: '作者线索'
   },
   search: {
     title: '历史检索',
     subtitle: '先把保存页写入本地证据索引，再按关键词检索可引用的历史发言。',
-    mode: 'Evidence recall',
-    focus: 'Floor index'
+    mode: '证据检索',
+    focus: '历史楼层'
   },
   system: {
-    title: '系统状态',
-    subtitle: '查看 API、适配器和本地服务状态。',
-    mode: 'Operations deck',
-    focus: 'Runtime + sources'
+    title: '工作台状态',
+    subtitle: '查看来源、任务、提醒和本地服务的当前状态。',
+    mode: '运行概览',
+    focus: '来源与提醒'
   }
 };
 
@@ -164,7 +164,7 @@ function normalizeAutomationActionHistoryItem(item) {
     status: String(item.status || 'unknown'),
     mode: String(item.mode || 'check'),
     changed: String(item.changed || 'n/a'),
-    subject: String(item.subject || 'ThreadTrace cockpit'),
+    subject: String(item.subject || 'ThreadTrace 工作区'),
     next: String(item.next || 'Review the detailed report below.'),
     recordedAt: String(item.recordedAt || new Date().toISOString())
   };
@@ -177,7 +177,7 @@ function rememberAutomationAction(action, meta) {
     status: safeMeta.status || 'unknown',
     mode: safeMeta.mode || 'check',
     changed: safeMeta.changed || 'n/a',
-    subject: safeMeta.subject || 'ThreadTrace cockpit',
+    subject: safeMeta.subject || 'ThreadTrace 工作区',
     next: safeMeta.next || 'Review the detailed report below.',
     recordedAt: new Date().toISOString()
   });
@@ -235,12 +235,12 @@ function updateAutomationAutoRefreshControl() {
   const button = document.querySelector('button[data-action="toggle-automation-auto-refresh"]');
   if (!button) return;
   const enabled = state.automationAutoRefresh;
-  const stateLabel = enabled ? 'On' : 'Off';
+  const stateLabel = enabled ? '开' : '关';
   const statusLabel = automationAutoRefreshStatusLabel();
   button.dataset.enabled = enabled ? 'true' : 'false';
   button.setAttribute('aria-pressed', enabled ? 'true' : 'false');
-  button.setAttribute('aria-label', 'Auto refresh ' + stateLabel + ' every 60 seconds. ' + statusLabel);
-  button.setAttribute('title', 'Auto refresh ' + stateLabel + ' every 60 seconds. ' + statusLabel);
+  button.setAttribute('aria-label', '自动刷新' + stateLabel + '，每 60 秒更新。' + statusLabel);
+  button.setAttribute('title', '自动刷新' + stateLabel + '，每 60 秒更新。' + statusLabel);
   button.classList.toggle('is-active', enabled);
   button.classList.toggle('is-refreshing', state.automationReadinessInFlight);
   const value = button.querySelector('strong');
@@ -250,11 +250,11 @@ function updateAutomationAutoRefreshControl() {
 }
 
 function automationAutoRefreshStatusLabel() {
-  if (state.automationReadinessInFlight) return 'Refreshing';
+  if (state.automationReadinessInFlight) return '刷新中';
   if (state.automationAutoRefresh && state.automationNextRefreshAt) {
-    return 'Next ' + formatTimeOfDay(state.automationNextRefreshAt);
+    return '下次 ' + formatTimeOfDay(state.automationNextRefreshAt);
   }
-  if (state.automationLastRefreshAt) return 'Last ' + formatTimeOfDay(state.automationLastRefreshAt);
+  if (state.automationLastRefreshAt) return '上次 ' + formatTimeOfDay(state.automationLastRefreshAt);
   return '60s';
 }
 
@@ -1276,7 +1276,7 @@ async function loadConnectorPackageRecommendedManifest(selection) {
   const target = document.getElementById('onboardingResult');
   target.innerHTML = panel('Recommended manifest loaded', [
     metric('Package', result.packageName || 'unknown'),
-    metric('Source type', result.sourceType || 'unknown'),
+    metric('来源类型', result.sourceType || 'unknown'),
     metric('Manifest path', result.manifestPath || result.recommendedManifest || 'unknown'),
     '<div class="button-group source-op-buttons">' +
       '<button class="inline-button secondary-inline-button" type="button" data-action="preflight-loaded-connector-package-manifest">Preflight manifest</button>' +
@@ -1458,11 +1458,11 @@ function appendDeploymentGateOptions(manifest, form) {
 function parseContextReviewResultJson(value) {
   const text = String(value || '').trim();
   if (!text) {
-    throw new Error('Context review result JSON is required.');
+    throw new Error('复核结果 JSON 不能为空。');
   }
   const parsed = JSON.parse(text);
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('Context review result JSON must be an object.');
+    throw new Error('复核结果 JSON 必须是一个对象。');
   }
   return parsed;
 }
@@ -1768,48 +1768,48 @@ function renderSystemStatusDashboard(report) {
     '<article class="system-runtime-hero ' + statusClassName(variant) + '">',
     '<section class="system-runtime-main">',
     '<div class="system-runtime-header">',
-    '<span class="system-runtime-label">Runtime pulse</span>',
+    '<span class="system-runtime-label">运行概览</span>',
     statusBadge(systemStatusLabel(variant), variant),
     '</div>',
     '<h3>' + escapeHtml(systemStatusHeadline(variant, operationsRunbook, deploymentChecklist, operationsReadiness)) + '</h3>',
     '<p>' + escapeHtml([
-      'service=' + (health.ok ? 'running' : 'attention'),
-      'storage=' + (overview.storageMode || config.storageMode || 'unknown'),
-      'sourceMode=' + (workersConfig.sourceTaskMode || 'unknown'),
-      'generated=' + (overview.generatedAt || diagnostics.generatedAt || deploymentChecklist.generatedAt || 'pending')
-    ].join(' | ')) + '</p>',
+      '服务=' + (health.ok ? '运行中' : '需关注'),
+      '存储=' + (overview.storageMode || config.storageMode || 'unknown'),
+      '来源模式=' + (workersConfig.sourceTaskMode || 'unknown'),
+      '更新=' + (overview.generatedAt || diagnostics.generatedAt || deploymentChecklist.generatedAt || 'pending')
+    ].join(' · ')) + '</p>',
     '</section>',
     '<aside class="system-runtime-pressure">',
-    systemRuntimeSignal('Sources', String(sources.enabled || 0) + '/' + String(sources.total || 0), 'due ' + String(sources.due || 0) + ' | failed ' + String(sources.failed || 0), sourcePressureVariant(sources)),
-    systemRuntimeSignal('Tasks', 'running ' + String(tasks.running || 0), 'failed ' + String(tasks.failed || 0) + ' | total ' + String(tasks.total || 0), taskPressureVariant(tasks)),
-    systemRuntimeSignal('Events', 'pending ' + String(events.pending || 0), 'failed ' + String(events.failed || 0) + ' | open ' + String(events.unacknowledged || 0), eventPressureVariant(events, {})),
-    systemRuntimeSignal('Workers', 'running ' + String(workers.running || 0), 'stale ' + String(workers.stale || 0) + ' | leases ' + String(workers.leases && workers.leases.active || 0), workerPressureVariant(workers)),
+    systemRuntimeSignal('来源', String(sources.enabled || 0) + '/' + String(sources.total || 0), '到期 ' + String(sources.due || 0) + ' · 失败 ' + String(sources.failed || 0), sourcePressureVariant(sources)),
+    systemRuntimeSignal('任务', '运行中 ' + String(tasks.running || 0), '失败 ' + String(tasks.failed || 0) + ' · 总数 ' + String(tasks.total || 0), taskPressureVariant(tasks)),
+    systemRuntimeSignal('提醒', '待处理 ' + String(events.pending || 0), '失败 ' + String(events.failed || 0) + ' · 未读 ' + String(events.unacknowledged || 0), eventPressureVariant(events, {})),
+    systemRuntimeSignal('执行', '运行中 ' + String(workers.running || 0), '停滞 ' + String(workers.stale || 0) + ' · 占用 ' + String(workers.leases && workers.leases.active || 0), workerPressureVariant(workers)),
     '</aside>',
     '<section class="system-runtime-stack">',
-    systemRuntimeMini('Readiness', readinessStatusSummary(operationsReadiness), statusVariant(operationsReadiness.status)),
-    systemRuntimeMini('Runbook', (operationsRunbook.status || 'unknown') + ' | actions ' + String(operationsRunbook.actionCount || 0), statusVariant(operationsRunbook.status)),
-    systemRuntimeMini('Overview', overview.warning ? 'deferred' : 'live', overview.warning ? 'warn' : 'ok'),
-    systemRuntimeMini('Deploy', deploymentChecklist.status || 'unknown', statusVariant(deploymentChecklist.status)),
-    systemRuntimeMini('LLM', llmConfig.provider || 'unknown', statusVariant(diagnostics.status)),
-    systemRuntimeMini('Adapters', (adapterDiagnostics.status || 'unknown') + ' | ' + String(adapterDiagnostics.adapterCount || (adapters.adapters || []).length || 0), statusVariant(adapterDiagnostics.status)),
-    systemRuntimeMini('Sources config', (sourceDiagnostics.status || 'unknown') + ' | ' + String(sourceDiagnostics.sourceCount || 0), statusVariant(sourceDiagnostics.status)),
-    systemRuntimeMini('Notify', diagnosticStatus(notificationDiagnostics, 'notifications.channel') + ' | ' + (notificationDiagnostics.channel || 'unknown'), statusVariant(diagnosticStatus(notificationDiagnostics, 'notifications.channel'))),
+    systemRuntimeMini('准备', readinessStatusSummary(operationsReadiness), statusVariant(operationsReadiness.status)),
+    systemRuntimeMini('操作', (operationsRunbook.status || 'unknown') + ' · 动作 ' + String(operationsRunbook.actionCount || 0), statusVariant(operationsRunbook.status)),
+    systemRuntimeMini('概览', overview.warning ? '延迟' : '实时', overview.warning ? 'warn' : 'ok'),
+    systemRuntimeMini('发布', deploymentChecklist.status || 'unknown', statusVariant(deploymentChecklist.status)),
+    systemRuntimeMini('助手', llmConfig.provider || 'unknown', statusVariant(diagnostics.status)),
+    systemRuntimeMini('适配器', (adapterDiagnostics.status || 'unknown') + ' · ' + String(adapterDiagnostics.adapterCount || (adapters.adapters || []).length || 0), statusVariant(adapterDiagnostics.status)),
+    systemRuntimeMini('来源配置', (sourceDiagnostics.status || 'unknown') + ' · ' + String(sourceDiagnostics.sourceCount || 0), statusVariant(sourceDiagnostics.status)),
+    systemRuntimeMini('提醒', diagnosticStatus(notificationDiagnostics, 'notifications.channel') + ' · ' + (notificationDiagnostics.channel || 'unknown'), statusVariant(diagnosticStatus(notificationDiagnostics, 'notifications.channel'))),
     resourceSignals.map(function (signal) {
       return systemRuntimeMini(signal.label, signal.value, statusVariant(signal.value));
     }).join(''),
     '</section>',
     '<section class="system-runtime-foot">',
-    '<span>System surface</span>',
+    '<span>接口与资料</span>',
     '<strong>' + escapeHtml([
       'API ' + (openApi.openapi || 'unknown'),
-      'paths ' + String(Object.keys(openApi.paths || {}).length),
-      'rawPages ' + String(rawPages.total || 0)
-    ].join(' | ')) + '</strong>',
+      '路径 ' + String(Object.keys(openApi.paths || {}).length),
+      '原始页 ' + String(rawPages.total || 0)
+    ].join(' · ')) + '</strong>',
     '<small>' + escapeHtml([
-      'authorQueue=' + authorReviewQueueStatusSummary(authorQueue),
-      'reviewActions=' + reviewActionStatusSummary(overview.reviewActions),
-      'eventActions=' + eventActionStatusSummary(overview.notificationEventActions)
-    ].join(' | ')) + '</small>',
+      '作者复核=' + authorReviewQueueStatusSummary(authorQueue),
+      '复核动作=' + reviewActionStatusSummary(overview.reviewActions),
+      '提醒动作=' + eventActionStatusSummary(overview.notificationEventActions)
+    ].join(' · ')) + '</small>',
     '</section>',
     '</article>'
   ].join('');
@@ -1972,29 +1972,29 @@ function renderHistoryCockpit(report) {
   return [
     '<section class="cockpit-hero ' + cockpitClassName(variant) + '">',
     '<div class="cockpit-hero-copy">',
-    '<span class="cockpit-kicker">ThreadTrace cockpit</span>',
-    '<h3>今日情报驾驶舱</h3>',
-    '<p>打开后先看采集、提醒和任务压力；每个异常都应该能继续钻到来源、证据和审计记录。</p>',
+    '<span class="cockpit-kicker">今日工作区</span>',
+    '<h3>今天该看什么</h3>',
+    '<p>先看来源、提醒和任务是否需要注意；每一条异常都保留通向来源、上下文和证据卡片的路径。</p>',
     '</div>',
     '<div class="cockpit-hero-status">',
-    '<span>当前判断</span>',
+    '<span>今日状态</span>',
     '<strong>' + escapeHtml(historyCockpitLabel(variant)) + '</strong>',
     '<small>' + escapeHtml(nextAction) + '</small>',
     '</div>',
     '<div class="cockpit-command-row">',
-    '<button class="inline-button" type="button" data-action="refresh-history-cockpit">刷新驾驶舱</button>',
-    '<button class="inline-button secondary-inline-button" type="button" data-view="system">进入系统台</button>',
+    '<button class="inline-button" type="button" data-action="refresh-history-cockpit">刷新概览</button>',
+    '<button class="inline-button secondary-inline-button" type="button" data-view="system">查看工作台</button>',
     '</div>',
-    '<small class="cockpit-generated">Updated ' + escapeHtml(generatedAt) + '</small>',
+    '<small class="cockpit-generated">更新于 ' + escapeHtml(generatedAt) + '</small>',
     '</section>',
     cockpitQueueCard(cockpit, deploymentChecklist, eventOverview),
-    cockpitCard('Sources', String(sources.enabled || 0) + '/' + String(sources.total || 0), 'due ' + String(sources.due || 0) + ' | failed ' + String(sources.failed || 0), sourcePressureVariant(sources)),
-    cockpitCard('Tasks', 'running ' + String(tasks.running || 0), 'failed ' + String(tasks.failed || 0) + ' | total ' + String(tasks.total || 0), taskPressureVariant(tasks)),
-    cockpitCard('Outbox', 'pending ' + String(events.pending || eventOverview.pendingCount || 0), 'failed ' + String(events.failed || eventOverview.failedCount || 0) + ' | open ' + String(events.unacknowledged || eventOverview.unacknowledgedCount || 0), eventPressureVariant(events, eventOverview)),
-    cockpitCard('Workers', 'running ' + String(workers.running || 0), 'stale ' + String(workers.stale || 0) + ' | leases ' + String(workers.leases && workers.leases.active || 0), workerPressureVariant(workers)),
-    cockpitCard('Evidence', String(rawPages.total || 0), 'raw pages | latest ' + (rawPages.latestFetchedAt || 'none'), (rawPages.total || 0) > 0 ? 'ok' : 'muted'),
-    cockpitCard('LLM', diagnostics.configuration && diagnostics.configuration.llm ? diagnostics.configuration.llm.provider : 'unknown', 'storage ' + (overview.storageMode || diagnostics.configuration && diagnostics.configuration.storageMode || 'unknown'), statusVariant(diagnostics.status)),
-    cockpitCard('Review', 'open ' + String(authorQueue.openCount || 0), 'high ' + String(authorQueue.highPriorityOpenCount || 0) + ' | sources ' + compactCountMap(authorQueue.openBySourceKey), (authorQueue.highPriorityOpenCount || 0) > 0 ? 'warn' : 'muted')
+    cockpitCard('来源', String(sources.enabled || 0) + '/' + String(sources.total || 0), '到期 ' + String(sources.due || 0) + ' · 失败 ' + String(sources.failed || 0), sourcePressureVariant(sources)),
+    cockpitCard('任务', '运行中 ' + String(tasks.running || 0), '失败 ' + String(tasks.failed || 0) + ' · 总数 ' + String(tasks.total || 0), taskPressureVariant(tasks)),
+    cockpitCard('提醒', '待处理 ' + String(events.pending || eventOverview.pendingCount || 0), '失败 ' + String(events.failed || eventOverview.failedCount || 0) + ' · 未读 ' + String(events.unacknowledged || eventOverview.unacknowledgedCount || 0), eventPressureVariant(events, eventOverview)),
+    cockpitCard('执行', '运行中 ' + String(workers.running || 0), '停滞 ' + String(workers.stale || 0) + ' · 占用 ' + String(workers.leases && workers.leases.active || 0), workerPressureVariant(workers)),
+    cockpitCard('证据', String(rawPages.total || 0), '原始页面 · 最近 ' + (rawPages.latestFetchedAt || '暂无'), (rawPages.total || 0) > 0 ? 'ok' : 'muted'),
+    cockpitCard('助手', diagnostics.configuration && diagnostics.configuration.llm ? diagnostics.configuration.llm.provider : 'unknown', '存储 ' + (overview.storageMode || diagnostics.configuration && diagnostics.configuration.storageMode || 'unknown'), statusVariant(diagnostics.status)),
+    cockpitCard('复核', '打开 ' + String(authorQueue.openCount || 0), '高优先级 ' + String(authorQueue.highPriorityOpenCount || 0) + ' · 来源 ' + compactCountMap(authorQueue.openBySourceKey), (authorQueue.highPriorityOpenCount || 0) > 0 ? 'warn' : 'muted')
   ].join('');
 }
 
@@ -2013,18 +2013,18 @@ function cockpitQueueCard(cockpit, deploymentChecklist, eventOverview) {
   });
   const rows = queue.slice(0, 4).map(function (item) {
     return cockpitQueueRow(
-      '#' + (item.rank || '?') + ' ' + (item.title || item.id || 'Queue item'),
-      [item.kind, item.scope, item.recommendedNextAction].filter(Boolean).join(' | '),
+      '#' + (item.rank || '?') + ' ' + (item.title || item.id || '待处理事项'),
+      [item.kind, item.scope, item.recommendedNextAction].filter(Boolean).join(' · '),
       attentionStatusVariant(item.severity)
     );
   }).concat(checklistItems.slice(0, Math.max(0, 4 - queue.length)).map(function (item) {
-    return cockpitQueueRow(item.key || 'deployment check', item.summary || item.status || 'needs attention', statusVariant(item.status));
+    return cockpitQueueRow(item.key || '发布检查', item.summary || item.status || '需要关注', statusVariant(item.status));
   }));
   if (rows.length === 0 && eventOverview.recommendedNextAction) {
-    rows.push(cockpitQueueRow('Outbox recommendation', eventOverview.recommendedNextAction, statusVariant(eventOverview.status)));
+    rows.push(cockpitQueueRow('提醒建议', eventOverview.recommendedNextAction, statusVariant(eventOverview.status)));
   }
   return '<article class="cockpit-card cockpit-queue-card ' + cockpitClassName(statusVariant(cockpit.status || deploymentChecklist.status || eventOverview.status)) + '">' +
-    '<div class="cockpit-card-head"><span>Operator queue</span>' + statusBadge(cockpit.status || deploymentChecklist.status || eventOverview.status || 'quiet', statusVariant(cockpit.status || deploymentChecklist.status || eventOverview.status)) + '</div>' +
+    '<div class="cockpit-card-head"><span>待处理路径</span>' + statusBadge(cockpit.status || deploymentChecklist.status || eventOverview.status || 'quiet', statusVariant(cockpit.status || deploymentChecklist.status || eventOverview.status)) + '</div>' +
     (rows.length ? rows.join('') : '<div class="cockpit-queue-empty">队列平稳。可以继续做历史分析或接入新来源。</div>') +
     '</article>';
 }
@@ -2220,7 +2220,7 @@ async function loadAutomationReadiness(options) {
         acceptErrorStatus: true
       });
     }, renderAutomationReadinessPlan, {
-      loadingMessage: 'Refreshing automation cockpit...'
+      loadingMessage: '正在刷新自动运行概览...'
     });
     state.automationLastRefreshAt = new Date().toISOString();
     return {
@@ -2587,14 +2587,14 @@ async function runLlmPreflight(targetId) {
   await renderAsync(resolvedTargetId, function () {
     return requestJson('/api/llm/preflight', {});
   }, function (result) {
-    return renderAutomationActionResult('LLM preflight', {
+    return renderAutomationActionResult('助手预检', {
       status: result.status,
       mode: result.provider || 'provider',
       subject: result.task || result.traceId || 'schema check',
       changed: result.validation && result.validation.status,
       next: firstNextActionSummary(result.nextActions)
     }, renderLlmPreflightReport(result));
-  }, automationActionRenderOptions(resolvedTargetId, 'Running LLM preflight...'));
+  }, automationActionRenderOptions(resolvedTargetId, '正在进行助手预检...'));
   await loadSystemStatus();
   await loadAutomationReadiness();
   refocusAutomationActionResult(resolvedTargetId);
@@ -2610,14 +2610,14 @@ async function runLlmReadiness(targetId) {
     });
   }, function (result) {
     const readiness = result.readiness || {};
-    return renderAutomationActionResult('LLM readiness', {
+    return renderAutomationActionResult('助手状态', {
       status: result.status,
       mode: result.mode || 'configuration',
       subject: result.provider || 'provider',
       changed: readiness.realProviderCandidate ? 'real provider' : 'mock/default',
       next: firstNextActionSummary(result.nextActions)
     }, renderLlmReadinessProfile(result));
-  }, automationActionRenderOptions(resolvedTargetId, 'Checking LLM readiness...'));
+  }, automationActionRenderOptions(resolvedTargetId, '正在检查助手状态...'));
   await loadSystemStatus();
   await loadAutomationReadiness();
   refocusAutomationActionResult(resolvedTargetId);
@@ -2629,14 +2629,14 @@ async function runLlmEvaluation(targetId) {
     return requestJson('/api/llm/evaluate', {});
   }, function (result) {
     const summary = result.summary || {};
-    return renderAutomationActionResult('LLM evaluate', {
+    return renderAutomationActionResult('质量评估', {
       status: result.status,
       mode: result.provider || 'provider',
       subject: String(result.sampleCount || 0) + ' samples',
       changed: 'warn=' + String(summary.warn || 0) + ' fail=' + String(summary.fail || 0),
       next: firstNextActionSummary(result.nextActions)
     }, renderLlmEvaluationReport(result));
-  }, automationActionRenderOptions(resolvedTargetId, 'Evaluating LLM quality gates...'));
+  }, automationActionRenderOptions(resolvedTargetId, '正在评估助手质量门禁...'));
   await loadSystemStatus();
   await loadAutomationReadiness();
   refocusAutomationActionResult(resolvedTargetId);
@@ -2657,7 +2657,7 @@ async function runDemoCycle(targetId) {
     });
   }, function (result) {
     const summary = result.summary || {};
-    return renderAutomationActionResult('Demo cycle', {
+    return renderAutomationActionResult('试跑闭环', {
       status: result.status,
       mode: 'mock',
       subject: formatSourceScope(result.primarySource),
@@ -2982,19 +2982,19 @@ function renderAutomationActionResult(action, meta, content) {
   const summary = [
     '<div class="automation-action-summary">',
     '<div class="summary-strip">',
-    summaryTile('Action', action || 'Automation', 'info'),
-    summaryTile('Status', safeMeta.status || 'unknown', statusVariant(safeMeta.status)),
-    summaryTile('Mode', safeMeta.mode || 'check'),
-    summaryTile('Changed', safeMeta.changed || 'n/a', statusVariant(safeMeta.changed)),
+    summaryTile('动作', action || '自动运行', 'info'),
+    summaryTile('状态', safeMeta.status || 'unknown', statusVariant(safeMeta.status)),
+    summaryTile('模式', safeMeta.mode || 'check'),
+    summaryTile('变化', safeMeta.changed || 'n/a', statusVariant(safeMeta.changed)),
     '</div>',
     '<div class="automation-action-summary-line">',
-    '<span><strong>' + escapeHtml(safeMeta.subject || 'ThreadTrace cockpit') + '</strong>',
-    '<small>' + escapeHtml(safeMeta.next || 'Review the detailed report below.') + '</small></span>',
+    '<span><strong>' + escapeHtml(safeMeta.subject || 'ThreadTrace 工作区') + '</strong>',
+    '<small>' + escapeHtml(safeMeta.next || '查看下方详细报告。') + '</small></span>',
     statusBadge(safeMeta.status || 'unknown', statusVariant(safeMeta.status)),
     '</div>',
     '</div>'
   ].join('');
-  return panel('Last action', summary, 'wide automation-action-summary-panel') + renderAutomationActionHistory(history) + content;
+  return panel('最近动作', summary, 'wide automation-action-summary-panel') + renderAutomationActionHistory(history) + content;
 }
 
 function renderAutomationActionHistory(history) {
@@ -3005,19 +3005,19 @@ function renderAutomationActionHistory(history) {
     return '<div class="automation-action-history-row ' + statusClassName(variant) + '">' +
       '<span class="automation-action-history-rank">' + escapeHtml('#' + (index + 1)) + '</span>' +
       '<span class="automation-action-history-body"><strong>' + escapeHtml(item.action) + '</strong>' +
-      '<small>' + escapeHtml(formatTimeOfDay(item.recordedAt) + ' | ' + item.subject + ' | ' + item.next) + '</small></span>' +
+      '<small>' + escapeHtml(formatTimeOfDay(item.recordedAt) + ' · ' + item.subject + ' · ' + item.next) + '</small></span>' +
       '<span class="automation-action-history-meta">' +
         statusBadge(item.status, variant) +
-        '<small>' + escapeHtml(item.mode + ' | changed=' + item.changed) + '</small>' +
+        '<small>' + escapeHtml(item.mode + ' · 变化=' + item.changed) + '</small>' +
       '</span>' +
     '</div>';
   }).join('');
   const content = '<div class="automation-action-history-head">' +
-      '<span><strong>Recent cockpit actions</strong><small>' + escapeHtml('Stored locally in this browser for quick operator recall.') + '</small></span>' +
-      '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="clear-automation-action-history">Clear</button>' +
+      '<span><strong>最近工作台动作</strong><small>' + escapeHtml('只保存在当前浏览器，方便快速回看。') + '</small></span>' +
+      '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="clear-automation-action-history">清除</button>' +
     '</div>' +
     '<div class="automation-action-history-list">' + rows + '</div>';
-  return panel('Action history', content, 'wide automation-action-history-panel');
+  return panel('动作历史', content, 'wide automation-action-history-panel');
 }
 
 function renderAutomationActionHistoryStandby() {
@@ -3031,8 +3031,8 @@ function renderAutomationActionHistoryStandby() {
 
 function firstNextActionSummary(actions) {
   const first = (actions || []).find(Boolean);
-  if (!first) return 'No follow-up command required.';
-  return first.summary || first.command || first.key || 'Review generated follow-up commands.';
+  if (!first) return '暂无需要继续执行的命令。';
+  return first.summary || first.command || first.key || '查看生成的后续命令。';
 }
 
 function refocusAutomationActionResult(targetId) {
@@ -4033,7 +4033,7 @@ function renderSourceOnboardingRecipe(sourceTypeSpec, selectedSourceKey) {
   const compatibleLabel = compatibleSourceKeys.length > 0 ? compatibleSourceKeys.join(', ') : 'none';
   return renderConnectorCatalogPanels(sourceTypeSpec).concat([
     panel('Source onboarding recipe', [
-      metric('Source type', sourceTypeSpec.sourceType),
+      metric('来源类型', sourceTypeSpec.sourceType),
       metric('Adapter', recipe.requiresAdapter ? 'required' : 'not required'),
       metric('Location fields', requiredFields.length + ' required / ' + optionalFields.length + ' optional'),
       metric('Compatible keys', compatibleLabel)
@@ -4534,7 +4534,7 @@ function renderConnectorRolloutPlan(result) {
     }
   }
   if (actions.length > 0) {
-    panels.push(panel('Next actions', evidenceList(actions.map(function (action) {
+    panels.push(panel('下一步', evidenceList(actions.map(function (action) {
       return action.severity + ' 路 ' + action.key + ' 路 ' + action.command;
     })), 'wide'));
   }
@@ -4549,7 +4549,7 @@ function renderWorkerTopologyPlan(result) {
       metric('Status', result.status),
       metric('Topology', result.topology),
       metric('Storage', result.storageMode),
-      metric('Source mode', result.sourceTaskMode),
+      metric('来源模式', result.sourceTaskMode),
       metric('Scope', formatEventSourceScope(result.scope || {
         sourceKey: result.sourceKey,
         sourceId: result.sourceId
@@ -4582,7 +4582,7 @@ function renderRolloutManifestPlan(result) {
     panels.push(panel('Connector rollout', [
       metric('Status', result.connectorRolloutPlan.status),
       metric('Steps', (result.connectorRolloutPlan.steps || []).length),
-      metric('Next actions', (result.connectorRolloutPlan.nextActions || []).length)
+      metric('下一步', (result.connectorRolloutPlan.nextActions || []).length)
     ].join('')));
   }
   if (result.workerTopologyPlan) {
@@ -4636,7 +4636,7 @@ function renderDeploymentGateReport(result) {
     panel('Deployment gate', [
       metric('Status', result.status),
       metric('Gates', result.gateCount || gates.length),
-      metric('Next actions', actions.length)
+      metric('下一步', actions.length)
     ].join('')),
     panel('Gate results', evidenceList(gates.map(function (gate) {
       return gate.status + ' 路 ' + gate.area + ' 路 ' + gate.key + ' 路 ' + gate.summary;
@@ -4668,7 +4668,7 @@ function renderDeploymentGateLlmSummary(result) {
   const configStatus = checklistStatusForItem(llmItems, 'llm.configuration') || 'unknown';
   const preflightStatus = preflight.status || checklistStatusForItem(llmItems, 'llm.preflight') || 'not run';
   const evaluationStatus = evaluation.status || checklistStatusForItem(llmItems, 'llm.semanticEvaluation') || 'not run';
-  return panel('LLM readiness', [
+  return panel('助手状态', [
     '<div class="summary-strip">',
     summaryTile('Config', configStatus, statusVariant(configStatus)),
     summaryTile('Preflight', preflightStatus, statusVariant(preflight.status)),
@@ -4712,7 +4712,7 @@ function renderRolloutApplyExecutionGate(result, options) {
       metric('Gate status', result && result.status || 'unknown'),
       metric('Mode', 'execute=true'),
       metric('Gates', result && (result.gateCount || gates.length) || 0),
-      metric('Next actions', actions.length),
+      metric('下一步', actions.length),
       metric('Audit', decision === 'cleared' || decision === 'awaiting-confirmation' ? 'rollout apply task will be recorded after execute' : 'no apply task was submitted')
     ].join('')),
     panel('Gate results', evidenceList(gates.map(function (gate) {
@@ -4836,7 +4836,7 @@ function renderRolloutManifestApply(result) {
   ];
   if (report.registration && report.registration.source) {
     panels.push(panel('Registered source', [
-      metric('Source ID', report.registration.source.id),
+      metric('来源 ID', report.registration.source.id),
       metric('Created', report.registration.created ? 'yes' : 'no'),
       metric('Name', report.registration.source.displayName),
       renderRolloutApplyOperationButtons(report)
@@ -4846,7 +4846,7 @@ function renderRolloutManifestApply(result) {
     panels.push(panel('Rollback plan', [
       metric('Available', report.rollbackPlan.available ? 'yes' : 'no'),
       metric('Mode', report.rollbackPlan.mode || 'unknown'),
-      metric('Source ID', report.rollbackPlan.sourceId || 'after execute'),
+      metric('来源 ID', report.rollbackPlan.sourceId || 'after execute'),
       metric('Summary', report.rollbackPlan.summary || ''),
       renderRolloutRollbackButtons(report),
       evidenceList(report.rollbackPlan.commands || [])
@@ -5014,24 +5014,24 @@ function renderLlmReadinessProfile(profile) {
   const readiness = profile.readiness || {};
   const configuration = profile.configuration || {};
   return [
-    panel('LLM readiness profile', [
+    panel('助手状态概况', [
       '<div class="summary-strip">',
-      summaryTile('Status', profile.status || 'unknown', statusVariant(profile.status)),
-      summaryTile('Mode', profile.mode || 'configuration'),
-      summaryTile('Provider', profile.provider || 'unknown', readiness.mockMode ? 'warn' : 'ok'),
-      summaryTile('Real', readiness.realProviderCandidate ? 'yes' : 'no', readiness.realProviderCandidate ? 'ok' : 'warn'),
-      summaryTile('Preflight', readiness.preflightPassed ? 'ok' : 'not run', readiness.preflightPassed ? 'ok' : 'muted'),
-      summaryTile('Evaluation', readiness.evaluationPassed ? 'ok' : 'not run', readiness.evaluationPassed ? 'ok' : 'muted'),
+      summaryTile('状态', profile.status || 'unknown', statusVariant(profile.status)),
+      summaryTile('模式', profile.mode || 'configuration'),
+      summaryTile('提供方', profile.provider || 'unknown', readiness.mockMode ? 'warn' : 'ok'),
+      summaryTile('真实服务', readiness.realProviderCandidate ? 'yes' : 'no', readiness.realProviderCandidate ? 'ok' : 'warn'),
+      summaryTile('预检', readiness.preflightPassed ? 'ok' : 'not run', readiness.preflightPassed ? 'ok' : 'muted'),
+      summaryTile('评估', readiness.evaluationPassed ? 'ok' : 'not run', readiness.evaluationPassed ? 'ok' : 'muted'),
       '</div>',
       metric('API key', configuration.apiKeyConfigured ? 'configured' : 'not configured'),
-      metric('Model', configuration.modelConfigured ? 'configured' : 'not configured'),
+      metric('模型', configuration.modelConfigured ? 'configured' : 'not configured'),
       metric('Base URL', configuration.baseUrlConfigured ? 'configured' : 'default'),
-      metric('Timeout', configuration.timeoutMs || 'default')
+      metric('超时', configuration.timeoutMs || 'default')
     ].join(''), 'wide'),
-    panel('LLM readiness checks', evidenceList((profile.checks || []).map(function (check) {
+    panel('助手状态检查', evidenceList((profile.checks || []).map(function (check) {
       return check.status + ' | ' + check.area + ' | ' + check.key + ' | ' + check.summary;
     })), 'wide'),
-    panel('LLM readiness actions', renderNextActionRows(profile.nextActions || []), 'wide automation-action-command-panel')
+    panel('助手状态建议', renderNextActionRows(profile.nextActions || []), 'wide automation-action-command-panel')
   ].join('');
 }
 
@@ -5040,43 +5040,43 @@ function renderLlmPreflightReport(report) {
   const usage = report.usage || {};
   const preview = report.outputPreview || {};
   return [
-    panel('LLM preflight', [
+    panel('助手预检', [
       '<div class="summary-strip">',
-      summaryTile('Status', report.status || 'unknown', statusVariant(report.status)),
-      summaryTile('Provider', report.provider || 'unknown', report.provider === 'mock' ? 'muted' : 'ok'),
-      summaryTile('Validation', validation.status || 'not-run', statusVariant(validation.status)),
+      summaryTile('状态', report.status || 'unknown', statusVariant(report.status)),
+      summaryTile('提供方', report.provider || 'unknown', report.provider === 'mock' ? 'muted' : 'ok'),
+      summaryTile('验证', validation.status || 'not-run', statusVariant(validation.status)),
       summaryTile('Schema', report.schemaVersion || 'unknown', validation.status === 'ok' ? 'ok' : 'muted'),
       '</div>',
       metric('Trace', report.traceId || 'none'),
-      metric('Task', report.task || 'unknown'),
-      metric('Usage', formatLlmUsage(usage)),
-      metric('Output', preview.summary || 'none'),
-      report.error ? metric('Error', report.error.message || 'unknown') : ''
+      metric('任务', report.task || 'unknown'),
+      metric('用量', formatLlmUsage(usage)),
+      metric('输出', preview.summary || 'none'),
+      report.error ? metric('错误', report.error.message || 'unknown') : ''
     ].join(''), 'wide'),
-    panel('LLM preflight checks', evidenceList((report.checks || []).map(function (check) {
+    panel('助手预检检查', evidenceList((report.checks || []).map(function (check) {
       return check.status + ' | ' + check.key + ' | ' + check.summary;
     })), 'wide'),
-    panel('LLM preflight actions', renderNextActionRows(report.nextActions || []), 'wide automation-action-command-panel')
+    panel('助手预检建议', renderNextActionRows(report.nextActions || []), 'wide automation-action-command-panel')
   ].join('');
 }
 
 function renderLlmEvaluationReport(report) {
   const summary = report.summary || {};
   return [
-    panel('LLM evaluation', [
+    panel('助手质量评估', [
       '<div class="summary-strip">',
-      summaryTile('Status', report.status || 'unknown', statusVariant(report.status)),
-      summaryTile('Provider', report.provider || 'unknown', report.provider === 'mock' ? 'muted' : 'ok'),
-      summaryTile('Samples', String(report.sampleCount || 0)),
-      summaryTile('Warn', String(summary.warn || 0), (summary.warn || 0) > 0 ? 'warn' : 'ok'),
-      summaryTile('Fail', String(summary.fail || 0), (summary.fail || 0) > 0 ? 'fail' : 'ok'),
+      summaryTile('状态', report.status || 'unknown', statusVariant(report.status)),
+      summaryTile('提供方', report.provider || 'unknown', report.provider === 'mock' ? 'muted' : 'ok'),
+      summaryTile('样本', String(report.sampleCount || 0)),
+      summaryTile('提醒', String(summary.warn || 0), (summary.warn || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('失败', String(summary.fail || 0), (summary.fail || 0) > 0 ? 'fail' : 'ok'),
       '</div>',
       metric('Trace', report.traceId || 'none'),
-      metric('Task', report.task || 'unknown'),
+      metric('任务', report.task || 'unknown'),
       metric('Schema', report.schemaVersion || 'unknown')
     ].join(''), 'wide'),
-    panel('LLM evaluation samples', evidenceList((report.results || []).map(formatLlmEvaluationSampleRow)), 'wide'),
-    panel('LLM evaluation actions', renderNextActionRows(report.nextActions || []), 'wide automation-action-command-panel')
+    panel('助手评估样本', evidenceList((report.results || []).map(formatLlmEvaluationSampleRow)), 'wide'),
+    panel('助手评估建议', renderNextActionRows(report.nextActions || []), 'wide automation-action-command-panel')
   ].join('');
 }
 
@@ -5105,38 +5105,38 @@ function renderSourceDemoCycleReport(report) {
   const pipeline = report.pipeline || {};
   const acknowledgement = report.acknowledgement || {};
   return [
-    panel('Demo cycle', [
+    panel('试跑闭环', [
       '<div class="summary-strip">',
-      summaryTile('Status', report.status || 'unknown', statusVariant(report.status)),
-      summaryTile('Due', summary.dueCount || 0, summary.dueCount > 0 ? 'ok' : 'muted'),
-      summaryTile('Completed', summary.completedCount || 0, summary.failedCount > 0 ? 'warn' : 'ok'),
-      summaryTile('Events', summary.sourceChangedEventCount || 0, summary.sourceChangedEventCount > 0 ? 'ok' : 'muted'),
+      summaryTile('状态', report.status || 'unknown', statusVariant(report.status)),
+      summaryTile('到期', summary.dueCount || 0, summary.dueCount > 0 ? 'ok' : 'muted'),
+      summaryTile('完成', summary.completedCount || 0, summary.failedCount > 0 ? 'warn' : 'ok'),
+      summaryTile('提醒', summary.sourceChangedEventCount || 0, summary.sourceChangedEventCount > 0 ? 'ok' : 'muted'),
       '</div>',
-      metric('Task', report.task && report.task.id || 'none'),
+      metric('任务', report.task && report.task.id || 'none'),
       metric('Trace', report.traceId || 'none'),
-      metric('Primary source', formatSourceScope(report.primarySource)),
-      metric('Open events', summary.openEventCount === undefined ? 'unknown' : summary.openEventCount),
-      metric('Ack', acknowledgement.status || 'not-run'),
+      metric('主要来源', formatSourceScope(report.primarySource)),
+      metric('打开提醒', summary.openEventCount === undefined ? 'unknown' : summary.openEventCount),
+      metric('确认', acknowledgement.status || 'not-run'),
       renderBatchTaskControls(pipeline.task)
     ].join(''), 'wide'),
-    panel('Demo cycle pipeline', [
-      metric('Batch task', pipeline.task && pipeline.task.id || 'none'),
-      metric('Sources', pipeline.sourceCount || 0),
-      metric('Skipped', pipeline.skippedCount || 0),
-      metric('Failed', pipeline.failedCount || 0),
+    panel('试跑处理路径', [
+      metric('批量任务', pipeline.task && pipeline.task.id || 'none'),
+      metric('来源', pipeline.sourceCount || 0),
+      metric('跳过', pipeline.skippedCount || 0),
+      metric('失败', pipeline.failedCount || 0),
       renderSourceOperationResultRows(pipeline.results || []),
       renderSourceOperationSkippedRows(pipeline.skipped || [])
     ].join(''), 'wide'),
-    panel('Source changed events', renderDemoCycleEvents(report.sourceChangedEvents || []), 'wide'),
-    acknowledgement.status ? panel('Acknowledgement', renderDemoCycleAcknowledgement(acknowledgement), 'wide') : '',
-    report.closure ? panel('Demo cycle closure', renderDemoCycleClosure(report.closure), 'wide') : '',
-    report.drilldown ? panel('Demo cycle drilldown', [
-      metric('Status', report.drilldown.status || 'unknown'),
-      metric('Latest event', report.drilldown.health && report.drilldown.health.events && report.drilldown.health.events.latest ? report.drilldown.health.events.latest.id : 'none'),
-      metric('Latest task', report.drilldown.health && report.drilldown.health.tasks && report.drilldown.health.tasks.latest ? report.drilldown.health.tasks.latest.id : 'none'),
+    panel('来源变化提醒', renderDemoCycleEvents(report.sourceChangedEvents || []), 'wide'),
+    acknowledgement.status ? panel('确认结果', renderDemoCycleAcknowledgement(acknowledgement), 'wide') : '',
+    report.closure ? panel('试跑闭环收口', renderDemoCycleClosure(report.closure), 'wide') : '',
+    report.drilldown ? panel('试跑明细', [
+      metric('状态', report.drilldown.status || 'unknown'),
+      metric('最新提醒', report.drilldown.health && report.drilldown.health.events && report.drilldown.health.events.latest ? report.drilldown.health.events.latest.id : 'none'),
+      metric('最新任务', report.drilldown.health && report.drilldown.health.tasks && report.drilldown.health.tasks.latest ? report.drilldown.health.tasks.latest.id : 'none'),
       renderSourceDrilldownButtonForScope(report.primarySource || {})
     ].join(''), 'wide') : '',
-    panel('Demo cycle actions', renderNextActionRows(report.nextActions || []), 'wide automation-action-command-panel')
+    panel('试跑建议', renderNextActionRows(report.nextActions || []), 'wide automation-action-command-panel')
   ].join('');
 }
 
@@ -5324,13 +5324,13 @@ function renderTaskList(result) {
   const tasks = result.tasks || [];
   const pipelineRuns = result.pipelineRuns || [];
   return [
-    panel('鏈€杩戞礊瀵熸祦姘寸嚎', evidenceList(pipelineRuns.map(renderPipelineRunSummary)), 'wide'),
-    panel('Recent tasks', renderTaskRows(tasks), 'wide')
+    panel('最近洞察流水线', evidenceList(pipelineRuns.map(renderPipelineRunSummary)), 'wide'),
+    panel('最近任务', renderTaskRows(tasks), 'wide')
   ].join('');
 }
 
 function renderTaskRows(tasks) {
-  if (!tasks || tasks.length === 0) return '<div class="muted">No tasks.</div>';
+  if (!tasks || tasks.length === 0) return '<div class="muted">暂无任务。</div>';
   return '<div class="source-operation-result-list">' + tasks.map(function (task) {
     const output = task.output || {};
     const trace = taskTraceMetadata(task);
@@ -5640,14 +5640,14 @@ function renderAutomationReadinessPlan(input) {
   const plan = cockpit.plan;
   return [
     renderAutomationCockpitHero(plan, cockpit),
-    panel('Attention queue', renderAutomationAttentionQueue(cockpit.attentionQueue), 'wide automation-attention-panel'),
-    panel('Snapshot freshness', renderAutomationFreshness(cockpit.freshness), 'wide automation-freshness-panel'),
-    panel('Notification and audit pressure', renderAutomationOperatingPressure(cockpit), 'wide automation-pressure-panel'),
-    panel('Automation gates', renderAutomationReadinessChecks(plan.checks || []), 'wide automation-gates-panel'),
-    panel('Operator runbook', renderAutomationOperatorRunbook(cockpit.operatorRunbook), 'wide automation-runbook-panel'),
-    panel('Automation remediation', renderAutomationRemediation(plan.remediation), 'wide automation-remediation-panel'),
-    panel('Worker commands', renderAutomationWorkerCommands(plan.automation && plan.automation.workerCommands || []), 'wide automation-worker-panel'),
-    panel('Next actions', renderAutomationNextActions(plan.nextActions || []), 'wide automation-next-panel')
+    panel('待处理路径', renderAutomationAttentionQueue(cockpit.attentionQueue), 'wide automation-attention-panel'),
+    panel('快照新鲜度', renderAutomationFreshness(cockpit.freshness), 'wide automation-freshness-panel'),
+    panel('提醒与审计压力', renderAutomationOperatingPressure(cockpit), 'wide automation-pressure-panel'),
+    panel('自动运行门禁', renderAutomationReadinessChecks(plan.checks || []), 'wide automation-gates-panel'),
+    panel('操作清单', renderAutomationOperatorRunbook(cockpit.operatorRunbook), 'wide automation-runbook-panel'),
+    panel('修复建议', renderAutomationRemediation(plan.remediation), 'wide automation-remediation-panel'),
+    panel('执行命令', renderAutomationWorkerCommands(plan.automation && plan.automation.workerCommands || []), 'wide automation-worker-panel'),
+    panel('下一步', renderAutomationNextActions(plan.nextActions || []), 'wide automation-next-panel')
   ].join('');
 }
 
@@ -5697,68 +5697,68 @@ function renderAutomationCockpitHero(plan, cockpit) {
     '<article class="automation-cockpit-hero ' + statusClassName(readyVariant) + '">',
     '<section class="automation-cockpit-main">',
     '<div class="automation-cockpit-header">',
-    '<span class="automation-cockpit-label">Automation cockpit</span>',
+    '<span class="automation-cockpit-label">自动运行概览</span>',
     statusBadge(plan.status || 'unknown', readyVariant),
-    statusBadge(plan.readyForUnattendedRun ? 'unattended ready' : 'operator review', plan.readyForUnattendedRun ? 'ok' : 'warn'),
+    statusBadge(plan.readyForUnattendedRun ? '可自动运行' : '需要复核', plan.readyForUnattendedRun ? 'ok' : 'warn'),
     '</div>',
     '<h3>' + escapeHtml(automationReadinessHeadlineReadable(plan, sources, operations, workers, llm, demo)) + '</h3>',
     '<p>' + escapeHtml([
-      'snapshot=' + generatedAt,
-      'sourceTaskMode=' + sourceTaskMode,
-      'topology=' + (workers.topology || 'unknown'),
-      'llm=' + (llm.provider || 'unknown') + (llm.mockMode ? '/mock' : '')
-    ].join(' | ')) + '</p>',
+      '快照=' + generatedAt,
+      '来源模式=' + sourceTaskMode,
+      '拓扑=' + (workers.topology || 'unknown'),
+      '助手=' + (llm.provider || 'unknown') + (llm.mockMode ? '/mock' : '')
+    ].join(' · ')) + '</p>',
     '<div class="automation-cockpit-actions button-group">' +
-      automationCockpitButton('refresh-automation-readiness', 'Refresh', 'secondary-inline-button') +
+      automationCockpitButton('refresh-automation-readiness', '刷新', 'secondary-inline-button') +
       automationCockpitAutoRefreshToggle() +
-      automationCockpitButton('run-llm-readiness', 'LLM readiness', 'secondary-inline-button') +
-      automationCockpitButton('run-llm-preflight', 'LLM preflight', 'secondary-inline-button') +
-      automationCockpitButton('run-llm-evaluation', 'LLM evaluate', 'secondary-inline-button') +
-      automationCockpitButton('run-demo-cycle', 'Demo cycle', '') +
+      automationCockpitButton('run-llm-readiness', '助手状态', 'secondary-inline-button') +
+      automationCockpitButton('run-llm-preflight', '助手预检', 'secondary-inline-button') +
+      automationCockpitButton('run-llm-evaluation', '质量评估', 'secondary-inline-button') +
+      automationCockpitButton('run-demo-cycle', '试跑闭环', '') +
     '</div>',
     '</section>',
     '<aside class="automation-cockpit-signals">',
-    automationCockpitSignal('Ready', plan.readyForUnattendedRun ? 'yes' : 'no', plan.readyForUnattendedRun ? 'ok' : 'warn'),
-    automationCockpitSignal('Sources', sources.total || 0, (sources.total || 0) > 0 ? 'ok' : 'fail'),
-    automationCockpitSignal('Due now', sources.due || 0, (sources.due || 0) > 0 ? 'warn' : 'ok'),
-    automationCockpitSignal('Queue', operations.queueTotal || 0, statusVariant(operations.cockpitStatus)),
-    automationCockpitSignal('Runnable', operations.runnable || 0, (operations.runnable || 0) > 0 ? 'ok' : 'muted'),
-    automationCockpitSignal('LLM', llm.provider || 'unknown', statusVariant(llm.status)),
-    automationCockpitSignal('Freshness', (freshness.presentSourceCount || 0) + '/' + (freshness.sourceCount || 0), statusVariant(freshness.status)),
-    automationCockpitSignal('Span', freshnessSpan, freshness.spanMs > 60000 ? 'warn' : statusVariant(freshness.status || 'ok')),
+    automationCockpitSignal('就绪', plan.readyForUnattendedRun ? '是' : '否', plan.readyForUnattendedRun ? 'ok' : 'warn'),
+    automationCockpitSignal('来源', sources.total || 0, (sources.total || 0) > 0 ? 'ok' : 'fail'),
+    automationCockpitSignal('今日到期', sources.due || 0, (sources.due || 0) > 0 ? 'warn' : 'ok'),
+    automationCockpitSignal('队列', operations.queueTotal || 0, statusVariant(operations.cockpitStatus)),
+    automationCockpitSignal('可运行', operations.runnable || 0, (operations.runnable || 0) > 0 ? 'ok' : 'muted'),
+    automationCockpitSignal('助手', llm.provider || 'unknown', statusVariant(llm.status)),
+    automationCockpitSignal('新鲜度', (freshness.presentSourceCount || 0) + '/' + (freshness.sourceCount || 0), statusVariant(freshness.status)),
+    automationCockpitSignal('跨度', freshnessSpan, freshness.spanMs > 60000 ? 'warn' : statusVariant(freshness.status || 'ok')),
     '</aside>',
     '<section class="automation-cockpit-runpath">',
-    '<span>Run path</span>',
+    '<span>运行路径</span>',
     renderAutomationRunPath(summary, plan, cockpit || {}),
     '</section>',
     '<section class="automation-cockpit-foot">',
-    '<span>Evidence loop</span>',
+    '<span>证据回路</span>',
     '<strong>' + escapeHtml([
-      'representative=' + representativeSource,
-      'health=' + (representative.status || 'not-evaluated'),
-      'replay=' + replayStatus,
-      'outbox=' + pressure.outboxStatus
-    ].join(' | ')) + '</strong>',
+      '代表来源=' + representativeSource,
+      '健康=' + (representative.status || 'not-evaluated'),
+      '回放=' + replayStatus,
+      '提醒箱=' + pressure.outboxStatus
+    ].join(' · ')) + '</strong>',
     '<small>' + escapeHtml([
-      'skipped=' + (sources.skipped || 0),
-      'priority=' + (operations.highestPriorityScore || 0),
-      'demo=' + (demo.closureStatus || demo.status || 'not-run'),
-      'audits=' + pressure.auditCount,
-      'executions=' + pressure.executionCount
-    ].join(' | ')) + '</small>',
+      '跳过=' + (sources.skipped || 0),
+      '优先级=' + (operations.highestPriorityScore || 0),
+      '试跑=' + (demo.closureStatus || demo.status || 'not-run'),
+      '审计=' + pressure.auditCount,
+      '执行=' + pressure.executionCount
+    ].join(' · ')) + '</small>',
     '</section>',
     '</article>'
   ].join('');
 }
 
 function automationReadinessHeadlineReadable(plan, sources, operations, workers, llm, demo) {
-  if (plan.readyForUnattendedRun) return 'Unattended operation is ready for a daily run.';
-  if ((sources.total || 0) === 0) return 'Connect a trusted source before automation has something to run.';
-  if ((operations.queueTotal || 0) > 0 && (operations.runnable || 0) > 0) return 'Runnable work is queued; run one controlled cycle next.';
-  if (llm.mockMode || llm.provider === 'mock') return 'Semantic analysis is still on the mock/provider readiness path.';
-  if (!workers.topology || workers.status !== 'ok') return 'Confirm worker topology before relying on long-running automation.';
-  if (!demo.readyForDailyUse) return 'Complete the demo closure before treating the loop as daily-use ready.';
-  return 'The automation base is in place; close the remaining operating gaps.';
+  if (plan.readyForUnattendedRun) return '每日自动运行已经准备好。';
+  if ((sources.total || 0) === 0) return '先接入一个可信来源，自动运行才有内容可处理。';
+  if ((operations.queueTotal || 0) > 0 && (operations.runnable || 0) > 0) return '已有可运行事项排队，下一步适合做一次受控试跑。';
+  if (llm.mockMode || llm.provider === 'mock') return '语义分析仍在助手提供方的准备路径上。';
+  if (!workers.topology || workers.status !== 'ok') return '先确认执行拓扑，再依赖长时间自动运行。';
+  if (!demo.readyForDailyUse) return '完成一次试跑闭环后，再把它当成日常流程使用。';
+  return '自动运行底座已经在位，继续收口剩余的运行缺口。';
 }
 
 function automationCockpitButton(action, label, className) {
@@ -5767,11 +5767,11 @@ function automationCockpitButton(action, label, className) {
 
 function automationCockpitAutoRefreshToggle() {
   const enabled = Boolean(state.automationAutoRefresh);
-  const stateLabel = enabled ? 'On' : 'Off';
+  const stateLabel = enabled ? '开' : '关';
   const statusLabel = automationAutoRefreshStatusLabel();
   return [
-    '<button class="automation-auto-refresh-toggle' + (enabled ? ' is-active' : '') + (state.automationReadinessInFlight ? ' is-refreshing' : '') + '" type="button" data-action="toggle-automation-auto-refresh" data-enabled="' + (enabled ? 'true' : 'false') + '" aria-pressed="' + (enabled ? 'true' : 'false') + '" aria-label="' + escapeHtml('Auto refresh ' + stateLabel + ' every 60 seconds. ' + statusLabel) + '" title="' + escapeHtml('Auto refresh ' + stateLabel + ' every 60 seconds. ' + statusLabel) + '">',
-    '<span>Auto refresh</span>',
+    '<button class="automation-auto-refresh-toggle' + (enabled ? ' is-active' : '') + (state.automationReadinessInFlight ? ' is-refreshing' : '') + '" type="button" data-action="toggle-automation-auto-refresh" data-enabled="' + (enabled ? 'true' : 'false') + '" aria-pressed="' + (enabled ? 'true' : 'false') + '" aria-label="' + escapeHtml('自动刷新' + stateLabel + '，每 60 秒更新。' + statusLabel) + '" title="' + escapeHtml('自动刷新' + stateLabel + '，每 60 秒更新。' + statusLabel) + '">',
+    '<span>自动刷新</span>',
     ' ',
     '<strong>' + stateLabel + '</strong>',
     ' ',
@@ -5795,38 +5795,38 @@ function renderAutomationRunPath(summary, plan, cockpit) {
   const pressure = automationOperatingPressureSummary(cockpit || {});
   const rows = [
     {
-      title: 'Source schedule',
-      detail: 'registered=' + (sources.total || 0) + ' | due=' + (sources.due || 0) + ' | skipped=' + (sources.skipped || 0),
+      title: '来源排期',
+      detail: '已登记=' + (sources.total || 0) + ' · 到期=' + (sources.due || 0) + ' · 跳过=' + (sources.skipped || 0),
       status: (sources.total || 0) > 0 ? ((sources.due || 0) > 0 ? 'warn' : 'ok') : 'fail'
     },
     {
-      title: 'Worker topology',
-      detail: (workers.topology || 'unknown') + ' | mode=' + (workers.sourceTaskMode || automation.sourceTaskMode || 'unknown') + ' | workers=' + (workers.workerCount || workerCommands.length || 0),
+      title: '执行拓扑',
+      detail: (workers.topology || 'unknown') + ' · 模式=' + (workers.sourceTaskMode || automation.sourceTaskMode || 'unknown') + ' · 执行器=' + (workers.workerCount || workerCommands.length || 0),
       status: statusVariant(workers.status)
     },
     {
-      title: 'LLM provider',
-      detail: (llm.provider || 'unknown') + ' | mode=' + (llm.mode || 'unknown') + ' | mock=' + String(Boolean(llm.mockMode)),
+      title: '助手提供方',
+      detail: (llm.provider || 'unknown') + ' · 模式=' + (llm.mode || 'unknown') + ' · mock=' + String(Boolean(llm.mockMode)),
       status: llm.mockMode ? 'warn' : statusVariant(llm.status)
     },
     {
-      title: 'Demo closure',
-      detail: 'status=' + (demo.closureStatus || demo.status || 'not-run') + ' | daily=' + String(Boolean(demo.readyForDailyUse)),
+      title: '试跑收口',
+      detail: '状态=' + (demo.closureStatus || demo.status || 'not-run') + ' · 日常可用=' + String(Boolean(demo.readyForDailyUse)),
       status: demo.readyForDailyUse ? 'ok' : 'warn'
     },
     {
-      title: 'Operator pressure',
-      detail: 'queue=' + (operations.queueTotal || 0) + ' | runnable=' + (operations.runnable || 0) + ' | priority=' + (operations.highestPriorityScore || 0),
+      title: '操作压力',
+      detail: '队列=' + (operations.queueTotal || 0) + ' · 可运行=' + (operations.runnable || 0) + ' · 优先级=' + (operations.highestPriorityScore || 0),
       status: statusVariant(operations.cockpitStatus)
     },
     {
-      title: 'Notification outbox',
-      detail: 'open=' + pressure.openEvents + ' | due=' + pressure.dueEvents + ' | failed=' + pressure.failedEvents,
+      title: '提醒箱',
+      detail: '未读=' + pressure.openEvents + ' · 到期=' + pressure.dueEvents + ' · 失败=' + pressure.failedEvents,
       status: pressure.outboxVariant
     },
     {
-      title: 'Review audit ledger',
-      detail: 'audits=' + pressure.auditCount + ' | executions=' + pressure.executionCount + ' | stale=' + pressure.staleExecutions,
+      title: '复核审计',
+      detail: '审计=' + pressure.auditCount + ' · 执行=' + pressure.executionCount + ' · 停滞=' + pressure.staleExecutions,
       status: pressure.auditVariant
     }
   ];
@@ -5843,40 +5843,143 @@ function renderAutomationAttentionQueue(queue) {
   const items = safeQueue.items || [];
   const rows = [
     '<div class="summary-strip">',
-    summaryTile('Status', safeQueue.status || 'unknown', statusVariant(safeQueue.status)),
-    summaryTile('Items', String(safeQueue.itemCount || items.length || 0), (safeQueue.itemCount || items.length || 0) > 0 ? 'warn' : 'ok'),
-    summaryTile('Critical', String(safeQueue.criticalCount || 0), (safeQueue.criticalCount || 0) > 0 ? 'fail' : 'ok'),
-    summaryTile('Warning', String(safeQueue.warningCount || 0), (safeQueue.warningCount || 0) > 0 ? 'warn' : 'ok'),
-    summaryTile('Top', safeQueue.highestSeverity || 'ok', safeQueue.highestSeverity === 'critical' ? 'fail' : safeQueue.highestSeverity === 'warning' ? 'warn' : 'ok'),
+    summaryTile('状态', automationAttentionStatusLabel(safeQueue.status || 'unknown'), statusVariant(safeQueue.status)),
+    summaryTile('事项', String(safeQueue.itemCount || items.length || 0), (safeQueue.itemCount || items.length || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('严重', String(safeQueue.criticalCount || 0), (safeQueue.criticalCount || 0) > 0 ? 'fail' : 'ok'),
+    summaryTile('提醒', String(safeQueue.warningCount || 0), (safeQueue.warningCount || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('最高', automationAttentionStatusLabel(safeQueue.highestSeverity || 'ok'), safeQueue.highestSeverity === 'critical' ? 'fail' : safeQueue.highestSeverity === 'warning' ? 'warn' : 'ok'),
     '</div>'
   ];
   if (items.length === 0) {
-    rows.push(emptySignal('No cockpit attention items right now.', 'Clear'));
+    rows.push(emptySignal('当前没有需要处理的路径。', '清爽'));
     return rows.join('');
   }
   rows.push('<div class="automation-attention-list">' + items.slice(0, 8).map(function (item) {
     const variant = item.severity === 'critical' ? 'fail' : item.severity === 'warning' ? 'warn' : statusVariant(item.status);
     return '<div class="action-row ops-row automation-attention-row ' + statusClassName(variant) + '">' +
       '<span>' +
-      '<strong>' + escapeHtml('#' + (item.rank || '?') + ' ' + (item.title || item.id || 'Attention item')) + '</strong>' +
-      '<small>' + escapeHtml((item.area || 'cockpit') + ' | ' + (item.summary || 'Review this cockpit signal.')) + '</small>' +
-      '<small>' + escapeHtml(item.nextAction || 'Review the related cockpit panel.') + '</small>' +
+      '<strong>' + escapeHtml('#' + (item.rank || '?') + ' ' + automationAttentionTitle(item)) + '</strong>' +
+      '<small>' + escapeHtml(automationAttentionAreaLabel(item.area || 'cockpit') + ' · ' + automationAttentionSummary(item)) + '</small>' +
+      '<small>' + escapeHtml(automationAttentionNextAction(item)) + '</small>' +
       '</span>' +
       renderAutomationAttentionControl(item) +
-      statusBadge(item.severity || item.status || 'info', variant) +
+      statusBadge(automationAttentionStatusLabel(item.severity || item.status || 'info'), variant) +
       '</div>';
   }).join('') + '</div>');
   return rows.join('');
+}
+
+function automationAttentionTitle(item) {
+  const safeItem = item || {};
+  const id = safeItem.id || '';
+  const title = safeItem.title || '';
+  const byId = {
+    readiness: '自动运行准备度',
+    'pressure.outbox': '提醒箱',
+    'pressure.audit': '复核审计',
+    'pressure.executions': '动作执行记录',
+    'pressure.channel': '提醒渠道',
+    freshness: '快照新鲜度',
+    'runbook.actionable': '操作清单'
+  };
+  return byId[id] || title || id || '待处理事项';
+}
+
+function automationAttentionAreaLabel(area) {
+  return {
+    readiness: '准备度',
+    notifications: '提醒',
+    'review-audit': '复核审计',
+    executions: '执行记录',
+    freshness: '快照',
+    runbook: '操作清单',
+    cockpit: '工作区'
+  }[area] || area || '工作区';
+}
+
+function automationAttentionSummary(item) {
+  const summary = item && item.summary ? String(item.summary) : '查看这个工作区信号。';
+  return summary
+    .replace(/\s+\|\s+/g, ' · ')
+    .replace(/\bretryExhausted=/g, '重试耗尽=')
+    .replace(/\bfailedChecks=/g, '失败检查=')
+    .replace(/\bwarnChecks=/g, '提醒检查=')
+    .replace(/\bplannedClosure=/g, '计划关闭=')
+    .replace(/\bplannedMerge=/g, '计划合并=')
+    .replace(/\bactionable=/g, '可处理=')
+    .replace(/\bdryRun=/g, '预览=')
+    .replace(/\bexecute=/g, '执行=')
+    .replace(/\baudits=/g, '审计=')
+    .replace(/\btasks=/g, '任务=')
+    .replace(/\bpresent=/g, '已就绪=')
+    .replace(/\bmissing=/g, '缺失=')
+    .replace(/\bspanMs=/g, '跨度=')
+    .replace(/\bchannel=/g, '渠道=')
+    .replace(/\bcount=/g, '总数=')
+    .replace(/\bstale=/g, '停滞=')
+    .replace(/\bopen=/g, '未读=')
+    .replace(/\bdue=/g, '到期=')
+    .replace(/\bfailed=/g, '失败=');
+}
+
+function automationAttentionNextAction(item) {
+  const safeItem = item || {};
+  const nextAction = safeItem.nextAction ? String(safeItem.nextAction) : '';
+  if (safeItem.id === 'readiness') return '自动运行还不能无人值守。';
+  if (safeItem.id === 'pressure.outbox') return '查看未读、到期和失败提醒。';
+  if (safeItem.id === 'pressure.audit') return '执行动作前先查看复核审计压力。';
+  if (safeItem.id === 'pressure.executions') return '检查停滞或失败的自动动作。';
+  if (safeItem.id === 'pressure.channel') return '依赖投递前先检查提醒渠道。';
+  if (safeItem.id === 'freshness') {
+    const suffix = nextAction.indexOf(':') >= 0 ? nextAction.slice(nextAction.indexOf(':') + 1).trim() : '';
+    return suffix ? '刷新缺失输入：' + suffix : '刷新过期的工作区输入。';
+  }
+  if (safeItem.id === 'runbook.actionable') {
+    return nextAction.indexOf('node ') === 0 ? nextAction : '查看操作清单里的命令。';
+  }
+  return nextAction || '查看相关工作区面板。';
+}
+
+function automationAttentionStatusLabel(status) {
+  return {
+    ok: '正常',
+    info: '提示',
+    warn: '提醒',
+    warning: '提醒',
+    fail: '失败',
+    critical: '严重',
+    unknown: '未知'
+  }[status] || status || '未知';
+}
+
+function automationAttentionPanelActionLabel(item) {
+  if (!item || !item.targetPanel) return '打开面板';
+  return {
+    'automation-gates': '打开门禁',
+    'automation-pressure': '打开概览',
+    'automation-freshness': '打开新鲜度',
+    'automation-runbook': '打开操作清单'
+  }[item.targetPanel] || '打开面板';
+}
+
+function automationAttentionRunActionLabel(item) {
+  if (!item || !item.nextActionKey) return '运行检查';
+  return {
+    'refresh-automation-readiness': '刷新快照',
+    'preview-runbook-command': '预览下一步',
+    'run-llm-readiness': '检查助手状态',
+    'run-llm-preflight': '运行助手预检'
+  }[item.nextActionKey] || '运行检查';
 }
 
 function renderAutomationAttentionControl(item) {
   if (!item || (!item.targetPanel && !item.nextActionKey)) return '';
   const buttons = [];
   if (item.targetPanel) {
-    buttons.push('<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="focus-automation-panel" data-target-panel="' + escapeHtml(item.targetPanel) + '">' + escapeHtml(item.actionLabel || 'Open panel') + '</button>');
+    buttons.push('<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="focus-automation-panel" data-target-panel="' + escapeHtml(item.targetPanel) + '">' + escapeHtml(automationAttentionPanelActionLabel(item)) + '</button>');
   }
   if (item.nextActionKey) {
-    buttons.push('<button class="inline-button compact-inline-button" type="button" data-action="run-automation-attention-action" data-attention-action="' + escapeHtml(item.nextActionKey) + '" data-target-panel="' + escapeHtml(item.targetPanel || '') + '">' + escapeHtml(item.nextActionLabel || 'Run check') + '</button>');
+    buttons.push('<button class="inline-button compact-inline-button" type="button" data-action="run-automation-attention-action" data-attention-action="' + escapeHtml(item.nextActionKey) + '" data-target-panel="' + escapeHtml(item.targetPanel || '') + '">' + escapeHtml(automationAttentionRunActionLabel(item)) + '</button>');
   }
   return '<span class="button-group automation-attention-actions">' + buttons.join('') + '</span>';
 }
@@ -5919,14 +6022,14 @@ async function runAutomationPressureAction(button) {
         acceptErrorStatus: true
       });
     }, function (overview) {
-      return renderAutomationActionResult('Outbox overview', {
+      return renderAutomationActionResult('提醒箱概览', {
         status: overview.status,
         mode: 'read-only',
-        subject: 'Notification outbox',
-        changed: 'No change',
-        next: overview.recommendedNextAction || 'Review notification outbox pressure.'
+        subject: '提醒箱',
+        changed: '无变化',
+        next: overview.recommendedNextAction || '查看提醒箱压力。'
       }, renderNotificationEventOverview(overview));
-    }, automationActionRenderOptions(resolveAutomationActionTarget(), 'Loading notification outbox overview...'));
+    }, automationActionRenderOptions(resolveAutomationActionTarget(), '正在读取提醒箱概览...'));
     return;
   }
   if (action === 'ack-preview') {
@@ -5940,14 +6043,14 @@ async function runAutomationPressureAction(button) {
         execute: false
       });
     }, function (result) {
-      return renderAutomationActionResult('Acknowledgement preview', {
+      return renderAutomationActionResult('确认预览', {
         status: result.status,
         mode: 'dry-run',
-        subject: 'Open notification events',
-        changed: 'No change',
-        next: 'Previewed ' + String(result.candidateCount || 0) + ' acknowledgement candidate(s).'
+        subject: '未读提醒',
+        changed: '无变化',
+        next: '已预览 ' + String(result.candidateCount || 0) + ' 条可确认提醒。'
       }, renderEventBatchAckResult(result));
-    }, automationActionRenderOptions(resolveAutomationActionTarget(), 'Previewing notification acknowledgements...'));
+    }, automationActionRenderOptions(resolveAutomationActionTarget(), '正在预览提醒确认...'));
     return;
   }
   if (action === 'dispatch-preview') {
@@ -5956,14 +6059,14 @@ async function runAutomationPressureAction(button) {
         acceptErrorStatus: true
       });
     }, function (overview) {
-      return renderAutomationActionResult('Dispatch preview', {
+      return renderAutomationActionResult('投递预览', {
         status: overview.status,
         mode: 'read-only preview',
-        subject: 'Notification dispatch',
-        changed: 'No delivery side effects',
+        subject: '提醒投递',
+        changed: '无投递副作用',
         next: dispatchPreviewNextAction(overview)
       }, renderNotificationDispatchPreview(overview));
-    }, automationActionRenderOptions(resolveAutomationActionTarget(), 'Previewing notification dispatch readiness...'));
+    }, automationActionRenderOptions(resolveAutomationActionTarget(), '正在预览提醒投递...'));
     return;
   }
   if (action === 'audit-overview') {
@@ -5983,14 +6086,14 @@ async function runAutomationPressureAction(button) {
       });
     }, function (result) {
       const overview = result.overview || {};
-      return renderAutomationActionResult('Review audits', {
+      return renderAutomationActionResult('复核审计', {
         status: overview.status,
         mode: 'read-only',
-        subject: 'Review audit ledger',
-        changed: 'No change',
-        next: overview.recommendedNextAction || 'Review audit ledger pressure.'
+        subject: '复核审计',
+        changed: '无变化',
+        next: overview.recommendedNextAction || '查看复核审计压力。'
       }, renderContextReviewActionAuditPanel(result));
-    }, automationActionRenderOptions(resolveAutomationActionTarget(), 'Loading review audit ledger...'));
+    }, automationActionRenderOptions(resolveAutomationActionTarget(), '正在读取复核审计...'));
     return;
   }
   if (action === 'gate-preview') {
@@ -5999,14 +6102,14 @@ async function runAutomationPressureAction(button) {
         acceptErrorStatus: true
       });
     }, function (gateReport) {
-      return renderAutomationActionResult('Gate preview', {
+      return renderAutomationActionResult('门禁预览', {
         status: gateReport.status,
         mode: 'read-only',
-        subject: 'Review action gate',
-        changed: 'No change',
-        next: gateReport.recommendedNextAction || 'Inspect review action gate before applying downstream actions.'
+        subject: '复核动作门禁',
+        changed: '无变化',
+        next: gateReport.recommendedNextAction || '应用后续动作前，先检查复核动作门禁。'
       }, renderContextReviewResultActionGate(gateReport));
-    }, automationActionRenderOptions(resolveAutomationActionTarget(), 'Loading review action gate...'));
+    }, automationActionRenderOptions(resolveAutomationActionTarget(), '正在读取复核动作门禁...'));
     return;
   }
   if (action === 'execution-overview') {
@@ -6015,14 +6118,14 @@ async function runAutomationPressureAction(button) {
         acceptErrorStatus: true
       });
     }, function (result) {
-      return renderAutomationActionResult('Review executions', {
+      return renderAutomationActionResult('复核执行', {
         status: result.status,
         mode: 'read-only',
-        subject: 'Action execution ledger',
-        changed: 'No change',
-        next: result.message || 'Inspect stale or failed automation action executions.'
+        subject: '动作执行记录',
+        changed: '无变化',
+        next: result.message || '检查停滞或失败的自动运行执行记录。'
       }, renderContextReviewActionExecutionPanel(result));
-    }, automationActionRenderOptions(resolveAutomationActionTarget(), 'Loading review action executions...'));
+    }, automationActionRenderOptions(resolveAutomationActionTarget(), '正在读取复核执行记录...'));
     return;
   }
   if (action === 'executor-diagnostics') {
@@ -6031,14 +6134,14 @@ async function runAutomationPressureAction(button) {
         acceptErrorStatus: true
       });
     }, function (result) {
-      return renderAutomationActionResult('Executor diagnostics', {
+      return renderAutomationActionResult('执行诊断', {
         status: result.status,
         mode: 'read-only',
-        subject: 'Review action executor',
-        changed: 'No change',
-        next: (result.nextActions || [])[0] && (result.nextActions || [])[0].summary || 'Inspect review action executor readiness.'
+        subject: '复核执行器',
+        changed: '无变化',
+        next: (result.nextActions || [])[0] && (result.nextActions || [])[0].summary || '检查复核执行器准备度。'
       }, renderContextReviewActionExecutorDiagnostics(result));
-    }, automationActionRenderOptions(resolveAutomationActionTarget(), 'Loading review action executor diagnostics...'));
+    }, automationActionRenderOptions(resolveAutomationActionTarget(), '正在读取复核执行诊断...'));
   }
 }
 
@@ -6072,42 +6175,42 @@ function renderAutomationOperatingPressure(cockpit) {
   const checks = notificationDiagnostics.checks || [];
   return [
     '<div class="summary-strip">',
-    summaryTile('Outbox', pressure.outboxStatus, pressure.outboxVariant),
-    summaryTile('Open', String(pressure.openEvents), pressure.openEvents > 0 ? 'warn' : 'ok'),
-    summaryTile('Due', String(pressure.dueEvents), pressure.dueEvents > 0 ? 'warn' : 'ok'),
-    summaryTile('Failed', String(pressure.failedEvents), pressure.failedEvents > 0 ? 'fail' : 'ok'),
-    summaryTile('Audits', String(pressure.auditCount), pressure.auditCount > 0 ? 'ok' : 'warn'),
-    summaryTile('Executions', String(pressure.executionCount), pressure.staleExecutions > 0 ? 'fail' : pressure.executionCount > 0 ? 'ok' : 'muted'),
-    summaryTile('Channel', pressure.channel, statusVariant(pressure.channelStatus)),
+    summaryTile('提醒箱', pressure.outboxStatus, pressure.outboxVariant),
+    summaryTile('未读', String(pressure.openEvents), pressure.openEvents > 0 ? 'warn' : 'ok'),
+    summaryTile('到期', String(pressure.dueEvents), pressure.dueEvents > 0 ? 'warn' : 'ok'),
+    summaryTile('失败', String(pressure.failedEvents), pressure.failedEvents > 0 ? 'fail' : 'ok'),
+    summaryTile('审计', String(pressure.auditCount), pressure.auditCount > 0 ? 'ok' : 'warn'),
+    summaryTile('执行', String(pressure.executionCount), pressure.staleExecutions > 0 ? 'fail' : pressure.executionCount > 0 ? 'ok' : 'muted'),
+    summaryTile('渠道', pressure.channel, statusVariant(pressure.channelStatus)),
     '</div>',
     '<div class="action-row ops-row"><span>' +
-      '<strong>Notification outbox</strong>' +
-      '<small>' + escapeHtml(notificationOverview.recommendedNextAction || 'No notification overview action returned.') + '</small>' +
-      '<small>' + escapeHtml('retryExhausted=' + pressure.retryExhaustedEvents + ' | events=' + pressure.eventCount) + '</small>' +
+      '<strong>提醒箱</strong>' +
+      '<small>' + escapeHtml(notificationOverview.recommendedNextAction || '暂无提醒箱建议。') + '</small>' +
+      '<small>' + escapeHtml('重试耗尽=' + pressure.retryExhaustedEvents + ' · 提醒=' + pressure.eventCount) + '</small>' +
       '</span><span class="button-group automation-pressure-actions">' +
-        '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="outbox-overview">Open outbox</button>' +
-        '<button class="inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="ack-preview">Ack preview</button>' +
-        '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="dispatch-preview">Dispatch preview</button>' +
+        '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="outbox-overview">打开提醒箱</button>' +
+        '<button class="inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="ack-preview">确认预览</button>' +
+        '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="dispatch-preview">投递预览</button>' +
       '</span>' + statusBadge(pressure.outboxStatus, pressure.outboxVariant) + '</div>',
     '<div class="action-row ops-row"><span>' +
-      '<strong>Review audit ledger</strong>' +
-      '<small>' + escapeHtml(auditOverview.recommendedNextAction || 'No review audit recommendation returned.') + '</small>' +
-      '<small>' + escapeHtml('tasks=' + (auditOverview.taskCount || 0) + ' | plannedClosure=' + (auditOverview.plannedClosureCount || 0) + ' | plannedMerge=' + (auditOverview.plannedMergeCandidateCount || 0)) + '</small>' +
+      '<strong>复核审计</strong>' +
+      '<small>' + escapeHtml(auditOverview.recommendedNextAction || '暂无复核审计建议。') + '</small>' +
+      '<small>' + escapeHtml('任务=' + (auditOverview.taskCount || 0) + ' · 计划关闭=' + (auditOverview.plannedClosureCount || 0) + ' · 计划合并=' + (auditOverview.plannedMergeCandidateCount || 0)) + '</small>' +
       '</span><span class="button-group automation-pressure-actions">' +
-        '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="audit-overview">Open audits</button>' +
-        '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="gate-preview">Gate preview</button>' +
+        '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="audit-overview">打开审计</button>' +
+        '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="gate-preview">门禁预览</button>' +
       '</span>' + statusBadge(auditOverview.status || 'unknown', pressure.auditVariant) + '</div>',
     '<div class="action-row ops-row"><span>' +
-      '<strong>Action executions</strong>' +
-      '<small>' + escapeHtml('status=' + (actionExecutions.status || 'unknown') + ' | count=' + pressure.executionCount + ' | stale=' + pressure.staleExecutions + ' | failed=' + pressure.failedExecutions) + '</small>' +
-      '<small>' + escapeHtml('Notification delivery and review actions stay observable before real executors are enabled.') + '</small>' +
+      '<strong>动作执行</strong>' +
+      '<small>' + escapeHtml('状态=' + (actionExecutions.status || 'unknown') + ' · 数量=' + pressure.executionCount + ' · 停滞=' + pressure.staleExecutions + ' · 失败=' + pressure.failedExecutions) + '</small>' +
+      '<small>' + escapeHtml('真实执行器启用前，提醒投递和复核动作仍保持可观察。') + '</small>' +
       '</span><span class="button-group automation-pressure-actions">' +
-        '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="execution-overview">Open executions</button>' +
-        '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="executor-diagnostics">Executor diagnostics</button>' +
+        '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="execution-overview">打开执行</button>' +
+        '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="executor-diagnostics">执行诊断</button>' +
       '</span>' + statusBadge(actionExecutions.status || 'unknown', pressure.executionVariant) + '</div>',
     checks.length > 0
       ? '<div class="action-row ops-row"><span>' +
-        '<strong>Notification channel</strong>' +
+        '<strong>提醒渠道</strong>' +
         '<small>' + escapeHtml(checks.map(function (check) { return check.key + '=' + check.status; }).join(' | ')) + '</small>' +
         '</span>' + statusBadge(pressure.channelStatus, statusVariant(pressure.channelStatus)) + '</div>'
       : ''
@@ -6132,7 +6235,7 @@ function renderAutomationFreshness(freshness) {
       '<small>' + escapeHtml('oldest=' + (safeFreshness.oldestGeneratedAt || 'unknown') + ' | newest=' + (safeFreshness.newestGeneratedAt || 'unknown')) + '</small>' +
       '<small>' + escapeHtml(missingSources.length > 0 ? 'missing=' + missingSources.join(', ') : 'all expected inputs reported generatedAt') + '</small>' +
       '</span><span class="button-group automation-freshness-actions">' +
-        '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="refresh-automation-readiness">Refresh snapshot</button>' +
+          '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="refresh-automation-readiness">刷新快照</button>' +
       '</span>' + statusBadge(safeFreshness.status || 'unknown', statusVariant(safeFreshness.status)) + '</div>'
   ];
   if (visibleSources.length > 0) {
@@ -6400,23 +6503,23 @@ function renderSourceOperations(result) {
       sourceAttentionAlertableCount,
       sourceTypeOperationsAlertableCount
     }),
-    panel('Operator queue detail', [
+    panel('待处理队列明细', [
       renderSourceOperationsCockpitRows(cockpit.queue || []),
       renderSourceOperationsCockpitNextActions(cockpit.nextActions || [])
     ].join(''), 'wide'),
-    panel('Collection status', renderCollectionStatusOverview(schedule), 'wide'),
-    panel('Collection actions', renderCollectionActionControls(schedule), 'wide'),
-    panel('Source attention', renderSourceAttentionRows(attentionItems), 'wide'),
-    panel('Source type operations', renderSourceTypeOperations(sourceTypeOperations), 'wide'),
-    panel('Source type readiness', renderSourceTypeReadiness(sourceTypeReadiness), 'wide'),
-    panel('Due sources', renderScheduleDecisionRows(schedule.dueSources || [], 'No due sources.', true), 'wide'),
-    panel('Retry waiting sources', renderScheduleDecisionRows(filterScheduleSourcesByCollectionStatus(schedule.sources || [], 'retry-waiting'), 'No retry-waiting sources.', false), 'wide'),
-    panel('Unscheduled or disabled sources', renderScheduleDecisionRows(filterScheduleSourcesByCollectionStatus(schedule.sources || [], ['unscheduled', 'disabled']), 'No unscheduled or disabled sources.', false), 'wide'),
-    panel('Skipped sources', renderScheduleDecisionRows((schedule.skippedSources || []).slice(0, 10), 'No skipped sources.', false), 'wide'),
-    panel('Lifecycle attention', renderLifecycleAttentionRows(lifecycle.sources || []), 'wide')
+    panel('采集状态', renderCollectionStatusOverview(schedule), 'wide'),
+    panel('采集动作', renderCollectionActionControls(schedule), 'wide'),
+    panel('来源关注', renderSourceAttentionRows(attentionItems), 'wide'),
+    panel('来源类型运行', renderSourceTypeOperations(sourceTypeOperations), 'wide'),
+    panel('来源类型准备度', renderSourceTypeReadiness(sourceTypeReadiness), 'wide'),
+    panel('到期来源', renderScheduleDecisionRows(schedule.dueSources || [], 'No due sources.', true), 'wide'),
+    panel('等待重试的来源', renderScheduleDecisionRows(filterScheduleSourcesByCollectionStatus(schedule.sources || [], 'retry-waiting'), 'No retry-waiting sources.', false), 'wide'),
+    panel('未排期或已停用来源', renderScheduleDecisionRows(filterScheduleSourcesByCollectionStatus(schedule.sources || [], ['unscheduled', 'disabled']), 'No unscheduled or disabled sources.', false), 'wide'),
+    panel('已跳过来源', renderScheduleDecisionRows((schedule.skippedSources || []).slice(0, 10), 'No skipped sources.', false), 'wide'),
+    panel('生命周期关注', renderLifecycleAttentionRows(lifecycle.sources || []), 'wide')
   ];
   if (sourceActions.length > 0) {
-    panels.push(panel('Source runbook actions', renderRunbookActionRows(sourceActions), 'wide'));
+    panels.push(panel('来源操作建议', renderRunbookActionRows(sourceActions), 'wide'));
   }
   return panels.join('');
 }
@@ -6439,41 +6542,41 @@ function renderSourceOperationsHero(view) {
     '<article class="source-ops-hero">',
     '<section class="source-ops-main">',
     '<div class="source-ops-header">',
-    '<span class="source-ops-label">Source runtime</span>',
+    '<span class="source-ops-label">来源运行</span>',
     statusBadge(cockpit.status || lifecycle.status || schedule.status || 'unknown', statusVariant(cockpit.status || lifecycle.status || schedule.status)),
     '</div>',
     '<h3>' + escapeHtml(headline) + '</h3>',
     '<p>' + escapeHtml([
-      'lifecycle=' + (lifecycle.status || 'unknown'),
-      'schedule=' + (schedule.status || 'unknown'),
-      'runbook=' + (runbook.status || 'unknown'),
-      'enabled=' + String(lifecycleSummary.enabled || 0) + '/' + String(lifecycleSummary.total || 0)
-    ].join(' | ')) + '</p>',
+      '生命周期=' + (lifecycle.status || 'unknown'),
+      '排期=' + (schedule.status || 'unknown'),
+      '操作=' + (runbook.status || 'unknown'),
+      '启用=' + String(lifecycleSummary.enabled || 0) + '/' + String(lifecycleSummary.total || 0)
+    ].join(' · ')) + '</p>',
     '<div class="source-ops-actions button-group">' +
-      sourceOpsAlertControl('Runbook check', 'Create runbook alerts', 'synthesize-runbook-events', alertableCount, 'data-limit="100"') +
-      sourceOpsAlertControl('Attention check', 'Create attention alerts', 'synthesize-source-attention-events', sourceAttentionAlertableCount, 'data-limit="100" data-attention-limit="100" data-priority-score-threshold="70"') +
-      sourceOpsAlertControl('Type check', 'Create type alerts', 'synthesize-source-type-operations-events', sourceTypeOperationsAlertableCount, 'data-limit="100" data-source-type-limit="100" data-attention-limit="100" data-priority-score-threshold="70"') +
+      sourceOpsAlertControl('操作检查', '创建操作提醒', 'synthesize-runbook-events', alertableCount, 'data-limit="100"') +
+      sourceOpsAlertControl('关注检查', '创建关注提醒', 'synthesize-source-attention-events', sourceAttentionAlertableCount, 'data-limit="100" data-attention-limit="100" data-priority-score-threshold="70"') +
+      sourceOpsAlertControl('类型检查', '创建类型提醒', 'synthesize-source-type-operations-events', sourceTypeOperationsAlertableCount, 'data-limit="100" data-source-type-limit="100" data-attention-limit="100" data-priority-score-threshold="70"') +
     '</div>',
     '</section>',
     '<aside class="source-ops-signals">',
-    sourceOpsSignal('Queue', summary.total || 0, statusVariant(cockpit.status)),
-    sourceOpsSignal('Critical', summary.fail || 0, (summary.fail || 0) > 0 ? 'fail' : 'ok'),
-    sourceOpsSignal('Due now', scheduleSummary.due || 0, (scheduleSummary.due || 0) > 0 ? 'warn' : 'ok'),
-    sourceOpsSignal('Runnable', summary.runnable || 0, (summary.runnable || 0) > 0 ? 'ok' : 'muted'),
-    sourceOpsSignal('Retry wait', lifecycleSummary.failureRetryWaiting || 0, (lifecycleSummary.failureRetryWaiting || 0) > 0 ? 'warn' : 'ok'),
-    sourceOpsSignal('Unscheduled', collectionSummary.unscheduled || 0, (collectionSummary.unscheduled || 0) > 0 ? 'warn' : 'ok'),
+    sourceOpsSignal('队列', summary.total || 0, statusVariant(cockpit.status)),
+    sourceOpsSignal('严重', summary.fail || 0, (summary.fail || 0) > 0 ? 'fail' : 'ok'),
+    sourceOpsSignal('今日到期', scheduleSummary.due || 0, (scheduleSummary.due || 0) > 0 ? 'warn' : 'ok'),
+    sourceOpsSignal('可运行', summary.runnable || 0, (summary.runnable || 0) > 0 ? 'ok' : 'muted'),
+    sourceOpsSignal('等待重试', lifecycleSummary.failureRetryWaiting || 0, (lifecycleSummary.failureRetryWaiting || 0) > 0 ? 'warn' : 'ok'),
+    sourceOpsSignal('未排期', collectionSummary.unscheduled || 0, (collectionSummary.unscheduled || 0) > 0 ? 'warn' : 'ok'),
     '</aside>',
     '<section class="source-ops-queue">',
-    '<span>Hot queue</span>',
+    '<span>重点队列</span>',
     renderSourceOperationsHeroQueue(queue),
     '</section>',
     '<section class="source-ops-foot">',
-    '<span>Automation pressure</span>',
+    '<span>自动运行压力</span>',
     '<strong>' + escapeHtml([
-      'runbook=' + alertableCount,
-      'sources=' + sourceAttentionAlertableCount,
-      'types=' + sourceTypeOperationsAlertableCount
-    ].join(' | ')) + '</strong>',
+      '操作=' + alertableCount,
+      '来源=' + sourceAttentionAlertableCount,
+      '类型=' + sourceTypeOperationsAlertableCount
+    ].join(' · ')) + '</strong>',
     '<small>' + escapeHtml([
       'warnings=' + (summary.warning || 0),
       'skipped=' + (scheduleSummary.skipped || 0),
@@ -7155,44 +7258,44 @@ function renderSourceOperationsDrilldown(report) {
   const recent = report.recent || {};
   const scope = report.scope || {};
   return [
-    panel('Source ops drill-down', [
+    panel('来源概览明细', [
       '<div class="summary-strip">',
-      summaryTile('Status', report.status || 'unknown', statusVariant(report.status)),
-      summaryTile('Source', sourceHealth.status || (report.sourceFound ? 'found' : 'missing'), statusVariant(report.sourceFound ? report.status : 'warn')),
-      summaryTile('Collection', collectionPlan.status || 'unknown', collectionStatusVariant(collectionPlan.status)),
-      summaryTile('Tasks failed', String(tasks.failed || 0), (tasks.failed || 0) > 0 ? 'warn' : 'ok'),
-      summaryTile('Events failed', String(events.failed || 0), (events.failed || 0) > 0 ? 'warn' : 'ok'),
-      summaryTile('Stale runs', String(workerRuns.stale || 0), (workerRuns.stale || 0) > 0 ? 'warn' : 'ok'),
-      summaryTile('Expired leases', String(workerLeases.expired || 0), (workerLeases.expired || 0) > 0 ? 'warn' : 'ok'),
-      summaryTile('Review stale', String(reviewExecutions.staleRunning || 0), (reviewExecutions.staleRunning || 0) > 0 ? 'warn' : 'ok'),
-      summaryTile('Event action stale', String(eventActions.staleRunning || 0), (eventActions.staleRunning || 0) > 0 ? 'warn' : 'ok'),
-      summaryTile('Queue high', String(authorQueue.highPriorityOpenCount || 0), (authorQueue.highPriorityOpenCount || 0) > 0 ? 'warn' : 'ok'),
-      summaryTile('Attention', attention.found ? ('#' + (attention.attentionRank || '?') + ' · ' + (attention.priorityScore || 0)) : 'none', attentionStatusVariant(attention.severity)),
+      summaryTile('状态', report.status || 'unknown', statusVariant(report.status)),
+      summaryTile('来源', sourceHealth.status || (report.sourceFound ? 'found' : 'missing'), statusVariant(report.sourceFound ? report.status : 'warn')),
+      summaryTile('采集', collectionPlan.status || 'unknown', collectionStatusVariant(collectionPlan.status)),
+      summaryTile('任务失败', String(tasks.failed || 0), (tasks.failed || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('提醒失败', String(events.failed || 0), (events.failed || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('停滞运行', String(workerRuns.stale || 0), (workerRuns.stale || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('过期占用', String(workerLeases.expired || 0), (workerLeases.expired || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('复核停滞', String(reviewExecutions.staleRunning || 0), (reviewExecutions.staleRunning || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('提醒动作停滞', String(eventActions.staleRunning || 0), (eventActions.staleRunning || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('高优先级', String(authorQueue.highPriorityOpenCount || 0), (authorQueue.highPriorityOpenCount || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('关注', attention.found ? ('#' + (attention.attentionRank || '?') + ' · ' + (attention.priorityScore || 0)) : 'none', attentionStatusVariant(attention.severity)),
       '</div>',
-      metric('Scope', formatEventSourceScope(scope)),
-      metric('Source', [source.displayName, source.id, source.sourceKey, source.sourceType].filter(Boolean).join(' | ') || 'not found'),
-      metric('Collection plan', formatCollectionPlanSummary(collectionPlan)),
-      metric('Cursor', formatCollectionCursorSummary(collectionPlan.cursor)),
-      metric('Replay evidence', formatCollectionReplaySummary(collectionPlan.replay)),
-      metric('Attention', attention.found ? [(attention.severity || 'info'), 'score ' + (attention.priorityScore || 0), 'signals ' + (attention.signalCount || 0), attention.recommendedNextAction || attention.recommendedCommand].filter(Boolean).join(' | ') : 'none'),
-      attention.recommendedCommand ? metric('Attention command', attention.recommendedCommand) : '',
-      metric('Schedule', sourceHealth.schedule ? ((sourceHealth.schedule.due ? 'due' : 'skip') + ' | ' + (sourceHealth.schedule.reason || 'unknown')) : 'unknown'),
-      metric('Worker types', compactCountMap(workerRuns.byWorkerType)),
-      metric('Lease types', compactCountMap(workerLeases.byWorkerType)),
-      metric('Tasks', 'total ' + (tasks.total || 0) + ' | running ' + (tasks.running || 0) + ' | failed ' + (tasks.failed || 0)),
-      metric('Events', 'open ' + (events.unacknowledged || 0) + ' | pending ' + (events.pending || 0) + ' | due ' + (events.dueForDelivery || 0)),
-      metric('Review actions', 'audits ' + (reviewActions.auditCount || 0) + ' | executions ' + (reviewExecutions.count || 0) + ' | failed ' + (reviewExecutions.failed || 0)),
-      metric('Event actions', 'executions ' + (eventActions.count || 0) + ' | running ' + (eventActions.running || 0) + ' | failed ' + (eventActions.failed || 0)),
-      metric('Author queue', 'open ' + (authorQueue.openCount || 0) + ' | high ' + (authorQueue.highPriorityOpenCount || 0))
+      metric('范围', formatEventSourceScope(scope)),
+      metric('来源', [source.displayName, source.id, source.sourceKey, source.sourceType].filter(Boolean).join(' | ') || 'not found'),
+      metric('采集计划', formatCollectionPlanSummary(collectionPlan)),
+      metric('游标', formatCollectionCursorSummary(collectionPlan.cursor)),
+      metric('回放证据', formatCollectionReplaySummary(collectionPlan.replay)),
+      metric('关注', attention.found ? [(attention.severity || 'info'), 'score ' + (attention.priorityScore || 0), 'signals ' + (attention.signalCount || 0), attention.recommendedNextAction || attention.recommendedCommand].filter(Boolean).join(' | ') : 'none'),
+      attention.recommendedCommand ? metric('关注命令', attention.recommendedCommand) : '',
+      metric('排期', sourceHealth.schedule ? ((sourceHealth.schedule.due ? 'due' : 'skip') + ' | ' + (sourceHealth.schedule.reason || 'unknown')) : 'unknown'),
+      metric('执行类型', compactCountMap(workerRuns.byWorkerType)),
+      metric('占用类型', compactCountMap(workerLeases.byWorkerType)),
+      metric('任务', 'total ' + (tasks.total || 0) + ' | running ' + (tasks.running || 0) + ' | failed ' + (tasks.failed || 0)),
+      metric('提醒', 'open ' + (events.unacknowledged || 0) + ' | pending ' + (events.pending || 0) + ' | due ' + (events.dueForDelivery || 0)),
+      metric('复核动作', 'audits ' + (reviewActions.auditCount || 0) + ' | executions ' + (reviewExecutions.count || 0) + ' | failed ' + (reviewExecutions.failed || 0)),
+      metric('提醒动作', 'executions ' + (eventActions.count || 0) + ' | running ' + (eventActions.running || 0) + ' | failed ' + (eventActions.failed || 0)),
+      metric('作者队列', 'open ' + (authorQueue.openCount || 0) + ' | high ' + (authorQueue.highPriorityOpenCount || 0))
     ].join(''), 'wide'),
-    panel('Source health brief', renderSourceHealthBrief(report), 'wide'),
-    panel('Source collection plan', renderCollectionPlanDetails(collectionPlan), 'wide'),
-    panel('Source attention details', renderSourceDrilldownAttention(attention), 'wide'),
-    panel('Source next actions', renderSourceDrilldownActions(report.nextActions || []), 'wide'),
-    panel('Source operations timeline', evidenceList((report.timeline || []).map(formatSourceTimelineRow)), 'wide'),
-    panel('Recent source tasks', evidenceList((recent.tasks || []).map(formatSourceDrilldownTaskRow)), 'wide'),
-    panel('Recent source events', evidenceList((recent.events || []).map(formatSourceDrilldownEventRow)), 'wide'),
-    panel('Recent source workers', evidenceList((recent.workerRuns || []).map(formatWorkerRunRow).concat((recent.workerLeases || []).map(formatWorkerLeaseRow))), 'wide')
+    panel('来源健康简报', renderSourceHealthBrief(report), 'wide'),
+    panel('来源采集计划', renderCollectionPlanDetails(collectionPlan), 'wide'),
+    panel('来源关注明细', renderSourceDrilldownAttention(attention), 'wide'),
+    panel('来源下一步', renderSourceDrilldownActions(report.nextActions || []), 'wide'),
+    panel('来源运行时间线', evidenceList((report.timeline || []).map(formatSourceTimelineRow)), 'wide'),
+    panel('最近来源任务', evidenceList((recent.tasks || []).map(formatSourceDrilldownTaskRow)), 'wide'),
+    panel('最近来源提醒', evidenceList((recent.events || []).map(formatSourceDrilldownEventRow)), 'wide'),
+    panel('最近执行记录', evidenceList((recent.workerRuns || []).map(formatWorkerRunRow).concat((recent.workerLeases || []).map(formatWorkerLeaseRow))), 'wide')
   ].join('');
 }
 
@@ -7208,39 +7311,39 @@ function renderSourceTypeOperationsDrilldown(report) {
   const recent = report.recent || {};
   const scope = report.scope || {};
   return [
-    panel('Source type ops drill-down', [
+    panel('来源类型运行明细', [
       '<div class="summary-strip">',
-      summaryTile('Status', report.status || 'unknown', statusVariant(report.status)),
-      summaryTile('Type', report.sourceType || 'unknown', statusVariant(report.status)),
-      summaryTile('Sources', String(sources.total || 0), (sources.total || 0) > 0 ? 'ok' : 'muted'),
-      summaryTile('Due', String(sources.due || 0), (sources.due || 0) > 0 ? 'ok' : 'muted'),
-      summaryTile('Failed', String(sources.failed || 0), (sources.failed || 0) > 0 ? 'warn' : 'ok'),
-      summaryTile('Tasks failed', String(tasks.failed || 0), (tasks.failed || 0) > 0 ? 'warn' : 'ok'),
-      summaryTile('Events failed', String(events.failed || 0), (events.failed || 0) > 0 ? 'warn' : 'ok'),
-      summaryTile('Stale runs', String(workerRuns.stale || 0), (workerRuns.stale || 0) > 0 ? 'warn' : 'ok'),
-      summaryTile('Expired leases', String(workerLeases.expired || 0), (workerLeases.expired || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('状态', report.status || 'unknown', statusVariant(report.status)),
+      summaryTile('类型', report.sourceType || 'unknown', statusVariant(report.status)),
+      summaryTile('来源', String(sources.total || 0), (sources.total || 0) > 0 ? 'ok' : 'muted'),
+      summaryTile('到期', String(sources.due || 0), (sources.due || 0) > 0 ? 'ok' : 'muted'),
+      summaryTile('失败', String(sources.failed || 0), (sources.failed || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('任务失败', String(tasks.failed || 0), (tasks.failed || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('提醒失败', String(events.failed || 0), (events.failed || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('停滞运行', String(workerRuns.stale || 0), (workerRuns.stale || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('过期占用', String(workerLeases.expired || 0), (workerLeases.expired || 0) > 0 ? 'warn' : 'ok'),
       '</div>',
-      metric('Scope', [
+      metric('范围', [
         'type=' + (scope.sourceType || report.sourceType || 'unknown'),
         'sources=' + ((scope.sourceIds || []).length),
         'sourceKeys=' + (scope.sourceKeys || []).join(',')
       ].join(' | ')),
-      metric('Operations', [
+      metric('运行', [
         'found=' + Boolean(operations.found),
         'status=' + (operations.status || 'unknown'),
         'attention=' + (operations.attention && operations.attention.total || 0),
         'priority=' + (operations.attention && operations.attention.highestPriorityScore || 0)
       ].join(' | ')),
-      metric('Run statuses', compactCountMap(sources.byRunStatus)),
-      metric('Schedule reasons', compactCountMap(sources.byScheduleReason)),
-      metric('Event types', compactCountMap(events.byType)),
-      metric('Worker types', compactCountMap(workerRuns.byWorkerType))
+      metric('运行状态', compactCountMap(sources.byRunStatus)),
+      metric('排期原因', compactCountMap(sources.byScheduleReason)),
+      metric('提醒类型', compactCountMap(events.byType)),
+      metric('执行类型', compactCountMap(workerRuns.byWorkerType))
     ].join(''), 'wide'),
-    panel('Source type next actions', renderSourceDrilldownActions(report.nextActions || []), 'wide'),
-    panel('Recent source type sources', evidenceList((recent.sources || []).map(formatSourceTypeDrilldownSourceRow)), 'wide'),
-    panel('Recent source type tasks', evidenceList((recent.tasks || []).map(formatSourceDrilldownTaskRow)), 'wide'),
-    panel('Recent source type events', evidenceList((recent.events || []).map(formatSourceDrilldownEventRow)), 'wide'),
-    panel('Recent source type workers', evidenceList((recent.workerRuns || []).map(formatWorkerRunRow).concat((recent.workerLeases || []).map(formatWorkerLeaseRow))), 'wide')
+    panel('来源类型下一步', renderSourceDrilldownActions(report.nextActions || []), 'wide'),
+    panel('最近同类来源', evidenceList((recent.sources || []).map(formatSourceTypeDrilldownSourceRow)), 'wide'),
+    panel('最近同类任务', evidenceList((recent.tasks || []).map(formatSourceDrilldownTaskRow)), 'wide'),
+    panel('最近同类提醒', evidenceList((recent.events || []).map(formatSourceDrilldownEventRow)), 'wide'),
+    panel('最近同类执行记录', evidenceList((recent.workerRuns || []).map(formatWorkerRunRow).concat((recent.workerLeases || []).map(formatWorkerLeaseRow))), 'wide')
   ].join('');
 }
 
@@ -7479,24 +7582,24 @@ function renderRunbookEventControls(alertableCount) {
 function renderSourceAttentionEventControls(alertableCount) {
   const disabled = alertableCount > 0 ? '' : ' disabled';
   return '<div class="action-row ops-row"><span>' +
-    '<strong>Source attention alerts</strong>' +
+    '<strong>来源关注提醒</strong>' +
     '<small>' + escapeHtml('alertable=' + alertableCount + ' | threshold=70') + '</small>' +
     '</span>' +
     '<span class="button-group source-op-buttons">' +
-    '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-source-attention-events" data-execute="false" data-limit="100" data-attention-limit="100" data-priority-score-threshold="70">Attention check</button>' +
-    '<button class="inline-button warning-inline-button" type="button" data-action="synthesize-source-attention-events" data-execute="true" data-limit="100" data-attention-limit="100" data-priority-score-threshold="70"' + disabled + '>Create alerts</button>' +
+    '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-source-attention-events" data-execute="false" data-limit="100" data-attention-limit="100" data-priority-score-threshold="70">关注检查</button>' +
+    '<button class="inline-button warning-inline-button" type="button" data-action="synthesize-source-attention-events" data-execute="true" data-limit="100" data-attention-limit="100" data-priority-score-threshold="70"' + disabled + '>创建提醒</button>' +
     '</span></div>';
 }
 
 function renderSourceTypeOperationsEventControls(alertableCount) {
   const disabled = alertableCount > 0 ? '' : ' disabled';
   return '<div class="action-row ops-row"><span>' +
-    '<strong>Source type operations alerts</strong>' +
+    '<strong>来源类型运行提醒</strong>' +
     '<small>' + escapeHtml('alertable=' + alertableCount + ' | threshold=70') + '</small>' +
     '</span>' +
     '<span class="button-group source-op-buttons">' +
-    '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-source-type-operations-events" data-execute="false" data-limit="100" data-source-type-limit="100" data-attention-limit="100" data-priority-score-threshold="70">Type check</button>' +
-    '<button class="inline-button warning-inline-button" type="button" data-action="synthesize-source-type-operations-events" data-execute="true" data-limit="100" data-source-type-limit="100" data-attention-limit="100" data-priority-score-threshold="70"' + disabled + '>Create alerts</button>' +
+    '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-source-type-operations-events" data-execute="false" data-limit="100" data-source-type-limit="100" data-attention-limit="100" data-priority-score-threshold="70">类型检查</button>' +
+    '<button class="inline-button warning-inline-button" type="button" data-action="synthesize-source-type-operations-events" data-execute="true" data-limit="100" data-source-type-limit="100" data-attention-limit="100" data-priority-score-threshold="70"' + disabled + '>创建提醒</button>' +
     '</span></div>';
 }
 
@@ -7927,17 +8030,17 @@ function renderSourceAttentionNotificationEventResult(result) {
 
 function renderSourceTypeOperationsNotificationEventResult(result) {
   const items = result.results || [];
-  return panel('Source type operations notification events', [
-    metric('Status', result.status || 'unknown'),
-    metric('Mode', result.dryRun ? 'dry-run' : 'execute'),
-    metric('Source types', result.sourceTypeCount || 0),
-    metric('Threshold', result.priorityScoreThreshold || 0),
-    metric('Readiness warnings', result.includeReadinessWarnings ? 'included' : 'ignored'),
-    metric('Events', result.eventCount || 0),
-    metric('Created', result.createdCount || 0),
-    metric('Updated', result.updatedCount || 0),
-    metric('Resolved', result.resolvedCount || 0),
-    metric('Reopened', result.reopenedCount || 0),
+  return panel('来源类型运行提醒', [
+    metric('状态', result.status || 'unknown'),
+    metric('模式', result.dryRun ? 'dry-run' : 'execute'),
+    metric('来源类型', result.sourceTypeCount || 0),
+    metric('阈值', result.priorityScoreThreshold || 0),
+    metric('准备度提醒', result.includeReadinessWarnings ? 'included' : 'ignored'),
+    metric('提醒', result.eventCount || 0),
+    metric('创建', result.createdCount || 0),
+    metric('更新', result.updatedCount || 0),
+    metric('解决', result.resolvedCount || 0),
+    metric('重开', result.reopenedCount || 0),
     metric('Skipped', result.skippedCount || 0),
     evidenceList(items.map(function (item) {
       const event = item.event || {};
@@ -8092,16 +8195,16 @@ function renderContextReviewResultActionGate(gateReport) {
   const executable = gateReport.executable || {};
   const gates = gateReport.gates || [];
   const tiles = '<div class="summary-strip event-summary-strip">' + [
-    summaryTile('Gate status', gateReport.status || 'unknown', statusVariant(gateReport.status)),
-    summaryTile('Can close', executable.canCloseTasks ? 'yes' : 'no', executable.canCloseTasks ? 'ok' : 'muted'),
-    summaryTile('Can merge', executable.canMergeContext ? 'yes' : 'no', executable.canMergeContext ? 'ok' : 'muted'),
-    summaryTile('Human review', executable.requiresHumanReview ? 'yes' : 'no', executable.requiresHumanReview ? 'warn' : 'ok'),
-    summaryTile('Next actions', String((gateReport.nextActions || []).length), (gateReport.nextActions || []).length > 0 ? 'warn' : 'ok')
+    summaryTile('门禁状态', gateReport.status || 'unknown', statusVariant(gateReport.status)),
+    summaryTile('可关闭', executable.canCloseTasks ? 'yes' : 'no', executable.canCloseTasks ? 'ok' : 'muted'),
+    summaryTile('可合并', executable.canMergeContext ? 'yes' : 'no', executable.canMergeContext ? 'ok' : 'muted'),
+    summaryTile('人工复核', executable.requiresHumanReview ? 'yes' : 'no', executable.requiresHumanReview ? 'warn' : 'ok'),
+    summaryTile('下一步', String((gateReport.nextActions || []).length), (gateReport.nextActions || []).length > 0 ? 'warn' : 'ok')
   ].join('') + '</div>';
-  return panel('Review action gate', [
+  return panel('复核动作门禁', [
     tiles,
-    metric('Generated', gateReport.generatedAt || 'unknown'),
-    metric('Next action', gateReport.recommendedNextAction || 'none'),
+    metric('生成时间', gateReport.generatedAt || 'unknown'),
+    metric('下一步', gateReport.recommendedNextAction || 'none'),
     renderReviewActionGateRows(gates)
   ].join(''), 'wide');
 }
@@ -8126,17 +8229,17 @@ function renderContextReviewActionAuditPanel(result) {
   const overview = result.overview || {};
   const audits = result.audits || overview.recentAudits || [];
   const tiles = '<div class="summary-strip event-summary-strip">' + [
-    summaryTile('Audits', String(overview.count || audits.length || 0), (overview.count || audits.length || 0) > 0 ? 'ok' : 'muted'),
-    summaryTile('Tasks', String(overview.taskCount || 0), (overview.taskCount || 0) > 0 ? 'ok' : 'muted'),
-    summaryTile('Close planned', String(overview.plannedClosureCount || 0), (overview.plannedClosureCount || 0) > 0 ? 'ok' : 'muted'),
-    summaryTile('Merge planned', String(overview.plannedMergeCandidateCount || 0), (overview.plannedMergeCandidateCount || 0) > 0 ? 'ok' : 'muted')
+    summaryTile('审计', String(overview.count || audits.length || 0), (overview.count || audits.length || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('任务', String(overview.taskCount || 0), (overview.taskCount || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('计划关闭', String(overview.plannedClosureCount || 0), (overview.plannedClosureCount || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('计划合并', String(overview.plannedMergeCandidateCount || 0), (overview.plannedMergeCandidateCount || 0) > 0 ? 'ok' : 'muted')
   ].join('') + '</div>';
-  return panel('Review action audits', [
+  return panel('复核审计', [
     tiles,
-    metric('Generated', overview.generatedAt || 'unknown'),
-    metric('Latest audit', overview.latestGeneratedAt || 'none'),
-    metric('Sources', compactCountMap(overview.bySourceKey)),
-    metric('Next action', overview.recommendedNextAction || 'none'),
+    metric('生成时间', overview.generatedAt || 'unknown'),
+    metric('最新审计', overview.latestGeneratedAt || 'none'),
+    metric('来源', compactCountMap(overview.bySourceKey)),
+    metric('下一步', overview.recommendedNextAction || 'none'),
     renderContextReviewActionAuditRows(audits)
   ].join(''), 'wide');
 }
@@ -8150,19 +8253,19 @@ function renderContextReviewActionExecutionPanel(result) {
     : result.staleRunningCount;
   const failed = executions.filter(function (execution) { return execution.status === 'failed'; }).length;
   const tiles = '<div class="summary-strip event-summary-strip">' + [
-    summaryTile('Status', result.status || 'ok', statusVariant(result.status || 'ok')),
-    summaryTile('Executions', String(result.count || executions.length || 0), executions.length > 0 ? 'ok' : 'muted'),
-    summaryTile('Completed', String(completed), completed > 0 ? 'ok' : 'muted'),
-    summaryTile('Running', String(running), running > 0 ? 'warn' : 'muted'),
-    summaryTile('Stale running', String(staleRunning), staleRunning > 0 ? 'fail' : 'muted'),
-    summaryTile('Failed', String(failed), failed > 0 ? 'fail' : 'muted')
+    summaryTile('状态', result.status || 'ok', statusVariant(result.status || 'ok')),
+    summaryTile('执行', String(result.count || executions.length || 0), executions.length > 0 ? 'ok' : 'muted'),
+    summaryTile('完成', String(completed), completed > 0 ? 'ok' : 'muted'),
+    summaryTile('运行中', String(running), running > 0 ? 'warn' : 'muted'),
+    summaryTile('停滞', String(staleRunning), staleRunning > 0 ? 'fail' : 'muted'),
+    summaryTile('失败', String(failed), failed > 0 ? 'fail' : 'muted')
   ].join('') + '</div>';
-  return panel('Review action executions', [
+  return panel('复核执行', [
     tiles,
-    metric('Generated', result.generatedAt || 'unknown'),
-    metric('Stale window', result.runningStaleAfterMs === undefined ? 'unknown' : result.runningStaleAfterMs + ' ms'),
-    metric('Sources', compactCountMap(result.bySourceKey)),
-    metric('Stale sources', compactCountMap(result.staleRunningBySourceKey)),
+    metric('生成时间', result.generatedAt || 'unknown'),
+    metric('停滞窗口', result.runningStaleAfterMs === undefined ? 'unknown' : result.runningStaleAfterMs + ' ms'),
+    metric('来源', compactCountMap(result.bySourceKey)),
+    metric('停滞来源', compactCountMap(result.staleRunningBySourceKey)),
     result.message ? '<div class="muted">' + escapeHtml(result.message) + '</div>' : '',
     renderContextReviewActionExecutionRows(executions)
   ].join(''), 'wide');
@@ -8178,7 +8281,7 @@ function renderContextReviewActionExecutorDiagnostics(result) {
     summaryTile('Dry-run only', result.dryRunOnly ? 'yes' : 'no', result.dryRunOnly ? 'warn' : 'ok'),
     summaryTile('Audits', String(audit.count || 0), (audit.count || 0) > 0 ? 'ok' : 'muted')
   ].join('') + '</div>';
-  return panel('Review executor diagnostics', [
+  return panel('复核执行诊断', [
     tiles,
     metric('Source', result.source || 'unknown'),
     metric('Mutates source truth', result.mutatesSourceTruth ? 'yes' : 'no'),
@@ -8187,7 +8290,7 @@ function renderContextReviewActionExecutorDiagnostics(result) {
     metric('Latest audit', audit.latestGeneratedAt || 'none'),
     '<h4>Checks</h4>',
     renderDiagnosticCheckRows(result.checks || []),
-    '<h4>Next actions</h4>',
+    '<h4>下一步</h4>',
     evidenceList((result.nextActions || []).map(function (action) {
       return action.severity + ' | ' + action.key + ' | ' + action.summary;
     }))
@@ -8523,7 +8626,7 @@ function renderNotificationEventActionIntent(result) {
 
 function renderNotificationEventOverviewLegacy(overview) {
   const attention = overview.attention || {};
-  return panel('Notification outbox overview', [
+  return panel('提醒箱概览', [
     '<div class="summary-strip event-summary-strip">' + [
       summaryTile('Status', overview.status || 'unknown', statusVariant(overview.status)),
       summaryTile('Window', String(overview.eventCount || 0)),
@@ -8686,30 +8789,30 @@ function renderNotificationEventOverview(overview) {
     '<article class="notification-outbox-hero">',
       '<section class="notification-outbox-main">',
         '<div class="notification-outbox-header">',
-          '<span class="notification-outbox-label">Notification outbox</span>',
+          '<span class="notification-outbox-label">提醒箱</span>',
           statusBadge(overview.status || 'unknown', statusVariant(overview.status)),
         '</div>',
-        '<h3>' + escapeHtml(overview.recommendedNextAction || 'Notification outbox is clear in the current window.') + '</h3>',
+        '<h3>' + escapeHtml(overview.recommendedNextAction || '当前窗口内没有需要处理的提醒。') + '</h3>',
         '<p>' + escapeHtml([
-          'delivery=' + formatStanceSummary(overview.byDeliveryStatus),
-          'severity=' + formatStanceSummary(overview.bySeverity),
-          'sources=' + compactCountMap(overview.bySourceKey)
-        ].filter(Boolean).join(' | ')) + '</p>',
+          '投递=' + formatStanceSummary(overview.byDeliveryStatus),
+          '级别=' + formatStanceSummary(overview.bySeverity),
+          '来源=' + compactCountMap(overview.bySourceKey)
+        ].filter(Boolean).join(' · ')) + '</p>',
       '</section>',
       '<aside class="notification-outbox-signals">',
-        notificationOutboxSignal('Window', overview.eventCount || 0, (overview.eventCount || 0) > 0 ? 'info' : 'muted'),
-        notificationOutboxSignal('Open', overview.unacknowledgedCount || 0, (overview.unacknowledgedCount || 0) > 0 ? 'warn' : 'ok'),
-        notificationOutboxSignal('Due', overview.dueForDeliveryCount || 0, (overview.dueForDeliveryCount || 0) > 0 ? 'warn' : 'ok'),
-        notificationOutboxSignal('Failed', overview.failedCount || 0, (overview.failedCount || 0) > 0 ? 'fail' : 'ok'),
+        notificationOutboxSignal('窗口', overview.eventCount || 0, (overview.eventCount || 0) > 0 ? 'info' : 'muted'),
+        notificationOutboxSignal('未读', overview.unacknowledgedCount || 0, (overview.unacknowledgedCount || 0) > 0 ? 'warn' : 'ok'),
+        notificationOutboxSignal('到期', overview.dueForDeliveryCount || 0, (overview.dueForDeliveryCount || 0) > 0 ? 'warn' : 'ok'),
+        notificationOutboxSignal('失败', overview.failedCount || 0, (overview.failedCount || 0) > 0 ? 'fail' : 'ok'),
       '</aside>',
       '<section class="notification-outbox-next">',
-        '<span>Timing</span>',
-        '<strong>' + escapeHtml(overview.nextDeliveryAt || 'no scheduled delivery') + '</strong>',
-        '<small>' + escapeHtml('oldest open=' + (overview.oldestUnacknowledgedAt || 'none') + ' | open sources=' + compactCountMap(overview.byOpenSourceKey)) + '</small>',
+        '<span>时间</span>',
+        '<strong>' + escapeHtml(overview.nextDeliveryAt || '暂无排期投递') + '</strong>',
+        '<small>' + escapeHtml('最早未读=' + (overview.oldestUnacknowledgedAt || 'none') + ' · 未读来源=' + compactCountMap(overview.byOpenSourceKey)) + '</small>',
       '</section>',
       '<section class="notification-outbox-attention">',
-        '<span>Attention queue</span>',
-        (attentionRows.length ? attentionRows.join('') : '<div class="notification-outbox-empty">No failed or reviewable notification signals.</div>'),
+        '<span>关注队列</span>',
+        (attentionRows.length ? attentionRows.join('') : '<div class="notification-outbox-empty">暂无失败或待复核提醒。</div>'),
       '</section>',
       renderNotificationSourceHotspots(overview.sourceHotspots || []),
     '</article>'
@@ -8729,19 +8832,19 @@ function renderNotificationDispatchPreview(overview) {
       ' | failed=' + (hotspot.failedCount || 0) +
       ' | open=' + (hotspot.openCount || 0);
   });
-  return panel('Notification dispatch preview', [
+  return panel('提醒投递预览', [
     '<div class="summary-strip event-summary-strip">' + [
-      summaryTile('Mode', 'dry-run', 'warn'),
-      summaryTile('Candidates', String(candidateCount), candidateCount > 0 ? 'warn' : 'ok'),
-      summaryTile('Due', String(dueCount), dueCount > 0 ? 'warn' : 'ok'),
-      summaryTile('Failed', String(failedCount), failedCount > 0 ? 'fail' : 'ok'),
-      summaryTile('Retry exhausted', String(retryExhaustedCount), retryExhaustedCount > 0 ? 'fail' : 'ok')
+      summaryTile('模式', 'dry-run', 'warn'),
+      summaryTile('候选', String(candidateCount), candidateCount > 0 ? 'warn' : 'ok'),
+      summaryTile('到期', String(dueCount), dueCount > 0 ? 'warn' : 'ok'),
+      summaryTile('失败', String(failedCount), failedCount > 0 ? 'fail' : 'ok'),
+      summaryTile('重试耗尽', String(retryExhaustedCount), retryExhaustedCount > 0 ? 'fail' : 'ok')
     ].join('') + '</div>',
-    metric('Side effects', 'none'),
-    metric('Channel readiness', safeOverview.channelStatus || safeOverview.channel || 'not evaluated'),
-    metric('Next delivery', safeOverview.nextDeliveryAt || 'none'),
-    metric('Command after review', command),
-    metric('Next', dispatchPreviewNextAction(safeOverview)),
+    metric('副作用', 'none'),
+    metric('渠道准备', safeOverview.channelStatus || safeOverview.channel || 'not evaluated'),
+    metric('下次投递', safeOverview.nextDeliveryAt || 'none'),
+    metric('复核后命令', command),
+    metric('下一步', dispatchPreviewNextAction(safeOverview)),
     evidenceList(hotspotRows)
   ].join(''), 'wide');
 }
@@ -8953,17 +9056,17 @@ function renderEventAckResult(result) {
 }
 
 function renderEventBatchAckResult(result) {
-  const title = result.dryRun ? 'Notification acknowledgement preview' : 'Notification events acknowledged';
+  const title = result.dryRun ? '提醒确认预览' : '提醒已确认';
   return panel(title, [
     '<div class="summary-strip event-summary-strip">' + [
-      summaryTile('Status', result.status || 'unknown', statusVariant(result.status)),
-      summaryTile('Dry-run', result.dryRun ? 'yes' : 'no', result.dryRun ? 'warn' : 'ok'),
-      summaryTile('Candidates', String(result.candidateCount || 0), result.candidateCount > 0 ? 'warn' : 'muted'),
-      summaryTile('Acked', String(result.acknowledgedCount || 0), result.acknowledgedCount > 0 ? 'ok' : 'muted'),
-      summaryTile('Skipped', String(result.skippedCount || 0), result.skippedCount > 0 ? 'warn' : 'ok'),
-      summaryTile('Window', String(result.eventCount || 0))
+      summaryTile('状态', result.status || 'unknown', statusVariant(result.status)),
+      summaryTile('预演', result.dryRun ? 'yes' : 'no', result.dryRun ? 'warn' : 'ok'),
+      summaryTile('候选', String(result.candidateCount || 0), result.candidateCount > 0 ? 'warn' : 'muted'),
+      summaryTile('已确认', String(result.acknowledgedCount || 0), result.acknowledgedCount > 0 ? 'ok' : 'muted'),
+      summaryTile('跳过', String(result.skippedCount || 0), result.skippedCount > 0 ? 'warn' : 'ok'),
+      summaryTile('窗口', String(result.eventCount || 0))
     ].join('') + '</div>',
-    metric('Acknowledged by', result.acknowledgedBy || 'system'),
+    metric('确认人', result.acknowledgedBy || 'system'),
     evidenceList((result.results || []).slice(0, 8).map(function (item) {
       return item.status + ' | ' + item.eventId + (item.reason ? ' | ' + item.reason : '');
     }))

@@ -258,7 +258,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /renderSourceOperationsCockpit/);
     assert.match(webAppJs, /renderSourceCockpitActionPlan/);
     assert.match(webAppJs, /load-source-cockpit-action-plan/);
-    assert.match(webAppJs, /Operator queue/);
+    assert.match(webAppJs, /待处理队列/);
     assert.match(webAppJs, /operations\/source-attention/);
     assert.match(webAppJs, /operations\/source-type-operations/);
     assert.match(webAppJs, /operations\/source-type-drilldown/);
@@ -321,7 +321,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /renderAuthorReviewQueueEventSynthesis/);
     assert.match(webAppJs, /renderSourceOperationsDrilldown/);
     assert.match(webAppJs, /renderSourceHealthBrief/);
-    assert.match(webAppJs, /Source health brief/);
+    assert.match(webAppJs, /来源健康简报/);
     assert.match(webAppJs, /renderCollectionStatusOverview/);
     assert.match(webAppJs, /api\/context-review-results/);
     assert.ok(openApi.paths['/api/events/dispatch'].post.requestBody.content['application/json'].schema.properties.sourceId);
@@ -1461,15 +1461,15 @@ test('http server exposes source operations drilldown API', async function () {
     assert.match(webAppJs, /run-automation-pressure-action/);
     assert.match(webAppJs, /dispatch-preview/);
     assert.match(webAppJs, /renderNotificationDispatchPreview/);
-    assert.match(webAppJs, /Notification dispatch preview/);
+    assert.match(webAppJs, /提醒投递预览/);
     assert.match(webAppJs, /automation-freshness-actions/);
-    assert.match(webAppJs, /Refresh snapshot/);
+    assert.match(webAppJs, /刷新快照/);
     assert.match(webAppJs, /audit-overview/);
     assert.match(webAppJs, /gate-preview/);
-    assert.match(webAppJs, /Gate preview/);
+    assert.match(webAppJs, /门禁预览/);
     assert.match(webAppJs, /execution-overview/);
     assert.match(webAppJs, /executor-diagnostics/);
-    assert.match(webAppJs, /Executor diagnostics/);
+    assert.match(webAppJs, /执行诊断/);
     assert.match(webAppJs, /renderAutomationOperatorRunbook/);
     assert.match(webAppJs, /renderAutomationRunbookIntentButton/);
     assert.match(webAppJs, /renderAutomationRemediation/);
@@ -1485,8 +1485,8 @@ test('http server exposes source operations drilldown API', async function () {
     assert.match(webAppJs, /automation-readiness-refresh-in-flight/);
     assert.match(webAppJs, /automationAutoRefreshStatusLabel/);
     assert.match(webAppJs, /scheduleAutomationAutoRefresh/);
-    assert.match(webAppJs, /Auto refresh/);
-    assert.match(webAppJs, /Refreshing/);
+    assert.match(webAppJs, /自动刷新/);
+    assert.match(webAppJs, /刷新中/);
   } finally {
     await close(server);
   }
