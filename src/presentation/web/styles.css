@@ -114,7 +114,7 @@ textarea:focus-visible {
 .app-shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 276px minmax(0, 1fr);
+  grid-template-columns: 246px minmax(0, 1fr);
 }
 
 .sidebar {
@@ -125,86 +125,161 @@ textarea:focus-visible {
   overflow: auto;
   display: flex;
   flex-direction: column;
+  isolation: isolate;
   background:
-    linear-gradient(180deg, rgba(241, 189, 82, 0.12), rgba(241, 189, 82, 0) 150px),
-    linear-gradient(140deg, rgba(39, 95, 174, 0.2), rgba(39, 95, 174, 0) 42%),
-    linear-gradient(180deg, var(--sidebar-2), var(--sidebar));
-  color: #f8fbfa;
-  padding: 24px 18px;
-  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.06);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(246, 250, 252, 0.92)),
+    linear-gradient(132deg, rgba(20, 114, 95, 0.12), rgba(20, 114, 95, 0) 34%),
+    linear-gradient(28deg, rgba(101, 84, 199, 0.105), rgba(101, 84, 199, 0) 48%),
+    linear-gradient(205deg, rgba(241, 189, 82, 0.12), rgba(241, 189, 82, 0) 28%),
+    var(--workspace);
+  color: var(--text);
+  padding: 22px 13px;
+  border-right: 1px solid rgba(185, 200, 216, 0.68);
+  box-shadow:
+    18px 0 54px rgba(38, 59, 84, 0.07),
+    inset -1px 0 0 rgba(255, 255, 255, 0.74);
+}
+
+.sidebar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(90deg, rgba(20, 114, 95, 0.055) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(36, 95, 159, 0.045) 1px, transparent 1px);
+  background-size: 28px 28px;
+  opacity: 0.72;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.8), transparent 74%);
+}
+
+.sidebar::after {
+  content: "";
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 12px;
+  height: 3px;
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(90deg, var(--gold) 0 22%, rgba(36, 95, 159, 0.42) 22% 50%, rgba(20, 114, 95, 0.74) 50% 100%);
+  opacity: 0.82;
+  pointer-events: none;
 }
 
 .brand {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-columns: 42px minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
-  min-height: 68px;
-  margin-bottom: 18px;
-  padding: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 11px;
+  min-height: 64px;
+  margin: 7px 0 20px;
+  padding: 10px 9px;
+  border: 1px solid rgba(185, 200, 216, 0.42);
   border-radius: var(--radius);
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.03));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(240, 250, 247, 0.54) 58%, rgba(238, 246, 255, 0.52));
+  box-shadow:
+    0 10px 26px rgba(38, 59, 84, 0.06),
+    var(--inner-light);
 }
 
 .brand-mark {
-  width: 44px;
-  height: 44px;
+  position: relative;
+  width: 42px;
+  height: 42px;
   display: grid;
   place-items: center;
   border-radius: var(--radius);
   background:
-    linear-gradient(180deg, #ffd871, var(--gold));
+    linear-gradient(150deg, #ffe694, var(--gold) 62%, #d89e31);
   color: #121915;
+  border: 1px solid rgba(115, 80, 27, 0.18);
   font-weight: 900;
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.26);
+  box-shadow:
+    0 12px 24px rgba(179, 125, 28, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.64);
+}
+
+.brand-mark::after {
+  content: "";
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 10px;
+  height: 3px;
+  border-radius: var(--radius-sm);
+  background: rgba(7, 17, 31, 0.55);
 }
 
 .brand h1 {
   margin: 0;
-  color: #ffffff;
-  font-size: 20px;
+  color: var(--text-strong);
+  font-size: 19px;
   line-height: 1.2;
   text-wrap: balance;
 }
 
 .brand p {
   margin: 4px 0 0;
-  color: #b9ccc6;
+  color: var(--muted-strong);
   font-size: 13px;
 }
 
 .nav-list {
   display: grid;
-  gap: 8px;
-  padding: 8px 0;
+  gap: 6px;
+  padding: 7px;
+  border: 1px solid rgba(185, 200, 216, 0.45);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(245, 248, 251, 0.36));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.68),
+    0 12px 28px rgba(38, 59, 84, 0.045);
 }
 
 .nav-item {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   width: 100%;
-  min-height: 44px;
+  min-height: 42px;
   text-align: left;
-  padding: 11px 12px;
+  padding: 9px 10px;
   border-radius: var(--radius);
-  color: #dbe9e5;
+  color: var(--muted-strong);
   background: transparent;
-  font-weight: 750;
+  border: 1px solid transparent;
+  font-weight: 800;
+  box-shadow: none;
 }
 
 .nav-item::before {
   content: "";
   flex: 0 0 auto;
-  width: 9px;
-  height: 9px;
-  border-radius: 3px;
-  background: rgba(219, 233, 229, 0.28);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
+  width: 20px;
+  height: 20px;
+  border-radius: 7px;
+  background:
+    linear-gradient(135deg, rgba(100, 113, 129, 0.24), rgba(100, 113, 129, 0.08));
+  border: 1px solid rgba(64, 80, 99, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.74);
+}
+
+.nav-item::after {
+  content: "";
+  margin-left: auto;
+  width: 6px;
+  height: 6px;
+  border-top: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+  opacity: 0;
+  transform: rotate(45deg) translateX(-2px);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
 }
 
 .nav-item:nth-child(2)::before {
@@ -212,7 +287,7 @@ textarea:focus-visible {
 }
 
 .nav-item:nth-child(3)::before {
-  background: rgba(241, 189, 82, 0.66);
+  background: rgba(241, 189, 82, 0.76);
 }
 
 .nav-item:nth-child(4)::before {
@@ -220,50 +295,62 @@ textarea:focus-visible {
 }
 
 .nav-item:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.075);
+  color: var(--text-strong);
+  border-color: rgba(185, 200, 216, 0.56);
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 8px 18px rgba(38, 59, 84, 0.06),
+    var(--inner-light);
+  transform: translateY(-1px);
 }
 
 .nav-item.active {
-  color: #ffffff;
+  color: var(--accent-ink);
   background:
-    linear-gradient(135deg, rgba(39, 95, 174, 0.42), rgba(18, 118, 107, 0.36)),
-    linear-gradient(180deg, rgba(32, 42, 57, 0.98), rgba(19, 29, 43, 0.98));
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(226, 243, 238, 0.94) 62%, rgba(238, 246, 255, 0.88));
+  border-color: rgba(20, 114, 95, 0.28);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.09),
-    0 10px 24px rgba(0, 0, 0, 0.18);
+    0 13px 28px rgba(20, 114, 95, 0.105),
+    var(--inner-light);
 }
 
 .nav-item.active::before {
-  background: var(--gold);
+  background:
+    linear-gradient(135deg, var(--gold), rgba(20, 114, 95, 0.86));
+  border-color: rgba(20, 114, 95, 0.24);
   box-shadow:
-    0 0 0 3px rgba(241, 189, 82, 0.12),
-    0 0 18px rgba(241, 189, 82, 0.22);
+    0 0 0 4px rgba(241, 189, 82, 0.14),
+    0 8px 18px rgba(20, 114, 95, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.68);
+}
+
+.nav-item.active::after {
+  opacity: 0.72;
+  transform: rotate(45deg) translateX(0);
 }
 
 .sidebar-status {
   display: grid;
-  gap: 6px;
+  gap: 7px;
   margin-top: auto;
-  padding: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  padding: 13px;
+  border: 1px solid rgba(185, 200, 216, 0.52);
   border-radius: var(--radius);
   background:
-    linear-gradient(145deg, rgba(39, 95, 174, 0.18), rgba(18, 118, 107, 0.12)),
-    rgba(255, 255, 255, 0.045);
+    linear-gradient(145deg, rgba(255, 255, 255, 0.74), rgba(226, 243, 238, 0.56) 54%, rgba(238, 246, 255, 0.48));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.07),
-    0 18px 34px rgba(0, 0, 0, 0.18);
+    0 13px 30px rgba(38, 59, 84, 0.07),
+    var(--inner-light);
 }
 
 .sidebar-status span {
   width: max-content;
   max-width: 100%;
   padding: 4px 7px;
-  border: 1px solid rgba(241, 189, 82, 0.3);
+  border: 1px solid rgba(20, 114, 95, 0.24);
   border-radius: var(--radius-sm);
-  background: rgba(241, 189, 82, 0.12);
-  color: #ffe4a3;
+  background: rgba(226, 243, 238, 0.88);
+  color: var(--accent-ink);
   font-family: "Cascadia Mono", Consolas, monospace;
   font-size: 11px;
   font-weight: 850;
@@ -272,14 +359,14 @@ textarea:focus-visible {
 }
 
 .sidebar-status strong {
-  color: #ffffff;
+  color: var(--text-strong);
   font-size: 15px;
   line-height: 1.25;
   overflow-wrap: anywhere;
 }
 
 .sidebar-status small {
-  color: #b9c9d8;
+  color: var(--muted-strong);
   font-size: 12px;
   line-height: 1.45;
   overflow-wrap: anywhere;
@@ -5899,7 +5986,7 @@ pre {
   }
 
   .sidebar {
-    position: static;
+    position: relative;
     min-height: auto;
     max-height: none;
     padding: 16px;

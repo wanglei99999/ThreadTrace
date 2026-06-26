@@ -6,8 +6,8 @@ colors:
   workspace-surface: "#f7f9fa"
   panel: "#ffffff"
   panel-subtle: "#f6f8f8"
-  sidebar: "#0c1715"
-  sidebar-raised: "#10211e"
+  sidebar: "#f7fafc"
+  sidebar-raised: "#ffffff"
   text: "#17211f"
   text-strong: "#07100e"
   muted: "#60716d"
@@ -94,7 +94,7 @@ components:
 
 ThreadTrace should feel like a private cockpit for a young technical operator: sharp, credible, and satisfying to use without falling into hacker theatrics. The interface serves analysis, source operations, and evidence review, so it should be dense enough for real work while keeping the visual field calm and navigable.
 
-The system rejects generic admin templates, old enterprise dashboards, dark hacker terminals, and single-color monotony. It uses a restrained technical foundation with a deep green-black sidebar, cool work surfaces, teal operational accents, gold brand recognition, and semantic colors for status.
+The system rejects generic admin templates, old enterprise dashboards, dark hacker terminals, and single-color monotony. It uses a restrained technical foundation with a daylight command dock, cool work surfaces, teal operational accents, gold brand recognition, and semantic colors for status.
 
 **Key Characteristics:**
 - Dense but not cramped.
@@ -105,7 +105,7 @@ The system rejects generic admin templates, old enterprise dashboards, dark hack
 
 ## 2. Colors
 
-The palette is a cool technical neutral system with a deep green-black shell, teal operational accent, gold brand marker, and clear semantic colors.
+The palette is a cool technical neutral system with a light command shell, teal operational accent, gold brand marker, and clear semantic colors.
 
 ### Primary
 - **Signal Teal** (`accent`): Used for primary actions, current navigation, focus energy, and compact status anchors.
@@ -120,7 +120,7 @@ The palette is a cool technical neutral system with a deep green-black shell, te
 - **Success Green** (`ok`), **Attention Amber** (`warn`), and **Failure Red** (`fail`): Used only for semantic status, not decoration.
 
 ### Neutral
-- **Cockpit Black-Green** (`sidebar`, `sidebar-raised`): Used for the persistent navigation shell.
+- **Daylight Command Dock** (`sidebar`, `sidebar-raised`): Used for the persistent navigation shell. It should feel light, modern, and AI-native rather than like an old dark admin sidebar. The dock uses subtle structure, compact capsules, and multi-accent identity marks instead of heavy cards.
 - **Cool Work Surface** (`workspace-bg`, `workspace-surface`): Used for the main analysis canvas.
 - **Raised Panel White** (`panel`, `panel-subtle`): Used for forms, result panels, and readable evidence areas.
 - **Ink Text** (`text`, `text-strong`) and **Muted Text** (`muted`): Used for hierarchy and scanning.
@@ -189,14 +189,14 @@ ThreadTrace uses hybrid depth: tonal layers establish the main hierarchy, while 
 - **Error / Disabled:** Error states use semantic amber/red; disabled states lower contrast and remove interactive shadow.
 
 ### Navigation
-- **Style:** Persistent deep green-black sidebar with strong active item treatment. Navigation uses clear labels, compact spacing, and no decorative icons unless they add recognition.
-- **Mobile:** Sidebar collapses into a compact top shell with two-column or four-column nav depending on width.
+- **Style:** Persistent daylight command dock with strong active item treatment. Navigation uses clear labels, compact spacing, soft elevation, and small color anchors for recognition.
+- **Mobile:** The dock collapses into a compact top command shell with two-column or four-column nav depending on width.
 
 ## 6. Do's and Don'ts
 
 ### Do:
 - **Do** keep the UI young, sharp, and personally useful.
-- **Do** use multiple deliberate color roles: deep shell, cool canvas, teal action, gold identity, semantic status.
+- **Do** use multiple deliberate color roles: daylight command dock, cool canvas, teal action, gold identity, semantic status.
 - **Do** preserve evidence density while keeping row separation, labels, and panel titles easy to scan.
 - **Do** make source operations, review flows, and analysis results feel like one coherent cockpit.
 - **Do** keep focus states visible and keyboard-friendly.
