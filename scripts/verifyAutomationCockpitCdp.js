@@ -233,6 +233,9 @@ function viewportAuditExpression() {
     "  const pressure = document.querySelector('.automation-pressure-panel');",
     "  const action = document.querySelector('#automationActionResult');",
     "  const status = document.querySelector('#systemStatus');",
+    "  const mojibakeMarkers = ['\\u9352', '\\u55d8', '\\u93c3', '\\u95c3', '\\u7487', '\\u93b7', '\\u9477'];",
+    "  const bodyText = document.body.innerText;",
+    "  const headlineText = hero ? hero.querySelector('h3')?.textContent || '' : '';",
     '  const heroRect = hero ? hero.getBoundingClientRect() : null;',
     '  const statusRect = status ? status.getBoundingClientRect() : null;',
     '  return {',
@@ -250,12 +253,14 @@ function viewportAuditExpression() {
     '    heroTop: heroRect ? Math.round(heroRect.top) : null,',
     '    heroHeight: heroRect ? Math.round(heroRect.height) : null,',
     '    statusTop: statusRect ? Math.round(statusRect.top) : null,',
-    "    bodyTextIncludesOutbox: document.body.innerText.includes('Notification outbox'),",
-    "    bodyTextIncludesAudit: document.body.innerText.includes('Review audit ledger'),",
-    "    bodyTextIncludesRunbook: document.body.innerText.includes('Operator runbook'),",
-    "    bodyTextIncludesActionable: document.body.innerText.includes('Actionable'),",
-    "    bodyTextIncludesFreshness: document.body.innerText.includes('Snapshot freshness'),",
-    "    bodyTextHasMojibake: document.body.innerText.includes('\\u9352') || document.body.innerText.includes('\\u55d8'),",
+    '    headlineText,',
+    "    headlineHasMojibake: mojibakeMarkers.some((marker) => headlineText.includes(marker)),",
+    "    bodyTextIncludesOutbox: bodyText.includes('Notification outbox'),",
+    "    bodyTextIncludesAudit: bodyText.includes('Review audit ledger'),",
+    "    bodyTextIncludesRunbook: bodyText.includes('Operator runbook'),",
+    "    bodyTextIncludesActionable: bodyText.includes('Actionable'),",
+    "    bodyTextIncludesFreshness: bodyText.includes('Snapshot freshness'),",
+    "    bodyTextHasMojibake: mojibakeMarkers.some((marker) => bodyText.includes(marker)),",
     "    runbookCommandCount: document.querySelectorAll('.automation-runbook-command-row').length,",
     "    runbookCopyButtonCount: document.querySelectorAll('.automation-runbook-panel button[data-action=\"copy-lifecycle-command\"]').length,",
     "    runbookScheduleCommandCount: Array.from(document.querySelectorAll('.automation-runbook-command-row code')).filter((code) => code.textContent.includes('configure-source-schedule')).length,",
@@ -530,6 +535,8 @@ function assertAudit(label, audit) {
   if (!audit.bodyTextIncludesRunbook) failures.push('missing Operator runbook text');
   if (!audit.bodyTextIncludesActionable) failures.push('missing Actionable runbook summary text');
   if (!audit.bodyTextIncludesFreshness) failures.push('missing Snapshot freshness text');
+  if (!audit.headlineText) failures.push('missing automation cockpit headline text');
+  if (audit.headlineHasMojibake) failures.push('automation cockpit headline contains mojibake: ' + audit.headlineText);
   if (audit.bodyTextHasMojibake) failures.push('body text contains mojibake');
   if (audit.runbookCommandCount > 0 && audit.runbookCopyButtonCount < audit.runbookCommandCount) failures.push('runbook commands are missing copy controls');
   if (audit.runbookScheduleCommandCount > 0 && audit.runbookScheduleButtonCount < audit.runbookScheduleCommandCount) failures.push('schedule runbook commands are missing Preview/Apply controls');

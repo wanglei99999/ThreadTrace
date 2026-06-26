@@ -5451,7 +5451,7 @@ function renderAutomationCockpitHero(plan, cockpit) {
     statusBadge(plan.status || 'unknown', readyVariant),
     statusBadge(plan.readyForUnattendedRun ? 'unattended ready' : 'operator review', plan.readyForUnattendedRun ? 'ok' : 'warn'),
     '</div>',
-    '<h3>' + escapeHtml(automationReadinessHeadline(plan, sources, operations, workers, llm, demo)) + '</h3>',
+    '<h3>' + escapeHtml(automationReadinessHeadlineReadable(plan, sources, operations, workers, llm, demo)) + '</h3>',
     '<p>' + escapeHtml([
       'snapshot=' + generatedAt,
       'sourceTaskMode=' + sourceTaskMode,
@@ -5500,14 +5500,14 @@ function renderAutomationCockpitHero(plan, cockpit) {
   ].join('');
 }
 
-function automationReadinessHeadline(plan, sources, operations, workers, llm, demo) {
-  if (plan.readyForUnattendedRun) return '无人值守链路已经具备日常运行条件。';
-  if ((sources.total || 0) === 0) return '先接入一个可信来源，自动化才有可运行对象。';
-  if ((operations.queueTotal || 0) > 0 && (operations.runnable || 0) > 0) return '队列已有可执行工作，适合先跑一轮受控验证。';
-  if (llm.mockMode || llm.provider === 'mock') return '语义链路仍在 mock/provider 预检阶段，需要接入真实模型质量。';
-  if (!workers.topology || workers.status !== 'ok') return 'Worker 拓扑还需要确认，避免长期运行时掉链。';
-  if (!demo.readyForDailyUse) return '端到端 demo closure 还没有形成可日常信任的证据。';
-  return '自动化底座已铺好，剩下的是把缺口逐个清掉。';
+function automationReadinessHeadlineReadable(plan, sources, operations, workers, llm, demo) {
+  if (plan.readyForUnattendedRun) return 'Unattended operation is ready for a daily run.';
+  if ((sources.total || 0) === 0) return 'Connect a trusted source before automation has something to run.';
+  if ((operations.queueTotal || 0) > 0 && (operations.runnable || 0) > 0) return 'Runnable work is queued; run one controlled cycle next.';
+  if (llm.mockMode || llm.provider === 'mock') return 'Semantic analysis is still on the mock/provider readiness path.';
+  if (!workers.topology || workers.status !== 'ok') return 'Confirm worker topology before relying on long-running automation.';
+  if (!demo.readyForDailyUse) return 'Complete the demo closure before treating the loop as daily-use ready.';
+  return 'The automation base is in place; close the remaining operating gaps.';
 }
 
 function automationCockpitButton(action, label, className) {
