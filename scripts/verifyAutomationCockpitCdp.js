@@ -35,6 +35,7 @@ async function main() {
         width: 1440,
         height: 1100,
         mobile: false,
+        runAction: true,
         screenshotPath: path.join(outputDir, 'automation-cockpit-cdp-desktop.png')
       });
       const mobile = await verifyViewport(client, {
@@ -160,6 +161,7 @@ async function verifyViewport(client, options) {
   });
   await client.send('Page.navigate', { url: options.url });
   await waitForCockpit(client);
+  const actionResult = options.runAction ? await verifyAutomationActionResult(client) : undefined;
   const audit = await evaluateByValue(client, viewportAuditExpression());
   const screenshot = await client.send('Page.captureScreenshot', {
     format: 'png',
@@ -169,6 +171,7 @@ async function verifyViewport(client, options) {
   const stats = await fs.stat(options.screenshotPath);
   assertAudit(options.label, audit);
   return Object.assign({}, audit, {
+    actionResult,
     screenshotPath: options.screenshotPath,
     screenshotBytes: stats.size
   });
@@ -217,6 +220,45 @@ function viewportAuditExpression() {
     '  };',
     '})()'
   ].join('\n');
+}
+
+async function verifyAutomationActionResult(client) {
+  const clicked = await evaluateByValue(client, [
+    '(() => {',
+    "  const buttons = Array.from(document.querySelectorAll('.automation-cockpit-hero button'));",
+    "  const button = buttons.find((candidate) => candidate.textContent.trim() === 'LLM readiness');",
+    '  if (!button) return false;',
+    '  button.click();',
+    '  return true;',
+    '})()'
+  ].join('\n'));
+  if (!clicked) {
+    throw new Error('Could not click Automation Cockpit LLM readiness button.');
+  }
+  await waitFor(async function () {
+    return evaluateByValue(client, [
+      '(() => {',
+      "  const result = document.querySelector('#automationActionResult');",
+      "  const commandRows = result ? result.querySelectorAll('.automation-action-command-row .lifecycle-command-row') : [];",
+      "  const copyButtons = result ? result.querySelectorAll('button[data-action=\"copy-lifecycle-command\"],button[data-action=\"copy-command\"]') : [];",
+      '  return Boolean(result && commandRows.length > 0 && copyButtons.length > 0);',
+      '})()'
+    ].join('\n'));
+  }, 30000, 'Timed out waiting for Automation Cockpit action commands.');
+  return evaluateByValue(client, [
+    '(() => {',
+    "  const result = document.querySelector('#automationActionResult');",
+    "  const rows = Array.from(result.querySelectorAll('.automation-action-command-row'));",
+    "  const commands = Array.from(result.querySelectorAll('.lifecycle-command-row code')).map((item) => item.textContent.trim());",
+    '  return {',
+    '    hasResult: Boolean(result),',
+    '    rowCount: rows.length,',
+    '    commandCount: commands.length,',
+    '    commands: commands.slice(0, 5),',
+    "    hasCopyButtons: Boolean(result.querySelector('button[data-action=\"copy-lifecycle-command\"],button[data-action=\"copy-command\"]'))",
+    '  };',
+    '})()'
+  ].join('\n'));
 }
 
 async function evaluateByValue(client, expression, awaitPromise) {

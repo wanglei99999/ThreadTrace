@@ -53,6 +53,8 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshAutomationReadinessButton').addEventListener('click', loadAutomationReadiness);
   const automationReadinessResult = document.getElementById('automationReadinessResult');
   if (automationReadinessResult) automationReadinessResult.addEventListener('click', handleAutomationReadinessAction);
+  const automationActionResult = document.getElementById('automationActionResult');
+  if (automationActionResult) automationActionResult.addEventListener('click', handleAutomationActionResult);
   document.getElementById('runLlmReadinessButton').addEventListener('click', runLlmReadiness);
   document.getElementById('runLlmPreflightButton').addEventListener('click', runLlmPreflight);
   document.getElementById('runLlmEvaluationButton').addEventListener('click', runLlmEvaluation);
@@ -324,8 +326,8 @@ function bindForms() {
   document.getElementById('sourceOperationsResult').addEventListener('click', async function (event) {
     const button = event.target.closest('button[data-action]');
     if (!button) return;
-    if (button.dataset.action === 'copy-lifecycle-command') {
-      await copyLifecycleCommandFromButton(button);
+    if (isCopyCommandAction(button)) {
+      await copyCommandFromButton(button);
       return;
     }
     if (button.dataset.action === 'synthesize-runbook-events') {
@@ -697,6 +699,22 @@ async function handleAutomationReadinessAction(event) {
   }
 }
 
+async function handleAutomationActionResult(event) {
+  const button = event.target.closest('button[data-action]');
+  if (!button) return;
+  if (isCopyCommandAction(button)) {
+    await copyCommandFromButton(button);
+    return;
+  }
+  if (button.dataset.action === 'load-trace-context') {
+    await loadTaskTraceContextFromButton(button);
+    return;
+  }
+  if (button.dataset.action === 'load-task-detail') {
+    await loadTaskDetailFromButton(button);
+  }
+}
+
 function resolveAutomationActionTarget() {
   return document.getElementById('automationActionResult')
     ? 'automationActionResult'
@@ -964,8 +982,8 @@ function setLoading(targetId, message) {
 async function handleRolloutReadinessAction(event) {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
-  if (button.dataset.action === 'copy-lifecycle-command') {
-    await copyLifecycleCommandFromButton(button);
+  if (isCopyCommandAction(button)) {
+    await copyCommandFromButton(button);
     return;
   }
   if (button.dataset.action === 'load-source-drilldown') {
@@ -4666,9 +4684,7 @@ function renderLlmReadinessProfile(profile) {
     panel('LLM readiness checks', evidenceList((profile.checks || []).map(function (check) {
       return check.status + ' | ' + check.area + ' | ' + check.key + ' | ' + check.summary;
     })), 'wide'),
-    panel('LLM readiness actions', evidenceList((profile.nextActions || []).map(function (action) {
-      return (action.severity || 'info') + ' | ' + (action.key || 'action') + ' | ' + (action.summary || '') + ' | ' + (action.commands || []).join(' | ');
-    })), 'wide')
+    panel('LLM readiness actions', renderNextActionRows(profile.nextActions || []), 'wide automation-action-command-panel')
   ].join('');
 }
 
@@ -4693,9 +4709,7 @@ function renderLlmPreflightReport(report) {
     panel('LLM preflight checks', evidenceList((report.checks || []).map(function (check) {
       return check.status + ' | ' + check.key + ' | ' + check.summary;
     })), 'wide'),
-    panel('LLM preflight actions', evidenceList((report.nextActions || []).map(function (action) {
-      return (action.severity || 'info') + ' | ' + (action.key || 'action') + ' | ' + (action.summary || '') + ' | ' + (action.commands || []).join(' | ');
-    })), 'wide')
+    panel('LLM preflight actions', renderNextActionRows(report.nextActions || []), 'wide automation-action-command-panel')
   ].join('');
 }
 
@@ -4715,9 +4729,7 @@ function renderLlmEvaluationReport(report) {
       metric('Schema', report.schemaVersion || 'unknown')
     ].join(''), 'wide'),
     panel('LLM evaluation samples', evidenceList((report.results || []).map(formatLlmEvaluationSampleRow)), 'wide'),
-    panel('LLM evaluation actions', evidenceList((report.nextActions || []).map(function (action) {
-      return (action.severity || 'info') + ' | ' + (action.key || 'action') + ' | ' + (action.summary || '') + ' | ' + (action.commands || []).join(' | ');
-    })), 'wide')
+    panel('LLM evaluation actions', renderNextActionRows(report.nextActions || []), 'wide automation-action-command-panel')
   ].join('');
 }
 
@@ -4777,10 +4789,28 @@ function renderSourceDemoCycleReport(report) {
       metric('Latest task', report.drilldown.health && report.drilldown.health.tasks && report.drilldown.health.tasks.latest ? report.drilldown.health.tasks.latest.id : 'none'),
       renderSourceDrilldownButtonForScope(report.primarySource || {})
     ].join(''), 'wide') : '',
-    panel('Demo cycle actions', evidenceList((report.nextActions || []).map(function (action) {
-      return (action.severity || 'info') + ' | ' + (action.key || 'action') + ' | ' + (action.summary || '') + ' | ' + (action.commands || []).join(' | ');
-    })), 'wide')
+    panel('Demo cycle actions', renderNextActionRows(report.nextActions || []), 'wide automation-action-command-panel')
   ].join('');
+}
+
+function renderNextActionRows(actions) {
+  if (!actions || actions.length === 0) return '<div class="muted">No follow-up commands.</div>';
+  return '<div class="automation-action-command-list">' + actions.map(function (action) {
+    const commands = action.commands || (action.command ? [action.command] : []);
+    const details = (action.details || []).map(function (detail) {
+      return detail.key + (detail.evidenceSummary ? ' evidence=' + detail.evidenceSummary : '');
+    }).join(' | ');
+    return '<div class="action-row ops-row automation-action-command-row">' +
+      '<span>' +
+      '<strong>' + escapeHtml((action.severity || 'info') + ' | ' + (action.key || 'action')) + '</strong>' +
+      '<small>' + escapeHtml(action.summary || action.command || '') + '</small>' +
+      (action.evidenceSummary ? '<small>' + escapeHtml('evidence=' + action.evidenceSummary) + '</small>' : '') +
+      (details ? '<small>' + escapeHtml('details=' + details) + '</small>' : '') +
+      renderReadinessCommandRows(commands) +
+      '</span>' +
+      statusBadge(action.severity || 'info', action.severity === 'critical' ? 'fail' : statusVariant(action.severity)) +
+      '</div>';
+  }).join('') + '</div>';
 }
 
 function renderDemoCycleClosure(closure) {
@@ -8488,7 +8518,11 @@ async function requestJson(url, body, options) {
   return response.json();
 }
 
-async function copyLifecycleCommandFromButton(button) {
+function isCopyCommandAction(button) {
+  return button && (button.dataset.action === 'copy-command' || button.dataset.action === 'copy-lifecycle-command');
+}
+
+async function copyCommandFromButton(button) {
   const row = button.closest('.lifecycle-command-row');
   const commandElement = row ? row.querySelector('code') : undefined;
   const command = commandElement ? commandElement.textContent : '';

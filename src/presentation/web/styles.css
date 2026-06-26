@@ -3467,6 +3467,30 @@ form button[type="submit"]:hover {
     var(--panel);
 }
 
+.automation-action-command-panel {
+  border-color: rgba(20, 114, 95, 0.2);
+}
+
+.automation-action-command-list {
+  display: grid;
+  gap: 10px;
+}
+
+.automation-action-command-row {
+  align-items: start;
+  border-color: rgba(184, 201, 195, 0.72);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(238, 246, 255, 0.74) 58%, rgba(232, 247, 241, 0.62));
+}
+
+.automation-action-command-row .lifecycle-command-list {
+  margin-top: 8px;
+}
+
+.automation-action-command-row .lifecycle-command-row {
+  background: rgba(255, 255, 255, 0.82);
+}
+
 .automation-cockpit-hero {
   position: relative;
   grid-column: span 12;
