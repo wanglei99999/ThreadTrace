@@ -3147,8 +3147,8 @@ function renderEvidenceReliability(reliability) {
 function renderAuthorIntelligenceDashboard(dashboard) {
   return [
     renderAuthorIntelligenceHero(dashboard),
-    panel('Source review pressure', renderAuthorSourceReviewPressureRows(dashboard.sourceReviewPressure || []), 'wide'),
-    panel('Review queue', renderAuthorReviewQueueRows(dashboard.reviewQueue || []), 'wide'),
+    panel('来源复核压力', renderAuthorSourceReviewPressureRows(dashboard.sourceReviewPressure || []), 'wide'),
+    panel('复核队列', renderAuthorReviewQueueRows(dashboard.reviewQueue || []), 'wide'),
     panel('重点作者', renderAuthorIntelligenceRows(dashboard.authors || []), 'wide'),
     panel('聚焦实体', renderAuthorEntityRows(dashboard.focusEntities || []), 'wide'),
     panel('观点时间线', renderOpinionTimelineRows(dashboard.opinionTimeline || []), 'wide'),
@@ -3164,43 +3164,43 @@ function renderAuthorIntelligenceHero(dashboard) {
   const status = dashboard.status || 'unknown';
   const queueCount = summary.reviewQueueCount || 0;
   const gapCount = summary.evidenceGapCount || 0;
-  const nextAction = dashboard.recommendedNextAction || dashboard.message || 'Review author signals and sync the open queue.';
+  const nextAction = authorWorkspaceCopy(dashboard.recommendedNextAction || dashboard.message, '查看作者线索，并同步待复核队列。');
   return [
     '<article class="author-intel-hero">',
     '<section class="author-intel-main">',
     '<div class="author-intel-header">',
-    '<span class="author-intel-label">Author radar</span>',
+    '<span class="author-intel-label">作者雷达</span>',
     statusBadge(status, statusVariant(status)),
     '</div>',
     '<h3>' + escapeHtml(nextAction) + '</h3>',
-    '<p>' + escapeHtml(authorIntelligenceScope(dashboard) + ' | ' + (dashboard.revisionMode || 'latest-per-thread') + ' | reports=' + (dashboard.reportCount || 0) + ' | revisions=' + (dashboard.reportRevisionCount || 0)) + '</p>',
+    '<p>' + escapeHtml([authorIntelligenceScope(dashboard), formatAuthorRevisionMode(dashboard.revisionMode), '报告 ' + (dashboard.reportCount || 0), '修订 ' + (dashboard.reportRevisionCount || 0)].filter(Boolean).join(' · ')) + '</p>',
     '<div class="author-intel-actions button-group">' +
-      '<button class="inline-button" type="button" data-action="sync-author-review-queue">Sync queue</button>' +
-      '<button class="inline-button secondary-inline-button" type="button" data-action="load-author-review-queue">Open queue</button>' +
-      '<a class="inline-button secondary-inline-button" href="' + escapeHtml(authorIntelligenceMarkdownHref(dashboard)) + '" target="_blank" rel="noreferrer">Markdown</a>' +
+      '<button class="inline-button" type="button" data-action="sync-author-review-queue">同步复核</button>' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="load-author-review-queue">打开队列</button>' +
+      '<a class="inline-button secondary-inline-button" href="' + escapeHtml(authorIntelligenceMarkdownHref(dashboard)) + '" target="_blank" rel="noreferrer">打开报告</a>' +
     '</div>',
     '</section>',
     '<aside class="author-intel-signals">',
-    authorIntelSignal('Authors', summary.authorCount || 0, (summary.authorCount || 0) > 0 ? 'ok' : 'muted'),
-    authorIntelSignal('Opinions', summary.opinionCount || 0, (summary.opinionCount || 0) > 0 ? 'ok' : 'muted'),
-    authorIntelSignal('Entities', summary.focusEntityCount || 0, (summary.focusEntityCount || 0) > 0 ? 'ok' : 'muted'),
-    authorIntelSignal('Gaps', gapCount, gapCount > 0 ? 'warn' : 'ok'),
-    authorIntelSignal('Queue', queueCount, queueCount > 0 ? 'warn' : 'ok'),
-    authorIntelSignal('Threads', summary.threadCount || 0, (summary.threadCount || 0) > 0 ? 'ok' : 'muted'),
+    authorIntelSignal('作者', summary.authorCount || 0, (summary.authorCount || 0) > 0 ? 'ok' : 'muted'),
+    authorIntelSignal('观点', summary.opinionCount || 0, (summary.opinionCount || 0) > 0 ? 'ok' : 'muted'),
+    authorIntelSignal('对象', summary.focusEntityCount || 0, (summary.focusEntityCount || 0) > 0 ? 'ok' : 'muted'),
+    authorIntelSignal('缺口', gapCount, gapCount > 0 ? 'warn' : 'ok'),
+    authorIntelSignal('复核', queueCount, queueCount > 0 ? 'warn' : 'ok'),
+    authorIntelSignal('主题', summary.threadCount || 0, (summary.threadCount || 0) > 0 ? 'ok' : 'muted'),
     '</aside>',
     '<section class="author-intel-focus">',
-    '<span>Focus authors</span>',
+    '<span>关注作者</span>',
     renderAuthorIntelFocusRows(authors),
     '</section>',
     '<section class="author-intel-review">',
-    '<span>Review pressure</span>',
-    '<strong>' + escapeHtml(queueCount + ' queue / ' + gapCount + ' gaps') + '</strong>',
+    '<span>复核压力</span>',
+    '<strong>' + escapeHtml('待复核 ' + queueCount + ' · 证据缺口 ' + gapCount) + '</strong>',
     '<small>' + escapeHtml([
-      formatStanceSummary(summary.reviewQueuePriorityCounts),
-      formatStanceSummary(summary.reviewQueueTypeCounts),
-      topPressure.sourceKey ? 'top source=' + topPressure.sourceKey : undefined,
-      topPressure.recommendedNextAction
-    ].filter(Boolean).join(' | ')) + '</small>',
+      formatAuthorCountSummary(summary.reviewQueuePriorityCounts),
+      formatAuthorCountSummary(summary.reviewQueueTypeCounts),
+      topPressure.sourceKey ? '主要来源=' + topPressure.sourceKey : undefined,
+      authorWorkspaceCopy(topPressure.recommendedNextAction)
+    ].filter(Boolean).join(' · ')) + '</small>',
     '</section>',
     '</article>'
   ].join('');
@@ -3210,9 +3210,48 @@ function authorIntelSignal(label, value, variant) {
   return '<div class="author-intel-signal ' + statusClassName(variant) + '"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(value) + '</strong></div>';
 }
 
+function formatAuthorRevisionMode(mode) {
+  return mode === 'all-revisions' ? '全部修订' : '每个主题取最新报告';
+}
+
+function authorWorkspaceCopy(value, fallback) {
+  const text = value === undefined || value === null || value === '' ? (fallback || '') : String(value);
+  const normalized = text.trim();
+  if (normalized.indexOf('Validate high-confidence opinion from ') === 0) {
+    return '核验高可信观点：' + normalized.slice('Validate high-confidence opinion from '.length);
+  }
+  const translated = {
+    'Work the author intelligence review queue from highest priority to lowest.': '按优先级处理作者复核队列。',
+    'Work the source-scoped author review queue before downstream automation.': '先处理这个来源的作者复核队列，再继续后续自动动作。',
+    'Confirm, ignore, or drill into the source scope.': '确认、忽略，或打开来源查看证据。',
+    'Confirm the cited floor, then allow it to seed author memory or downstream briefings.': '先确认引用楼层，再用于作者记忆或后续简报。',
+    'Open source scope and validate the evidence chain.': '打开来源范围，核验证据路径。',
+    'Needs operator review before downstream action.': '需要先复核证据，再继续后续动作。',
+    'Continue working the remaining open author intelligence review queue items.': '继续处理剩余的作者复核事项。',
+    'Use top authors, focus entities, and opinion timeline as the next review anchors.': '以重点作者、聚焦实体和观点时间线作为下一轮复核锚点。',
+    'high-confidence-opinion': '高可信观点',
+    high: '高优先',
+    medium: '中优先',
+    low: '低优先',
+    open: '待处理',
+    confirmed: '已确认',
+    ignored: '已忽略',
+    unknown: '未知'
+  }[normalized];
+  return translated || text;
+}
+
+function formatAuthorCountSummary(summary) {
+  const keys = Object.keys(summary || {});
+  if (keys.length === 0) return '暂无';
+  return keys.sort().map(function (key) {
+    return authorWorkspaceCopy(key) + ' ' + summary[key];
+  }).join(' / ');
+}
+
 function renderAuthorIntelFocusRows(authors) {
   if (!authors || authors.length === 0) {
-    return '<div class="author-intel-empty">No author signals yet.</div>';
+    return '<div class="author-intel-empty">暂无作者线索。</div>';
   }
   return authors.slice(0, 3).map(function (item) {
     const author = item.author || {};
@@ -3220,20 +3259,20 @@ function renderAuthorIntelFocusRows(authors) {
       return entity.entity && entity.entity.displayName ? entity.entity.displayName : entity.key;
     }).filter(Boolean).join(' / ');
     return '<div class="author-intel-focus-row">' +
-      '<strong>' + escapeHtml(author.displayName || author.sourceAuthorId || item.key || 'unknown') + '</strong>' +
-      '<small>' + escapeHtml(['posts=' + (item.postCount || 0), 'opinions=' + (item.opinionCount || 0), 'gaps=' + (item.evidenceGapCount || 0), focus].filter(Boolean).join(' | ')) + '</small>' +
+      '<strong>' + escapeHtml(author.displayName || author.sourceAuthorId || item.key || '未知作者') + '</strong>' +
+      '<small>' + escapeHtml(['发言 ' + (item.postCount || 0), '观点 ' + (item.opinionCount || 0), '缺口 ' + (item.evidenceGapCount || 0), focus].filter(Boolean).join(' · ')) + '</small>' +
       '</div>';
   }).join('');
 }
 
 function authorIntelligenceScope(dashboard) {
   const parts = [
-    dashboard.sourceKey || 'all-sources',
-    dashboard.sourceThreadId ? 'thread=' + dashboard.sourceThreadId : undefined
+    dashboard.sourceKey || '全部来源',
+    dashboard.sourceThreadId ? '主题 ' + dashboard.sourceThreadId : undefined
   ];
   const filter = dashboard.authorFilter || {};
   if (filter.authorId || filter.displayName) {
-    parts.push('author=' + (filter.displayName || filter.authorId));
+    parts.push('作者 ' + (filter.displayName || filter.authorId));
   }
   return parts.filter(Boolean).join(' · ');
 }
@@ -3254,25 +3293,25 @@ function authorIntelligenceMarkdownHref(dashboard) {
 }
 
 function renderAuthorSourceReviewPressureRows(items) {
-  if (items.length === 0) return '<div class="muted">No source review pressure</div>';
+  if (items.length === 0) return '<div class="muted">暂无来源复核压力。</div>';
   return items.slice(0, 12).map(function (item) {
     const details = [
-      'threads=' + (item.threadCount || 0),
-      'authors=' + (item.authorCount || 0),
-      'opinions=' + (item.opinionCount || 0),
-      'gaps=' + (item.evidenceGapCount || 0),
-      'queue=' + (item.reviewQueueCount || 0),
-      'high=' + (item.highPriorityReviewQueueCount || 0),
-      item.latestGeneratedAt ? 'latest=' + item.latestGeneratedAt : undefined
+      '主题 ' + (item.threadCount || 0),
+      '作者 ' + (item.authorCount || 0),
+      '观点 ' + (item.opinionCount || 0),
+      '缺口 ' + (item.evidenceGapCount || 0),
+      '待复核 ' + (item.reviewQueueCount || 0),
+      '高优先 ' + (item.highPriorityReviewQueueCount || 0),
+      item.latestGeneratedAt ? '最新 ' + item.latestGeneratedAt : undefined
     ].filter(Boolean).join(' · ');
-    const typeSummary = formatStanceSummary(item.reviewQueueTypeCounts);
+    const typeSummary = formatAuthorCountSummary(item.reviewQueueTypeCounts);
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml(item.sourceKey || 'unknown-source') + '</strong>' +
+      '<strong>' + escapeHtml(item.sourceKey || '未知来源') + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
       '<small>' + escapeHtml(typeSummary) + '</small>' +
-      '<small>' + escapeHtml(item.recommendedNextAction || '') + '</small>' +
+      '<small>' + escapeHtml(authorWorkspaceCopy(item.recommendedNextAction)) + '</small>' +
       '</span><span class="button-group source-op-buttons">' +
-      statusBadge((item.highPriorityReviewQueueCount || 0) > 0 ? 'review' : 'ok', (item.highPriorityReviewQueueCount || 0) > 0 ? 'warn' : 'ok') +
+      statusBadge((item.highPriorityReviewQueueCount || 0) > 0 ? '待复核' : '稳定', (item.highPriorityReviewQueueCount || 0) > 0 ? 'warn' : 'ok') +
       renderSourceDrilldownButton({ sourceKey: item.sourceKey }) +
       '</span></div>';
   }).join('');
@@ -3295,7 +3334,7 @@ function renderAuthorReviewQueueRowsLegacy(items) {
       '<strong>' + escapeHtml(item.title || item.key || 'review item') + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
       '<small>' + escapeHtml(item.summary || '') + '</small>' +
-      '<small>' + escapeHtml(item.nextAction || '') + '</small>' +
+      '<small>' + escapeHtml(authorWorkspaceCopy(item.nextAction)) + '</small>' +
       '</span><span class="button-group source-op-buttons">' +
       statusBadge(item.priority || 'unknown', item.priority === 'high' ? 'warn' : 'muted') +
       renderSourceDrilldownButtonForScope({ sourceKey }) +
@@ -3330,11 +3369,11 @@ function renderAuthorReviewQueueHero(result) {
     '<span class="review-queue-label">复核队列</span>',
     statusBadge(status, openCount > 0 ? 'warn' : statusVariant(status)),
     '</div>',
-    '<h3>' + escapeHtml(result.recommendedNextAction || '当前没有待处理的作者复核。') + '</h3>',
+    '<h3>' + escapeHtml(authorWorkspaceCopy(result.recommendedNextAction, '当前没有待处理的作者复核。')) + '</h3>',
     '<p>' + escapeHtml([
       '状态=' + (result.status || 'ok'),
-      '优先级=' + formatStanceSummary(summary.byPriority),
-      '类型=' + formatStanceSummary(summary.byType),
+      '优先级=' + formatAuthorCountSummary(summary.byPriority),
+      '类型=' + formatAuthorCountSummary(summary.byType),
       sync
     ].filter(Boolean).join(' · ')) + '</p>',
     '<div class="review-queue-actions button-group">' +
@@ -3355,8 +3394,8 @@ function renderAuthorReviewQueueHero(result) {
     '</section>',
     '<section class="review-queue-foot">',
     '<span>队列构成</span>',
-    '<strong>' + escapeHtml(formatStanceSummary(summary.byStatus)) + '</strong>',
-    '<small>' + escapeHtml('来源=' + formatStanceSummary(sourceCounts)) + '</small>',
+    '<strong>' + escapeHtml(formatAuthorCountSummary(summary.byStatus)) + '</strong>',
+    '<small>' + escapeHtml('来源=' + formatAuthorCountSummary(sourceCounts)) + '</small>',
     '</section>',
     '</article>'
   ].join('');
@@ -3368,36 +3407,36 @@ function reviewQueueSignal(label, value, variant) {
 
 function renderReviewQueueHotspotRows(items) {
   if (!items || items.length === 0) {
-    return '<div class="review-queue-empty">No source hotspots.</div>';
+    return '<div class="review-queue-empty">暂无来源关注。</div>';
   }
   return items.slice(0, 3).map(function (item) {
     return '<div class="review-queue-hotspot-row">' +
-      '<strong>' + escapeHtml(item.sourceKey || 'unknown-source') + '</strong>' +
+      '<strong>' + escapeHtml(item.sourceKey || '未知来源') + '</strong>' +
       '<small>' + escapeHtml([
-        'items=' + (item.itemCount || 0),
-        'open=' + (item.openCount || 0),
-        'high=' + (item.highPriorityOpenCount || 0),
-        formatStanceSummary(item.byType)
-      ].filter(Boolean).join(' | ')) + '</small>' +
+        '事项 ' + (item.itemCount || 0),
+        '待处理 ' + (item.openCount || 0),
+        '高优先 ' + (item.highPriorityOpenCount || 0),
+        formatAuthorCountSummary(item.byType)
+      ].filter(Boolean).join(' · ')) + '</small>' +
       '</div>';
   }).join('');
 }
 
 function renderAuthorReviewQueueSourceHotspots(items) {
-  if (items.length === 0) return '<div class="muted">No source hotspots</div>';
+  if (items.length === 0) return '<div class="muted">暂无来源关注。</div>';
   return items.slice(0, 12).map(function (item) {
     const details = [
-      'items=' + (item.itemCount || 0),
-      'open=' + (item.openCount || 0),
-      'high=' + (item.highPriorityOpenCount || 0),
-      item.latestUpdatedAt ? 'latest=' + item.latestUpdatedAt : undefined
+      '事项 ' + (item.itemCount || 0),
+      '待处理 ' + (item.openCount || 0),
+      '高优先 ' + (item.highPriorityOpenCount || 0),
+      item.latestUpdatedAt ? '最新 ' + item.latestUpdatedAt : undefined
     ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml(item.sourceKey || 'unknown-source') + '</strong>' +
+      '<strong>' + escapeHtml(item.sourceKey || '未知来源') + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
-      '<small>' + escapeHtml(formatStanceSummary(item.byType)) + '</small>' +
+      '<small>' + escapeHtml(formatAuthorCountSummary(item.byType)) + '</small>' +
       '</span><span class="button-group source-op-buttons">' +
-      statusBadge((item.highPriorityOpenCount || 0) > 0 ? 'review' : 'open', (item.highPriorityOpenCount || 0) > 0 ? 'warn' : 'muted') +
+      statusBadge((item.highPriorityOpenCount || 0) > 0 ? '待复核' : '开放', (item.highPriorityOpenCount || 0) > 0 ? 'warn' : 'muted') +
       renderSourceDrilldownButtonForScope({ sourceKey: item.sourceKey }) +
       '</span></div>';
   }).join('');
@@ -3406,31 +3445,31 @@ function renderAuthorReviewQueueSourceHotspots(items) {
 function renderAuthorReviewQueueEventSynthesis(result) {
   const rows = result.results || [];
   return [
-    panel('Author queue alert synthesis', [
-      metric('Mode', result.dryRun ? 'dry-run' : 'execute'),
-      metric('Items', result.itemCount || 0),
-      metric('Actions', result.actionCount || 0),
-      metric('Created', result.createdCount || 0),
-      metric('Updated', result.updatedCount || 0),
-      metric('Resolved', result.resolvedCount || 0),
-      metric('Reopened', result.reopenedCount || 0),
-      metric('Skipped', result.skippedCount || 0),
-      metric('Next', result.recommendedNextAction || 'none'),
+    panel('作者复核提醒', [
+      metric('模式', result.dryRun ? '预演' : '执行'),
+      metric('事项', result.itemCount || 0),
+      metric('动作', result.actionCount || 0),
+      metric('新增', result.createdCount || 0),
+      metric('更新', result.updatedCount || 0),
+      metric('已解决', result.resolvedCount || 0),
+      metric('重新打开', result.reopenedCount || 0),
+      metric('跳过', result.skippedCount || 0),
+      metric('下一步', authorWorkspaceCopy(result.recommendedNextAction, '无')),
       '<span class="button-group">' +
-        '<button class="inline-button secondary-inline-button" type="button" data-action="load-author-review-queue">Back to queue</button>' +
-        '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-author-review-queue-events" data-execute="false" data-limit="50">Run check again</button>' +
+        '<button class="inline-button secondary-inline-button" type="button" data-action="load-author-review-queue">返回队列</button>' +
+        '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-author-review-queue-events" data-execute="false" data-limit="50">再次检查</button>' +
       '</span>'
     ].join(''), 'wide'),
-    panel('Event preview', evidenceList(rows.map(function (item) {
+    panel('提醒预览', evidenceList(rows.map(function (item) {
       const event = item.event || {};
       const reason = item.reason ? ' | ' + item.reason : '';
-      return item.status + ' | ' + (item.itemId || 'unknown-item') + ' | ' + (event.id || 'no-event') + ' | ' + (event.severity || 'unknown') + reason;
+      return item.status + ' | ' + (item.itemId || '未知事项') + ' | ' + (event.id || '暂无提醒') + ' | ' + (event.severity || '未知级别') + reason;
     })), 'wide')
   ].join('');
 }
 
 function renderDurableAuthorReviewQueueRowsLegacy(items) {
-  if (items.length === 0) return '<div class="muted">No durable queue items</div>';
+  if (items.length === 0) return '<div class="muted">暂无持久复核事项。</div>';
   return items.slice(0, 30).map(function (item) {
     const ref = (item.refs || [])[0] || {};
     const sourceKey = item.sourceKey || ref.sourceKey;
@@ -3446,14 +3485,14 @@ function renderDurableAuthorReviewQueueRowsLegacy(items) {
     const controls = '<span class="button-group source-op-buttons">' +
       renderSourceDrilldownButtonForScope({ sourceKey }) +
       (item.status === 'open'
-        ? '<button class="inline-button secondary-inline-button" type="button" data-action="set-author-review-status" data-item-id="' + escapeHtml(item.id) + '" data-status="confirmed">Confirm</button><button class="inline-button warning-inline-button" type="button" data-action="set-author-review-status" data-item-id="' + escapeHtml(item.id) + '" data-status="ignored">Ignore</button>'
+        ? '<button class="inline-button secondary-inline-button" type="button" data-action="set-author-review-status" data-item-id="' + escapeHtml(item.id) + '" data-status="confirmed">确认</button><button class="inline-button warning-inline-button" type="button" data-action="set-author-review-status" data-item-id="' + escapeHtml(item.id) + '" data-status="ignored">忽略</button>'
         : statusBadge(item.status || 'unknown', item.status === 'confirmed' ? 'ok' : 'muted')) +
       '</span>';
     return '<div class="action-row ops-row"><span>' +
       '<strong>' + escapeHtml(item.title || item.id) + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
       '<small>' + escapeHtml(item.summary || '') + '</small>' +
-      '<small>' + escapeHtml(item.nextAction || '') + '</small>' +
+      '<small>' + escapeHtml(authorWorkspaceCopy(item.nextAction)) + '</small>' +
       '</span>' +
       controls +
       '</div>';
@@ -3492,30 +3531,30 @@ function renderAuthorIntelligenceRowsLegacy(authors) {
 }
 
 function renderAuthorReviewQueueRows(items) {
-  if (items.length === 0) return '<div class="muted">No author review queue yet.</div>';
+  if (items.length === 0) return '<div class="muted">暂无作者复核事项。</div>';
   return items.slice(0, 12).map(function (item) {
     const ref = (item.refs || [])[0] || {};
     const sourceKey = item.sourceKey || ref.sourceKey || (item.thread && item.thread.sourceKey);
-    const threadRef = ref.sourceThreadId ? 'thread ' + ref.sourceThreadId : undefined;
+    const threadRef = ref.sourceThreadId ? '主题 ' + ref.sourceThreadId : undefined;
     const floorRef = ref.floor === undefined ? undefined : '#' + ref.floor;
     return '<div class="author-review-row ' + (item.priority === 'high' ? 'is-hot' : '') + '">' +
       '<section class="author-review-identity">' +
-        '<span class="author-review-source">' + escapeHtml(sourceKey || 'all-sources') + '</span>' +
-        '<strong>' + escapeHtml(item.title || item.key || 'review item') + '</strong>' +
-        '<small>' + escapeHtml([item.type, item.reason].filter(Boolean).join(' / ') || 'author signal') + '</small>' +
+        '<span class="author-review-source">' + escapeHtml(sourceKey || '全部来源') + '</span>' +
+        '<strong>' + escapeHtml(authorWorkspaceCopy(item.title, item.key || '复核事项')) + '</strong>' +
+        '<small>' + escapeHtml([authorWorkspaceCopy(item.type), authorWorkspaceCopy(item.reason)].filter(Boolean).join(' / ') || '作者线索') + '</small>' +
       '</section>' +
       '<section class="author-review-brief">' +
-        '<p>' + escapeHtml(item.summary || item.reason || 'Needs operator review before downstream action.') + '</p>' +
+        '<p>' + escapeHtml(item.summary || item.reason || '需要先复核证据，再继续后续动作。') + '</p>' +
         '<div class="author-review-chips">' +
-          authorMetaChip('priority', item.priority || 'unknown', item.priority === 'high' ? 'warn' : 'muted') +
-          authorMetaChip('score', item.score === undefined ? undefined : item.score, item.score >= 0.8 ? 'warn' : 'info') +
-          authorMetaChip('thread', threadRef, 'info') +
-          authorMetaChip('floor', floorRef, 'muted') +
+          authorMetaChip('优先级', authorWorkspaceCopy(item.priority || 'unknown'), item.priority === 'high' ? 'warn' : 'muted') +
+          authorMetaChip('评分', item.score === undefined ? undefined : item.score, item.score >= 0.8 ? 'warn' : 'info') +
+          authorMetaChip('主题', threadRef, 'info') +
+          authorMetaChip('楼层', floorRef, 'muted') +
         '</div>' +
-        '<small>' + escapeHtml(item.nextAction || 'Open source scope and validate the evidence chain.') + '</small>' +
+        '<small>' + escapeHtml(authorWorkspaceCopy(item.nextAction, '打开来源范围，核验证据路径。')) + '</small>' +
       '</section>' +
       '<section class="author-review-actions button-group source-op-buttons">' +
-        statusBadge(item.priority || 'unknown', item.priority === 'high' ? 'warn' : 'muted') +
+        statusBadge(authorWorkspaceCopy(item.priority || 'unknown'), item.priority === 'high' ? 'warn' : 'muted') +
         renderSourceDrilldownButtonForScope({ sourceKey }) +
       '</section>' +
     '</div>';
@@ -3523,7 +3562,7 @@ function renderAuthorReviewQueueRows(items) {
 }
 
 function renderDurableAuthorReviewQueueRows(items) {
-  if (items.length === 0) return '<div class="muted">No durable queue items</div>';
+  if (items.length === 0) return '<div class="muted">暂无持久复核事项。</div>';
   return items.slice(0, 30).map(function (item) {
     const ref = (item.refs || [])[0] || {};
     const sourceKey = item.sourceKey || ref.sourceKey;
@@ -3532,24 +3571,24 @@ function renderDurableAuthorReviewQueueRows(items) {
     const controls = '<section class="author-review-actions button-group source-op-buttons">' +
       renderSourceDrilldownButtonForScope({ sourceKey }) +
       (item.status === 'open'
-        ? '<button class="inline-button secondary-inline-button" type="button" data-action="set-author-review-status" data-item-id="' + escapeHtml(item.id) + '" data-status="confirmed">Confirm</button><button class="inline-button warning-inline-button" type="button" data-action="set-author-review-status" data-item-id="' + escapeHtml(item.id) + '" data-status="ignored">Ignore</button>'
+        ? '<button class="inline-button secondary-inline-button" type="button" data-action="set-author-review-status" data-item-id="' + escapeHtml(item.id) + '" data-status="confirmed">确认</button><button class="inline-button warning-inline-button" type="button" data-action="set-author-review-status" data-item-id="' + escapeHtml(item.id) + '" data-status="ignored">忽略</button>'
         : statusBadge(item.status || 'unknown', item.status === 'confirmed' ? 'ok' : 'muted')) +
       '</section>';
     return '<div class="author-review-row durable-review-row ' + (item.priority === 'high' ? 'is-hot' : '') + '">' +
       '<section class="author-review-identity">' +
-        '<span class="author-review-source">' + escapeHtml(sourceKey || 'unknown-source') + '</span>' +
-        '<strong>' + escapeHtml(item.title || item.id) + '</strong>' +
-        '<small>' + escapeHtml([item.type, item.reason].filter(Boolean).join(' / ') || item.id) + '</small>' +
+        '<span class="author-review-source">' + escapeHtml(sourceKey || '未知来源') + '</span>' +
+        '<strong>' + escapeHtml(authorWorkspaceCopy(item.title, item.id)) + '</strong>' +
+        '<small>' + escapeHtml([authorWorkspaceCopy(item.type), authorWorkspaceCopy(item.reason)].filter(Boolean).join(' / ') || item.id) + '</small>' +
       '</section>' +
       '<section class="author-review-brief">' +
-        '<p>' + escapeHtml(item.summary || 'Open queue item waiting for operator judgement.') + '</p>' +
+        '<p>' + escapeHtml(item.summary || '队列事项正在等待判断。') + '</p>' +
         '<div class="author-review-chips">' +
-          authorMetaChip('status', item.status || 'unknown', item.status === 'open' ? 'warn' : 'muted') +
-          authorMetaChip('seen', item.seenCount || 0, (item.seenCount || 0) > 1 ? 'info' : 'muted') +
-          authorMetaChip('thread', threadRef ? 'thread ' + threadRef : undefined, 'info') +
-          authorMetaChip('floor', floorRef, 'muted') +
+          authorMetaChip('状态', authorWorkspaceCopy(item.status || 'unknown'), item.status === 'open' ? 'warn' : 'muted') +
+          authorMetaChip('出现', item.seenCount || 0, (item.seenCount || 0) > 1 ? 'info' : 'muted') +
+          authorMetaChip('主题', threadRef ? '主题 ' + threadRef : undefined, 'info') +
+          authorMetaChip('楼层', floorRef, 'muted') +
         '</div>' +
-        '<small>' + escapeHtml(item.nextAction || 'Confirm, ignore, or drill into the source scope.') + '</small>' +
+        '<small>' + escapeHtml(authorWorkspaceCopy(item.nextAction, '确认、忽略，或打开来源查看证据。')) + '</small>' +
       '</section>' +
       controls +
       '</div>';
@@ -3557,7 +3596,7 @@ function renderDurableAuthorReviewQueueRows(items) {
 }
 
 function renderAuthorIntelligenceRows(authors) {
-  if (authors.length === 0) return '<div class="muted">No author intelligence yet.</div>';
+  if (authors.length === 0) return '<div class="muted">暂无作者画像。</div>';
   return authors.slice(0, 12).map(function (item) {
     const author = item.author || {};
     const intelligence = item.intelligence || {};
@@ -3569,19 +3608,19 @@ function renderAuthorIntelligenceRows(authors) {
     const confidence = item.averageOpinionConfidence === undefined ? undefined : item.averageOpinionConfidence;
     return '<div class="author-signal-row">' +
       '<section class="author-signal-identity">' +
-        '<span class="author-review-source">' + escapeHtml(sourceKey || 'unknown-source') + '</span>' +
-        '<strong>' + escapeHtml(author.displayName || author.sourceAuthorId || item.key || 'unknown author') + '</strong>' +
-        '<small>' + escapeHtml([author.sourceAuthorId, item.dominantStance ? 'stance=' + item.dominantStance : undefined].filter(Boolean).join(' / ') || 'author profile') + '</small>' +
+        '<span class="author-review-source">' + escapeHtml(sourceKey || '未知来源') + '</span>' +
+        '<strong>' + escapeHtml(author.displayName || author.sourceAuthorId || item.key || '未知作者') + '</strong>' +
+        '<small>' + escapeHtml([author.sourceAuthorId, item.dominantStance ? '态度=' + item.dominantStance : undefined].filter(Boolean).join(' / ') || '作者画像') + '</small>' +
       '</section>' +
       '<section class="author-signal-brief">' +
-        '<p>' + escapeHtml(intelligence.summary || focus || formatStanceSummary(item.stanceSummary) || 'No summary generated yet.') + '</p>' +
+        '<p>' + escapeHtml(intelligence.summary || focus || formatStanceSummary(item.stanceSummary) || '暂无摘要。') + '</p>' +
         '<div class="author-signal-metrics">' +
-          authorMetaChip('posts', item.postCount || 0, 'info') +
-          authorMetaChip('opinions', item.opinionCount || 0, 'ok') +
-          authorMetaChip('threads', item.threadCount || 0, 'muted') +
-          authorMetaChip('confidence', confidence, confidence >= 0.8 ? 'ok' : 'muted') +
-          authorMetaChip('primary', item.primaryThreadCount || 0, 'info') +
-          authorMetaChip('gaps', item.evidenceGapCount || 0, item.evidenceGapCount > 0 ? 'warn' : 'ok') +
+          authorMetaChip('发言', item.postCount || 0, 'info') +
+          authorMetaChip('观点', item.opinionCount || 0, 'ok') +
+          authorMetaChip('主题', item.threadCount || 0, 'muted') +
+          authorMetaChip('可信度', confidence, confidence >= 0.8 ? 'ok' : 'muted') +
+          authorMetaChip('主线', item.primaryThreadCount || 0, 'info') +
+          authorMetaChip('缺口', item.evidenceGapCount || 0, item.evidenceGapCount > 0 ? 'warn' : 'ok') +
         '</div>' +
         (focusEntities.length > 0 ? '<div class="author-signal-focus">' + focusEntities.map(function (entry) {
           return '<span>' + escapeHtml(entry) + '</span>';
@@ -3684,24 +3723,24 @@ function renderAuthorEvidenceRowsLegacy(items) {
 }
 
 function renderAuthorEntityRows(entities) {
-  if (entities.length === 0) return '<div class="muted">No focus entities yet.</div>';
+  if (entities.length === 0) return '<div class="muted">暂无聚焦实体。</div>';
   return entities.slice(0, 12).map(function (item) {
     const entity = item.entity || {};
     const levels = item.evidenceLevels || {};
     return '<div class="author-evidence-row entity-signal-row">' +
       '<section class="author-evidence-anchor">' +
-        '<span class="author-review-source">entity</span>' +
-        '<strong>' + escapeHtml(entity.displayName || item.key || 'unknown entity') + '</strong>' +
-        '<small>' + escapeHtml(item.latestAttitude || 'unknown stance') + '</small>' +
+        '<span class="author-review-source">对象</span>' +
+        '<strong>' + escapeHtml(entity.displayName || item.key || '未知对象') + '</strong>' +
+        '<small>' + escapeHtml(item.latestAttitude || '未知态度') + '</small>' +
       '</section>' +
       '<section class="author-evidence-brief">' +
-        '<p>' + escapeHtml(formatStanceSummary(item.attitudeCounts) || 'Entity is present in the current author window.') + '</p>' +
+        '<p>' + escapeHtml(formatStanceSummary(item.attitudeCounts) || '这个对象出现在当前作者窗口中。') + '</p>' +
         '<div class="author-evidence-chips">' +
-          authorMetaChip('mentions', item.mentionCount || 0, 'info') +
-          authorMetaChip('author opinions', item.primaryAuthorOpinionCount || 0, 'ok') +
-          authorMetaChip('threads', item.threadCount || 0, 'muted') +
-          authorMetaChip('explicit', levels.explicit || 0, (levels.explicit || 0) > 0 ? 'ok' : 'muted') +
-          authorMetaChip('inferred', levels.inferred || 0, (levels.inferred || 0) > 0 ? 'warn' : 'muted') +
+          authorMetaChip('提及', item.mentionCount || 0, 'info') +
+          authorMetaChip('作者观点', item.primaryAuthorOpinionCount || 0, 'ok') +
+          authorMetaChip('主题', item.threadCount || 0, 'muted') +
+          authorMetaChip('明确', levels.explicit || 0, (levels.explicit || 0) > 0 ? 'ok' : 'muted') +
+          authorMetaChip('推断', levels.inferred || 0, (levels.inferred || 0) > 0 ? 'warn' : 'muted') +
         '</div>' +
       '</section>' +
       '<section class="author-evidence-status">' +
@@ -3712,23 +3751,23 @@ function renderAuthorEntityRows(entities) {
 }
 
 function renderOpinionTimelineRows(items) {
-  if (items.length === 0) return '<div class="muted">No opinion timeline yet.</div>';
+  if (items.length === 0) return '<div class="muted">暂无观点时间线。</div>';
   return items.slice(0, 16).map(function (item) {
     const thread = item.thread || {};
     const author = item.author || {};
     return '<div class="author-evidence-row opinion-timeline-row">' +
       '<section class="author-evidence-anchor">' +
-        '<span class="author-review-source">' + escapeHtml(thread.sourceKey || 'timeline') + '</span>' +
-        '<strong>' + escapeHtml('#' + item.floor + ' / ' + (author.displayName || author.sourceAuthorId || 'unknown')) + '</strong>' +
-        '<small>' + escapeHtml(item.publishedAt || 'time unknown') + '</small>' +
+        '<span class="author-review-source">' + escapeHtml(thread.sourceKey || '时间线') + '</span>' +
+        '<strong>' + escapeHtml('#' + item.floor + ' / ' + (author.displayName || author.sourceAuthorId || '未知作者')) + '</strong>' +
+        '<small>' + escapeHtml(item.publishedAt || '时间未知') + '</small>' +
       '</section>' +
       '<section class="author-evidence-brief">' +
-        '<p>' + escapeHtml(item.evidenceText || 'No evidence text captured for this opinion.') + '</p>' +
+        '<p>' + escapeHtml(item.evidenceText || '暂无观点证据文本。') + '</p>' +
         '<div class="author-evidence-chips">' +
-          authorMetaChip('thread', thread.sourceThreadId ? 'thread ' + thread.sourceThreadId : undefined, 'info') +
-          authorMetaChip('scope', item.scope, 'muted') +
-          authorMetaChip('horizon', item.horizon, 'muted') +
-          authorMetaChip('confidence', item.confidence, item.confidence >= 0.8 ? 'ok' : 'muted') +
+          authorMetaChip('主题', thread.sourceThreadId ? '主题 ' + thread.sourceThreadId : undefined, 'info') +
+          authorMetaChip('范围', item.scope, 'muted') +
+          authorMetaChip('周期', item.horizon, 'muted') +
+          authorMetaChip('可信度', item.confidence, item.confidence >= 0.8 ? 'ok' : 'muted') +
         '</div>' +
       '</section>' +
       '<section class="author-evidence-status">' +
@@ -3739,23 +3778,23 @@ function renderOpinionTimelineRows(items) {
 }
 
 function renderAuthorEvidenceGapRows(gaps) {
-  if (gaps.length === 0) return '<div class="muted">No evidence gaps.</div>';
+  if (gaps.length === 0) return '<div class="muted">暂无证据缺口。</div>';
   return gaps.slice(0, 12).map(function (gap) {
     const entity = gap.entity || {};
     const thread = gap.thread || {};
     return '<div class="author-evidence-row evidence-gap-row">' +
       '<section class="author-evidence-anchor">' +
-        '<span class="author-review-source">' + escapeHtml(thread.sourceKey || 'gap') + '</span>' +
-        '<strong>' + escapeHtml(entity.displayName || gap.key || 'unknown entity') + '</strong>' +
+        '<span class="author-review-source">' + escapeHtml(thread.sourceKey || '缺口') + '</span>' +
+        '<strong>' + escapeHtml(entity.displayName || gap.key || '未知对象') + '</strong>' +
         '<small>' + escapeHtml('#' + gap.firstFloor + '-#' + gap.lastFloor) + '</small>' +
       '</section>' +
       '<section class="author-evidence-brief">' +
-        '<p>' + escapeHtml(gap.summary || gap.reason || 'This entity needs stronger evidence before automation.') + '</p>' +
+        '<p>' + escapeHtml(gap.summary || gap.reason || '这个对象需要更强证据才能继续自动处理。') + '</p>' +
         '<div class="author-evidence-chips">' +
-          authorMetaChip('thread', thread.sourceThreadId ? 'thread ' + thread.sourceThreadId : undefined, 'info') +
-          authorMetaChip('reason', gap.reason, 'warn') +
-          authorMetaChip('first', gap.firstFloor === undefined ? undefined : '#' + gap.firstFloor, 'muted') +
-          authorMetaChip('last', gap.lastFloor === undefined ? undefined : '#' + gap.lastFloor, 'muted') +
+          authorMetaChip('主题', thread.sourceThreadId ? '主题 ' + thread.sourceThreadId : undefined, 'info') +
+          authorMetaChip('原因', gap.reason, 'warn') +
+          authorMetaChip('起点', gap.firstFloor === undefined ? undefined : '#' + gap.firstFloor, 'muted') +
+          authorMetaChip('终点', gap.lastFloor === undefined ? undefined : '#' + gap.lastFloor, 'muted') +
         '</div>' +
       '</section>' +
       '<section class="author-evidence-status">' +
@@ -3766,22 +3805,22 @@ function renderAuthorEvidenceGapRows(gaps) {
 }
 
 function renderAuthorEvidenceRows(items) {
-  if (items.length === 0) return '<div class="muted">No high-signal evidence yet.</div>';
+  if (items.length === 0) return '<div class="muted">暂无高信号证据。</div>';
   return items.slice(0, 12).map(function (item) {
     const thread = item.thread || {};
     const author = item.author || {};
     return '<div class="author-evidence-row high-signal-row">' +
       '<section class="author-evidence-anchor">' +
-        '<span class="author-review-source">' + escapeHtml(thread.sourceKey || 'evidence') + '</span>' +
-        '<strong>' + escapeHtml('#' + item.floor + ' / ' + (author.displayName || author.sourceAuthorId || 'unknown')) + '</strong>' +
-        '<small>' + escapeHtml(item.publishedAt || 'time unknown') + '</small>' +
+        '<span class="author-review-source">' + escapeHtml(thread.sourceKey || '证据') + '</span>' +
+        '<strong>' + escapeHtml('#' + item.floor + ' / ' + (author.displayName || author.sourceAuthorId || '未知作者')) + '</strong>' +
+        '<small>' + escapeHtml(item.publishedAt || '时间未知') + '</small>' +
       '</section>' +
       '<section class="author-evidence-brief">' +
-        '<p>' + escapeHtml(item.excerpt || 'Evidence excerpt is not available.') + '</p>' +
+        '<p>' + escapeHtml(item.excerpt || '暂无证据摘录。') + '</p>' +
         '<div class="author-evidence-chips">' +
-          authorMetaChip('thread', thread.sourceThreadId ? 'thread ' + thread.sourceThreadId : undefined, 'info') +
-          authorMetaChip('score', item.score, item.score >= 0.8 ? 'ok' : 'muted') +
-          authorMetaChip('floor', item.floor === undefined ? undefined : '#' + item.floor, 'muted') +
+          authorMetaChip('主题', thread.sourceThreadId ? '主题 ' + thread.sourceThreadId : undefined, 'info') +
+          authorMetaChip('评分', item.score, item.score >= 0.8 ? 'ok' : 'muted') +
+          authorMetaChip('楼层', item.floor === undefined ? undefined : '#' + item.floor, 'muted') +
         '</div>' +
       '</section>' +
       '<section class="author-evidence-status">' +

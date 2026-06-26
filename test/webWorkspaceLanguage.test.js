@@ -124,3 +124,33 @@ test('event and source result surfaces avoid console-style action copy', functio
     'Checking event archive policy...'
   ]);
 });
+
+test('author intelligence surfaces avoid review-console copy', function () {
+  const app = readProjectFile('src/presentation/web/app.js');
+
+  assertAbsent(app, [
+    "panel('Source review pressure'",
+    "panel('Review queue'",
+    'Review author signals and sync the open queue.',
+    '<span class="author-intel-label">Author radar</span>',
+    '>Sync queue</button>',
+    '>Open queue</button>',
+    '<span>Focus authors</span>',
+    '<span>Review pressure</span>',
+    'No author signals yet.',
+    'No source review pressure',
+    'No author review queue yet.',
+    'No durable queue items',
+    'No author intelligence yet.',
+    'No focus entities yet.',
+    'No opinion timeline yet.',
+    'No evidence gaps.',
+    'No high-signal evidence yet.',
+    '>Confirm</button>',
+    '>Ignore</button>',
+    'Author queue alert synthesis',
+    'Event preview',
+    '>Back to queue</button>',
+    '>Run check again</button>'
+  ]);
+});
