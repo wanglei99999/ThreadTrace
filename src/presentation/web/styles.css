@@ -694,6 +694,32 @@ textarea:focus-visible {
   grid-column: 1 / -1;
 }
 
+#historyView:has(#historyResult .history-report-hero) .history-entry-card {
+  grid-template-columns: minmax(180px, 0.24fr) minmax(220px, 1fr) minmax(260px, 0.34fr);
+  min-height: 126px;
+}
+
+#historyView:has(#historyResult .history-report-hero) .history-source-strip,
+#historyView:has(#historyResult .history-report-hero) .history-directory-field,
+#historyView:has(#historyResult .history-report-hero) .history-command-shelf {
+  padding-block: 12px;
+}
+
+#historyView:has(#historyResult .history-report-hero) .history-directory-field input {
+  min-height: 48px;
+  padding-block: 10px;
+  font-size: 18px;
+}
+
+#historyView:has(#historyResult .history-report-hero) .history-command-shelf {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding-top: 30px;
+}
+
+#historyView:has(#historyResult .history-report-hero) .history-command-shelf button[type="submit"] {
+  grid-column: auto;
+}
+
 .context-entry-card {
   gap: 13px;
 }
@@ -847,6 +873,45 @@ textarea:focus-visible {
   min-width: 0;
 }
 
+#contextView:has(#contextResult .context-verdict-hero) .context-entry-card {
+  grid-template-columns: minmax(180px, 0.22fr) minmax(180px, 0.22fr) minmax(0, 1fr) minmax(150px, 0.18fr);
+  align-items: stretch;
+  gap: 10px;
+  min-height: 0;
+}
+
+#contextView:has(#contextResult .context-verdict-hero) .context-source-strip,
+#contextView:has(#contextResult .context-verdict-hero) .context-author-strip,
+#contextView:has(#contextResult .context-verdict-hero) .context-command-shelf {
+  grid-row: 1;
+  padding: 12px;
+}
+
+#contextView:has(#contextResult .context-verdict-hero) .context-source-strip {
+  grid-column: 1;
+}
+
+#contextView:has(#contextResult .context-verdict-hero) .context-author-strip {
+  grid-column: 2;
+}
+
+#contextView:has(#contextResult .context-verdict-hero) .context-entry-card > label.full.context-text-field {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+#contextView:has(#contextResult .context-verdict-hero) .context-entry-card textarea {
+  min-height: 82px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+#contextView:has(#contextResult .context-verdict-hero) .context-command-shelf {
+  grid-column: 4;
+  align-content: end;
+  padding-top: 30px;
+}
+
 .search-workbench {
   display: grid;
   grid-template-columns: minmax(260px, 0.42fr) 52px minmax(0, 1fr);
@@ -880,8 +945,8 @@ textarea:focus-visible {
 
 .search-query-card::before {
   border-color: rgba(241, 189, 82, 0.35);
-  background: rgba(241, 189, 82, 0.12);
-  color: #ffe4a3;
+  background: rgba(255, 245, 220, 0.88);
+  color: #73501b;
 }
 
 .search-card-kicker {
@@ -1050,6 +1115,44 @@ textarea:focus-visible {
   font-family: "Cascadia Mono", Consolas, monospace;
   font-size: 12px;
   font-weight: 850;
+}
+
+#searchView:has(#searchResult .search-results-panel) .search-workbench {
+  grid-template-columns: minmax(190px, 0.26fr) 34px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+#searchView:has(#searchResult .search-results-panel) .search-index-card,
+#searchView:has(#searchResult .search-results-panel) .search-query-card {
+  min-height: 136px;
+  padding-block: 36px 10px;
+}
+
+#searchView:has(#searchResult .search-results-panel) .search-query-card {
+  grid-template-columns: minmax(0, 1fr) minmax(124px, 0.28fr);
+  grid-template-rows: auto minmax(44px, auto) auto;
+  gap: 9px;
+}
+
+#searchView:has(#searchResult .search-results-panel) .search-command-shelf {
+  padding: 24px 10px 10px;
+  gap: 8px;
+}
+
+#searchView:has(#searchResult .search-results-panel) .search-query-input input {
+  min-height: 46px;
+  padding: 10px 12px;
+  font-size: 18px;
+}
+
+#searchView:has(#searchResult .search-results-panel) .search-flow-rail {
+  min-height: 136px;
+  padding-block: 8px;
+}
+
+#searchView:has(#searchResult .search-results-panel) .search-flow-rail i {
+  min-height: 42px;
 }
 
 .system-status-grid {
@@ -2237,42 +2340,42 @@ textarea::placeholder {
   grid-template-rows: auto minmax(86px, 1fr) auto;
   align-content: stretch;
   min-height: 232px;
-  border-color: rgba(12, 23, 21, 0.2);
+  border-color: rgba(36, 95, 159, 0.22);
   background:
-    linear-gradient(135deg, rgba(12, 23, 21, 0.96), rgba(13, 56, 49, 0.93) 56%, rgba(36, 95, 159, 0.8)),
-    var(--sidebar);
-  color: #f8fbfa;
-  box-shadow: 0 20px 44px rgba(10, 27, 24, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.99), rgba(238, 246, 255, 0.94) 52%, rgba(255, 247, 226, 0.74)),
+    var(--panel);
+  color: var(--text);
+  box-shadow: 0 18px 38px rgba(36, 95, 159, 0.11), var(--inner-light);
 }
 
 .control-strip.search-query-card .search-card-kicker span {
   border-color: rgba(241, 189, 82, 0.35);
-  background: rgba(241, 189, 82, 0.12);
-  color: #ffe4a3;
+  background: rgba(255, 245, 220, 0.9);
+  color: #73501b;
 }
 
 .control-strip.search-query-card .search-card-kicker strong {
-  color: #d6e7e2;
+  color: #154d88;
 }
 
 .control-strip.search-query-card label span {
-  color: #bdd5ce;
+  color: #154d88;
 }
 
 .control-strip.search-query-card input {
-  border-color: rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-color: rgba(36, 95, 159, 0.2);
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--text-strong);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
 }
 
 .control-strip.search-query-card input::placeholder {
-  color: #c7d9d4;
+  color: #536b73;
 }
 
 .control-strip.search-query-card input:focus {
-  border-color: rgba(241, 189, 82, 0.52);
-  box-shadow: 0 0 0 3px rgba(241, 189, 82, 0.13);
+  border-color: rgba(36, 95, 159, 0.58);
+  box-shadow: 0 0 0 3px rgba(36, 95, 159, 0.12);
 }
 
 .control-strip.search-query-card button[type="submit"] {
@@ -2282,6 +2385,12 @@ textarea::placeholder {
   box-shadow:
     0 14px 28px rgba(0, 0, 0, 0.22),
     inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.control-strip.search-query-card .search-hit-schema span {
+  border-color: rgba(36, 95, 159, 0.17);
+  background: rgba(238, 246, 255, 0.76);
+  color: #154d88;
 }
 
 form button[type="submit"],
@@ -5900,6 +6009,25 @@ pre {
     font-size: 18px;
   }
 
+  #historyView:has(#historyResult .history-report-hero) .history-entry-card {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  #historyView:has(#historyResult .history-report-hero) .history-source-strip,
+  #historyView:has(#historyResult .history-report-hero) .history-directory-field,
+  #historyView:has(#historyResult .history-report-hero) .history-command-shelf {
+    grid-column: 1;
+  }
+
+  #historyView:has(#historyResult .history-report-hero) .history-command-shelf {
+    grid-template-columns: 1fr;
+  }
+
+  #historyView:has(#historyResult .history-report-hero) .history-command-shelf button[type="submit"] {
+    grid-column: 1;
+  }
+
   .stacked-form.context-entry-card {
     grid-template-columns: 1fr;
   }
@@ -5914,6 +6042,35 @@ pre {
 
   .context-entry-card textarea {
     min-height: 220px;
+  }
+
+  #contextView:has(#contextResult .context-verdict-hero) .context-entry-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  #contextView:has(#contextResult .context-verdict-hero) .context-source-strip {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  #contextView:has(#contextResult .context-verdict-hero) .context-author-strip {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  #contextView:has(#contextResult .context-verdict-hero) .context-entry-card > label.full.context-text-field {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  #contextView:has(#contextResult .context-verdict-hero) .context-entry-card textarea {
+    min-height: 126px;
+  }
+
+  #contextView:has(#contextResult .context-verdict-hero) .context-command-shelf {
+    grid-column: 1 / -1;
+    grid-row: 3;
   }
 
   .search-index-card {
@@ -5942,6 +6099,70 @@ pre {
 
   .search-query-input input {
     font-size: 20px;
+  }
+
+  #searchView:has(#searchResult .search-results-panel) .search-workbench {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  #searchView:has(#searchResult .search-results-panel) .search-index-card,
+  #searchView:has(#searchResult .search-results-panel) .search-query-card {
+    min-height: 0;
+    padding-block: 40px 10px;
+  }
+
+  #searchView:has(#searchResult .search-results-panel) .search-index-card {
+    grid-template-columns: minmax(96px, 0.34fr) minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    gap: 8px;
+  }
+
+  #searchView:has(#searchResult .search-results-panel) .search-index-card .search-card-kicker,
+  #searchView:has(#searchResult .search-results-panel) .search-index-card .search-command-shelf {
+    grid-column: 1 / -1;
+  }
+
+  #searchView:has(#searchResult .search-results-panel) .search-index-card > label {
+    grid-column: span 1;
+  }
+
+  #searchView:has(#searchResult .search-results-panel) .search-card-kicker {
+    align-items: center;
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  #searchView:has(#searchResult .search-results-panel) .search-card-kicker strong {
+    text-align: right;
+  }
+
+  #searchView:has(#searchResult .search-results-panel) .search-query-card {
+    grid-template-columns: minmax(0, 1fr) minmax(132px, 0.32fr);
+    grid-template-rows: auto minmax(62px, auto) auto;
+  }
+
+  #searchView:has(#searchResult .search-results-panel) .search-command-shelf {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: 22px 10px 10px;
+  }
+
+  #searchView:has(#searchResult .search-results-panel) .search-command-shelf span {
+    text-align: right;
+  }
+
+  #searchView:has(#searchResult .search-results-panel) .search-query-input input {
+    min-height: 62px;
+    font-size: 19px;
+  }
+
+  #searchView:has(#searchResult .search-results-panel) .search-flow-rail {
+    min-height: 44px;
+    padding: 0 10px;
+  }
+
+  #searchView:has(#searchResult .search-results-panel) .search-flow-rail i {
+    min-height: 0;
   }
 
   .entry-card::after {
@@ -6357,9 +6578,27 @@ pre {
     grid-template-columns: 1fr;
   }
 
+  #searchView:has(#searchResult .search-results-panel) .search-query-card {
+    grid-template-columns: 1fr;
+  }
+
   .search-query-input,
   .search-query-side {
     grid-column: 1;
+  }
+
+  #searchView:has(#searchResult .search-results-panel) .search-query-input,
+  #searchView:has(#searchResult .search-results-panel) .search-query-side {
+    grid-column: 1;
+  }
+
+  #searchView:has(#searchResult .search-results-panel) .search-query-side {
+    grid-template-columns: minmax(72px, 0.42fr) minmax(118px, 0.58fr);
+    align-items: end;
+  }
+
+  #searchView:has(#searchResult .search-results-panel) .search-query-side button[type="submit"] {
+    min-height: 42px;
   }
 
   .search-query-input input {
@@ -6680,6 +6919,18 @@ pre {
   .source-ops-signals,
   .system-runtime-pressure {
     grid-template-columns: 1fr;
+  }
+
+  #contextView:has(#contextResult .context-verdict-hero) .context-entry-card {
+    grid-template-columns: 1fr;
+  }
+
+  #contextView:has(#contextResult .context-verdict-hero) .context-source-strip,
+  #contextView:has(#contextResult .context-verdict-hero) .context-author-strip,
+  #contextView:has(#contextResult .context-verdict-hero) .context-entry-card > label.full.context-text-field,
+  #contextView:has(#contextResult .context-verdict-hero) .context-command-shelf {
+    grid-column: 1;
+    grid-row: auto;
   }
 
   .event-triage-command-group {
