@@ -23,6 +23,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
 
   try {
     const health = await getJson(baseUrl + '/health');
+    const apiHealth = await getJson(baseUrl + '/api/health');
     const home = await fetch(baseUrl + '/');
     const webApp = await fetch(baseUrl + '/app.js');
     const adapters = await getJson(baseUrl + '/adapters');
@@ -124,6 +125,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     });
 
     assert.equal(health.ok, true);
+    assert.deepEqual(apiHealth, health);
     assert.equal(home.status, 200);
     const homeHtml = await home.text();
     const webAppJs = await webApp.text();
@@ -325,6 +327,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.ok(openApi.paths['/api/events/dispatch'].post.requestBody.content['application/json'].schema.properties.sourceId);
     assert.ok(openApi.paths['/api/events/dispatch'].post.requestBody.content['application/json'].schema.properties.sourceKey);
     assert.equal(openApi.paths['/api/operations/overview'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/OperationalOverview');
+    assert.equal(openApi.paths['/api/health'].get.responses[200].description, 'Service status');
     assert.equal(openApi.components.schemas.OperationalOverview.properties.workers.properties.leases.$ref, '#/components/schemas/WorkerLeaseSummary');
     assert.equal(openApi.components.schemas.OperationalOverview.properties.workers.properties.latestRun.$ref, '#/components/schemas/WorkerRun');
     assert.equal(openApi.components.schemas.OperationalOverview.properties.workers.properties.staleRuns.items.$ref, '#/components/schemas/WorkerRun');

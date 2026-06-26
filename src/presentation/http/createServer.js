@@ -62,7 +62,7 @@ async function routeRequest(request, response, context) {
     return;
   }
 
-  if (request.method === 'GET' && url.pathname === '/health') {
+  if (request.method === 'GET' && (url.pathname === '/health' || url.pathname === '/api/health')) {
     writeJson(response, 200, {
       ok: true,
       service: 'threadtrace'

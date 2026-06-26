@@ -19,6 +19,16 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/health': {
+        get: {
+          summary: 'API health check',
+          responses: {
+            200: {
+              description: 'Service status'
+            }
+          }
+        }
+      },
       '/adapters': {
         get: {
           summary: 'List forum adapters',
