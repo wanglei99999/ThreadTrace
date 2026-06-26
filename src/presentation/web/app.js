@@ -5893,6 +5893,22 @@ async function runAutomationPressureAction(button) {
     }, automationActionRenderOptions(resolveAutomationActionTarget(), 'Loading review audit ledger...'));
     return;
   }
+  if (action === 'gate-preview') {
+    await renderAsync(resolveAutomationActionTarget(), function () {
+      return fetchJson('/api/context-review-results/action-gate?limit=50', {
+        acceptErrorStatus: true
+      });
+    }, function (gateReport) {
+      return renderAutomationActionResult('Gate preview', {
+        status: gateReport.status,
+        mode: 'read-only',
+        subject: 'Review action gate',
+        changed: 'No change',
+        next: gateReport.recommendedNextAction || 'Inspect review action gate before applying downstream actions.'
+      }, renderContextReviewResultActionGate(gateReport));
+    }, automationActionRenderOptions(resolveAutomationActionTarget(), 'Loading review action gate...'));
+    return;
+  }
   if (action === 'execution-overview') {
     await renderAsync(resolveAutomationActionTarget(), function () {
       return fetchJson('/api/context-review-results/action-executions?limit=20', {
@@ -5963,6 +5979,7 @@ function renderAutomationOperatingPressure(cockpit) {
       '<small>' + escapeHtml('tasks=' + (auditOverview.taskCount || 0) + ' | plannedClosure=' + (auditOverview.plannedClosureCount || 0) + ' | plannedMerge=' + (auditOverview.plannedMergeCandidateCount || 0)) + '</small>' +
       '</span><span class="button-group automation-pressure-actions">' +
         '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="audit-overview">Open audits</button>' +
+        '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="gate-preview">Gate preview</button>' +
       '</span>' + statusBadge(auditOverview.status || 'unknown', pressure.auditVariant) + '</div>',
     '<div class="action-row ops-row"><span>' +
       '<strong>Action executions</strong>' +

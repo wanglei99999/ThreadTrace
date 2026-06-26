@@ -246,7 +246,7 @@ function assertPressureAction(label, pressureAction, audit) {
   const failures = [];
   if (!pressureAction) failures.push('missing pressure action report');
   else {
-    ['outbox', 'ack', 'dispatch', 'audits', 'executions'].forEach(function (key) {
+    ['outbox', 'ack', 'dispatch', 'audits', 'gate', 'executions'].forEach(function (key) {
       const item = pressureAction[key];
       if (!item) failures.push('missing pressure action: ' + key);
       else {
@@ -937,6 +937,7 @@ async function verifyAutomationPressureAction(client) {
     ack: await verifyAutomationPressureActionButton(client, 'ack-preview', 'Acknowledgement preview', 'Notification acknowledgement preview'),
     dispatch: await verifyAutomationPressureActionButton(client, 'dispatch-preview', 'Dispatch preview', 'Notification dispatch preview'),
     audits: await verifyAutomationPressureActionButton(client, 'audit-overview', 'Review audits', 'Review action audits'),
+    gate: await verifyAutomationPressureActionButton(client, 'gate-preview', 'Gate preview', 'Review action gate'),
     executions: await verifyAutomationPressureActionButton(client, 'execution-overview', 'Review executions', 'Review action executions')
   };
 }
