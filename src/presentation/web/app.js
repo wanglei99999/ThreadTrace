@@ -5831,6 +5831,8 @@ function renderAutomationFreshness(freshness) {
       '<strong>Snapshot window</strong>' +
       '<small>' + escapeHtml('oldest=' + (safeFreshness.oldestGeneratedAt || 'unknown') + ' | newest=' + (safeFreshness.newestGeneratedAt || 'unknown')) + '</small>' +
       '<small>' + escapeHtml(missingSources.length > 0 ? 'missing=' + missingSources.join(', ') : 'all expected inputs reported generatedAt') + '</small>' +
+      '</span><span class="button-group automation-freshness-actions">' +
+        '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="refresh-automation-readiness">Refresh snapshot</button>' +
       '</span>' + statusBadge(safeFreshness.status || 'unknown', statusVariant(safeFreshness.status)) + '</div>'
   ];
   if (visibleSources.length > 0) {

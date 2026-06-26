@@ -192,6 +192,8 @@ async function verifyViewport(client, options) {
   await waitForCockpit(client);
   const refreshLoadingState = options.verifyLoading ? await verifyAutomationRefreshLoadingState(client) : undefined;
   if (options.verifyLoading) await waitForCockpit(client);
+  const freshnessRefresh = await verifyAutomationFreshnessRefreshAction(client);
+  await waitForCockpit(client);
   const loadingState = options.verifyLoading ? await verifyAutomationLoadingState(client) : undefined;
   if (options.verifyLoading) await waitForCockpit(client);
   const runbookPreview = options.runPreview ? await verifyAutomationRunbookPreview(client) : undefined;
@@ -218,6 +220,7 @@ async function verifyViewport(client, options) {
   assertScreenshot(options.label, png, stats, options, audit);
   return Object.assign({}, audit, {
     refreshLoadingState,
+    freshnessRefresh,
     loadingState,
     runbookPreview,
     actionResult,
@@ -381,6 +384,7 @@ function viewportAuditExpression() {
     "    attentionQueueRowCount: document.querySelectorAll('.automation-attention-row').length,",
     "    attentionActionButtonCount: document.querySelectorAll('.automation-attention-panel button[data-action=\"run-automation-attention-action\"]').length,",
     "    pressureActionButtonCount: document.querySelectorAll('.automation-pressure-panel button[data-action=\"run-automation-pressure-action\"]').length,",
+    "    freshnessActionButtonCount: document.querySelectorAll('.automation-freshness-panel button[data-action=\"refresh-automation-readiness\"]').length,",
     "    runbookCopyButtonCount: document.querySelectorAll('.automation-runbook-panel button[data-action=\"copy-lifecycle-command\"]').length,",
     "    runbookScheduleCommandCount: Array.from(document.querySelectorAll('.automation-runbook-command-row code')).filter((code) => code.textContent.includes('configure-source-schedule')).length,",
     "    runbookScheduleButtonCount: document.querySelectorAll('.automation-runbook-panel button[data-action=\"set-source-schedule\"]').length",
@@ -579,6 +583,78 @@ async function verifyAutomationRefreshLoadingState(client) {
       '})()'
     ].join('\n'));
   }, 30000, 'Timed out waiting for delayed Automation Cockpit refresh to settle.');
+  return loading;
+}
+
+async function verifyAutomationFreshnessRefreshAction(client) {
+  await evaluateByValue(client, [
+    '(() => {',
+    '  const originalFetch = window.fetch.bind(window);',
+    '  let releaseFetch;',
+    '  const gate = new Promise((resolve) => { releaseFetch = resolve; });',
+    '  window.__threadtraceReleaseDelayedFreshnessFetch = () => {',
+    '    releaseFetch();',
+    '    window.fetch = originalFetch;',
+    '    delete window.__threadtraceReleaseDelayedFreshnessFetch;',
+    '  };',
+    '  window.fetch = async function (input, init) {',
+    "    const url = typeof input === 'string' ? input : input && input.url || '';",
+    "    if (!window.__threadtraceDelayedFreshnessFetchUsed && url.includes('/api/operations/automation-cockpit')) {",
+    '      window.__threadtraceDelayedFreshnessFetchUsed = true;',
+    '      await gate;',
+    '    }',
+    '    return originalFetch(input, init);',
+    '  };',
+    '  return true;',
+    '})()'
+  ].join('\n'));
+  const clicked = await evaluateByValue(client, [
+    '(() => {',
+    "  const button = document.querySelector('.automation-freshness-panel button[data-action=\"refresh-automation-readiness\"]');",
+    '  if (!button) return { clicked: false, skipped: true, reason: "no freshness refresh action" };',
+    '  button.click();',
+    '  return { clicked: true, skipped: false, label: button.textContent.trim() };',
+    '})()'
+  ].join('\n'));
+  if (!clicked || clicked.skipped) return clicked;
+  await waitFor(async function () {
+    return evaluateByValue(client, [
+      '(() => {',
+      "  const result = document.querySelector('#automationReadinessResult');",
+      "  const text = result ? result.innerText : '';",
+      "  return Boolean(result && result.getAttribute('aria-busy') === 'true' && text.includes('Refreshing automation cockpit...'));",
+      '})()'
+    ].join('\n'));
+  }, 10000, 'Timed out waiting for Automation Cockpit freshness refresh loading state.');
+  const loading = await evaluateByValue(client, [
+    '(() => {',
+    "  const result = document.querySelector('#automationReadinessResult');",
+    "  const text = result ? result.innerText : '';",
+    '  return {',
+    '    clicked: true,',
+    '    skipped: false,',
+    '    label: ' + JSON.stringify(clicked.label) + ',',
+    "    busy: result ? result.getAttribute('aria-busy') : 'missing',",
+    "    hasLoadingMessage: text.includes('Refreshing automation cockpit...'),",
+    "    hasMojibake: text.includes('\\u9352') || text.includes('\\u55d8'),",
+    "    preview: text.slice(0, 120)",
+    '  };',
+    '})()'
+  ].join('\n'));
+  await evaluateByValue(client, [
+    '(() => {',
+    '  if (window.__threadtraceReleaseDelayedFreshnessFetch) window.__threadtraceReleaseDelayedFreshnessFetch();',
+    '  return true;',
+    '})()'
+  ].join('\n'));
+  await waitFor(async function () {
+    return evaluateByValue(client, [
+      '(() => {',
+      "  const result = document.querySelector('#automationReadinessResult');",
+      "  return Boolean(result && result.getAttribute('aria-busy') === 'false' && document.querySelector('.automation-freshness-panel'));",
+      '})()'
+    ].join('\n'));
+  }, 30000, 'Timed out waiting for Automation Cockpit freshness refresh to settle.');
   return loading;
 }
 
