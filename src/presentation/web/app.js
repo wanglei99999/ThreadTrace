@@ -1432,9 +1432,13 @@ function createSystemStatusFallbackReport() {
         sourceTaskMode: 'ingest'
       },
       llm: {
-        provider: 'pending'
+        provider: 'checking'
       }
-    }
+    },
+    checks: [
+      { key: 'resources.inputDir', status: 'standby' },
+      { key: 'resources.storeDir', status: 'standby' }
+    ]
   };
   return {
     health: {
@@ -1443,7 +1447,10 @@ function createSystemStatusFallbackReport() {
     adapters: {
       adapters: []
     },
-    openApi: {},
+    openApi: {
+      openapi: 'checking',
+      paths: {}
+    },
     overview: createOperationalOverviewFallback(new Error('Operational overview is deferred from first paint.')),
     adapterDiagnostics: {
       status: 'warn',
@@ -1469,7 +1476,10 @@ function createSystemStatusFallbackReport() {
     },
     notificationDiagnostics: {
       status: 'warn',
-      channel: 'pending'
+      channel: 'checking',
+      checks: [
+        { key: 'notifications.channel', status: 'standby' }
+      ]
     }
   };
 }
@@ -1521,7 +1531,7 @@ function renderSystemStatusDashboard(report) {
     '<section class="system-runtime-stack">',
     systemRuntimeMini('Readiness', readinessStatusSummary(operationsReadiness), statusVariant(operationsReadiness.status)),
     systemRuntimeMini('Runbook', (operationsRunbook.status || 'unknown') + ' | actions ' + String(operationsRunbook.actionCount || 0), statusVariant(operationsRunbook.status)),
-    systemRuntimeMini('Overview', overview.warning ? 'partial' : 'live', overview.warning ? 'warn' : 'ok'),
+    systemRuntimeMini('Overview', overview.warning ? 'deferred' : 'live', overview.warning ? 'warn' : 'ok'),
     systemRuntimeMini('Deploy', deploymentChecklist.status || 'unknown', statusVariant(deploymentChecklist.status)),
     systemRuntimeMini('LLM', llmConfig.provider || 'unknown', statusVariant(diagnostics.status)),
     systemRuntimeMini('Adapters', (adapterDiagnostics.status || 'unknown') + ' | ' + String(adapterDiagnostics.adapterCount || (adapters.adapters || []).length || 0), statusVariant(adapterDiagnostics.status)),
@@ -1634,7 +1644,15 @@ function renderHistoryCockpitStandby() {
       generatedAt: 'standby'
     },
     eventOverview: {},
-    diagnostics: {},
+    diagnostics: {
+      status: 'warn',
+      configuration: {
+        storageMode: 'standby',
+        llm: {
+          provider: 'standby'
+        }
+      }
+    },
     deploymentChecklist: {}
   });
 }
@@ -8224,7 +8242,7 @@ async function fetchJson(url, options) {
 function createOperationalOverviewFallback(error) {
   return {
     status: 'warn',
-    storageMode: 'partial',
+    storageMode: 'deferred',
     generatedAt: new Date().toISOString(),
     sources: {},
     tasks: {},
