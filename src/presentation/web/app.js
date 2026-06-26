@@ -5354,8 +5354,10 @@ function renderAutomationCockpitHero(plan, cockpit) {
   const llm = summary.llm || {};
   const demo = summary.demo || {};
   const pressure = automationOperatingPressureSummary(cockpit || {});
+  const freshness = cockpit && cockpit.freshness || {};
+  const freshnessSpan = freshness.spanMs === undefined ? 'unknown' : formatDurationMs(freshness.spanMs);
   const representative = summary.representativeSource || {};
-  const generatedAt = plan.generatedAt || 'unknown';
+  const generatedAt = cockpit && cockpit.generatedAt || plan.generatedAt || 'unknown';
   const sourceTaskMode = workers.sourceTaskMode || plan.automation && plan.automation.sourceTaskMode || 'unknown';
   const representativeSource = representative.source && (representative.source.displayName || representative.source.id || representative.source.sourceKey) || 'none';
   const replayStatus = representative.replay && representative.replay.available ? 'available' : 'missing';
@@ -5370,7 +5372,7 @@ function renderAutomationCockpitHero(plan, cockpit) {
     '</div>',
     '<h3>' + escapeHtml(automationReadinessHeadline(plan, sources, operations, workers, llm, demo)) + '</h3>',
     '<p>' + escapeHtml([
-      'generated=' + generatedAt,
+      'snapshot=' + generatedAt,
       'sourceTaskMode=' + sourceTaskMode,
       'topology=' + (workers.topology || 'unknown'),
       'llm=' + (llm.provider || 'unknown') + (llm.mockMode ? '/mock' : '')
@@ -5390,6 +5392,8 @@ function renderAutomationCockpitHero(plan, cockpit) {
     automationCockpitSignal('Queue', operations.queueTotal || 0, statusVariant(operations.cockpitStatus)),
     automationCockpitSignal('Runnable', operations.runnable || 0, (operations.runnable || 0) > 0 ? 'ok' : 'muted'),
     automationCockpitSignal('LLM', llm.provider || 'unknown', statusVariant(llm.status)),
+    automationCockpitSignal('Freshness', (freshness.presentSourceCount || 0) + '/' + (freshness.sourceCount || 0), statusVariant(freshness.status)),
+    automationCockpitSignal('Span', freshnessSpan, freshness.spanMs > 60000 ? 'warn' : statusVariant(freshness.status || 'ok')),
     '</aside>',
     '<section class="automation-cockpit-runpath">',
     '<span>Run path</span>',
