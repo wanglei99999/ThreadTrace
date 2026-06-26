@@ -3577,8 +3577,14 @@ form button[type="submit"]:hover {
   min-width: max-content;
 }
 
+.automation-pressure-actions {
+  justify-content: flex-end;
+  min-width: max-content;
+}
+
 @media (max-width: 720px) {
-  .automation-attention-actions {
+  .automation-attention-actions,
+  .automation-pressure-actions {
     justify-content: flex-start;
     min-width: 0;
     width: 100%;

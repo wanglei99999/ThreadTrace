@@ -708,6 +708,10 @@ async function handleAutomationReadinessAction(event) {
   }
   if (button.dataset.action === 'run-automation-attention-action') {
     await runAutomationAttentionAction(button);
+    return;
+  }
+  if (button.dataset.action === 'run-automation-pressure-action') {
+    await runAutomationPressureAction(button);
   }
 }
 
@@ -5656,6 +5660,46 @@ async function runAutomationAttentionAction(button) {
   }
 }
 
+async function runAutomationPressureAction(button) {
+  const action = button.dataset.pressureAction;
+  if (action === 'outbox-overview') {
+    await renderAsync(resolveAutomationActionTarget(), function () {
+      return fetchJson('/api/events/overview?limit=50', {
+        acceptErrorStatus: true
+      });
+    }, function (overview) {
+      return renderAutomationActionResult('Outbox overview', {
+        status: overview.status,
+        mode: 'read-only',
+        subject: 'Notification outbox',
+        changed: 'No change',
+        next: overview.recommendedNextAction || 'Review notification outbox pressure.'
+      }, renderNotificationEventOverview(overview));
+    }, automationActionRenderOptions(resolveAutomationActionTarget(), 'Loading notification outbox overview...'));
+    return;
+  }
+  if (action === 'ack-preview') {
+    await renderAsync(resolveAutomationActionTarget(), function () {
+      return requestJson('/api/events/ack', {
+        limit: 50,
+        acknowledged: false,
+        acknowledgedBy: 'automation-cockpit',
+        note: 'Previewed from Automation Cockpit pressure panel.',
+        dryRun: true,
+        execute: false
+      });
+    }, function (result) {
+      return renderAutomationActionResult('Acknowledgement preview', {
+        status: result.status,
+        mode: 'dry-run',
+        subject: 'Open notification events',
+        changed: 'No change',
+        next: 'Previewed ' + String(result.candidateCount || 0) + ' acknowledgement candidate(s).'
+      }, renderEventBatchAckResult(result));
+    }, automationActionRenderOptions(resolveAutomationActionTarget(), 'Previewing notification acknowledgements...'));
+  }
+}
+
 function focusAutomationPanel(targetPanel) {
   const panelClass = {
     'automation-gates': '.automation-gates-panel',
@@ -5698,6 +5742,9 @@ function renderAutomationOperatingPressure(cockpit) {
       '<strong>Notification outbox</strong>' +
       '<small>' + escapeHtml(notificationOverview.recommendedNextAction || 'No notification overview action returned.') + '</small>' +
       '<small>' + escapeHtml('retryExhausted=' + pressure.retryExhaustedEvents + ' | events=' + pressure.eventCount) + '</small>' +
+      '</span><span class="button-group automation-pressure-actions">' +
+        '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="outbox-overview">Open outbox</button>' +
+        '<button class="inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="ack-preview">Ack preview</button>' +
       '</span>' + statusBadge(pressure.outboxStatus, pressure.outboxVariant) + '</div>',
     '<div class="action-row ops-row"><span>' +
       '<strong>Review audit ledger</strong>' +

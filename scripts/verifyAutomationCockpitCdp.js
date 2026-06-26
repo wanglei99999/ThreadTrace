@@ -177,6 +177,7 @@ async function verifyViewport(client, options) {
   const runbookPreview = options.runPreview ? await verifyAutomationRunbookPreview(client) : undefined;
   if (options.runPreview || options.runAction) await waitForCockpit(client);
   const actionResult = options.runAction ? await verifyAutomationActionResult(client) : undefined;
+  const pressureAction = await verifyAutomationPressureAction(client);
   const attentionFocus = await verifyAutomationAttentionFocus(client);
   const attentionAction = await verifyAutomationAttentionAction(client);
   if (attentionAction && !attentionAction.skipped) await waitForCockpit(client);
@@ -190,6 +191,7 @@ async function verifyViewport(client, options) {
   const png = await readPngInfo(options.screenshotPath);
   assertAudit(options.label, audit);
   assertRunbookPreview(options.label, runbookPreview, options);
+  assertPressureAction(options.label, pressureAction, audit);
   assertAttentionFocus(options.label, attentionFocus, audit);
   assertAttentionAction(options.label, attentionAction, audit);
   assertScreenshot(options.label, png, stats, options, audit);
@@ -198,6 +200,7 @@ async function verifyViewport(client, options) {
     loadingState,
     runbookPreview,
     actionResult,
+    pressureAction,
     attentionFocus,
     attentionAction,
     screenshotPath: options.screenshotPath,
@@ -205,6 +208,22 @@ async function verifyViewport(client, options) {
     screenshotWidth: png.width,
     screenshotHeight: png.height
   });
+}
+
+function assertPressureAction(label, pressureAction, audit) {
+  if (!audit || audit.pressureActionButtonCount <= 0) return;
+  const failures = [];
+  if (!pressureAction) failures.push('missing pressure action report');
+  else {
+    if (pressureAction.skipped) failures.push('pressure action skipped: ' + pressureAction.reason);
+    if (!pressureAction.clicked) failures.push('pressure action button was not clicked');
+    if (!pressureAction.hasResult) failures.push('pressure action did not render an action result');
+    if (!pressureAction.hasOutbox) failures.push('pressure action did not render outbox overview');
+    if (!pressureAction.visible) failures.push('pressure action result is not visible after click');
+  }
+  if (failures.length > 0) {
+    throw new Error(label + ' Automation Cockpit pressure action verification failed: ' + failures.join('; '));
+  }
 }
 
 function assertRunbookPreview(label, runbookPreview, options) {
@@ -315,6 +334,7 @@ function viewportAuditExpression() {
     "    runbookCommandCount: document.querySelectorAll('.automation-runbook-command-row').length,",
     "    attentionQueueRowCount: document.querySelectorAll('.automation-attention-row').length,",
     "    attentionActionButtonCount: document.querySelectorAll('.automation-attention-panel button[data-action=\"run-automation-attention-action\"]').length,",
+    "    pressureActionButtonCount: document.querySelectorAll('.automation-pressure-panel button[data-action=\"run-automation-pressure-action\"]').length,",
     "    runbookCopyButtonCount: document.querySelectorAll('.automation-runbook-panel button[data-action=\"copy-lifecycle-command\"]').length,",
     "    runbookScheduleCommandCount: Array.from(document.querySelectorAll('.automation-runbook-command-row code')).filter((code) => code.textContent.includes('configure-source-schedule')).length,",
     "    runbookScheduleButtonCount: document.querySelectorAll('.automation-runbook-panel button[data-action=\"set-source-schedule\"]').length",
@@ -577,6 +597,46 @@ async function verifyAutomationRunbookPreview(client) {
   ].join('\n'));
 }
 
+async function verifyAutomationPressureAction(client) {
+  const clicked = await evaluateByValue(client, [
+    '(() => {',
+    "  const button = document.querySelector('.automation-pressure-panel button[data-pressure-action=\"outbox-overview\"]');",
+    '  if (!button) return { clicked: false, skipped: true, reason: "no outbox overview pressure action" };',
+    '  const label = button.textContent.trim();',
+    '  button.click();',
+    '  return { clicked: true, skipped: false, action: button.dataset.pressureAction || "", label };',
+    '})()'
+  ].join('\n'));
+  if (!clicked || clicked.skipped) return clicked;
+  await waitFor(async function () {
+    return evaluateByValue(client, [
+      '(() => {',
+      "  const result = document.querySelector('#automationActionResult');",
+      "  const text = result ? result.innerText : '';",
+      "  const rect = result ? result.getBoundingClientRect() : null;",
+      "  const visible = rect ? rect.bottom > 0 && rect.top < window.innerHeight : false;",
+      "  return Boolean(result && text.includes('Last action') && text.includes('Outbox overview') && text.includes('Notification outbox') && visible);",
+      '})()'
+    ].join('\n'));
+  }, 30000, 'Timed out waiting for Automation Cockpit pressure action result.');
+  return evaluateByValue(client, [
+    '(() => {',
+    "  const result = document.querySelector('#automationActionResult');",
+    "  const text = result ? result.innerText : '';",
+    "  const rect = result ? result.getBoundingClientRect() : null;",
+    '  return {',
+    '    clicked: true,',
+    '    skipped: false,',
+    '    action: ' + JSON.stringify(clicked.action) + ',',
+    '    label: ' + JSON.stringify(clicked.label) + ',',
+    "    hasResult: text.includes('Last action') && text.includes('Outbox overview'),",
+    "    hasOutbox: text.includes('Notification outbox'),",
+    "    visible: rect ? rect.bottom > 0 && rect.top < window.innerHeight : false",
+    '  };',
+    '})()'
+  ].join('\n'));
+}
+
 async function verifyAutomationAttentionFocus(client) {
   const clicked = await evaluateByValue(client, [
     '(() => {',
@@ -700,6 +760,7 @@ function assertAudit(label, audit) {
   if (audit.headlineHasMojibake) failures.push('automation cockpit headline contains mojibake: ' + audit.headlineText);
   if (audit.bodyTextHasMojibake) failures.push('body text contains mojibake');
   if (audit.attentionQueueRowCount > 0 && audit.attentionActionButtonCount <= 0) failures.push('attention queue is missing safe action controls');
+  if (audit.pressureActionButtonCount <= 0) failures.push('pressure panel is missing outbox action controls');
   if (audit.runbookCommandCount > 0 && audit.runbookCopyButtonCount < audit.runbookCommandCount) failures.push('runbook commands are missing copy controls');
   if (audit.runbookScheduleCommandCount > 0 && audit.runbookScheduleButtonCount < audit.runbookScheduleCommandCount) failures.push('schedule runbook commands are missing Preview/Apply controls');
   if (audit.heroTop === null || audit.heroTop > audit.clientWidth * 3) failures.push('cockpit appears too late in the page');
