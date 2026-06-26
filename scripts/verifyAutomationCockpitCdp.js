@@ -60,6 +60,7 @@ async function main() {
       process.stdout.write(JSON.stringify(report, null, 2) + '\n');
     } finally {
       await client.close();
+      await closeTarget(cdpPort, target.id).catch(function () {});
     }
   } finally {
     if (browser.launched && browser.process) {
@@ -155,6 +156,11 @@ async function createTarget(port, url) {
   return JSON.parse(result.body);
 }
 
+async function closeTarget(port, targetId) {
+  if (!targetId) return;
+  await httpRequest('GET', 'http://127.0.0.1:' + port + '/json/close/' + encodeURIComponent(targetId));
+}
+
 async function verifyViewport(client, options) {
   await client.send('Emulation.setDeviceMetricsOverride', {
     width: options.width,
@@ -172,6 +178,8 @@ async function verifyViewport(client, options) {
   if (options.runPreview || options.runAction) await waitForCockpit(client);
   const actionResult = options.runAction ? await verifyAutomationActionResult(client) : undefined;
   const attentionFocus = await verifyAutomationAttentionFocus(client);
+  const attentionAction = await verifyAutomationAttentionAction(client);
+  if (attentionAction && !attentionAction.skipped) await waitForCockpit(client);
   const audit = await evaluateByValue(client, viewportAuditExpression());
   const screenshot = await client.send('Page.captureScreenshot', {
     format: 'png',
@@ -183,6 +191,7 @@ async function verifyViewport(client, options) {
   assertAudit(options.label, audit);
   assertRunbookPreview(options.label, runbookPreview, options);
   assertAttentionFocus(options.label, attentionFocus, audit);
+  assertAttentionAction(options.label, attentionAction, audit);
   assertScreenshot(options.label, png, stats, options, audit);
   return Object.assign({}, audit, {
     refreshLoadingState,
@@ -190,6 +199,7 @@ async function verifyViewport(client, options) {
     runbookPreview,
     actionResult,
     attentionFocus,
+    attentionAction,
     screenshotPath: options.screenshotPath,
     screenshotBytes: stats.size,
     screenshotWidth: png.width,
@@ -228,8 +238,24 @@ function assertAttentionFocus(label, attentionFocus, audit) {
   }
 }
 
+function assertAttentionAction(label, attentionAction, audit) {
+  if (!audit || audit.attentionQueueRowCount <= 0 || audit.attentionActionButtonCount <= 0) return;
+  const failures = [];
+  if (!attentionAction) failures.push('missing attention action report');
+  else {
+    if (attentionAction.skipped && audit.runbookScheduleButtonCount > 0) failures.push('attention action skipped: ' + attentionAction.reason);
+    if (!attentionAction.skipped && !attentionAction.clicked) failures.push('attention action button was not clicked');
+    if (!attentionAction.skipped && !attentionAction.hasResult) failures.push('attention action did not render a result');
+    if (!attentionAction.skipped && !attentionAction.dryRun) failures.push('attention action did not stay in dry-run mode');
+    if (!attentionAction.skipped && !attentionAction.visible) failures.push('attention action result is not visible after click');
+  }
+  if (failures.length > 0) {
+    throw new Error(label + ' Automation Cockpit attention action verification failed: ' + failures.join('; '));
+  }
+}
+
 async function waitForCockpit(client) {
-  await evaluateByValue(client, [
+  const ready = await evaluateByValue(client, [
     'new Promise((resolve) => {',
     '  const started = Date.now();',
     '  const tick = () => {',
@@ -241,6 +267,10 @@ async function waitForCockpit(client) {
     '  tick();',
     '})'
   ].join('\n'), true);
+  if (!ready) {
+    const diagnostic = await automationClickDiagnostic(client);
+    throw new Error('Timed out waiting for Automation Cockpit to render: ' + JSON.stringify(diagnostic));
+  }
 }
 
 function viewportAuditExpression() {
@@ -442,7 +472,8 @@ async function verifyAutomationRefreshLoadingState(client) {
     '})()'
   ].join('\n'));
   if (!clicked) {
-    throw new Error('Could not click Automation Cockpit Refresh button.');
+    const diagnostic = await automationClickDiagnostic(client);
+    throw new Error('Could not click Automation Cockpit Refresh button: ' + JSON.stringify(diagnostic));
   }
   await waitFor(async function () {
     return evaluateByValue(client, [
@@ -483,6 +514,24 @@ async function verifyAutomationRefreshLoadingState(client) {
     ].join('\n'));
   }, 30000, 'Timed out waiting for delayed Automation Cockpit refresh to settle.');
   return loading;
+}
+
+async function automationClickDiagnostic(client) {
+  return evaluateByValue(client, [
+    '(() => {',
+    '  const hero = document.querySelector(\'.automation-cockpit-hero\');',
+    '  return {',
+    '    href: location.href,',
+    '    hash: location.hash,',
+    '    readyState: document.readyState,',
+    "    title: document.querySelector('#viewTitle')?.textContent || document.title || '',",
+    '    hasHero: Boolean(hero),',
+    "    heroButtons: hero ? Array.from(hero.querySelectorAll('button')).map((button) => ({ text: button.textContent.trim(), action: button.dataset.action || '' })) : [],",
+    "    systemVisible: document.querySelector('#systemView') ? !document.querySelector('#systemView').hidden : null,",
+    "    bodyPreview: document.body ? document.body.innerText.slice(0, 500) : ''",
+    '  };',
+    '})()'
+  ].join('\n'));
 }
 
 async function verifyAutomationRunbookPreview(client) {
@@ -570,6 +619,46 @@ async function verifyAutomationAttentionFocus(client) {
     '    targetPanel: ' + JSON.stringify(clicked.targetPanel) + ',',
     '    visible: rect ? rect.bottom > 0 && rect.top < window.innerHeight : false,',
     "    pulsed: panel ? panel.classList.contains('result-focus-pulse') : false",
+    '  };',
+    '})()'
+  ].join('\n'));
+}
+
+async function verifyAutomationAttentionAction(client) {
+  const clicked = await evaluateByValue(client, [
+    '(() => {',
+    "  const button = document.querySelector('.automation-attention-panel button[data-attention-action=\"preview-runbook-command\"]');",
+    '  if (!button) return { clicked: false, skipped: true, reason: "no preview-runbook-command attention action" };',
+    '  const label = button.textContent.trim();',
+    '  button.click();',
+    '  return { clicked: true, skipped: false, action: button.dataset.attentionAction || "", label };',
+    '})()'
+  ].join('\n'));
+  if (!clicked || clicked.skipped) return clicked;
+  await waitFor(async function () {
+    return evaluateByValue(client, [
+      '(() => {',
+      "  const result = document.querySelector('#automationActionResult');",
+      "  const text = result ? result.innerText : '';",
+      "  const rect = result ? result.getBoundingClientRect() : null;",
+      "  const visible = rect ? rect.bottom > 0 && rect.top < window.innerHeight : false;",
+      "  return Boolean(result && text.includes('Last action') && text.includes('Source schedule') && text.includes('dry-run') && visible);",
+      '})()'
+    ].join('\n'));
+  }, 30000, 'Timed out waiting for Automation Cockpit attention action result.');
+  return evaluateByValue(client, [
+    '(() => {',
+    "  const result = document.querySelector('#automationActionResult');",
+    "  const text = result ? result.innerText : '';",
+    "  const rect = result ? result.getBoundingClientRect() : null;",
+    '  return {',
+    '    clicked: true,',
+    '    skipped: false,',
+    '    action: ' + JSON.stringify(clicked.action) + ',',
+    '    label: ' + JSON.stringify(clicked.label) + ',',
+    "    hasResult: text.includes('Last action') && text.includes('Source schedule'),",
+    "    dryRun: text.includes('dry-run'),",
+    "    visible: rect ? rect.bottom > 0 && rect.top < window.innerHeight : false",
     '  };',
     '})()'
   ].join('\n'));
