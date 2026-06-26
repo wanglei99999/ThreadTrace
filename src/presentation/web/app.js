@@ -5579,19 +5579,45 @@ function renderAutomationOperatorRunbook(runbook) {
     return rows.join('');
   }
   sections.forEach(function (section) {
-    const commands = (section.commands || []).map(function (command) {
-      return command.command;
-    }).filter(Boolean);
+    const commands = (section.commands || []).filter(function (command) {
+      return command && command.command;
+    });
     rows.push('<div class="action-row ops-row automation-runbook-row">' +
       '<span>' +
       '<strong>' + escapeHtml(section.title || section.key || 'Runbook section') + '</strong>' +
       '<small>' + escapeHtml('commands=' + (section.commandCount || commands.length || 0)) + '</small>' +
-      renderReadinessCommandRows(commands) +
+      renderAutomationRunbookCommandRows(commands) +
       '</span>' +
       statusBadge(section.status || 'unknown', statusVariant(section.status)) +
       '</div>');
   });
   return rows.join('');
+}
+
+function renderAutomationRunbookCommandRows(commands) {
+  if (!commands || commands.length === 0) return '';
+  return '<div class="lifecycle-command-list automation-runbook-command-list">' + commands.map(function (command) {
+    return '<div class="lifecycle-command-row automation-runbook-command-row">' +
+      '<code>' + escapeHtml(command.command || '') + '</code>' +
+      '<span class="button-group">' +
+      '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="copy-lifecycle-command">Copy</button>' +
+      renderAutomationRunbookIntentButton(command.intent) +
+      '</span>' +
+      '</div>';
+  }).join('') + '</div>';
+}
+
+function renderAutomationRunbookIntentButton(intent) {
+  const safeIntent = intent || {};
+  if (safeIntent.type !== 'set-source-schedule' || !safeIntent.sourceId) return '';
+  const label = safeIntent.execute ? 'Apply' : 'Preview';
+  const className = safeIntent.execute ? 'inline-button compact-inline-button' : 'inline-button secondary-inline-button compact-inline-button';
+  return '<button class="' + className + '" type="button" data-action="set-source-schedule"' +
+    ' data-source-id="' + escapeHtml(safeIntent.sourceId) + '"' +
+    ' data-interval-minutes="' + escapeHtml(String(safeIntent.intervalMinutes || 60)) + '"' +
+    ' data-run-now="' + escapeHtml(String(safeIntent.runNow !== false)) + '"' +
+    ' data-schedule-enabled="' + escapeHtml(String(safeIntent.scheduleEnabled !== false)) + '"' +
+    ' data-execute="' + escapeHtml(String(safeIntent.execute === true)) + '">' + label + '</button>';
 }
 
 function renderAutomationRemediation(remediation) {

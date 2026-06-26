@@ -3505,6 +3505,18 @@ form button[type="submit"]:hover {
   margin-top: 8px;
 }
 
+.automation-runbook-command-row {
+  gap: 10px;
+}
+
+.automation-runbook-command-row code {
+  min-width: 0;
+}
+
+.automation-runbook-command-row .button-group {
+  flex: 0 0 auto;
+}
+
 .automation-cockpit-hero {
   position: relative;
   grid-column: span 12;

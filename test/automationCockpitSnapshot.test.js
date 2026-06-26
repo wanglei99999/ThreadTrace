@@ -83,6 +83,20 @@ test('automation cockpit snapshot aggregates readiness and operating pressure', 
   }).commands.some(function (command) {
     return /--execute true/.test(command.command);
   }));
+  assert.deepEqual(snapshot.operatorRunbook.sections.find(function (section) {
+    return section.key === 'schedule';
+  }).commands.map(function (command) {
+    return {
+      type: command.intent && command.intent.type,
+      sourceId: command.intent && command.intent.sourceId,
+      execute: command.intent && command.intent.execute,
+      intervalMinutes: command.intent && command.intent.intervalMinutes,
+      runNow: command.intent && command.intent.runNow
+    };
+  }), [
+    { type: 'set-source-schedule', sourceId: 'source-1', execute: false, intervalMinutes: 60, runNow: true },
+    { type: 'set-source-schedule', sourceId: 'source-1', execute: true, intervalMinutes: 60, runNow: true }
+  ]);
   assert.ok(snapshot.operatorRunbook.sections.find(function (section) {
     return section.key === 'verification';
   }).commands.some(function (command) {

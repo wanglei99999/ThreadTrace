@@ -62,14 +62,16 @@ function buildOperatorRunbook(input) {
       remediationCommands.push(commandItem('schedule.preview.' + (action.key || remediationCommands.length), 'Preview schedule remediation', action.command, {
         sourceId: action.scope && action.scope.sourceId,
         sourceKey: action.scope && action.scope.sourceKey,
-        severity: action.severity || 'warning'
+        severity: action.severity || 'warning',
+        intent: scheduleIntent(action, action.dryRun, false)
       }));
     }
     if (action.executeCommand) {
       remediationCommands.push(commandItem('schedule.execute.' + (action.key || remediationCommands.length), 'Execute schedule remediation', action.executeCommand, {
         sourceId: action.scope && action.scope.sourceId,
         sourceKey: action.scope && action.scope.sourceKey,
-        severity: action.severity || 'warning'
+        severity: action.severity || 'warning',
+        intent: scheduleIntent(action, action.execute, true)
       }));
     }
   });
@@ -123,6 +125,26 @@ function commandItem(key, title, command, metadata) {
     title,
     command
   }, metadata || {});
+}
+
+function scheduleIntent(action, api, execute) {
+  if (!action || !action.scope || !action.scope.sourceId) return undefined;
+  const command = execute === true ? action.executeCommand : action.command;
+  const looksLikeScheduleAction = action.type === 'configure-source-schedule' ||
+    (api && /\/schedule$/.test(api.path || '')) ||
+    /configure-source-schedule/.test(command || '');
+  if (!looksLikeScheduleAction) return undefined;
+  const body = api && api.body || {};
+  return {
+    type: 'set-source-schedule',
+    sourceId: action.scope.sourceId,
+    sourceKey: action.scope.sourceKey,
+    sourceType: action.scope.sourceType,
+    execute: execute === true,
+    intervalMinutes: body.intervalMinutes || 60,
+    runNow: body.runNow !== false,
+    scheduleEnabled: body.scheduleEnabled === undefined ? true : body.scheduleEnabled !== false
+  };
 }
 
 function statusFromWorkers(plan) {

@@ -7334,7 +7334,21 @@ function createOpenApiSpec() {
                         key: { type: 'string' },
                         title: { type: 'string' },
                         command: { type: 'string' },
-                        severity: { type: 'string' }
+                        severity: { type: 'string' },
+                        intent: {
+                          type: 'object',
+                          properties: {
+                            type: { type: 'string', example: 'set-source-schedule' },
+                            sourceId: { type: 'string' },
+                            sourceKey: { type: 'string' },
+                            sourceType: { type: 'string' },
+                            execute: { type: 'boolean' },
+                            intervalMinutes: { type: 'number', example: 60 },
+                            runNow: { type: 'boolean' },
+                            scheduleEnabled: { type: 'boolean' }
+                          },
+                          additionalProperties: true
+                        }
                       },
                       additionalProperties: true
                     }

@@ -1359,6 +1359,7 @@ test('http server exposes source operations drilldown API', async function () {
     assert.match(webAppJs, /load-source-collection-health/);
     assert.match(webAppJs, /renderAutomationReadinessPlan/);
     assert.match(webAppJs, /renderAutomationOperatorRunbook/);
+    assert.match(webAppJs, /renderAutomationRunbookIntentButton/);
     assert.match(webAppJs, /renderAutomationRemediation/);
     assert.match(webAppJs, /automationReadinessResult/);
     assert.match(webAppJs, /operations\/automation-cockpit/);
@@ -2033,6 +2034,7 @@ test('http server exposes deployment checklist API', async function () {
     assert.ok(openApi.components.schemas.AutomationReadinessPlan.properties.automation);
     assert.equal(openApi.components.schemas.AutomationCockpitSnapshot.properties.plan.$ref, '#/components/schemas/AutomationReadinessPlan');
     assert.equal(openApi.components.schemas.AutomationCockpitSnapshot.properties.operatorRunbook.$ref, '#/components/schemas/AutomationCockpitOperatorRunbook');
+    assert.ok(openApi.components.schemas.AutomationCockpitOperatorRunbook.properties.sections.items.properties.commands.items.properties.intent);
     assert.equal(openApi.components.schemas.AutomationCockpitSnapshot.properties.reviewActionExecutions.$ref, '#/components/schemas/ContextReviewActionExecutionListResult');
     assert.equal(openApi.components.schemas.AutomationReadinessPlan.properties.remediation.$ref, '#/components/schemas/AutomationReadinessRemediationPlan');
     assert.equal(openApi.components.schemas.AutomationReadinessRemediationPlan.properties.actions.items.$ref, '#/components/schemas/AutomationReadinessRemediationAction');
