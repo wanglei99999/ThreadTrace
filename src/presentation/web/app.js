@@ -675,26 +675,32 @@ async function handleAutomationReadinessAction(event) {
     return;
   }
   if (button.dataset.action === 'run-llm-readiness') {
-    await runLlmReadiness();
+    await runLlmReadiness(resolveAutomationActionTarget());
     return;
   }
   if (button.dataset.action === 'run-llm-preflight') {
-    await runLlmPreflight();
+    await runLlmPreflight(resolveAutomationActionTarget());
     return;
   }
   if (button.dataset.action === 'run-llm-evaluation') {
-    await runLlmEvaluation();
+    await runLlmEvaluation(resolveAutomationActionTarget());
     return;
   }
   if (button.dataset.action === 'run-demo-cycle') {
-    await runDemoCycle();
+    await runDemoCycle(resolveAutomationActionTarget());
     return;
   }
   if (button.dataset.action === 'set-source-schedule') {
     const execute = button.dataset.execute === 'true';
     if (execute && !window.confirm('Configure this source schedule?')) return;
-    await setSourceScheduleFromButton(button, execute);
+    await setSourceScheduleFromButton(button, execute, resolveAutomationActionTarget());
   }
+}
+
+function resolveAutomationActionTarget() {
+  return document.getElementById('automationActionResult')
+    ? 'automationActionResult'
+    : 'sourceOperationActionResult';
 }
 
 async function handleOnboardingAction(event) {
@@ -2359,16 +2365,16 @@ async function runDuePipelines() {
   await loadRawPages();
 }
 
-async function runLlmPreflight() {
-  await renderAsync('sourceOperationActionResult', function () {
+async function runLlmPreflight(targetId) {
+  await renderAsync(targetId || 'sourceOperationActionResult', function () {
     return requestJson('/api/llm/preflight', {});
   }, renderLlmPreflightReport);
   await loadSystemStatus();
   await loadAutomationReadiness();
 }
 
-async function runLlmReadiness() {
-  await renderAsync('sourceOperationActionResult', function () {
+async function runLlmReadiness(targetId) {
+  await renderAsync(targetId || 'sourceOperationActionResult', function () {
     return requestJson('/api/llm/readiness', {
       llmReadinessMode: 'configuration'
     }, {
@@ -2379,15 +2385,15 @@ async function runLlmReadiness() {
   await loadAutomationReadiness();
 }
 
-async function runLlmEvaluation() {
-  await renderAsync('sourceOperationActionResult', function () {
+async function runLlmEvaluation(targetId) {
+  await renderAsync(targetId || 'sourceOperationActionResult', function () {
     return requestJson('/api/llm/evaluate', {});
   }, renderLlmEvaluationReport);
   await loadSystemStatus();
   await loadAutomationReadiness();
 }
 
-async function runDemoCycle() {
+async function runDemoCycle(targetId) {
   const form = new FormData(document.getElementById('sourceForm'));
   const request = {
     provider: 'mock',
@@ -2395,7 +2401,7 @@ async function runDemoCycle() {
     drilldownLimit: 20
   };
   if (form.get('forum')) request.sourceKey = form.get('forum');
-  await renderAsync('sourceOperationActionResult', function () {
+  await renderAsync(targetId || 'sourceOperationActionResult', function () {
     return requestJson('/api/demo/source-cycle', request, {
       acceptErrorStatus: true
     });
@@ -2498,9 +2504,9 @@ async function resetSourceFailureFromButton(button, execute) {
   await loadAutomationReadiness();
 }
 
-async function setSourceScheduleFromButton(button, execute) {
+async function setSourceScheduleFromButton(button, execute, targetId) {
   const sourceId = button.dataset.sourceId;
-  await renderAsync('sourceOperationActionResult', function () {
+  await renderAsync(targetId || 'sourceOperationActionResult', function () {
     return requestJson('/api/sources/' + encodeURIComponent(sourceId) + '/schedule', {
       execute,
       intervalMinutes: Number(button.dataset.intervalMinutes) || 60,

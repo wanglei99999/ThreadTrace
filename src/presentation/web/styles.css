@@ -3448,8 +3448,23 @@ form button[type="submit"]:hover {
 
 .automation-cockpit-grid {
   margin-top: 14px;
-  margin-bottom: 18px;
+  margin-bottom: 10px;
   scroll-margin-top: 112px;
+}
+
+.automation-action-grid {
+  margin-bottom: 18px;
+}
+
+.automation-action-grid:empty {
+  display: none;
+}
+
+.automation-action-grid .panel {
+  border-color: rgba(36, 95, 159, 0.18);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(247, 250, 253, 0.96)),
+    var(--panel);
 }
 
 .automation-cockpit-hero {
