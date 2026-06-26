@@ -70,6 +70,7 @@ const { getOperationalOverview } = require('../application/use-cases/getOperatio
 const { getSourceOperationsDrilldown } = require('../application/use-cases/getSourceOperationsDrilldown');
 const { getSourceCollectionHealthProfile } = require('../application/use-cases/getSourceCollectionHealthProfile');
 const { getAutomationReadinessPlan } = require('../application/use-cases/getAutomationReadinessPlan');
+const { getAutomationCockpitSnapshot } = require('../application/use-cases/getAutomationCockpitSnapshot');
 const { getSourceTypeOperationsDrilldown } = require('../application/use-cases/getSourceTypeOperationsDrilldown');
 const { getNotificationEventOverview } = require('../application/use-cases/getNotificationEventOverview');
 const { getAuthorIntelligenceDashboard } = require('../application/use-cases/getAuthorIntelligenceDashboard');
@@ -1513,6 +1514,53 @@ function createThreadTraceRuntime(options) {
         workerTopologyPlan,
         llmReadinessProfile,
         includeInputs: safeRequest.includeInputs === true,
+        now: safeRequest.now
+      });
+    },
+
+    async getAutomationCockpitSnapshot(request) {
+      const safeRequest = request || {};
+      const commonRequest = {
+        forum: safeRequest.forum,
+        sourceKey: safeRequest.sourceKey,
+        sourceId: safeRequest.sourceId,
+        sourceType: safeRequest.sourceType,
+        enabled: safeRequest.enabled,
+        limit: safeRequest.limit || 100,
+        now: safeRequest.now,
+        storeDir: safeRequest.storeDir
+      };
+      const [
+        plan,
+        notificationOverview,
+        reviewActionAuditOverview,
+        reviewActionExecutions,
+        notificationDiagnostics
+      ] = await Promise.all([
+        this.getAutomationReadinessPlan(safeRequest),
+        this.getNotificationEventOverview(Object.assign({}, commonRequest, {
+          limit: safeRequest.notificationLimit || safeRequest.eventLimit || safeRequest.limit || 100,
+          maxAttempts: safeRequest.maxAttempts
+        })),
+        this.getContextReviewActionAuditOverview(Object.assign({}, commonRequest, {
+          limit: safeRequest.auditLimit || safeRequest.limit || 100
+        })),
+        this.listContextReviewActionExecutions(Object.assign({}, commonRequest, {
+          limit: safeRequest.executionLimit || 20,
+          runningStaleAfterMs: safeRequest.runningStaleAfterMs
+        })),
+        this.getNotificationDiagnostics({
+          channel: safeRequest.channel,
+          webhookUrl: safeRequest.webhookUrl,
+          storeDir: safeRequest.storeDir
+        })
+      ]);
+      return getAutomationCockpitSnapshot({
+        plan,
+        notificationOverview,
+        reviewActionAuditOverview,
+        reviewActionExecutions,
+        notificationDiagnostics,
         now: safeRequest.now
       });
     },

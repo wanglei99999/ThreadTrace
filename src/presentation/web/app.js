@@ -2011,30 +2011,11 @@ async function loadAutomationReadiness() {
       sourceTaskMode: 'insight-pipeline',
       llmReadinessMode: 'configuration'
     });
-    return Promise.all([
-      fetchJson('/api/operations/automation-readiness?' + query.toString(), {
-        acceptErrorStatus: true
-      }),
-      fetchJson('/api/events/overview?limit=100', {
-        acceptErrorStatus: true
-      }),
-      fetchJson('/api/context-review-results/action-audits/overview?limit=100', {
-        acceptErrorStatus: true
-      }),
-      fetchJson('/api/context-review-results/action-executions?limit=20', {
-        acceptErrorStatus: true
-      }),
-      fetchJson('/api/notifications/diagnostics', {
-        acceptErrorStatus: true
-      })
-    ]).then(function (results) {
-      return {
-        plan: results[0],
-        notificationOverview: results[1],
-        reviewActionAuditOverview: results[2],
-        reviewActionExecutions: results[3],
-        notificationDiagnostics: results[4]
-      };
+    query.set('notificationLimit', '100');
+    query.set('auditLimit', '100');
+    query.set('executionLimit', '20');
+    return fetchJson('/api/operations/automation-cockpit?' + query.toString(), {
+      acceptErrorStatus: true
     });
   }, renderAutomationReadinessPlan);
 }

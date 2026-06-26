@@ -1250,6 +1250,51 @@ test('http server exposes source operations drilldown API', async function () {
             { key: 'automationReadiness.automation.demo.closure', severity: 'warning', recommendedCommand: 'node src/presentation/cli/threadtrace.js source-demo-cycle --source-id source-1' }
           ]
         };
+      },
+      async getAutomationCockpitSnapshot(request) {
+        calls.push(Object.assign({ automationCockpit: true }, request));
+        return {
+          schemaVersion: 'automation-cockpit-snapshot.v1',
+          generatedAt: request.now || '2026-06-18T10:00:00.000Z',
+          status: 'warn',
+          readyForUnattendedRun: false,
+          summary: {
+            readinessStatus: 'warn',
+            notificationStatus: 'ok',
+            auditStatus: 'warn',
+            executionStatus: 'ok',
+            diagnosticsStatus: 'ok',
+            openNotificationCount: 2,
+            pendingNotificationCount: 1,
+            auditCount: 3,
+            executionCount: 4
+          },
+          plan: {
+            status: 'warn',
+            readyForUnattendedRun: false,
+            summary: {
+              workers: { sourceTaskMode: request.sourceTaskMode },
+              llm: { provider: request.provider || 'mock' }
+            }
+          },
+          notificationOverview: {
+            status: 'ok',
+            openCount: 2,
+            pendingDeliveryCount: 1
+          },
+          reviewActionAuditOverview: {
+            status: 'warn',
+            count: 3
+          },
+          reviewActionExecutions: {
+            status: 'ok',
+            count: 4,
+            executions: []
+          },
+          notificationDiagnostics: {
+            status: 'ok'
+          }
+        };
       }
     }
   });
@@ -1261,6 +1306,7 @@ test('http server exposes source operations drilldown API', async function () {
     const report = await getJson(baseUrl + '/api/operations/source-drilldown?sourceKey=nga&sourceId=source-1&limit=10&timelineLimit=7&attentionLimit=5&taskScanLimit=20&leaseScanLimit=30&sourceFailureRetryBackoffMs=60000');
     const health = await getJson(baseUrl + '/api/operations/source-collection-health?sourceKey=nga&sourceId=source-1&limit=10&timelineLimit=7&attentionLimit=5&taskScanLimit=20&leaseScanLimit=30&sourceFailureRetryBackoffMs=60000');
     const automation = await getJson(baseUrl + '/api/operations/automation-readiness?sourceKey=nga&sourceId=source-1&sourceTaskMode=insight-pipeline&llmReadinessMode=configuration&provider=mock&limit=10&includeInputs=true');
+    const automationCockpit = await getJson(baseUrl + '/api/operations/automation-cockpit?sourceKey=nga&sourceId=source-1&sourceTaskMode=insight-pipeline&llmReadinessMode=configuration&provider=mock&limit=10&notificationLimit=11&auditLimit=12&executionLimit=13&includeInputs=true');
     const webAppJs = await getText(baseUrl + '/app.js', 'text/javascript');
 
     assert.equal(report.status, 'warn');
@@ -1297,11 +1343,24 @@ test('http server exposes source operations drilldown API', async function () {
     assert.equal(calls[2].sourceId, 'source-1');
     assert.equal(calls[2].sourceTaskMode, 'insight-pipeline');
     assert.equal(calls[2].includeInputs, true);
+    assert.equal(automationCockpit.schemaVersion, 'automation-cockpit-snapshot.v1');
+    assert.equal(automationCockpit.status, 'warn');
+    assert.equal(automationCockpit.summary.openNotificationCount, 2);
+    assert.equal(automationCockpit.reviewActionAuditOverview.count, 3);
+    assert.equal(calls[3].automationCockpit, true);
+    assert.equal(calls[3].sourceKey, 'nga');
+    assert.equal(calls[3].sourceId, 'source-1');
+    assert.equal(calls[3].sourceTaskMode, 'insight-pipeline');
+    assert.equal(calls[3].notificationLimit, 11);
+    assert.equal(calls[3].auditLimit, 12);
+    assert.equal(calls[3].executionLimit, 13);
+    assert.equal(calls[3].includeInputs, true);
     assert.match(webAppJs, /renderSourceCollectionHealthProfile/);
     assert.match(webAppJs, /load-source-collection-health/);
     assert.match(webAppJs, /renderAutomationReadinessPlan/);
     assert.match(webAppJs, /renderAutomationRemediation/);
     assert.match(webAppJs, /automationReadinessResult/);
+    assert.match(webAppJs, /operations\/automation-cockpit/);
     assert.match(webAppJs, /refreshAutomationReadinessButton/);
   } finally {
     await close(server);
@@ -1964,7 +2023,15 @@ test('http server exposes deployment checklist API', async function () {
     }));
     assert.equal(openApi.paths['/api/operations/automation-readiness'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/AutomationReadinessPlan');
     assert.equal(openApi.paths['/api/operations/automation-readiness'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/AutomationReadinessPlan');
+    assert.ok(openApi.paths['/api/operations/automation-cockpit']);
+    assert.ok(openApi.paths['/api/operations/automation-cockpit'].get.parameters.find(function (parameter) {
+      return parameter.name === 'notificationLimit';
+    }));
+    assert.equal(openApi.paths['/api/operations/automation-cockpit'].get.responses[200].content['application/json'].schema.$ref, '#/components/schemas/AutomationCockpitSnapshot');
+    assert.equal(openApi.paths['/api/operations/automation-cockpit'].get.responses[503].content['application/json'].schema.$ref, '#/components/schemas/AutomationCockpitSnapshot');
     assert.ok(openApi.components.schemas.AutomationReadinessPlan.properties.automation);
+    assert.equal(openApi.components.schemas.AutomationCockpitSnapshot.properties.plan.$ref, '#/components/schemas/AutomationReadinessPlan');
+    assert.equal(openApi.components.schemas.AutomationCockpitSnapshot.properties.reviewActionExecutions.$ref, '#/components/schemas/ContextReviewActionExecutionListResult');
     assert.equal(openApi.components.schemas.AutomationReadinessPlan.properties.remediation.$ref, '#/components/schemas/AutomationReadinessRemediationPlan');
     assert.equal(openApi.components.schemas.AutomationReadinessRemediationPlan.properties.actions.items.$ref, '#/components/schemas/AutomationReadinessRemediationAction');
     assert.equal(openApi.components.schemas.AutomationReadinessRemediationPlan.properties.manualActions.items.$ref, '#/components/schemas/AutomationReadinessManualAction');

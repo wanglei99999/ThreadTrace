@@ -1404,6 +1404,43 @@ function createOpenApiSpec() {
           }
         }
       },
+      '/api/operations/automation-cockpit': {
+        get: {
+          summary: 'Get a combined Automation Cockpit snapshot for web, API, and notification surfaces',
+          parameters: [
+            { name: 'sourceId', in: 'query', required: false, schema: { type: 'string', example: 'tracked-source-nga-001' } },
+            { name: 'sourceKey', in: 'query', required: false, schema: { type: 'string', example: 'nga' } },
+            { name: 'sourceType', in: 'query', required: false, schema: { type: 'string', example: 'thread-url' } },
+            { name: 'sourceTaskMode', in: 'query', required: false, schema: { type: 'string', enum: ['ingest', 'insight-pipeline'] } },
+            { name: 'llmReadinessMode', in: 'query', required: false, schema: { type: 'string', enum: ['configuration', 'preflight', 'evaluation'] } },
+            { name: 'provider', in: 'query', required: false, schema: { type: 'string', example: 'mock' } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'notificationLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'auditLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'executionLimit', in: 'query', required: false, schema: { type: 'number' } },
+            { name: 'now', in: 'query', required: false, schema: { type: 'string', example: '2026-06-18T10:00:00.000Z' } },
+            { name: 'storeDir', in: 'query', required: false, schema: { type: 'string' } }
+          ],
+          responses: {
+            200: {
+              description: 'Automation Cockpit snapshot is ok or has warnings',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/AutomationCockpitSnapshot' }
+                }
+              }
+            },
+            503: {
+              description: 'Automation Cockpit snapshot contains failing signals',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/AutomationCockpitSnapshot' }
+                }
+              }
+            }
+          }
+        }
+      },
       '/api/operations/source-type-drilldown': {
         get: {
           summary: 'Get source-type operational drill-down across sources, workers, tasks, events, and source-type operations',
@@ -7242,6 +7279,35 @@ function createOpenApiSpec() {
               type: 'array',
               items: { type: 'object', additionalProperties: true }
             }
+          }
+        },
+        AutomationCockpitSnapshot: {
+          type: 'object',
+          properties: {
+            schemaVersion: { type: 'string', example: 'automation-cockpit-snapshot.v1' },
+            generatedAt: { type: 'string', example: '2026-06-18T10:00:00.000Z' },
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            readyForUnattendedRun: { type: 'boolean', example: false },
+            summary: {
+              type: 'object',
+              properties: {
+                readinessStatus: { type: 'string', example: 'warn' },
+                notificationStatus: { type: 'string', example: 'ok' },
+                auditStatus: { type: 'string', example: 'warn' },
+                executionStatus: { type: 'string', example: 'ok' },
+                diagnosticsStatus: { type: 'string', example: 'ok' },
+                openNotificationCount: { type: 'number' },
+                pendingNotificationCount: { type: 'number' },
+                auditCount: { type: 'number' },
+                executionCount: { type: 'number' }
+              },
+              additionalProperties: true
+            },
+            plan: { $ref: '#/components/schemas/AutomationReadinessPlan' },
+            notificationOverview: { $ref: '#/components/schemas/NotificationEventOverview' },
+            reviewActionAuditOverview: { $ref: '#/components/schemas/ContextReviewActionAuditOverview' },
+            reviewActionExecutions: { $ref: '#/components/schemas/ContextReviewActionExecutionListResult' },
+            notificationDiagnostics: { type: 'object', additionalProperties: true }
           }
         },
         AutomationReadinessRemediationPlan: {
