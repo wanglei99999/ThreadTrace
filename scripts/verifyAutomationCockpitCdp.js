@@ -333,7 +333,7 @@ async function verifyAutomationActionHistoryRestore(client, url) {
       '})()'
     ].join('\n'));
   }, 30000, 'Timed out waiting for restored Automation Cockpit action history.');
-  return evaluateByValue(client, [
+  const restoreReport = await evaluateByValue(client, [
     '(() => {',
     "  const result = document.querySelector('#automationActionResult');",
     "  const text = result ? result.innerText : '';",
@@ -345,6 +345,8 @@ async function verifyAutomationActionHistoryRestore(client, url) {
     '  };',
     '})()'
   ].join('\n'));
+  await waitForCockpit(client);
+  return restoreReport;
 }
 
 function assertRunbookPreview(label, runbookPreview, options) {

@@ -3461,11 +3461,21 @@ function renderAuthorReviewQueueEventSynthesis(result) {
       '</span>'
     ].join(''), 'wide'),
     panel('提醒预览', evidenceList(rows.map(function (item) {
-      const event = item.event || {};
-      const reason = item.reason ? ' | ' + item.reason : '';
-      return item.status + ' | ' + (item.itemId || '未知事项') + ' | ' + (event.id || '暂无提醒') + ' | ' + (event.severity || '未知级别') + reason;
+      return authorReviewQueueEventSynthesisLine(item);
     })), 'wide')
   ].join('');
+}
+
+function authorReviewQueueEventSynthesisLine(item) {
+  const safeItem = item || {};
+  const event = safeItem.event || {};
+  return [
+    workspaceStatusLabel(safeItem.status || 'unknown'),
+    safeItem.itemId ? '事项 ' + safeItem.itemId : '事项未记录',
+    event.id ? '提醒 ' + event.id : '暂无提醒',
+    '级别 ' + workspaceStatusLabel(event.severity || 'unknown'),
+    safeItem.reason ? '原因 ' + safeItem.reason : undefined
+  ].filter(Boolean).join(' · ');
 }
 
 function renderDurableAuthorReviewQueueRowsLegacy(items) {
@@ -8320,6 +8330,7 @@ function workspaceStatusLabel(status) {
     resolved: '已解决',
     delivered: '已投递',
     due: '到期',
+    candidate: '候选',
     skip: '暂缓',
     scheduled: '已排期',
     'retry-waiting': '等待重试',
@@ -9408,7 +9419,7 @@ function renderEventBatchAckResult(result) {
   const title = result.dryRun ? '提醒确认预览' : '提醒已确认';
   return panel(title, [
     '<div class="summary-strip event-summary-strip">' + [
-      summaryTile('状态', result.status || 'unknown', statusVariant(result.status)),
+      summaryTile('状态', workspaceStatusLabel(result.status || 'unknown'), statusVariant(result.status)),
       summaryTile('预演', result.dryRun ? '是' : '否', result.dryRun ? 'warn' : 'ok'),
       summaryTile('候选', String(result.candidateCount || 0), result.candidateCount > 0 ? 'warn' : 'muted'),
       summaryTile('已确认', String(result.acknowledgedCount || 0), result.acknowledgedCount > 0 ? 'ok' : 'muted'),
@@ -9417,7 +9428,7 @@ function renderEventBatchAckResult(result) {
     ].join('') + '</div>',
     metric('确认人', result.acknowledgedBy || '系统'),
     evidenceList((result.results || []).slice(0, 8).map(function (item) {
-      return item.status + ' | ' + item.eventId + (item.reason ? ' | ' + item.reason : '');
+      return notificationBatchResultLine(item);
     }))
   ].join(''), 'wide');
 }
@@ -9426,18 +9437,39 @@ function renderEventArchiveResult(result) {
   const rows = result.results && result.results.length ? result.results : result.candidates || [];
   return panel('提醒归档', [
     '<div class="summary-strip event-summary-strip">' + [
-      summaryTile('状态', result.status || 'unknown', statusVariant(result.status)),
+      summaryTile('状态', workspaceStatusLabel(result.status || 'unknown'), statusVariant(result.status)),
       summaryTile('预演', result.dryRun ? '是' : '否', result.dryRun ? 'warn' : 'ok'),
       summaryTile('候选', String(result.candidateCount || 0), result.candidateCount > 0 ? 'warn' : 'ok'),
       summaryTile('已归档', String(result.archivedCount || 0), result.archivedCount > 0 ? 'ok' : 'muted')
     ].join('') + '</div>',
-    metric('归档线', result.cutoffAt || 'none'),
-    metric('批次', result.batchId || 'none'),
+    metric('归档线', workspaceValue(result.cutoffAt, '暂无')),
+    metric('批次', workspaceValue(result.batchId, '暂无')),
     evidenceList(rows.slice(0, 8).map(function (item) {
-      return (item.status || 'candidate') + ' | ' + (item.eventId || item.id) + ' | ' + (item.sourceKey || (item.event && item.event.sourceKey) || 'unknown');
+      return notificationArchiveResultLine(item);
     })),
-    metric('下一步', result.recommendedNextAction || 'none')
+    metric('下一步', result.recommendedNextAction || '暂无')
   ].join(''), 'wide');
+}
+
+function notificationBatchResultLine(item) {
+  const safeItem = item || {};
+  return [
+    workspaceStatusLabel(safeItem.status || 'unknown'),
+    safeItem.eventId ? '提醒 ' + safeItem.eventId : '提醒未记录',
+    safeItem.reason ? '原因 ' + safeItem.reason : undefined
+  ].filter(Boolean).join(' · ');
+}
+
+function notificationArchiveResultLine(item) {
+  const safeItem = item || {};
+  const event = safeItem.event || {};
+  const eventId = safeItem.eventId || safeItem.id || event.id;
+  const source = safeItem.sourceKey || event.sourceKey || safeItem.sourceId || event.sourceId;
+  return [
+    workspaceStatusLabel(safeItem.status || 'candidate'),
+    eventId ? '提醒 ' + eventId : '提醒待确认',
+    source ? '来源 ' + source : '来源未记录'
+  ].filter(Boolean).join(' · ');
 }
 
 function renderSemanticInsights(insights) {

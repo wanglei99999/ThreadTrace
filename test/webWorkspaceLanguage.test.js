@@ -663,3 +663,17 @@ test('notification inbox rows avoid event-backend copy', function () {
     "rule.key + ' | ' + rule.summary"
   ]);
 });
+
+test('notification batch results avoid archive-console copy', function () {
+  const app = readProjectFile('src/presentation/web/app.js');
+
+  assertAbsent(app, [
+    "return item.status + ' | ' + item.eventId",
+    "item.reason ? ' | ' + item.reason",
+    "metric('归档线', result.cutoffAt || 'none')",
+    "metric('批次', result.batchId || 'none')",
+    "return (item.status || 'candidate') + ' | ' + (item.eventId || item.id) + ' | '",
+    "(item.event && item.event.sourceKey) || 'unknown'",
+    "metric('下一步', result.recommendedNextAction || 'none')"
+  ]);
+});
