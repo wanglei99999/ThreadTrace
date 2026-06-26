@@ -5381,32 +5381,32 @@ function renderSourceOperationsCockpit(cockpit) {
 
 function renderSourceOperationsCockpitRows(queue) {
   if (!queue.length) return '<div class="muted">No operator queue items.</div>';
-  return queue.map(function (item) {
+  return '<div class="source-work-list">' + queue.map(function (item) {
     const source = item.source || {};
-    const details = [
-      item.kind,
-      item.scope,
-      'priority=' + (item.priorityScore || 0),
-      item.signalCount !== undefined ? 'signals=' + item.signalCount : undefined,
-      item.recommendedNextAction ? 'next=' + item.recommendedNextAction : undefined
-    ].filter(Boolean).join(' | ');
-    const command = item.recommendedCommand ? '<small>' + escapeHtml(item.recommendedCommand) + '</small>' : '';
-    const related = (item.relatedCommands || []).filter(function (commandText) {
-      return commandText !== item.recommendedCommand;
-    }).slice(0, 2).map(function (commandText) {
-      return '<small>' + escapeHtml(commandText) + '</small>';
-    }).join('');
-    return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml('#' + (item.rank || '?') + ' ' + (item.title || item.id || 'Queue item')) + '</strong>' +
-      '<small>' + escapeHtml(details) + '</small>' +
-      '<small>' + escapeHtml(item.summary || '') + '</small>' +
-      command +
-      related +
-      '</span><span class="button-group source-op-buttons">' +
-      renderSourceOperationsCockpitControls(item, source) +
-      statusBadge(item.severity || 'info', attentionStatusVariant(item.severity)) +
-      '</span></div>';
-  }).join('');
+    const sourceLabel = item.sourceType || source.sourceType || source.sourceKey || item.scope || 'source';
+    const commands = [item.recommendedCommand].concat(item.relatedCommands || []).filter(Boolean).slice(0, 3);
+    return '<div class="source-work-row ' + statusClassName(attentionStatusVariant(item.severity)) + '">' +
+      '<section class="source-work-anchor">' +
+        '<span class="source-work-scope">' + escapeHtml(sourceLabel) + '</span>' +
+        '<strong>' + escapeHtml('#' + (item.rank || '?') + ' ' + (item.title || item.id || 'Queue item')) + '</strong>' +
+        '<small>' + escapeHtml([item.kind, item.scope].filter(Boolean).join(' / ') || 'operator queue') + '</small>' +
+      '</section>' +
+      '<section class="source-work-brief">' +
+        '<p>' + escapeHtml(item.summary || item.recommendedNextAction || 'Review source operations before automation.') + '</p>' +
+        '<div class="source-work-chips">' +
+          authorMetaChip('priority', item.priorityScore || 0, (item.priorityScore || 0) >= 100 ? 'warn' : 'info') +
+          authorMetaChip('signals', item.signalCount === undefined ? 0 : item.signalCount, item.signalCount > 0 ? 'warn' : 'muted') +
+          authorMetaChip('runnable', item.runnable ? 'yes' : 'no', item.runnable ? 'ok' : 'muted') +
+          authorMetaChip('scope', item.scope, item.scope === 'source-type' ? 'info' : 'muted') +
+        '</div>' +
+        renderSourceCommandChips(commands) +
+      '</section>' +
+      '<section class="source-work-actions button-group source-op-buttons">' +
+        renderSourceOperationsCockpitControls(item, source) +
+        statusBadge(item.severity || 'info', attentionStatusVariant(item.severity)) +
+      '</section>' +
+      '</div>';
+  }).join('') + '</div>';
 }
 
 function renderSourceOperationsCockpitControls(item, source) {
@@ -5539,32 +5539,38 @@ function renderSourceTypeOperations(report) {
 
 function renderSourceTypeOperationsRows(sourceTypes) {
   if (!sourceTypes.length) return '<div class="muted">No source type operations yet.</div>';
-  return sourceTypes.map(function (sourceType) {
+  return '<div class="source-work-list">' + sourceTypes.map(function (sourceType) {
     const readiness = sourceType.readiness || {};
     const schedule = sourceType.schedule || {};
     const lifecycle = sourceType.lifecycle || {};
     const attention = sourceType.attention || {};
-    const details = [
-      'readiness=' + (readiness.status || 'unknown'),
-      'sources=' + (readiness.sourceCount || lifecycle.total || schedule.total || 0),
-      'enabled=' + (readiness.enabledSourceCount || lifecycle.enabled || 0),
-      'due=' + (schedule.due || 0),
-      'running=' + (lifecycle.running || 0),
-      'retry=' + (lifecycle.failureRetryWaiting || 0),
-      'attention=' + (attention.total || 0),
-      'actionable=' + (attention.actionable || 0),
-      'priority=' + (attention.highestPriorityScore || 0)
-    ].join(' | ');
-    const commands = (sourceType.recommendedCommands || []).slice(0, 2).map(function (command) {
-      return '<small>' + escapeHtml(command) + '</small>';
-    }).join('');
+    const commands = sourceType.recommendedCommands || [];
     const actions = '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-type-drilldown" data-source-type="' + escapeHtml(sourceType.sourceType || '') + '" data-limit="50" data-scan-limit="250">Ops</button>';
-    return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml(sourceType.sourceType || 'unknown') + '</strong>' +
-      '<small>' + escapeHtml(details) + '</small>' +
-      commands +
-      '</span><span class="button-group">' + actions + statusBadge(sourceType.status || 'unknown', statusVariant(sourceType.status)) + '</span></div>';
-  }).join('');
+    return '<div class="source-work-row source-type-work-row ' + statusClassName(statusVariant(sourceType.status)) + '">' +
+      '<section class="source-work-anchor">' +
+        '<span class="source-work-scope">source-type</span>' +
+        '<strong>' + escapeHtml(sourceType.sourceType || 'unknown') + '</strong>' +
+        '<small>' + escapeHtml('readiness=' + (readiness.status || 'unknown')) + '</small>' +
+      '</section>' +
+      '<section class="source-work-brief">' +
+        '<p>' + escapeHtml(sourceType.recommendedNextAction || 'Review this source type family and keep connector readiness clear.') + '</p>' +
+        '<div class="source-work-chips">' +
+          authorMetaChip('sources', readiness.sourceCount || lifecycle.total || schedule.total || 0, 'info') +
+          authorMetaChip('enabled', readiness.enabledSourceCount || lifecycle.enabled || 0, 'ok') +
+          authorMetaChip('due', schedule.due || 0, (schedule.due || 0) > 0 ? 'warn' : 'muted') +
+          authorMetaChip('running', lifecycle.running || 0, (lifecycle.running || 0) > 0 ? 'ok' : 'muted') +
+          authorMetaChip('retry', lifecycle.failureRetryWaiting || 0, (lifecycle.failureRetryWaiting || 0) > 0 ? 'warn' : 'muted') +
+          authorMetaChip('attention', attention.total || 0, (attention.total || 0) > 0 ? 'warn' : 'muted') +
+          authorMetaChip('priority', attention.highestPriorityScore || 0, (attention.highestPriorityScore || 0) >= 100 ? 'warn' : 'info') +
+        '</div>' +
+        renderSourceCommandChips(commands.slice(0, 3)) +
+      '</section>' +
+      '<section class="source-work-actions button-group source-op-buttons">' +
+        actions +
+        statusBadge(sourceType.status || 'unknown', statusVariant(sourceType.status)) +
+      '</section>' +
+      '</div>';
+  }).join('') + '</div>';
 }
 
 function renderSourceTypeReadiness(report) {
@@ -5592,17 +5598,31 @@ function renderSourceTypeReadiness(report) {
 
 function renderSourceTypeReadinessRows(sourceTypes) {
   if (!sourceTypes.length) return '<div class="muted">No registered source types.</div>';
-  return sourceTypes.map(function (sourceType) {
-    const compatible = sourceType.compatibleSourceKeys && sourceType.compatibleSourceKeys.length ? sourceType.compatibleSourceKeys.join(',') : 'none';
-    const checks = (sourceType.checks || []).map(function (check) {
-      return check.status + ' | ' + check.key + ' | ' + check.summary;
-    });
-    return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml(sourceType.sourceType) + '</strong>' +
-      '<small>' + escapeHtml((sourceType.description || '') + ' | sources=' + sourceType.sourceCount + ' | enabled=' + sourceType.enabledSourceCount + ' | compatible=' + compatible) + '</small>' +
-      '<small>' + escapeHtml(checks.join(' || ')) + '</small>' +
-      '</span>' + statusBadge(sourceType.status || 'unknown', statusVariant(sourceType.status)) + '</div>';
-  }).join('');
+  return '<div class="source-work-list">' + sourceTypes.map(function (sourceType) {
+    const compatible = sourceType.compatibleSourceKeys && sourceType.compatibleSourceKeys.length ? sourceType.compatibleSourceKeys.join(', ') : 'none';
+    const checks = (sourceType.checks || []).slice(0, 4);
+    return '<div class="source-work-row source-readiness-row ' + statusClassName(statusVariant(sourceType.status)) + '">' +
+      '<section class="source-work-anchor">' +
+        '<span class="source-work-scope">connector</span>' +
+        '<strong>' + escapeHtml(sourceType.sourceType || 'unknown') + '</strong>' +
+        '<small>' + escapeHtml(compatible === 'none' ? 'no compatible sources' : 'compatible=' + compatible) + '</small>' +
+      '</section>' +
+      '<section class="source-work-brief">' +
+        '<p>' + escapeHtml(sourceType.description || 'Connector readiness profile.') + '</p>' +
+        '<div class="source-work-chips">' +
+          authorMetaChip('sources', sourceType.sourceCount || 0, (sourceType.sourceCount || 0) > 0 ? 'info' : 'muted') +
+          authorMetaChip('enabled', sourceType.enabledSourceCount || 0, (sourceType.enabledSourceCount || 0) > 0 ? 'ok' : 'muted') +
+          authorMetaChip('checks', (sourceType.checks || []).length, 'info') +
+        '</div>' +
+        '<div class="source-work-checks">' + checks.map(function (check) {
+          return '<span class="' + statusClassName(statusVariant(check.status)) + '">' + escapeHtml((check.status || 'unknown') + ' | ' + (check.key || 'check') + ' | ' + (check.summary || '')) + '</span>';
+        }).join('') + '</div>' +
+      '</section>' +
+      '<section class="source-work-actions button-group source-op-buttons">' +
+        statusBadge(sourceType.status || 'unknown', statusVariant(sourceType.status)) +
+      '</section>' +
+      '</div>';
+  }).join('') + '</div>';
 }
 
 function renderSourceTypeReadinessUnknownRows(sourceTypes) {
@@ -5796,35 +5816,39 @@ function compareSourceAttention(left, right) {
 
 function renderSourceAttentionRows(items) {
   if (!items || items.length === 0) return '<div class="muted">No source attention needed.</div>';
-  return '<div class="source-attention-list">' + items.map(function (item) {
+  return '<div class="source-work-list">' + items.map(function (item) {
     const source = item.source || {};
     const runState = source.runState || {};
     const priorityScore = item.priorityScore === undefined ? scoreWebSourceAttention(item) : item.priorityScore;
     const signalLabels = uniqueText((item.signals || []).map(function (signal) {
       return signal.label;
     })).join(' + ');
-    const details = [
-      source.id || source.sourceKey || item.key,
-      source.sourceKey && source.sourceType ? source.sourceKey + '/' + source.sourceType : source.sourceKey || source.sourceType,
-      'priority=' + priorityScore,
-      runState.status ? 'run=' + runState.status : undefined,
-      attentionSignalDetail(item.signals || []),
-      item.commands && item.commands.length > 0 ? 'commands=' + item.commands.length : undefined
-    ].filter(Boolean).join(' | ');
     const canRunSourceActions = Boolean(source.id);
-    const controls = '<span class="button-group source-op-buttons source-attention-controls">' +
+    const controls = '<section class="source-work-actions button-group source-op-buttons source-attention-controls">' +
       (item.attentionRank ? statusBadge('#' + item.attentionRank, attentionStatusVariant(item.severity)) : '') +
       statusBadge(signalLabels || item.severity || 'attention', attentionStatusVariant(item.severity)) +
       renderSourceDrilldownButton(source) +
       (item.runnable && canRunSourceActions ? renderSourceRunButtons(source) : '') +
       (canRunSourceActions ? renderSourceEnablementButtons(source) : '') +
       (canRunSourceActions ? renderSourceFailureResetButtons(source) : '') +
-      '</span>';
-    return '<div class="action-row ops-row source-attention-row"><span>' +
-      '<strong>' + escapeHtml(source.displayName || source.id || source.sourceKey || 'Unknown source') + '</strong>' +
-      '<small>' + escapeHtml(details) + '</small>' +
-      renderSourceAttentionSignalRows(item.signals || []) +
-      '</span>' +
+      '</section>';
+    return '<div class="source-work-row source-attention-work-row ' + statusClassName(attentionStatusVariant(item.severity)) + '">' +
+      '<section class="source-work-anchor">' +
+        '<span class="source-work-scope">' + escapeHtml(source.sourceType || source.sourceKey || 'source') + '</span>' +
+        '<strong>' + escapeHtml(source.displayName || source.id || source.sourceKey || 'Unknown source') + '</strong>' +
+        '<small>' + escapeHtml(source.id || source.sourceKey || item.key || 'unknown scope') + '</small>' +
+      '</section>' +
+      '<section class="source-work-brief">' +
+        '<p>' + escapeHtml(item.recommendedNextAction || item.nextAction || 'Review source attention before automation.') + '</p>' +
+        '<div class="source-work-chips">' +
+          authorMetaChip('priority', priorityScore, priorityScore >= 100 ? 'warn' : 'info') +
+          authorMetaChip('run', runState.status || 'unknown', statusVariant(runState.status)) +
+          authorMetaChip('signals', (item.signals || []).length, (item.signals || []).length > 0 ? 'warn' : 'muted') +
+          authorMetaChip('commands', item.commands && item.commands.length || 0, item.commands && item.commands.length ? 'info' : 'muted') +
+        '</div>' +
+        renderSourceAttentionSignalRows(item.signals || []) +
+        renderSourceCommandChips(item.commands || []) +
+      '</section>' +
       controls +
       '</div>';
   }).join('') + '</div>';
@@ -6072,10 +6096,11 @@ function renderSourceHealthBrief(report) {
 }
 
 function renderSourceBriefRow(label, value, status) {
-  return '<div class="action-row ops-row"><span>' +
-    '<strong>' + escapeHtml(label) + '</strong>' +
-    '<small>' + escapeHtml(value || 'none') + '</small>' +
-    '</span>' +
+  return '<div class="source-brief-row ' + statusClassName(sourceBriefStatusVariant(status)) + '">' +
+    '<section>' +
+      '<span>' + escapeHtml(label) + '</span>' +
+      '<strong>' + escapeHtml(value || 'none') + '</strong>' +
+    '</section>' +
     statusBadge(status || 'info', sourceBriefStatusVariant(status)) +
     '</div>';
 }
@@ -6184,28 +6209,53 @@ function renderSourceDrilldownAttention(attention) {
     attention.recommendedNextAction ? 'next=' + attention.recommendedNextAction : undefined,
     attention.recommendedCommand ? 'command=' + attention.recommendedCommand : undefined
   ].filter(Boolean);
-  return '<div class="action-row ops-row"><span>' +
-    '<strong>' + escapeHtml((attention.severity || 'info') + ' | source attention') + '</strong>' +
-    lines.map(function (line) {
-      return '<small>' + escapeHtml(line) + '</small>';
-    }).join('') +
-    renderSourceAttentionSignalRows(attention.signals || []) +
-    '</span>' +
-    statusBadge('#' + (attention.attentionRank || '?'), attentionStatusVariant(attention.severity)) +
+  return '<div class="source-work-row source-attention-work-row ' + statusClassName(attentionStatusVariant(attention.severity)) + '">' +
+    '<section class="source-work-anchor">' +
+      '<span class="source-work-scope">attention</span>' +
+      '<strong>' + escapeHtml((attention.severity || 'info') + ' | source attention') + '</strong>' +
+      '<small>' + escapeHtml('rank #' + (attention.attentionRank || '?')) + '</small>' +
+    '</section>' +
+    '<section class="source-work-brief">' +
+      '<p>' + escapeHtml(attention.recommendedNextAction || 'Review this source attention item.') + '</p>' +
+      '<div class="source-work-chips">' +
+        authorMetaChip('priority', attention.priorityScore || 0, (attention.priorityScore || 0) >= 100 ? 'warn' : 'info') +
+        authorMetaChip('signals', attention.signalCount || (attention.signals || []).length || 0, 'warn') +
+      '</div>' +
+      lines.map(function (line) { return '<small class="source-attention-signal">' + escapeHtml(line) + '</small>'; }).join('') +
+      renderSourceAttentionSignalRows(attention.signals || []) +
+    '</section>' +
+    '<section class="source-work-actions button-group source-op-buttons">' +
+      statusBadge('#' + (attention.attentionRank || '?'), attentionStatusVariant(attention.severity)) +
+    '</section>' +
     '</div>';
 }
 
 function renderSourceDrilldownActions(actions) {
   if (!actions.length) return '<div class="muted">No source-specific actions.</div>';
-  return actions.map(function (action) {
-    return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml((action.severity || 'info') + ' | ' + (action.key || 'action')) + '</strong>' +
-      '<small>' + escapeHtml(action.summary || '') + '</small>' +
-      (action.recommendedCommand ? '<small>' + escapeHtml(action.recommendedCommand) + '</small>' : '') +
-      '</span>' +
-      statusBadge(action.severity || 'info', action.severity === 'critical' ? 'warn' : statusVariant(action.severity)) +
+  return '<div class="source-work-list">' + actions.map(function (action) {
+    return '<div class="source-work-row source-action-row ' + statusClassName(action.severity === 'critical' ? 'warn' : statusVariant(action.severity)) + '">' +
+      '<section class="source-work-anchor">' +
+        '<span class="source-work-scope">' + escapeHtml(action.severity || 'info') + '</span>' +
+        '<strong>' + escapeHtml(action.key || 'action') + '</strong>' +
+        '<small>' + escapeHtml(action.mode || 'recommended') + '</small>' +
+      '</section>' +
+      '<section class="source-work-brief">' +
+        '<p>' + escapeHtml(action.summary || 'Review source action.') + '</p>' +
+        renderSourceCommandChips([action.recommendedCommand].filter(Boolean).concat(action.commands || [])) +
+      '</section>' +
+      '<section class="source-work-actions button-group source-op-buttons">' +
+        statusBadge(action.severity || 'info', action.severity === 'critical' ? 'warn' : statusVariant(action.severity)) +
+      '</section>' +
       '</div>';
-  }).join('');
+  }).join('') + '</div>';
+}
+
+function renderSourceCommandChips(commands) {
+  const safeCommands = uniqueText(commands || []).slice(0, 3);
+  if (!safeCommands.length) return '';
+  return '<div class="source-command-chips">' + safeCommands.map(function (command) {
+    return '<span>' + escapeHtml(command) + '</span>';
+  }).join('') + '</div>';
 }
 
 function formatSourceDrilldownTaskRow(task) {
@@ -6333,19 +6383,27 @@ function renderCollectionActionControls(schedule) {
   const scheduled = byStatus.scheduled || 0;
   const blocked = (byStatus.running || 0) + (byStatus.disabled || 0) + (byStatus.unscheduled || 0);
   const disabled = dueCount > 0 ? '' : ' disabled';
-  return '<div class="action-row ops-row collection-action-row"><span>' +
-    '<strong>Due collection</strong>' +
-    '<small>' + escapeHtml([
-      'due=' + dueCount,
-      'scheduled=' + scheduled,
-      'retryWaiting=' + retryWaiting,
-      'blocked=' + blocked,
-      'skipped=' + (summary.skipped || 0)
-    ].join(' | ')) + '</small>' +
-    '</span><span class="button-group source-op-buttons">' +
-    '<button class="inline-button secondary-inline-button" type="button" data-action="run-due-sources" data-limit="25"' + disabled + '>Run due</button>' +
-    '<button class="inline-button" type="button" data-action="run-due-pipelines" data-provider="mock" data-limit="25"' + disabled + '>Run insights</button>' +
-    '</span></div>';
+  return '<div class="source-work-row source-action-row collection-action-row ' + statusClassName(dueCount > 0 ? 'warn' : 'ok') + '">' +
+    '<section class="source-work-anchor">' +
+      '<span class="source-work-scope">collection</span>' +
+      '<strong>Due collection</strong>' +
+      '<small>' + escapeHtml(dueCount > 0 ? 'ready to run' : 'queue clear') + '</small>' +
+    '</section>' +
+    '<section class="source-work-brief">' +
+      '<p>Run due collectors first, then trigger insight pipelines for fresh source evidence.</p>' +
+      '<div class="source-work-chips">' +
+        authorMetaChip('due', dueCount, dueCount > 0 ? 'warn' : 'muted') +
+        authorMetaChip('scheduled', scheduled, scheduled > 0 ? 'info' : 'muted') +
+        authorMetaChip('retry', retryWaiting, retryWaiting > 0 ? 'warn' : 'muted') +
+        authorMetaChip('blocked', blocked, blocked > 0 ? 'warn' : 'muted') +
+        authorMetaChip('skipped', summary.skipped || 0, (summary.skipped || 0) > 0 ? 'muted' : 'ok') +
+      '</div>' +
+    '</section>' +
+    '<section class="source-work-actions button-group source-op-buttons">' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="run-due-sources" data-limit="25"' + disabled + '>Run due</button>' +
+      '<button class="inline-button" type="button" data-action="run-due-pipelines" data-provider="mock" data-limit="25"' + disabled + '>Run insights</button>' +
+    '</section>' +
+    '</div>';
 }
 
 function filterScheduleSourcesByCollectionStatus(sources, statuses) {
@@ -6358,40 +6416,40 @@ function filterScheduleSourcesByCollectionStatus(sources, statuses) {
 
 function renderScheduleDecisionRows(sources, emptyText, runnable) {
   if (!sources || sources.length === 0) return '<div class="muted">' + escapeHtml(emptyText) + '</div>';
-  return sources.map(function (source) {
+  return '<div class="source-work-list">' + sources.map(function (source) {
     const decision = source.decision || {};
     const runState = source.runState || {};
     const schedule = source.schedule || {};
     const collectionPlan = source.collectionPlan || {};
-    const details = [
-      source.id,
-      source.sourceKey + '/' + source.sourceType,
-      collectionPlan.status ? 'plan=' + collectionPlan.status : undefined,
-      schedule.intervalMinutes ? 'every=' + schedule.intervalMinutes + 'm' : undefined,
-      'run=' + (runState.status || 'unknown'),
-      'reason=' + (decision.reason || 'unknown'),
-      decision.nextRunAt ? 'next=' + decision.nextRunAt : undefined,
-      decision.retryAt ? 'retry=' + decision.retryAt : undefined,
-      decision.backoffMs ? 'backoff=' + formatDurationMs(decision.backoffMs) : undefined,
-      collectionPlan.cursor && collectionPlan.cursor.present ? 'cursor=' + (collectionPlan.cursor.lastFloor || collectionPlan.cursor.lastPostId || collectionPlan.cursor.postCount) : undefined,
-      collectionPlan.replay && collectionPlan.replay.available ? 'replay=' + (collectionPlan.replay.evidenceKinds || []).join(',') : undefined
-    ].filter(Boolean).join(' | ');
-    return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml(source.displayName || source.id) + '</strong>' +
-      '<small>' + escapeHtml(details) + '</small>' +
-      '</span>' +
+    return '<div class="source-work-row source-schedule-row ' + statusClassName(runnable ? 'ok' : 'muted') + '">' +
+      '<section class="source-work-anchor">' +
+        '<span class="source-work-scope">' + escapeHtml(source.sourceType || source.sourceKey || 'source') + '</span>' +
+        '<strong>' + escapeHtml(source.displayName || source.id) + '</strong>' +
+        '<small>' + escapeHtml(source.id || source.sourceKey || 'unknown source') + '</small>' +
+      '</section>' +
+      '<section class="source-work-brief">' +
+        '<p>' + escapeHtml('reason=' + (decision.reason || 'unknown')) + '</p>' +
+        '<div class="source-work-chips">' +
+          authorMetaChip('plan', collectionPlan.status || 'unknown', collectionStatusVariant(collectionPlan.status)) +
+          authorMetaChip('run', runState.status || 'unknown', statusVariant(runState.status)) +
+          authorMetaChip('every', schedule.intervalMinutes ? schedule.intervalMinutes + 'm' : 'none', schedule.intervalMinutes ? 'info' : 'muted') +
+          authorMetaChip('next', decision.nextRunAt || 'none', decision.nextRunAt ? 'info' : 'muted') +
+          authorMetaChip('retry', decision.retryAt || 'none', decision.retryAt ? 'warn' : 'muted') +
+        '</div>' +
+        renderSourceCommandChips(source.recommendedCommands || collectionPlan.recommendedCommands || []) +
+      '</section>' +
       renderScheduleSourceControls(source, runnable) +
       '</div>';
-  }).join('');
+  }).join('') + '</div>';
 }
 
 function renderScheduleSourceControls(source, runnable) {
-  return '<span class="button-group source-op-buttons schedule-op-buttons">' +
+  return '<section class="source-work-actions button-group source-op-buttons schedule-op-buttons">' +
     statusBadge(runnable ? 'due' : 'skip', runnable ? 'ok' : 'muted') +
     renderSourceDrilldownButton(source) +
     renderSourceScheduleButtons(source) +
     (runnable ? renderSourceRunButtons(source) : '') +
-    '</span>';
+    '</section>';
 }
 
 function renderCollectionPlanDetails(plan) {
@@ -6399,24 +6457,27 @@ function renderCollectionPlanDetails(plan) {
   const schedule = plan.schedule || {};
   const decision = schedule.decision || {};
   const incremental = plan.incremental || {};
-  const commands = (plan.recommendedCommands || []).slice(0, 4).map(function (command) {
-    return '<small>' + escapeHtml(command) + '</small>';
-  }).join('');
-  return '<div class="action-row ops-row"><span>' +
-    '<strong>' + escapeHtml((plan.status || 'unknown') + ' | ' + (plan.strategy && plan.strategy.mode || 'collection')) + '</strong>' +
-    '<small>' + escapeHtml([
-      'reason=' + (decision.reason || 'unknown'),
-      decision.nextRunAt ? 'next=' + decision.nextRunAt : undefined,
-      decision.retryAt ? 'retry=' + decision.retryAt : undefined,
-      decision.backoffMs ? 'backoff=' + formatDurationMs(decision.backoffMs) : undefined,
-      'cursor=' + formatCollectionCursorSummary(plan.cursor),
-      'changed=' + String(incremental.lastChanged),
-      'newPosts=' + (incremental.newPostCount || 0),
-      'replay=' + formatCollectionReplaySummary(plan.replay)
-    ].filter(Boolean).join(' | ')) + '</small>' +
-    commands +
-    '</span>' +
-    statusBadge(plan.status || 'unknown', collectionStatusVariant(plan.status)) +
+  return '<div class="source-work-row source-action-row ' + statusClassName(collectionStatusVariant(plan.status)) + '">' +
+    '<section class="source-work-anchor">' +
+      '<span class="source-work-scope">plan</span>' +
+      '<strong>' + escapeHtml(plan.status || 'unknown') + '</strong>' +
+      '<small>' + escapeHtml(plan.strategy && plan.strategy.mode || 'collection') + '</small>' +
+    '</section>' +
+    '<section class="source-work-brief">' +
+      '<p>' + escapeHtml('reason=' + (decision.reason || 'unknown')) + '</p>' +
+      '<div class="source-work-chips">' +
+        authorMetaChip('next', decision.nextRunAt || 'none', decision.nextRunAt ? 'info' : 'muted') +
+        authorMetaChip('retry', decision.retryAt || 'none', decision.retryAt ? 'warn' : 'muted') +
+        authorMetaChip('cursor', formatCollectionCursorSummary(plan.cursor), plan.cursor && plan.cursor.present ? 'ok' : 'warn') +
+        authorMetaChip('changed', String(incremental.lastChanged), incremental.lastChanged ? 'ok' : 'muted') +
+        authorMetaChip('new', incremental.newPostCount || 0, (incremental.newPostCount || 0) > 0 ? 'ok' : 'muted') +
+        authorMetaChip('replay', formatCollectionReplaySummary(plan.replay), plan.replay && plan.replay.available ? 'ok' : 'muted') +
+      '</div>' +
+      renderSourceCommandChips(plan.recommendedCommands || []) +
+    '</section>' +
+    '<section class="source-work-actions button-group source-op-buttons">' +
+      statusBadge(plan.status || 'unknown', collectionStatusVariant(plan.status)) +
+    '</section>' +
     '</div>';
 }
 
@@ -6483,28 +6544,31 @@ function renderLifecycleSourceRow(source) {
   const runState = source.runState || {};
   const variant = guard.blocked || (retry.active && !retry.elapsed) ? 'warn' : (source.enabled === false ? 'muted' : 'ok');
   const label = guard.blocked ? 'blocked' : (retry.active && !retry.elapsed ? 'retry wait' : (source.enabled === false ? 'disabled' : 'ready'));
-  const details = [
-    source.id,
-    'run=' + (runState.status || 'unknown'),
-    'action=' + (source.nextAction || 'unknown'),
-    guard.lastStartedAt ? 'started=' + guard.lastStartedAt : undefined,
-    retry.retryAt ? 'retry=' + retry.retryAt : undefined,
-    retry.backoffMs ? 'backoff=' + formatDurationMs(retry.backoffMs) : undefined,
-    source.latestLifecycleTask ? 'task=' + source.latestLifecycleTask.id + '/' + source.latestLifecycleTask.status : undefined
-  ].filter(Boolean).join(' | ');
-  const controls = '<span class="button-group source-op-buttons">' +
+  const controls = '<section class="source-work-actions button-group source-op-buttons">' +
     statusBadge(label, variant) +
     renderSourceDrilldownButton(source) +
     renderSourceRunButtons(source) +
     renderSourceScheduleButtons(source) +
     renderSourceEnablementButtons(source) +
     renderSourceFailureResetButtons(source) +
-    '</span>';
-  return '<div class="action-row ops-row"><span>' +
-    '<strong>' + escapeHtml(source.displayName || source.id) + '</strong>' +
-    '<small>' + escapeHtml(details) + '</small>' +
-    renderLifecycleCommandRows(source.recommendedCommands || []) +
-    '</span>' +
+    '</section>';
+  return '<div class="source-work-row lifecycle-source-row ' + statusClassName(variant) + '">' +
+    '<section class="source-work-anchor">' +
+      '<span class="source-work-scope">' + escapeHtml(source.sourceType || source.sourceKey || 'source') + '</span>' +
+      '<strong>' + escapeHtml(source.displayName || source.id) + '</strong>' +
+      '<small>' + escapeHtml(source.id || source.sourceKey || 'unknown source') + '</small>' +
+    '</section>' +
+    '<section class="source-work-brief">' +
+      '<p>' + escapeHtml(source.nextAction || 'Source is ready for the next operational step.') + '</p>' +
+      '<div class="source-work-chips">' +
+        authorMetaChip('run', runState.status || 'unknown', statusVariant(runState.status)) +
+        authorMetaChip('state', label, variant) +
+        authorMetaChip('started', guard.lastStartedAt || 'none', guard.lastStartedAt ? 'info' : 'muted') +
+        authorMetaChip('retry', retry.retryAt || 'none', retry.retryAt ? 'warn' : 'muted') +
+        authorMetaChip('task', source.latestLifecycleTask ? source.latestLifecycleTask.status || 'task' : 'none', source.latestLifecycleTask ? statusVariant(source.latestLifecycleTask.status) : 'muted') +
+      '</div>' +
+      renderSourceCommandChips(source.recommendedCommands || []) +
+    '</section>' +
     controls +
     '</div>';
 }
@@ -7822,24 +7886,30 @@ function renderSourceOpsList(result) {
     const cursorDiff = runState.lastCursorDiff || {};
     const diagnostics = diagnosticsBySourceId[source.id];
     const runLabel = runState.status || 'never-run';
-    const details = [
-      source.id,
-      source.sourceType,
-      source.sourceKey ? 'key ' + source.sourceKey : undefined,
-      runLabel,
-      diagnostics ? 'config ' + diagnostics.status : undefined,
-      schedule.intervalMinutes ? 'every ' + schedule.intervalMinutes + 'm' : undefined,
-      formatSourceLocationSummary(source.location || {}),
-      cursor.postCount !== undefined ? 'posts ' + cursor.postCount + ' / #' + cursor.lastFloor : undefined,
-      cursorDiff.newPostCount !== undefined ? '+' + cursorDiff.newPostCount : undefined,
-      runState.lastTaskId || undefined
-    ].filter(Boolean).join(' | ');
-    const controls = '<span class="button-group source-op-buttons">' +
+    const controls = '<section class="source-work-actions button-group source-op-buttons">' +
       renderSourceDrilldownButton(source) +
       '<button class="inline-button" type="button" data-action="run-source" data-source-id="' + escapeHtml(source.id) + '">Run</button>' +
       '<button class="inline-button secondary-inline-button" type="button" data-action="run-source-pipeline" data-source-id="' + escapeHtml(source.id) + '">Insight</button>' +
-      '</span>';
-    return '<div class="action-row"><span>' + escapeHtml(source.displayName) + '<small>' + escapeHtml(details) + '</small></span>' + controls + '</div>';
+      '</section>';
+    return '<div class="source-work-row tracked-source-row ' + statusClassName(statusVariant(runState.status || diagnostics && diagnostics.status || 'ok')) + '">' +
+      '<section class="source-work-anchor">' +
+        '<span class="source-work-scope">' + escapeHtml(source.sourceType || source.sourceKey || 'source') + '</span>' +
+        '<strong>' + escapeHtml(source.displayName || source.id) + '</strong>' +
+        '<small>' + escapeHtml(source.id || 'unknown source') + '</small>' +
+      '</section>' +
+      '<section class="source-work-brief">' +
+        '<p>' + escapeHtml([formatSourceLocationSummary(source.location || {}), runState.lastTaskId].filter(Boolean).join(' | ') || 'Tracked source is ready for operation.') + '</p>' +
+        '<div class="source-work-chips">' +
+          authorMetaChip('key', source.sourceKey || 'none', source.sourceKey ? 'info' : 'muted') +
+          authorMetaChip('run', runLabel, statusVariant(runLabel)) +
+          authorMetaChip('config', diagnostics ? diagnostics.status : 'unknown', diagnostics ? statusVariant(diagnostics.status) : 'muted') +
+          authorMetaChip('every', schedule.intervalMinutes ? schedule.intervalMinutes + 'm' : 'none', schedule.intervalMinutes ? 'info' : 'muted') +
+          authorMetaChip('posts', cursor.postCount !== undefined ? cursor.postCount + ' / #' + cursor.lastFloor : 'none', cursor.postCount !== undefined ? 'ok' : 'muted') +
+          authorMetaChip('new', cursorDiff.newPostCount !== undefined ? '+' + cursorDiff.newPostCount : 'none', cursorDiff.newPostCount > 0 ? 'ok' : 'muted') +
+        '</div>' +
+      '</section>' +
+      controls +
+      '</div>';
   }).join(''), 'wide');
 }
 
