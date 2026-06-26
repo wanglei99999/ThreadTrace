@@ -161,6 +161,7 @@ async function verifyViewport(client, options) {
   });
   await client.send('Page.navigate', { url: options.url });
   await waitForCockpit(client);
+  const runbookPreview = options.runAction ? await verifyAutomationRunbookPreview(client) : undefined;
   const actionResult = options.runAction ? await verifyAutomationActionResult(client) : undefined;
   const audit = await evaluateByValue(client, viewportAuditExpression());
   const screenshot = await client.send('Page.captureScreenshot', {
@@ -171,6 +172,7 @@ async function verifyViewport(client, options) {
   const stats = await fs.stat(options.screenshotPath);
   assertAudit(options.label, audit);
   return Object.assign({}, audit, {
+    runbookPreview,
     actionResult,
     screenshotPath: options.screenshotPath,
     screenshotBytes: stats.size
@@ -261,6 +263,42 @@ async function verifyAutomationActionResult(client) {
     '    commandCount: commands.length,',
     '    commands: commands.slice(0, 5),',
     "    hasCopyButtons: Boolean(result.querySelector('button[data-action=\"copy-lifecycle-command\"],button[data-action=\"copy-command\"]'))",
+    '  };',
+    '})()'
+  ].join('\n'));
+}
+
+async function verifyAutomationRunbookPreview(client) {
+  const clicked = await evaluateByValue(client, [
+    '(() => {',
+    "  const buttons = Array.from(document.querySelectorAll('.automation-runbook-panel button[data-action=\"set-source-schedule\"][data-execute=\"false\"]'));",
+    '  const button = buttons[0];',
+    '  if (!button) return false;',
+    '  button.click();',
+    '  return true;',
+    '})()'
+  ].join('\n'));
+  if (!clicked) {
+    return { skipped: true, reason: 'no schedule preview button' };
+  }
+  await waitFor(async function () {
+    return evaluateByValue(client, [
+      '(() => {',
+      "  const result = document.querySelector('#automationActionResult');",
+      "  const text = result ? result.innerText : '';",
+      "  return text.includes('Source schedule') && text.includes('dry-run');",
+      '})()'
+    ].join('\n'));
+  }, 30000, 'Timed out waiting for Automation Cockpit runbook schedule preview.');
+  return evaluateByValue(client, [
+    '(() => {',
+    "  const result = document.querySelector('#automationActionResult');",
+    "  const text = result ? result.innerText : '';",
+    '  return {',
+    '    skipped: false,',
+    "    hasResult: text.includes('Source schedule'),",
+    "    dryRun: text.includes('dry-run'),",
+    "    changed: text.includes('Changed')",
     '  };',
     '})()'
   ].join('\n'));
