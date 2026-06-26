@@ -25,7 +25,9 @@ test('automation cockpit snapshot aggregates readiness and operating pressure', 
       count: 4
     },
     notificationDiagnostics: {
-      status: 'ok'
+      checks: [
+        { key: 'notifications.channel', status: 'ok' }
+      ]
     }
   });
 
@@ -35,6 +37,7 @@ test('automation cockpit snapshot aggregates readiness and operating pressure', 
   assert.equal(snapshot.readyForUnattendedRun, false);
   assert.equal(snapshot.summary.readinessStatus, 'ok');
   assert.equal(snapshot.summary.auditStatus, 'warn');
+  assert.equal(snapshot.summary.diagnosticsStatus, 'ok');
   assert.equal(snapshot.summary.openNotificationCount, 2);
   assert.equal(snapshot.summary.pendingNotificationCount, 1);
   assert.equal(snapshot.summary.auditCount, 3);

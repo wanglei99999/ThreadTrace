@@ -7,12 +7,13 @@ function getAutomationCockpitSnapshot(input) {
   const reviewActionAuditOverview = safeInput.reviewActionAuditOverview || {};
   const reviewActionExecutions = safeInput.reviewActionExecutions || {};
   const notificationDiagnostics = safeInput.notificationDiagnostics || {};
+  const diagnosticsStatus = notificationDiagnostics.status || statusFromChecks(notificationDiagnostics.checks || []);
   const componentStatuses = [
     plan.status,
     notificationOverview.status,
     reviewActionAuditOverview.status,
     reviewActionExecutions.status,
-    notificationDiagnostics.status
+    diagnosticsStatus
   ].filter(Boolean);
   const status = aggregateStatus(componentStatuses);
   return {
@@ -30,13 +31,28 @@ function getAutomationCockpitSnapshot(input) {
       notificationStatus: notificationOverview.status || 'unknown',
       auditStatus: reviewActionAuditOverview.status || 'unknown',
       executionStatus: reviewActionExecutions.status || 'unknown',
-      diagnosticsStatus: notificationDiagnostics.status || 'unknown',
-      openNotificationCount: notificationOverview.openCount,
-      pendingNotificationCount: notificationOverview.pendingDeliveryCount,
+      diagnosticsStatus,
+      openNotificationCount: firstNumber(notificationOverview.openCount, notificationOverview.unacknowledgedCount, 0),
+      pendingNotificationCount: firstNumber(notificationOverview.pendingDeliveryCount, notificationOverview.pendingCount, notificationOverview.dueForDeliveryCount, 0),
       auditCount: reviewActionAuditOverview.count,
       executionCount: reviewActionExecutions.count
     }
   };
+}
+
+function firstNumber() {
+  for (let index = 0; index < arguments.length; index += 1) {
+    const value = arguments[index];
+    if (Number.isFinite(value)) return value;
+  }
+  return undefined;
+}
+
+function statusFromChecks(checks) {
+  if (!checks || checks.length === 0) return 'unknown';
+  return aggregateStatus(checks.map(function (check) {
+    return check && check.status;
+  }).filter(Boolean));
 }
 
 function aggregateStatus(statuses) {
