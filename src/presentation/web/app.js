@@ -158,6 +158,8 @@ function updateAutomationAutoRefreshControl() {
   const enabled = state.automationAutoRefresh;
   button.dataset.enabled = enabled ? 'true' : 'false';
   button.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+  button.setAttribute('aria-label', 'Auto refresh ' + (enabled ? 'On' : 'Off') + ' every 60 seconds');
+  button.setAttribute('title', 'Auto refresh ' + (enabled ? 'On' : 'Off') + ' every 60 seconds');
   button.classList.toggle('is-active', enabled);
   const value = button.querySelector('strong');
   if (value) value.textContent = enabled ? 'On' : 'Off';
@@ -5597,10 +5599,13 @@ function automationCockpitButton(action, label, className) {
 
 function automationCockpitAutoRefreshToggle() {
   const enabled = Boolean(state.automationAutoRefresh);
+  const stateLabel = enabled ? 'On' : 'Off';
   return [
-    '<button class="automation-auto-refresh-toggle' + (enabled ? ' is-active' : '') + '" type="button" data-action="toggle-automation-auto-refresh" data-enabled="' + (enabled ? 'true' : 'false') + '" aria-pressed="' + (enabled ? 'true' : 'false') + '">',
+    '<button class="automation-auto-refresh-toggle' + (enabled ? ' is-active' : '') + '" type="button" data-action="toggle-automation-auto-refresh" data-enabled="' + (enabled ? 'true' : 'false') + '" aria-pressed="' + (enabled ? 'true' : 'false') + '" aria-label="' + escapeHtml('Auto refresh ' + stateLabel + ' every 60 seconds') + '" title="' + escapeHtml('Auto refresh ' + stateLabel + ' every 60 seconds') + '">',
     '<span>Auto refresh</span>',
-    '<strong>' + (enabled ? 'On' : 'Off') + '</strong>',
+    ' ',
+    '<strong>' + stateLabel + '</strong>',
+    ' ',
     '<small>60s</small>',
     '</button>'
   ].join('');

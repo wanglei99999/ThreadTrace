@@ -267,10 +267,12 @@ function assertAutomationAutoRefreshToggle(label, autoRefreshToggle) {
   const restored = autoRefreshToggle.restored || {};
   const failures = [];
   if (enabled.ariaPressed !== 'true') failures.push('aria-pressed did not become true');
+  if (enabled.ariaLabel !== 'Auto refresh On every 60 seconds') failures.push('aria-label did not become On');
   if (enabled.dataEnabled !== 'true') failures.push('data-enabled did not become true');
   if (!enabled.activeClass) failures.push('active class was not applied');
   if (enabled.stored !== 'true') failures.push('localStorage was not set true');
   if (restored.ariaPressed !== 'false') failures.push('aria-pressed did not restore false');
+  if (restored.ariaLabel !== 'Auto refresh Off every 60 seconds') failures.push('aria-label did not restore Off');
   if (restored.dataEnabled !== 'false') failures.push('data-enabled did not restore false');
   if (restored.activeClass) failures.push('active class remained after restore');
   if (restored.stored !== 'false') failures.push('localStorage was not restored false');
@@ -654,6 +656,7 @@ async function readAutomationAutoRefreshToggleState(client) {
     '  return {',
     '    exists: Boolean(button),',
     "    ariaPressed: button ? button.getAttribute('aria-pressed') : 'missing',",
+    "    ariaLabel: button ? button.getAttribute('aria-label') : 'missing',",
     "    dataEnabled: button ? button.dataset.enabled : 'missing',",
     "    activeClass: button ? button.classList.contains('is-active') : false,",
     "    text: button ? button.textContent.trim() : '',",
