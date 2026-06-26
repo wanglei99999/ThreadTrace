@@ -5850,6 +5850,22 @@ async function runAutomationPressureAction(button) {
     }, automationActionRenderOptions(resolveAutomationActionTarget(), 'Previewing notification acknowledgements...'));
     return;
   }
+  if (action === 'dispatch-preview') {
+    await renderAsync(resolveAutomationActionTarget(), function () {
+      return fetchJson('/api/events/overview?limit=50', {
+        acceptErrorStatus: true
+      });
+    }, function (overview) {
+      return renderAutomationActionResult('Dispatch preview', {
+        status: overview.status,
+        mode: 'read-only preview',
+        subject: 'Notification dispatch',
+        changed: 'No delivery side effects',
+        next: dispatchPreviewNextAction(overview)
+      }, renderNotificationDispatchPreview(overview));
+    }, automationActionRenderOptions(resolveAutomationActionTarget(), 'Previewing notification dispatch readiness...'));
+    return;
+  }
   if (action === 'audit-overview') {
     await renderAsync(resolveAutomationActionTarget(), function () {
       return Promise.all([
@@ -5939,6 +5955,7 @@ function renderAutomationOperatingPressure(cockpit) {
       '</span><span class="button-group automation-pressure-actions">' +
         '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="outbox-overview">Open outbox</button>' +
         '<button class="inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="ack-preview">Ack preview</button>' +
+        '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="dispatch-preview">Dispatch preview</button>' +
       '</span>' + statusBadge(pressure.outboxStatus, pressure.outboxVariant) + '</div>',
     '<div class="action-row ops-row"><span>' +
       '<strong>Review audit ledger</strong>' +
@@ -8563,6 +8580,44 @@ function renderNotificationEventOverview(overview) {
       renderNotificationSourceHotspots(overview.sourceHotspots || []),
     '</article>'
   ].join('');
+}
+
+function renderNotificationDispatchPreview(overview) {
+  const safeOverview = overview || {};
+  const dueCount = safeOverview.dueForDeliveryCount || 0;
+  const failedCount = safeOverview.failedCount || 0;
+  const retryExhaustedCount = safeOverview.retryExhaustedCount || 0;
+  const candidateCount = dueCount + failedCount;
+  const command = 'node src/presentation/cli/threadtrace.js dispatch-events --limit 50';
+  const hotspotRows = (safeOverview.sourceHotspots || []).slice(0, 5).map(function (hotspot) {
+    return (hotspot.sourceKey || 'unknown-source') +
+      ' | due=' + (hotspot.dueForDeliveryCount || 0) +
+      ' | failed=' + (hotspot.failedCount || 0) +
+      ' | open=' + (hotspot.openCount || 0);
+  });
+  return panel('Notification dispatch preview', [
+    '<div class="summary-strip event-summary-strip">' + [
+      summaryTile('Mode', 'dry-run', 'warn'),
+      summaryTile('Candidates', String(candidateCount), candidateCount > 0 ? 'warn' : 'ok'),
+      summaryTile('Due', String(dueCount), dueCount > 0 ? 'warn' : 'ok'),
+      summaryTile('Failed', String(failedCount), failedCount > 0 ? 'fail' : 'ok'),
+      summaryTile('Retry exhausted', String(retryExhaustedCount), retryExhaustedCount > 0 ? 'fail' : 'ok')
+    ].join('') + '</div>',
+    metric('Side effects', 'none'),
+    metric('Channel readiness', safeOverview.channelStatus || safeOverview.channel || 'not evaluated'),
+    metric('Next delivery', safeOverview.nextDeliveryAt || 'none'),
+    metric('Command after review', command),
+    metric('Next', dispatchPreviewNextAction(safeOverview)),
+    evidenceList(hotspotRows)
+  ].join(''), 'wide');
+}
+
+function dispatchPreviewNextAction(overview) {
+  const safeOverview = overview || {};
+  if ((safeOverview.retryExhaustedCount || 0) > 0) return 'Inspect retry-exhausted events before real dispatch.';
+  if ((safeOverview.failedCount || 0) > 0) return 'Dispatch can retry failed notification events after checking channel health.';
+  if ((safeOverview.dueForDeliveryCount || 0) > 0) return 'Dispatch can deliver due pending events from the Events tab or CLI.';
+  return safeOverview.recommendedNextAction || 'No dispatchable notification events in the current window.';
 }
 
 function notificationOutboxSignal(label, value, variant) {
