@@ -23,6 +23,7 @@ async function main() {
 
   const browser = await ensureBrowser(cdpPort, outputDir, options.chromePath || process.env.CHROME_PATH);
   try {
+    await closeExistingThreadTraceTargets(cdpPort, appUrl);
     const target = await createTarget(cdpPort, appUrl);
     const client = await CdpClient.connect(target.webSocketDebuggerUrl);
     try {
@@ -67,6 +68,25 @@ async function main() {
       browser.process.kill();
     }
   }
+}
+
+async function closeExistingThreadTraceTargets(port, appUrl) {
+  const parsedAppUrl = new URL(appUrl);
+  const result = await httpRequest('GET', 'http://127.0.0.1:' + port + '/json/list');
+  if (result.statusCode < 200 || result.statusCode >= 300) return;
+  let targets;
+  try {
+    targets = JSON.parse(result.body);
+  } catch (error) {
+    return;
+  }
+  await Promise.all((targets || []).filter(function (target) {
+    if (!target || !target.id || !target.url) return false;
+    const parsedTargetUrl = new URL(target.url);
+    return parsedTargetUrl.origin === parsedAppUrl.origin && parsedTargetUrl.pathname === parsedAppUrl.pathname;
+  }).map(function (target) {
+    return closeTarget(port, target.id).catch(function () {});
+  }));
 }
 
 function parseArgs(args) {
@@ -178,6 +198,7 @@ async function verifyViewport(client, options) {
   if (options.runPreview || options.runAction) await waitForCockpit(client);
   const actionResult = options.runAction ? await verifyAutomationActionResult(client) : undefined;
   const pressureAction = await verifyAutomationPressureAction(client);
+  await waitForScrollIdle(client);
   const attentionFocus = await verifyAutomationAttentionFocus(client);
   const attentionAction = await verifyAutomationAttentionAction(client);
   if (attentionAction && !attentionAction.skipped) await waitForCockpit(client);
@@ -215,11 +236,17 @@ function assertPressureAction(label, pressureAction, audit) {
   const failures = [];
   if (!pressureAction) failures.push('missing pressure action report');
   else {
-    if (pressureAction.skipped) failures.push('pressure action skipped: ' + pressureAction.reason);
-    if (!pressureAction.clicked) failures.push('pressure action button was not clicked');
-    if (!pressureAction.hasResult) failures.push('pressure action did not render an action result');
-    if (!pressureAction.hasOutbox) failures.push('pressure action did not render outbox overview');
-    if (!pressureAction.visible) failures.push('pressure action result is not visible after click');
+    ['outbox', 'audits', 'executions'].forEach(function (key) {
+      const item = pressureAction[key];
+      if (!item) failures.push('missing pressure action: ' + key);
+      else {
+        if (item.skipped) failures.push(key + ' pressure action skipped: ' + item.reason);
+        if (!item.clicked) failures.push(key + ' pressure action button was not clicked');
+        if (!item.hasResult) failures.push(key + ' pressure action did not render an action result');
+        if (!item.hasPanel) failures.push(key + ' pressure action did not render its detail panel');
+        if (!item.visible) failures.push(key + ' pressure action result is not visible after click');
+      }
+    });
   }
   if (failures.length > 0) {
     throw new Error(label + ' Automation Cockpit pressure action verification failed: ' + failures.join('; '));
@@ -290,6 +317,25 @@ async function waitForCockpit(client) {
     const diagnostic = await automationClickDiagnostic(client);
     throw new Error('Timed out waiting for Automation Cockpit to render: ' + JSON.stringify(diagnostic));
   }
+}
+
+async function waitForScrollIdle(client) {
+  await evaluateByValue(client, [
+    'new Promise((resolve) => {',
+    '  let lastX = window.scrollX;',
+    '  let lastY = window.scrollY;',
+    '  let stableTicks = 0;',
+    '  const tick = () => {',
+    '    const same = window.scrollX === lastX && window.scrollY === lastY;',
+    '    stableTicks = same ? stableTicks + 1 : 0;',
+    '    lastX = window.scrollX;',
+    '    lastY = window.scrollY;',
+    '    if (stableTicks >= 4) resolve(true);',
+    '    else setTimeout(tick, 100);',
+    '  };',
+    '  setTimeout(tick, 100);',
+    '})'
+  ].join('\n'), true);
 }
 
 function viewportAuditExpression() {
@@ -577,7 +623,7 @@ async function verifyAutomationRunbookPreview(client) {
       "  return text.includes('Last action') && text.includes('Source schedule') && text.includes('dry-run') && visible;",
       '})()'
     ].join('\n'));
-  }, 30000, 'Timed out waiting for Automation Cockpit runbook schedule preview.');
+  }, 30000, 'Timed out waiting for Automation Cockpit runbook schedule preview: ' + JSON.stringify(await automationActionDiagnostic(client)));
   return evaluateByValue(client, [
     '(() => {',
     "  const result = document.querySelector('#automationActionResult');",
@@ -597,11 +643,42 @@ async function verifyAutomationRunbookPreview(client) {
   ].join('\n'));
 }
 
+async function automationActionDiagnostic(client) {
+  return evaluateByValue(client, [
+    '(() => {',
+    "  const result = document.querySelector('#automationActionResult');",
+    "  const cockpit = document.querySelector('#automationReadinessResult');",
+    "  const previewButtons = Array.from(document.querySelectorAll('.automation-runbook-panel button[data-action=\"set-source-schedule\"][data-execute=\"false\"]'));",
+    '  const rect = result ? result.getBoundingClientRect() : null;',
+    '  return {',
+    '    href: location.href,',
+    '    scrollY: window.scrollY,',
+    "    actionBusy: result ? result.getAttribute('aria-busy') : 'missing',",
+    "    cockpitBusy: cockpit ? cockpit.getAttribute('aria-busy') : 'missing',",
+    '    previewButtonCount: previewButtons.length,',
+    "    previewButtonLabels: previewButtons.map((button) => button.textContent.trim()).slice(0, 5),",
+    '    resultVisible: rect ? rect.bottom > 0 && rect.top < window.innerHeight : false,',
+    '    resultTop: rect ? Math.round(rect.top) : null,',
+    '    resultBottom: rect ? Math.round(rect.bottom) : null,',
+    "    resultText: result ? result.innerText.slice(0, 800) : ''",
+    '  };',
+    '})()'
+  ].join('\n'));
+}
+
 async function verifyAutomationPressureAction(client) {
+  return {
+    outbox: await verifyAutomationPressureActionButton(client, 'outbox-overview', 'Outbox overview', 'Notification outbox'),
+    audits: await verifyAutomationPressureActionButton(client, 'audit-overview', 'Review audits', 'Review action audits'),
+    executions: await verifyAutomationPressureActionButton(client, 'execution-overview', 'Review executions', 'Review action executions')
+  };
+}
+
+async function verifyAutomationPressureActionButton(client, actionKey, actionLabel, panelText) {
   const clicked = await evaluateByValue(client, [
     '(() => {',
-    "  const button = document.querySelector('.automation-pressure-panel button[data-pressure-action=\"outbox-overview\"]');",
-    '  if (!button) return { clicked: false, skipped: true, reason: "no outbox overview pressure action" };',
+    '  const button = document.querySelector(\'.automation-pressure-panel button[data-pressure-action="' + actionKey + '"]\');',
+    '  if (!button) return { clicked: false, skipped: true, reason: "no ' + actionKey + ' pressure action" };',
     '  const label = button.textContent.trim();',
     '  button.click();',
     '  return { clicked: true, skipped: false, action: button.dataset.pressureAction || "", label };',
@@ -615,10 +692,10 @@ async function verifyAutomationPressureAction(client) {
       "  const text = result ? result.innerText : '';",
       "  const rect = result ? result.getBoundingClientRect() : null;",
       "  const visible = rect ? rect.bottom > 0 && rect.top < window.innerHeight : false;",
-      "  return Boolean(result && text.includes('Last action') && text.includes('Outbox overview') && text.includes('Notification outbox') && visible);",
+      "  return Boolean(result && text.includes('Last action') && text.includes(" + JSON.stringify(actionLabel) + ") && text.includes(" + JSON.stringify(panelText) + ") && visible);",
       '})()'
     ].join('\n'));
-  }, 30000, 'Timed out waiting for Automation Cockpit pressure action result.');
+  }, 30000, 'Timed out waiting for Automation Cockpit pressure action result: ' + actionKey + '.');
   return evaluateByValue(client, [
     '(() => {',
     "  const result = document.querySelector('#automationActionResult');",
@@ -629,8 +706,8 @@ async function verifyAutomationPressureAction(client) {
     '    skipped: false,',
     '    action: ' + JSON.stringify(clicked.action) + ',',
     '    label: ' + JSON.stringify(clicked.label) + ',',
-    "    hasResult: text.includes('Last action') && text.includes('Outbox overview'),",
-    "    hasOutbox: text.includes('Notification outbox'),",
+    "    hasResult: text.includes('Last action') && text.includes(" + JSON.stringify(actionLabel) + "),",
+    "    hasPanel: text.includes(" + JSON.stringify(panelText) + "),",
     "    visible: rect ? rect.bottom > 0 && rect.top < window.innerHeight : false",
     '  };',
     '})()'

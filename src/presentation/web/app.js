@@ -2589,11 +2589,13 @@ async function setSourceScheduleFromButton(button, execute, targetId) {
       next: schedule.nextRunAt || 'next run unchanged'
     }, rendered);
   }, automationActionRenderOptions(resolvedTargetId, execute ? 'Applying source schedule...' : 'Previewing source schedule...'));
-  await loadSystemStatus();
-  await loadTasks();
-  await loadSources();
-  await loadSourceOperations();
-  await loadAutomationReadiness();
+  if (execute) {
+    await loadSystemStatus();
+    await loadTasks();
+    await loadSources();
+    await loadSourceOperations();
+    await loadAutomationReadiness();
+  }
   refocusAutomationActionResult(resolvedTargetId);
 }
 
@@ -5697,6 +5699,49 @@ async function runAutomationPressureAction(button) {
         next: 'Previewed ' + String(result.candidateCount || 0) + ' acknowledgement candidate(s).'
       }, renderEventBatchAckResult(result));
     }, automationActionRenderOptions(resolveAutomationActionTarget(), 'Previewing notification acknowledgements...'));
+    return;
+  }
+  if (action === 'audit-overview') {
+    await renderAsync(resolveAutomationActionTarget(), function () {
+      return Promise.all([
+        fetchJson('/api/context-review-results/action-audits/overview?limit=100', {
+          acceptErrorStatus: true
+        }),
+        fetchJson('/api/context-review-results/action-audits?limit=20', {
+          acceptErrorStatus: true
+        })
+      ]).then(function (results) {
+        return {
+          overview: results[0],
+          audits: results[1].audits || []
+        };
+      });
+    }, function (result) {
+      const overview = result.overview || {};
+      return renderAutomationActionResult('Review audits', {
+        status: overview.status,
+        mode: 'read-only',
+        subject: 'Review audit ledger',
+        changed: 'No change',
+        next: overview.recommendedNextAction || 'Review audit ledger pressure.'
+      }, renderContextReviewActionAuditPanel(result));
+    }, automationActionRenderOptions(resolveAutomationActionTarget(), 'Loading review audit ledger...'));
+    return;
+  }
+  if (action === 'execution-overview') {
+    await renderAsync(resolveAutomationActionTarget(), function () {
+      return fetchJson('/api/context-review-results/action-executions?limit=20', {
+        acceptErrorStatus: true
+      });
+    }, function (result) {
+      return renderAutomationActionResult('Review executions', {
+        status: result.status,
+        mode: 'read-only',
+        subject: 'Action execution ledger',
+        changed: 'No change',
+        next: result.message || 'Inspect stale or failed automation action executions.'
+      }, renderContextReviewActionExecutionPanel(result));
+    }, automationActionRenderOptions(resolveAutomationActionTarget(), 'Loading review action executions...'));
   }
 }
 
@@ -5750,11 +5795,15 @@ function renderAutomationOperatingPressure(cockpit) {
       '<strong>Review audit ledger</strong>' +
       '<small>' + escapeHtml(auditOverview.recommendedNextAction || 'No review audit recommendation returned.') + '</small>' +
       '<small>' + escapeHtml('tasks=' + (auditOverview.taskCount || 0) + ' | plannedClosure=' + (auditOverview.plannedClosureCount || 0) + ' | plannedMerge=' + (auditOverview.plannedMergeCandidateCount || 0)) + '</small>' +
+      '</span><span class="button-group automation-pressure-actions">' +
+        '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="audit-overview">Open audits</button>' +
       '</span>' + statusBadge(auditOverview.status || 'unknown', pressure.auditVariant) + '</div>',
     '<div class="action-row ops-row"><span>' +
       '<strong>Action executions</strong>' +
       '<small>' + escapeHtml('status=' + (actionExecutions.status || 'unknown') + ' | count=' + pressure.executionCount + ' | stale=' + pressure.staleExecutions + ' | failed=' + pressure.failedExecutions) + '</small>' +
       '<small>' + escapeHtml('Notification delivery and review actions stay observable before real executors are enabled.') + '</small>' +
+      '</span><span class="button-group automation-pressure-actions">' +
+        '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="execution-overview">Open executions</button>' +
       '</span>' + statusBadge(actionExecutions.status || 'unknown', pressure.executionVariant) + '</div>',
     checks.length > 0
       ? '<div class="action-row ops-row"><span>' +
