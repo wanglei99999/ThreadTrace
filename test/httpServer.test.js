@@ -174,11 +174,11 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /renderNotificationEventActionIntent/);
     assert.match(webAppJs, /prepare-event-action-intent/);
     assert.match(webAppJs, /execute-event-action/);
-    assert.match(webAppJs, /Event action dry-run/);
-    assert.match(webAppJs, /Event action execution/);
-    assert.match(webAppJs, /Execution ledger/);
-    assert.match(webAppJs, /Ledger/);
-    assert.match(webAppJs, /Action readiness/);
+    assert.match(webAppJs, /提醒动作预演/);
+    assert.match(webAppJs, /提醒动作已执行/);
+    assert.match(webAppJs, /执行记录/);
+    assert.match(webAppJs, /动作证据/);
+    assert.match(webAppJs, /动作准备/);
     assert.match(webAppJs, /load-event-detail/);
     assert.match(webAppJs, /renderTaskTraceButton/);
     assert.match(webAppJs, /renderTaskTraceContext/);
@@ -274,7 +274,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /Worker lease shards/);
     assert.match(webAppJs, /workerLeaseStatusSummary/);
     assert.match(webAppJs, /intelligence\/author-review-queue\/events/);
-    assert.match(webAppJs, /Create alerts/);
+    assert.match(webAppJs, /创建提醒/);
     assert.match(webAppJs, /buildEventQuery/);
     assert.match(webAppJs, /buildEventDispatchRequest/);
     assert.match(webAppJs, /formatEventSourceScope/);
@@ -283,7 +283,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /api\/events\/synthesis-policy/);
     assert.match(webAppJs, /renderNotificationEventOverview/);
     assert.match(webAppJs, /renderNotificationSynthesisPolicy/);
-    assert.match(webAppJs, /Notification synthesis policy/);
+    assert.match(webAppJs, /提醒生成规则/);
     assert.match(webAppJs, /renderNotificationSourceHotspots/);
     assert.match(webAppJs, /renderEventSourceDrilldownButton/);
     assert.match(webAppJs, /event-summary-strip/);
@@ -316,7 +316,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /renderContextReviewActionExecutorDiagnostics/);
     assert.match(webAppJs, /renderContextReviewActionApplyResult/);
     assert.match(webAppJs, /synthesizeReviewResultEvents/);
-    assert.match(webAppJs, /attention-worthy review results/);
+    assert.match(webAppJs, /需要关注的复核结果/);
     assert.match(webAppJs, /renderContextReviewResultEventSynthesis/);
     assert.match(webAppJs, /renderAuthorReviewQueueEventSynthesis/);
     assert.match(webAppJs, /renderSourceOperationsDrilldown/);

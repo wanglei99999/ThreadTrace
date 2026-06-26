@@ -78,3 +78,49 @@ test('system workspace chrome uses approachable labels instead of developer cons
     '<span>Evidence loop</span>'
   ]);
 });
+
+test('event and source result surfaces avoid console-style action copy', function () {
+  const app = readProjectFile('src/presentation/web/app.js');
+
+  assertAbsent(app, [
+    "panel('Event detail'",
+    "panel('Action readiness'",
+    "panel('Event actions'",
+    "panel('Event payload'",
+    "panel('Notification synthesis policy'",
+    "panel('Notification event archive'",
+    "panel('Raw pages fetched'",
+    "panel('Tracked sources'",
+    "panel('Cockpit action plan'",
+    "panel('Review action plan'",
+    "panel('Review action apply task'",
+    "panel('Source hotspots'",
+    'Create notification events from',
+    'Reset this source failure state',
+    'Configure this source schedule',
+    '<strong>Runbook alerts</strong>',
+    'alertable=',
+    'threshold=70',
+    '>Acknowledge</button>',
+    '>Create alerts</button>',
+    '>Dry-run</button>',
+    '>Execute</button>',
+    '>Ops</button>',
+    '>Health</button>',
+    '>Detail</button>',
+    '>Task</button>',
+    '>Run</button>',
+    '>Insight</button>',
+    '>Preview</button>',
+    '>Runbook check</button>',
+    '<span>Standby</span>',
+    '<span>Quiet</span>',
+    'No notification events match this filter.',
+    'No evidence signals yet.',
+    'No tags yet.',
+    'No tracked sources yet.',
+    'No source diagnostics.',
+    'Working...',
+    'Checking event archive policy...'
+  ]);
+});

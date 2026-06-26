@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function () {
     synthesizeReviewResultEvents(false);
   });
   document.getElementById('createReviewResultEventsButton').addEventListener('click', async function () {
-    if (!window.confirm('Create notification events from attention-worthy review results?')) return;
+    if (!window.confirm('要为需要关注的复核结果创建提醒吗？')) return;
     await synthesizeReviewResultEvents(true);
   });
   document.getElementById('refreshRawPagesButton').addEventListener('click', loadRawPages);
@@ -165,7 +165,7 @@ function normalizeAutomationActionHistoryItem(item) {
     mode: String(item.mode || 'check'),
     changed: String(item.changed || 'n/a'),
     subject: String(item.subject || 'ThreadTrace 工作区'),
-    next: String(item.next || 'Review the detailed report below.'),
+    next: String(item.next || '查看下方的详细结果。'),
     recordedAt: String(item.recordedAt || new Date().toISOString())
   };
 }
@@ -178,7 +178,7 @@ function rememberAutomationAction(action, meta) {
     mode: safeMeta.mode || 'check',
     changed: safeMeta.changed || 'n/a',
     subject: safeMeta.subject || 'ThreadTrace 工作区',
-    next: safeMeta.next || 'Review the detailed report below.',
+    next: safeMeta.next || '查看下方的详细结果。',
     recordedAt: new Date().toISOString()
   });
   if (!item) return state.automationActionHistory || [];
@@ -494,25 +494,25 @@ function bindForms() {
     }
     if (button.dataset.action === 'synthesize-runbook-events') {
       const execute = button.dataset.execute === 'true';
-      if (execute && !window.confirm('Create notification events from current runbook actions?')) return;
+      if (execute && !window.confirm('要为当前操作清单创建提醒吗？')) return;
       await synthesizeRunbookEventsFromButton(button, execute);
       return;
     }
     if (button.dataset.action === 'synthesize-source-attention-events') {
       const execute = button.dataset.execute === 'true';
-      if (execute && !window.confirm('Create notification events from current source attention items?')) return;
+      if (execute && !window.confirm('要为当前来源关注创建提醒吗？')) return;
       await synthesizeSourceAttentionEventsFromButton(button, execute);
       return;
     }
     if (button.dataset.action === 'synthesize-source-type-operations-events') {
       const execute = button.dataset.execute === 'true';
-      if (execute && !window.confirm('Create notification events from current source type operations?')) return;
+      if (execute && !window.confirm('要为当前来源类型运行创建提醒吗？')) return;
       await synthesizeSourceTypeOperationsEventsFromButton(button, execute);
       return;
     }
     if (button.dataset.action === 'reset-source-failure') {
       const execute = button.dataset.execute === 'true';
-      if (execute && !window.confirm('Reset this source failure state and retry now?')) return;
+      if (execute && !window.confirm('要清除这个来源的失败状态并立即重试吗？')) return;
       await resetSourceFailureFromButton(button, execute);
       return;
     }
@@ -522,7 +522,7 @@ function bindForms() {
     }
     if (button.dataset.action === 'set-source-schedule') {
       const execute = button.dataset.execute === 'true';
-      if (execute && !window.confirm('Configure this source schedule?')) return;
+      if (execute && !window.confirm('要更新这个来源的运行计划吗？')) return;
       await setSourceScheduleFromButton(button, execute);
       return;
     }
@@ -584,7 +584,7 @@ function bindForms() {
     }
     if (button.dataset.action === 'reset-source-failure') {
       const execute = button.dataset.execute === 'true';
-      if (execute && !window.confirm('Reset this source failure state and retry now?')) return;
+      if (execute && !window.confirm('要清除这个来源的失败状态并立即重试吗？')) return;
       await resetSourceFailureFromButton(button, execute);
       return;
     }
@@ -594,25 +594,25 @@ function bindForms() {
     }
     if (button.dataset.action === 'set-source-schedule') {
       const execute = button.dataset.execute === 'true';
-      if (execute && !window.confirm('Configure this source schedule?')) return;
+      if (execute && !window.confirm('要更新这个来源的运行计划吗？')) return;
       await setSourceScheduleFromButton(button, execute);
       return;
     }
     if (button.dataset.action === 'synthesize-source-attention-events') {
       const execute = button.dataset.execute === 'true';
-      if (execute && !window.confirm('Create notification events from this source attention item?')) return;
+      if (execute && !window.confirm('要为这个来源关注创建提醒吗？')) return;
       await synthesizeSourceAttentionEventsFromButton(button, execute);
       return;
     }
     if (button.dataset.action === 'synthesize-source-type-operations-events') {
       const execute = button.dataset.execute === 'true';
-      if (execute && !window.confirm('Create notification events from this source type operations item?')) return;
+      if (execute && !window.confirm('要为这个来源类型运行创建提醒吗？')) return;
       await synthesizeSourceTypeOperationsEventsFromButton(button, execute);
       return;
     }
     if (button.dataset.action === 'synthesize-runbook-events') {
       const execute = button.dataset.execute === 'true';
-      if (execute && !window.confirm('Create notification events from runbook actions?')) return;
+      if (execute && !window.confirm('要为这些操作清单创建提醒吗？')) return;
       await synthesizeRunbookEventsFromButton(button, execute);
     }
   });
@@ -760,7 +760,7 @@ async function handleAuthorIntelligenceAction(event) {
   }
   if (action === 'synthesize-author-review-queue-events') {
     const execute = button.dataset.execute === 'true';
-    if (execute && !window.confirm('Create notification events from open author review queue items?')) return;
+    if (execute && !window.confirm('要为当前待复核事项创建提醒吗？')) return;
     await synthesizeAuthorReviewQueueEventsFromButton(button, execute);
     return;
   }
@@ -864,7 +864,7 @@ async function handleAutomationReadinessAction(event) {
   }
   if (button.dataset.action === 'set-source-schedule') {
     const execute = button.dataset.execute === 'true';
-    if (execute && !window.confirm('Configure this source schedule?')) return;
+    if (execute && !window.confirm('要更新这个来源的运行计划吗？')) return;
     await setSourceScheduleFromButton(button, execute, resolveAutomationActionTarget());
     return;
   }
@@ -2403,7 +2403,7 @@ async function prepareEventActionIntentFromButton(button) {
   const eventId = button.dataset.eventId;
   const actionKey = button.dataset.actionKey;
   if (!eventId || !actionKey) {
-    renderError('eventResult', new Error('Event id and action key are required for action dry-run.'));
+    renderError('eventResult', new Error('需要提醒 ID 和动作键，才能预演动作。'));
     return;
   }
   await renderAsync('eventResult', function () {
@@ -2421,10 +2421,10 @@ async function executeEventActionFromButton(button) {
   const eventId = button.dataset.eventId;
   const actionKey = button.dataset.actionKey;
   if (!eventId || !actionKey) {
-    renderError('eventResult', new Error('Event id and action key are required for action execution.'));
+    renderError('eventResult', new Error('需要提醒 ID 和动作键，才能执行动作。'));
     return;
   }
-  if (!window.confirm('Execute ' + actionKey + ' for this notification event?')) return;
+  if (!window.confirm('要对这条提醒执行 ' + actionKey + ' 吗？')) return;
   await renderAsync('eventResult', function () {
     return requestJson('/api/events/' + encodeURIComponent(eventId) + '/actions/execute', {
       actionKey,
@@ -2473,7 +2473,7 @@ function buildVisibleEventAckRequest(execute) {
   const request = Object.assign(buildEventSourceScopeRequest(), {
     acknowledged: false,
     acknowledgedBy: 'web',
-    note: 'Acknowledged from the web event filter.',
+    note: '从页面筛选结果确认提醒。',
     dryRun: execute !== true,
     execute: execute === true
   });
@@ -2912,9 +2912,9 @@ async function dispatchEvents() {
 
 async function acknowledgeVisibleEvents(execute) {
   const request = buildVisibleEventAckRequest(execute);
-  if (execute && !window.confirm('Acknowledge up to ' + request.limit + ' open notification events in the current filter?')) return;
+  if (execute && !window.confirm('要确认当前筛选下最多 ' + request.limit + ' 条未读提醒吗？')) return;
   const target = document.getElementById('eventResult');
-  target.innerHTML = renderFeedbackState('loading', execute ? 'Acknowledging events...' : 'Previewing acknowledgement candidates...');
+  target.innerHTML = renderFeedbackState('loading', execute ? '正在确认提醒...' : '正在预览可确认提醒...');
   try {
     const result = await requestJson('/api/events/ack', request);
     await loadSystemStatus();
@@ -2928,9 +2928,9 @@ async function acknowledgeVisibleEvents(execute) {
 
 async function archiveHandledEvents(execute) {
   const request = buildEventArchiveRequest(execute);
-  if (execute && !window.confirm('Archive handled notification events older than 30 days in the current filter?')) return;
+  if (execute && !window.confirm('要归档当前筛选下 30 天前已处理的提醒吗？')) return;
   const target = document.getElementById('eventResult');
-  target.innerHTML = renderFeedbackState('loading', 'Checking event archive policy...');
+  target.innerHTML = renderFeedbackState('loading', '正在检查提醒归档规则...');
   try {
     const result = await requestJson('/api/events/archive', request);
     await loadEvents();
@@ -2946,7 +2946,7 @@ async function renderAsync(targetId, task, renderer, options) {
   const target = document.getElementById(targetId);
   if (safeOptions.focus) focusResultTarget(targetId);
   target.setAttribute('aria-busy', 'true');
-  target.innerHTML = renderFeedbackState('loading', safeOptions.loadingMessage || 'Working...');
+  target.innerHTML = renderFeedbackState('loading', safeOptions.loadingMessage || '正在处理...');
   try {
     const result = await task();
     target.innerHTML = renderer(result);
@@ -3308,8 +3308,8 @@ function renderAuthorReviewQueueResult(result) {
   const openCount = summary.openCount || 0;
   return [
     renderAuthorReviewQueueHero(result),
-    panel('Source hotspots', renderAuthorReviewQueueSourceHotspots(summary.sourceHotspots || []), 'wide'),
-    panel('Open items', renderDurableAuthorReviewQueueRows(result.items || []), 'wide')
+    panel('来源关注', renderAuthorReviewQueueSourceHotspots(summary.sourceHotspots || []), 'wide'),
+    panel('待复核事项', renderDurableAuthorReviewQueueRows(result.items || []), 'wide')
   ].join('');
 }
 
@@ -3327,36 +3327,36 @@ function renderAuthorReviewQueueHero(result) {
     '<article class="review-queue-hero">',
     '<section class="review-queue-main">',
     '<div class="review-queue-header">',
-    '<span class="review-queue-label">Review queue</span>',
+    '<span class="review-queue-label">复核队列</span>',
     statusBadge(status, openCount > 0 ? 'warn' : statusVariant(status)),
     '</div>',
-    '<h3>' + escapeHtml(result.recommendedNextAction || 'No open author review work.') + '</h3>',
+    '<h3>' + escapeHtml(result.recommendedNextAction || '当前没有待处理的作者复核。') + '</h3>',
     '<p>' + escapeHtml([
-      'status=' + (result.status || 'ok'),
-      'priority=' + formatStanceSummary(summary.byPriority),
-      'type=' + formatStanceSummary(summary.byType),
+      '状态=' + (result.status || 'ok'),
+      '优先级=' + formatStanceSummary(summary.byPriority),
+      '类型=' + formatStanceSummary(summary.byType),
       sync
-    ].filter(Boolean).join(' | ')) + '</p>',
+    ].filter(Boolean).join(' · ')) + '</p>',
     '<div class="review-queue-actions button-group">' +
-      '<button class="inline-button secondary-inline-button" type="button" data-action="load-author-review-queue">Refresh open queue</button>' +
-      '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-author-review-queue-events" data-execute="false" data-limit="50">Alert check</button>' +
-      '<button class="inline-button warning-inline-button" type="button" data-action="synthesize-author-review-queue-events" data-execute="true" data-limit="50"' + alertDisabled + '>Create alerts</button>' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="load-author-review-queue">刷新队列</button>' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-author-review-queue-events" data-execute="false" data-limit="50">提醒检查</button>' +
+      '<button class="inline-button warning-inline-button" type="button" data-action="synthesize-author-review-queue-events" data-execute="true" data-limit="50"' + alertDisabled + '>创建提醒</button>' +
     '</div>',
     '</section>',
     '<aside class="review-queue-signals">',
-    reviewQueueSignal('Items', result.itemCount || 0, (result.itemCount || 0) > 0 ? 'ok' : 'muted'),
-    reviewQueueSignal('Open', openCount, openCount > 0 ? 'warn' : 'ok'),
-    reviewQueueSignal('High', highCount, highCount > 0 ? 'warn' : 'ok'),
-    reviewQueueSignal('Sources', sourceCount, sourceCount > 0 ? 'warn' : 'muted'),
+    reviewQueueSignal('事项', result.itemCount || 0, (result.itemCount || 0) > 0 ? 'ok' : 'muted'),
+    reviewQueueSignal('待处理', openCount, openCount > 0 ? 'warn' : 'ok'),
+    reviewQueueSignal('高优先', highCount, highCount > 0 ? 'warn' : 'ok'),
+    reviewQueueSignal('来源', sourceCount, sourceCount > 0 ? 'warn' : 'muted'),
     '</aside>',
     '<section class="review-queue-hotspots">',
-    '<span>Source hotspots</span>',
+    '<span>来源关注</span>',
     renderReviewQueueHotspotRows(hotspots),
     '</section>',
     '<section class="review-queue-foot">',
-    '<span>Queue mix</span>',
+    '<span>队列构成</span>',
     '<strong>' + escapeHtml(formatStanceSummary(summary.byStatus)) + '</strong>',
-    '<small>' + escapeHtml('source=' + formatStanceSummary(sourceCounts)) + '</small>',
+    '<small>' + escapeHtml('来源=' + formatStanceSummary(sourceCounts)) + '</small>',
     '</section>',
     '</article>'
   ].join('');
@@ -4481,14 +4481,14 @@ function renderSourceIngestDryRun(result) {
       metric('Tasks', result.repositoryWrites ? result.repositoryWrites.tasks : 0),
       metric('Raw pages', result.repositoryWrites ? result.repositoryWrites.rawThreadPages : 0)
     ].join('')),
-    panel('Dry-run checks', evidenceList(checks.map(function (check) {
+    panel('预演检查', evidenceList(checks.map(function (check) {
       return check.status + ' 路 ' + check.key + ' 路 ' + check.summary;
     })), 'wide')
   ];
   if (result.error) {
-    panels.push(panel('Dry-run error', [
-      metric('Code', result.error.code || 'error'),
-      metric('Message', result.error.message)
+    panels.push(panel('预演错误', [
+      metric('代码', result.error.code || 'error'),
+      metric('说明', result.error.message)
     ].join(''), 'wide'));
   }
   return panels.join('');
@@ -5193,7 +5193,7 @@ function renderDemoCycleClosureStep(step) {
 }
 
 function renderDemoCycleEvents(events) {
-  if (!events.length) return '<div class="muted">No source-changed event was generated in this cycle.</div>';
+  if (!events.length) return '<div class="muted">这次试跑没有生成来源变化提醒。</div>';
   return '<div class="source-operation-result-list">' + events.map(function (event) {
     return '<div class="action-row ops-row"><span>' +
       '<strong>' + escapeHtml(event.title || event.id || 'source-changed') + '</strong>' +
@@ -5201,7 +5201,7 @@ function renderDemoCycleEvents(events) {
       '<small>' + escapeHtml(event.summary || '') + '</small>' +
       '</span><span class="button-group source-op-buttons">' +
       renderEventDetailButtonControl(event) +
-      (event.acknowledgedAt ? '' : '<button class="inline-button" type="button" data-action="ack-event" data-event-id="' + escapeHtml(event.id || '') + '">Acknowledge</button>') +
+      (event.acknowledgedAt ? '' : '<button class="inline-button" type="button" data-action="ack-event" data-event-id="' + escapeHtml(event.id || '') + '">确认提醒</button>') +
       renderEventTaskDetailButton(event) +
       '</span></div>';
   }).join('') + '</div>';
@@ -5210,10 +5210,10 @@ function renderDemoCycleEvents(events) {
 function renderDemoCycleAcknowledgement(result) {
   return [
     '<div class="summary-strip">',
-    summaryTile('Status', result.status || 'unknown', statusVariant(result.status)),
-    summaryTile('Candidates', result.candidateCount || 0, result.candidateCount > 0 ? 'warn' : 'muted'),
-    summaryTile('Acknowledged', result.acknowledgedCount || 0, result.acknowledgedCount > 0 ? 'ok' : 'muted'),
-    summaryTile('Skipped', result.skippedCount || 0, result.skippedCount > 0 ? 'warn' : 'muted'),
+    summaryTile('状态', result.status || 'unknown', statusVariant(result.status)),
+    summaryTile('候选', result.candidateCount || 0, result.candidateCount > 0 ? 'warn' : 'muted'),
+    summaryTile('已确认', result.acknowledgedCount || 0, result.acknowledgedCount > 0 ? 'ok' : 'muted'),
+    summaryTile('跳过', result.skippedCount || 0, result.skippedCount > 0 ? 'warn' : 'muted'),
     '</div>',
     evidenceList((result.results || []).map(function (item) {
       return (item.status || 'unknown') + ' | ' + (item.eventId || '') + (item.reason ? ' | ' + item.reason : '');
@@ -6687,9 +6687,9 @@ function renderSourceOperationsCockpitRows(queue) {
 }
 
 function renderSourceOperationsCockpitControls(item, source) {
-  const planButton = '<button class="inline-button" type="button" data-action="load-source-cockpit-action-plan" data-rank="' + escapeHtml(item.rank || '') + '" data-item-id="' + escapeHtml(item.id || '') + '" data-source-id="' + escapeHtml(source && source.id || '') + '" data-source-key="' + escapeHtml(source && source.sourceKey || '') + '" data-source-type="' + escapeHtml(item.sourceType || source && source.sourceType || '') + '" data-limit="100" data-cockpit-limit="12">Plan</button>';
+  const planButton = '<button class="inline-button" type="button" data-action="load-source-cockpit-action-plan" data-rank="' + escapeHtml(item.rank || '') + '" data-item-id="' + escapeHtml(item.id || '') + '" data-source-id="' + escapeHtml(source && source.id || '') + '" data-source-key="' + escapeHtml(source && source.sourceKey || '') + '" data-source-type="' + escapeHtml(item.sourceType || source && source.sourceType || '') + '" data-limit="100" data-cockpit-limit="12">计划</button>';
   if (item.scope === 'source-type' || item.sourceType) {
-    return planButton + '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-type-drilldown" data-source-type="' + escapeHtml(item.sourceType || '') + '" data-limit="50" data-scan-limit="250">Ops</button>';
+    return planButton + '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-type-drilldown" data-source-type="' + escapeHtml(item.sourceType || '') + '" data-limit="50" data-scan-limit="250">查看路径</button>';
   }
   const hasSourceId = Boolean(source && source.id);
   const hasSourceScope = Boolean(source && (source.id || source.sourceKey));
@@ -6712,20 +6712,20 @@ function renderSourceCockpitActionPlan(plan) {
   const summary = plan.summary || {};
   const item = plan.selectedItem || {};
   return [
-    panel('Cockpit action plan', [
+    panel('来源动作计划', [
       '<div class="summary-strip">',
-      summaryTile('Status', plan.status || 'unknown', statusVariant(plan.status === 'actionable' ? 'warn' : 'ok')),
-      summaryTile('Actions', String(summary.actionCount || 0), (summary.actionCount || 0) > 0 ? 'ok' : 'muted'),
-      summaryTile('Dry-run', String(summary.dryRunCount || 0), (summary.dryRunCount || 0) > 0 ? 'warn' : 'ok'),
-      summaryTile('Execute', String(summary.executeCount || 0), (summary.executeCount || 0) > 0 ? 'warn' : 'ok'),
-      summaryTile('Destructive', String(summary.destructiveCount || 0), (summary.destructiveCount || 0) > 0 ? 'fail' : 'ok'),
+      summaryTile('状态', plan.status || 'unknown', statusVariant(plan.status === 'actionable' ? 'warn' : 'ok')),
+      summaryTile('动作', String(summary.actionCount || 0), (summary.actionCount || 0) > 0 ? 'ok' : 'muted'),
+      summaryTile('预演', String(summary.dryRunCount || 0), (summary.dryRunCount || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('执行', String(summary.executeCount || 0), (summary.executeCount || 0) > 0 ? 'warn' : 'ok'),
+      summaryTile('高风险', String(summary.destructiveCount || 0), (summary.destructiveCount || 0) > 0 ? 'fail' : 'ok'),
       '</div>',
-      metric('Queue item', '#' + (item.rank || '?') + ' ' + (item.title || item.id || 'unknown')),
-      metric('Kind', item.kind || 'unknown'),
-      metric('Priority', item.priorityScore || 0),
-      metric('Next', plan.recommendedNextAction || 'none')
+      metric('队列项', '#' + (item.rank || '?') + ' ' + (item.title || item.id || 'unknown')),
+      metric('类型', item.kind || 'unknown'),
+      metric('优先级', item.priorityScore || 0),
+      metric('下一步', plan.recommendedNextAction || 'none')
     ].join(''), 'wide'),
-    panel('Plan actions', renderSourceCockpitActionRows(plan.actions || [], item), 'wide')
+    panel('计划动作', renderSourceCockpitActionRows(plan.actions || [], item), 'wide')
   ].join('');
 }
 
@@ -6758,41 +6758,41 @@ function renderSourceCockpitActionButton(action, item) {
   const sourceKey = escapeHtml(source.sourceKey || '');
   const sourceType = escapeHtml(item.sourceType || source.sourceType || '');
   if (action.key === 'source.drilldown') {
-    return '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-drilldown" data-source-id="' + sourceId + '" data-source-key="' + sourceKey + '" data-limit="50">Open</button>' +
-      '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-collection-health" data-source-id="' + sourceId + '" data-source-key="' + sourceKey + '" data-limit="50">Health</button>';
+    return '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-drilldown" data-source-id="' + sourceId + '" data-source-key="' + sourceKey + '" data-limit="50">查看路径</button>' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-collection-health" data-source-id="' + sourceId + '" data-source-key="' + sourceKey + '" data-limit="50">健康简报</button>';
   }
   if (action.key === 'source.run-ingest') {
-    return '<button class="inline-button" type="button" data-action="run-source" data-source-id="' + sourceId + '">Run</button>';
+    return '<button class="inline-button" type="button" data-action="run-source" data-source-id="' + sourceId + '">运行</button>';
   }
   if (action.key === 'source.run-insight') {
-    return '<button class="inline-button" type="button" data-action="run-source-pipeline" data-source-id="' + sourceId + '">Insight</button>';
+    return '<button class="inline-button" type="button" data-action="run-source-pipeline" data-source-id="' + sourceId + '">洞察</button>';
   }
   if (action.key === 'source.failure-reset.preview') {
-    return '<button class="inline-button secondary-inline-button" type="button" data-action="reset-source-failure" data-source-id="' + sourceId + '" data-execute="false" data-retry-now="true">Preview</button>';
+    return '<button class="inline-button secondary-inline-button" type="button" data-action="reset-source-failure" data-source-id="' + sourceId + '" data-execute="false" data-retry-now="true">预览</button>';
   }
   if (action.key === 'source.failure-reset.execute') {
-    return '<button class="inline-button warning-inline-button" type="button" data-action="reset-source-failure" data-source-id="' + sourceId + '" data-execute="true" data-retry-now="true">Retry now</button>';
+    return '<button class="inline-button warning-inline-button" type="button" data-action="reset-source-failure" data-source-id="' + sourceId + '" data-execute="true" data-retry-now="true">立即重试</button>';
   }
   if (action.key === 'source.enable.preview') {
-    return '<button class="inline-button secondary-inline-button" type="button" data-action="set-source-enabled" data-source-id="' + sourceId + '" data-enabled="true" data-execute="false">Preview</button>';
+    return '<button class="inline-button secondary-inline-button" type="button" data-action="set-source-enabled" data-source-id="' + sourceId + '" data-enabled="true" data-execute="false">预览</button>';
   }
   if (action.key === 'source.enable.execute') {
-    return '<button class="inline-button" type="button" data-action="set-source-enabled" data-source-id="' + sourceId + '" data-enabled="true" data-execute="true">Enable</button>';
+    return '<button class="inline-button" type="button" data-action="set-source-enabled" data-source-id="' + sourceId + '" data-enabled="true" data-execute="true">启用</button>';
   }
   if (action.key === 'source-attention.events.preview') {
-    return '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-source-attention-events" data-execute="false" data-source-id="' + sourceId + '" data-source-key="' + sourceKey + '" data-limit="100" data-attention-limit="100" data-priority-score-threshold="70">Preview</button>';
+    return '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-source-attention-events" data-execute="false" data-source-id="' + sourceId + '" data-source-key="' + sourceKey + '" data-limit="100" data-attention-limit="100" data-priority-score-threshold="70">预览</button>';
   }
   if (action.key === 'runbook.events.preview') {
-    return '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-runbook-events" data-execute="false" data-source-id="' + sourceId + '" data-source-key="' + sourceKey + '" data-limit="100">Preview</button>';
+    return '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-runbook-events" data-execute="false" data-source-id="' + sourceId + '" data-source-key="' + sourceKey + '" data-limit="100">预览</button>';
   }
   if (action.key === 'source-type.drilldown') {
-    return '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-type-drilldown" data-source-type="' + sourceType + '" data-limit="50" data-scan-limit="250">Open</button>';
+    return '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-type-drilldown" data-source-type="' + sourceType + '" data-limit="50" data-scan-limit="250">打开路径</button>';
   }
   if (action.key === 'source-type-operations.events.preview') {
-    return '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-source-type-operations-events" data-execute="false" data-source-type="' + sourceType + '" data-limit="100" data-source-type-limit="100" data-attention-limit="100" data-priority-score-threshold="70">Preview</button>';
+    return '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-source-type-operations-events" data-execute="false" data-source-type="' + sourceType + '" data-limit="100" data-source-type-limit="100" data-attention-limit="100" data-priority-score-threshold="70">预览</button>';
   }
   if (action.key === 'source-type.run-due-insight') {
-    return '<button class="inline-button" type="button" data-action="run-due-pipelines" data-source-type="' + sourceType + '" data-limit="50" data-provider="mock">Run due</button>';
+    return '<button class="inline-button" type="button" data-action="run-due-pipelines" data-source-type="' + sourceType + '" data-limit="50" data-provider="mock">运行到期洞察</button>';
   }
   return '';
 }
@@ -6815,19 +6815,19 @@ function renderSourceTypeOperations(report) {
 }
 
 function renderSourceTypeOperationsRows(sourceTypes) {
-  if (!sourceTypes.length) return '<div class="muted">No source type operations yet.</div>';
+  if (!sourceTypes.length) return '<div class="muted">暂无来源类型运行记录。</div>';
   return '<div class="source-work-list">' + sourceTypes.map(function (sourceType) {
     const readiness = sourceType.readiness || {};
     const schedule = sourceType.schedule || {};
     const lifecycle = sourceType.lifecycle || {};
     const attention = sourceType.attention || {};
     const commands = sourceType.recommendedCommands || [];
-    const actions = '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-type-drilldown" data-source-type="' + escapeHtml(sourceType.sourceType || '') + '" data-limit="50" data-scan-limit="250">Ops</button>';
+    const actions = '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-type-drilldown" data-source-type="' + escapeHtml(sourceType.sourceType || '') + '" data-limit="50" data-scan-limit="250">查看路径</button>';
     return '<div class="source-work-row source-type-work-row ' + statusClassName(statusVariant(sourceType.status)) + '">' +
       '<section class="source-work-anchor">' +
-        '<span class="source-work-scope">source-type</span>' +
+        '<span class="source-work-scope">来源类型</span>' +
         '<strong>' + escapeHtml(sourceType.sourceType || 'unknown') + '</strong>' +
-        '<small>' + escapeHtml('readiness=' + (readiness.status || 'unknown')) + '</small>' +
+        '<small>' + escapeHtml('准备=' + (readiness.status || 'unknown')) + '</small>' +
       '</section>' +
       '<section class="source-work-brief">' +
         '<p>' + escapeHtml(sourceType.recommendedNextAction || 'Review this source type family and keep connector readiness clear.') + '</p>' +
@@ -7570,12 +7570,12 @@ function formatSourceTimelineRow(item) {
 function renderRunbookEventControls(alertableCount) {
   const disabled = alertableCount > 0 ? '' : ' disabled';
   return '<div class="action-row ops-row"><span>' +
-    '<strong>Runbook alerts</strong>' +
-    '<small>' + escapeHtml('alertable=' + alertableCount) + '</small>' +
+    '<strong>操作清单提醒</strong>' +
+    '<small>' + escapeHtml('可提醒=' + alertableCount) + '</small>' +
     '</span>' +
     '<span class="button-group source-op-buttons">' +
-    '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-runbook-events" data-execute="false" data-limit="100">Runbook check</button>' +
-    '<button class="inline-button warning-inline-button" type="button" data-action="synthesize-runbook-events" data-execute="true" data-limit="100"' + disabled + '>Create alerts</button>' +
+    '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-runbook-events" data-execute="false" data-limit="100">清单检查</button>' +
+    '<button class="inline-button warning-inline-button" type="button" data-action="synthesize-runbook-events" data-execute="true" data-limit="100"' + disabled + '>创建提醒</button>' +
     '</span></div>';
 }
 
@@ -7583,7 +7583,7 @@ function renderSourceAttentionEventControls(alertableCount) {
   const disabled = alertableCount > 0 ? '' : ' disabled';
   return '<div class="action-row ops-row"><span>' +
     '<strong>来源关注提醒</strong>' +
-    '<small>' + escapeHtml('alertable=' + alertableCount + ' | threshold=70') + '</small>' +
+    '<small>' + escapeHtml('可提醒=' + alertableCount + ' · 阈值=70') + '</small>' +
     '</span>' +
     '<span class="button-group source-op-buttons">' +
     '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-source-attention-events" data-execute="false" data-limit="100" data-attention-limit="100" data-priority-score-threshold="70">关注检查</button>' +
@@ -7595,7 +7595,7 @@ function renderSourceTypeOperationsEventControls(alertableCount) {
   const disabled = alertableCount > 0 ? '' : ' disabled';
   return '<div class="action-row ops-row"><span>' +
     '<strong>来源类型运行提醒</strong>' +
-    '<small>' + escapeHtml('alertable=' + alertableCount + ' | threshold=70') + '</small>' +
+    '<small>' + escapeHtml('可提醒=' + alertableCount + ' · 阈值=70') + '</small>' +
     '</span>' +
     '<span class="button-group source-op-buttons">' +
     '<button class="inline-button secondary-inline-button" type="button" data-action="synthesize-source-type-operations-events" data-execute="false" data-limit="100" data-source-type-limit="100" data-attention-limit="100" data-priority-score-threshold="70">类型检查</button>' +
@@ -7808,9 +7808,9 @@ function renderLifecycleAttentionRows(sources) {
     return guard.blocked || guard.stale || (retry.active && !retry.elapsed) || source.enabled === false;
   });
   const rows = attentionSources.length > 0 ? attentionSources : (sources || []).slice(0, 5);
-  if (rows.length === 0) return '<div class="muted">No tracked sources.</div>';
+  if (rows.length === 0) return '<div class="muted">还没有跟踪来源。</div>';
   if (attentionSources.length === 0) {
-    return '<div class="muted">No lifecycle attention needed.</div>' + rows.map(renderLifecycleSourceRow).join('');
+    return '<div class="muted">当前没有生命周期事项需要处理。</div>' + rows.map(renderLifecycleSourceRow).join('');
   }
   return rows.map(renderLifecycleSourceRow).join('');
 }
@@ -7856,7 +7856,7 @@ function renderLifecycleCommandRows(commands) {
   return '<div class="lifecycle-command-list">' + filteredCommands.map(function (command) {
     return '<div class="lifecycle-command-row">' +
       '<code>' + escapeHtml(command) + '</code>' +
-      '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="copy-lifecycle-command">Copy</button>' +
+      '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="copy-lifecycle-command">复制</button>' +
       '</div>';
   }).join('') + '</div>';
 }
@@ -7864,8 +7864,8 @@ function renderLifecycleCommandRows(commands) {
 function renderSourceDrilldownButton(source) {
   const sourceId = escapeHtml(source.id || '');
   const sourceKey = escapeHtml(source.sourceKey || '');
-  return '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-drilldown" data-source-id="' + sourceId + '" data-source-key="' + sourceKey + '" data-limit="50">Ops</button>' +
-    '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-collection-health" data-source-id="' + sourceId + '" data-source-key="' + sourceKey + '" data-limit="50">Health</button>';
+  return '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-drilldown" data-source-id="' + sourceId + '" data-source-key="' + sourceKey + '" data-limit="50">查看路径</button>' +
+    '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-collection-health" data-source-id="' + sourceId + '" data-source-key="' + sourceKey + '" data-limit="50">健康简报</button>';
 }
 
 function renderSourceDrilldownButtonForScope(scope) {
@@ -7883,8 +7883,8 @@ function renderSourceRunButtons(source) {
   if (runState.status === 'running') return '';
   const sourceId = escapeHtml(source.id);
   return [
-    '<button class="inline-button secondary-inline-button" type="button" data-action="run-source" data-source-id="' + sourceId + '">Run</button>',
-    '<button class="inline-button secondary-inline-button" type="button" data-action="run-source-pipeline" data-source-id="' + sourceId + '">Insight</button>'
+    '<button class="inline-button secondary-inline-button" type="button" data-action="run-source" data-source-id="' + sourceId + '">运行</button>',
+    '<button class="inline-button secondary-inline-button" type="button" data-action="run-source-pipeline" data-source-id="' + sourceId + '">洞察</button>'
   ].join('');
 }
 
@@ -8164,8 +8164,8 @@ function renderContextReviewResultOverview(result) {
       overview: actionAuditOverview,
       audits: actionAudits.audits || []
     }),
-    panel('Review attention', renderContextReviewAttentionRows(attention.topRecords || []), 'wide'),
-    panel('Recent review results', renderContextReviewResultRows(records), 'wide')
+    panel('复核关注', renderContextReviewAttentionRows(attention.topRecords || []), 'wide'),
+    panel('最近复核结果', renderContextReviewResultRows(records), 'wide')
   ].join('');
 }
 
@@ -8173,20 +8173,20 @@ function renderContextReviewResultActionPlan(plan) {
   const risk = plan.risk || {};
   const attention = plan.attention || {};
   const tiles = '<div class="summary-strip event-summary-strip">' + [
-    summaryTile('Close tasks', String((plan.closeTaskIds || []).length), (plan.closeTaskIds || []).length > 0 ? 'ok' : 'muted'),
-    summaryTile('Keep open', String((plan.keepOpenTaskIds || []).length), (plan.keepOpenTaskIds || []).length > 0 ? 'warn' : 'ok'),
-    summaryTile('Merge candidates', String((plan.mergeCandidates || []).length), (plan.mergeCandidates || []).length > 0 ? 'ok' : 'muted'),
-    summaryTile('Blocked', String((plan.blockedTasks || []).length), (plan.blockedTasks || []).length > 0 ? 'warn' : 'ok'),
-    summaryTile('Conflicts', String((attention.conflictTaskIds || []).length), (attention.conflictTaskIds || []).length > 0 ? 'fail' : 'ok')
+    summaryTile('可关闭', String((plan.closeTaskIds || []).length), (plan.closeTaskIds || []).length > 0 ? 'ok' : 'muted'),
+    summaryTile('保持打开', String((plan.keepOpenTaskIds || []).length), (plan.keepOpenTaskIds || []).length > 0 ? 'warn' : 'ok'),
+    summaryTile('合并候选', String((plan.mergeCandidates || []).length), (plan.mergeCandidates || []).length > 0 ? 'ok' : 'muted'),
+    summaryTile('受阻', String((plan.blockedTasks || []).length), (plan.blockedTasks || []).length > 0 ? 'warn' : 'ok'),
+    summaryTile('冲突', String((attention.conflictTaskIds || []).length), (attention.conflictTaskIds || []).length > 0 ? 'fail' : 'ok')
   ].join('') + '</div>';
-  return panel('Review action plan', [
+  return panel('复核动作计划', [
     tiles,
-    metric('Generated', plan.generatedAt || 'unknown'),
-    metric('Risk', risk.level || 'unknown'),
-    metric('Next action', plan.recommendedNextAction || 'none'),
-    '<h4>Merge candidates</h4>',
+    metric('生成时间', plan.generatedAt || 'unknown'),
+    metric('风险', risk.level || 'unknown'),
+    metric('下一步', plan.recommendedNextAction || 'none'),
+    '<h4>合并候选</h4>',
     renderReviewMergeCandidateRows(plan.mergeCandidates || []),
-    '<h4>Blocked tasks</h4>',
+    '<h4>受阻任务</h4>',
     renderReviewBlockedTaskRows(plan.blockedTasks || [])
   ].join(''), 'wide');
 }
@@ -8212,15 +8212,15 @@ function renderContextReviewResultActionGate(gateReport) {
 function renderContextReviewActionApplyResult(result) {
   const task = result.task || {};
   const report = result.report || {};
-  return panel('Review action apply task', [
-    metric('Task', task.id || 'none'),
-    metric('Task status', task.status || 'unknown'),
-    metric('Report', report.status || 'unknown'),
-    metric('Mode', report.dryRun ? 'dry-run' : 'execute'),
-    metric('Executed', report.executed ? 'yes' : 'no'),
-    metric('Applied', report.applied ? 'yes' : 'no'),
-    metric('Close tasks', report.closeTaskCount || 0),
-    metric('Merge candidates', report.mergeCandidateCount || 0),
+  return panel('复核动作应用', [
+    metric('任务', task.id || 'none'),
+    metric('任务状态', task.status || 'unknown'),
+    metric('报告', report.status || 'unknown'),
+    metric('模式', report.dryRun ? '预演' : '执行'),
+    metric('已执行', report.executed ? '是' : '否'),
+    metric('已应用', report.applied ? '是' : '否'),
+    metric('关闭任务', report.closeTaskCount || 0),
+    metric('合并候选', report.mergeCandidateCount || 0),
     renderReviewActionApplyStepRows(report.steps || [])
   ].join(''), 'wide');
 }
@@ -8275,20 +8275,20 @@ function renderContextReviewActionExecutorDiagnostics(result) {
   const methods = result.methods || {};
   const audit = result.audit || {};
   const tiles = '<div class="summary-strip event-summary-strip">' + [
-    summaryTile('Status', result.status || 'unknown', statusVariant(result.status)),
-    summaryTile('Mode', result.mode || 'none', result.ready ? 'ok' : 'warn'),
-    summaryTile('Ready', result.ready ? 'yes' : 'no', result.ready ? 'ok' : 'warn'),
-    summaryTile('Dry-run only', result.dryRunOnly ? 'yes' : 'no', result.dryRunOnly ? 'warn' : 'ok'),
-    summaryTile('Audits', String(audit.count || 0), (audit.count || 0) > 0 ? 'ok' : 'muted')
+    summaryTile('状态', result.status || 'unknown', statusVariant(result.status)),
+    summaryTile('模式', result.mode || 'none', result.ready ? 'ok' : 'warn'),
+    summaryTile('就绪', result.ready ? '是' : '否', result.ready ? 'ok' : 'warn'),
+    summaryTile('仅预演', result.dryRunOnly ? '是' : '否', result.dryRunOnly ? 'warn' : 'ok'),
+    summaryTile('审计', String(audit.count || 0), (audit.count || 0) > 0 ? 'ok' : 'muted')
   ].join('') + '</div>';
   return panel('复核执行诊断', [
     tiles,
-    metric('Source', result.source || 'unknown'),
-    metric('Mutates source truth', result.mutatesSourceTruth ? 'yes' : 'no'),
-    metric('closeTasks', methods.closeTasks ? 'available' : 'missing'),
-    metric('mergeContext', methods.mergeContext ? 'available' : 'missing'),
-    metric('Latest audit', audit.latestGeneratedAt || 'none'),
-    '<h4>Checks</h4>',
+    metric('来源', result.source || 'unknown'),
+    metric('会改写真值', result.mutatesSourceTruth ? '是' : '否'),
+    metric('关闭任务能力', methods.closeTasks ? '可用' : '缺失'),
+    metric('合并上下文能力', methods.mergeContext ? '可用' : '缺失'),
+    metric('最新审计', audit.latestGeneratedAt || 'none'),
+    '<h4>检查项</h4>',
     renderDiagnosticCheckRows(result.checks || []),
     '<h4>下一步</h4>',
     evidenceList((result.nextActions || []).map(function (action) {
@@ -8495,25 +8495,25 @@ function renderNotificationEventDetail(result) {
   const sourceScope = result.sourceScope || {};
   const relatedTask = result.relatedTask || {};
   return [
-    panel('Event detail', [
+    panel('提醒详情', [
       '<div class="summary-strip event-summary-strip">' + [
-        summaryTile('Status', event.deliveryStatus || 'pending', statusVariant(event.deliveryStatus || 'pending')),
-        summaryTile('Severity', event.severity || 'unknown', statusVariant(event.severity)),
-        summaryTile('Type', event.type || 'unknown'),
-        summaryTile('Source', sourceScope.sourceId || sourceScope.sourceKey || 'none', sourceScope.sourceId || sourceScope.sourceKey ? 'ok' : 'muted')
+        summaryTile('状态', event.deliveryStatus || 'pending', statusVariant(event.deliveryStatus || 'pending')),
+        summaryTile('级别', event.severity || 'unknown', statusVariant(event.severity)),
+        summaryTile('类型', event.type || 'unknown'),
+        summaryTile('来源', sourceScope.sourceId || sourceScope.sourceKey || '未绑定', sourceScope.sourceId || sourceScope.sourceKey ? 'ok' : 'muted')
       ].join('') + '</div>',
-      metric('Event ID', event.id || 'none'),
-      metric('Created', event.createdAt || 'unknown'),
-      metric('Next delivery', event.nextDeliveryAt || 'none'),
-      metric('Attempts', event.deliveryAttempts || 0),
-      metric('Acknowledged', event.acknowledgedAt || 'not acknowledged'),
-      metric('Source scope', formatTaskSourceScope(sourceScope)),
-      metric('Related task', relatedTask.id ? relatedTask.id + (relatedTask.missing ? ' (missing)' : ' | ' + [relatedTask.status, relatedTask.type].filter(Boolean).join('/')) : 'none'),
+      metric('提醒 ID', event.id || 'none'),
+      metric('创建时间', event.createdAt || 'unknown'),
+      metric('下次投递', event.nextDeliveryAt || 'none'),
+      metric('尝试次数', event.deliveryAttempts || 0),
+      metric('确认状态', event.acknowledgedAt || '未确认'),
+      metric('来源范围', formatTaskSourceScope(sourceScope)),
+      metric('关联任务', relatedTask.id ? relatedTask.id + (relatedTask.missing ? '（未找到）' : ' · ' + [relatedTask.status, relatedTask.type].filter(Boolean).join('/')) : '无'),
       renderNotificationEventDetailButtons(result)
     ].join(''), 'wide'),
-    panel('Action readiness', renderNotificationEventActionReadiness(result.actionReadiness), 'wide'),
-    panel('Event actions', renderNotificationEventDetailActions(result.nextActions || [], event.id), 'wide'),
-    panel('Event payload', '<pre>' + escapeHtml(JSON.stringify({
+    panel('动作准备', renderNotificationEventActionReadiness(result.actionReadiness), 'wide'),
+    panel('建议动作', renderNotificationEventDetailActions(result.nextActions || [], event.id), 'wide'),
+    panel('提醒证据', '<pre>' + escapeHtml(JSON.stringify({
       title: event.title,
       summary: event.summary,
       payload: event.payload,
@@ -8524,18 +8524,18 @@ function renderNotificationEventDetail(result) {
 }
 
 function renderNotificationEventActionReadiness(readiness) {
-  if (!readiness) return '<div class="muted">No action readiness report.</div>';
+  if (!readiness) return '<div class="muted">暂无动作准备报告。</div>';
   const gates = readiness.gates || [];
   return [
     '<div class="summary-strip event-summary-strip">' + [
-      summaryTile('Status', readiness.status || 'unknown', statusVariant(readiness.status)),
-      summaryTile('Gates', readiness.gateCount || gates.length),
-      summaryTile('Warnings', readiness.warningCount || 0, readiness.warningCount ? 'warn' : 'ok'),
-      summaryTile('Executable', (readiness.executableActionKeys || []).length)
+      summaryTile('状态', readiness.status || 'unknown', statusVariant(readiness.status)),
+      summaryTile('检查项', readiness.gateCount || gates.length),
+      summaryTile('提醒', readiness.warningCount || 0, readiness.warningCount ? 'warn' : 'ok'),
+      summaryTile('可执行', (readiness.executableActionKeys || []).length)
     ].join('') + '</div>',
     gates.map(function (gate) {
       return '<div class="action-row ops-row"><span>' +
-        '<strong>' + escapeHtml((gate.status || 'unknown') + ' | ' + (gate.key || 'gate')) + '</strong>' +
+        '<strong>' + escapeHtml((gate.status || 'unknown') + ' · ' + (gate.key || 'gate')) + '</strong>' +
         '<small>' + escapeHtml(gate.summary || '') + '</small>' +
         '</span>' +
         statusBadge(gate.status || 'unknown', gate.status === 'warn' ? 'warn' : statusVariant(gate.status)) +
@@ -8553,22 +8553,22 @@ function renderNotificationEventDetailButtons(result) {
       sourceId: sourceScope.sourceId,
       sourceKey: sourceScope.sourceKey
     }) +
-    (relatedTask.id ? '<button class="inline-button secondary-inline-button" type="button" data-action="load-task-detail" data-task-id="' + escapeHtml(relatedTask.id) + '" data-trace-limit="20">Task</button>' : '') +
-    (event.acknowledgedAt ? '' : '<button class="inline-button" type="button" data-action="ack-event" data-event-id="' + escapeHtml(event.id || '') + '">Acknowledge</button>') +
+    (relatedTask.id ? '<button class="inline-button secondary-inline-button" type="button" data-action="load-task-detail" data-task-id="' + escapeHtml(relatedTask.id) + '" data-trace-limit="20">关联任务</button>' : '') +
+    (event.acknowledgedAt ? '' : '<button class="inline-button" type="button" data-action="ack-event" data-event-id="' + escapeHtml(event.id || '') + '">确认提醒</button>') +
     '</div>';
 }
 
 function renderNotificationEventDetailActions(actions, eventId) {
-  if (!actions.length) return '<div class="muted">No recommended event actions.</div>';
+  if (!actions.length) return '<div class="muted">暂无建议动作。</div>';
   return actions.map(function (action) {
     const intentButton = eventId && action.key
-      ? '<button class="inline-button secondary-inline-button" type="button" data-action="prepare-event-action-intent" data-event-id="' + escapeHtml(eventId) + '" data-action-key="' + escapeHtml(action.key) + '">Dry-run</button>'
+      ? '<button class="inline-button secondary-inline-button" type="button" data-action="prepare-event-action-intent" data-event-id="' + escapeHtml(eventId) + '" data-action-key="' + escapeHtml(action.key) + '">预演</button>'
       : '';
     const executeButton = eventId && action.key === 'event.acknowledge'
-      ? '<button class="inline-button" type="button" data-action="execute-event-action" data-event-id="' + escapeHtml(eventId) + '" data-action-key="' + escapeHtml(action.key) + '">Execute</button>'
+      ? '<button class="inline-button" type="button" data-action="execute-event-action" data-event-id="' + escapeHtml(eventId) + '" data-action-key="' + escapeHtml(action.key) + '">执行确认</button>'
       : '';
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml((action.severity || 'info') + ' | ' + (action.key || 'event.action')) + '</strong>' +
+      '<strong>' + escapeHtml((action.severity || 'info') + ' · ' + (action.key || 'event.action')) + '</strong>' +
       '<small>' + escapeHtml(action.summary || '') + '</small>' +
       (action.command ? '<small>' + escapeHtml(action.command) + '</small>' : '') +
       '</span>' +
@@ -8583,9 +8583,9 @@ function renderNotificationEventDetailActions(actions, eventId) {
 
 function renderNotificationEventActionIntent(result) {
   if (result && result.error) {
-    return panel('Event action dry-run error', [
-      metric('Code', result.error.code || 'error'),
-      metric('Message', result.error.message || 'Action intent could not be prepared.')
+    return panel('动作预演失败', [
+      metric('代码', result.error.code || 'error'),
+      metric('说明', result.error.message || '动作预演无法准备。')
     ].join(''), 'wide');
   }
   const intent = result.intent || {};
@@ -8595,25 +8595,25 @@ function renderNotificationEventActionIntent(result) {
   const executionLedger = result.executionLedger || {};
   const executed = result.executed === true;
   return [
-    panel(executed ? 'Event action execution' : 'Event action dry-run', [
+    panel(executed ? '提醒动作已执行' : '提醒动作预演', [
       '<div class="summary-strip event-summary-strip">' + [
-        summaryTile('Status', result.status || 'unknown', statusVariant(result.status)),
-        summaryTile('Mode', result.mode || 'dry-run', 'ok'),
-        summaryTile('Executed', executed ? 'yes' : 'no', executed ? 'warn' : 'ok'),
-        summaryTile('Action', result.action && result.action.key || 'unknown')
+        summaryTile('状态', result.status || 'unknown', statusVariant(result.status)),
+        summaryTile('模式', result.mode || 'dry-run', 'ok'),
+        summaryTile('已执行', executed ? '是' : '否', executed ? 'warn' : 'ok'),
+        summaryTile('动作', result.action && result.action.key || 'unknown')
       ].join('') + '</div>',
-      metric('Intent ID', intent.id || 'none'),
-      metric('Event ID', result.event && result.event.id || intent.eventId || 'none'),
-      metric('Actor', intent.actor || 'operator'),
-      metric('Reason', intent.reason || 'none'),
-      metric('Ledger', ledger.recorded ? ledger.recordId || 'recorded' : ledger.reason || 'not recorded'),
-      metric('Execution ledger', executionLedger.recorded ? [executionLedger.status, executionLedger.key, executionLedger.replayed ? 'replayed' : 'new'].filter(Boolean).join(' | ') : executionLedger.reason || 'not recorded'),
-      metric('API plan', [api.method, api.path].filter(Boolean).join(' ') || 'manual'),
-      metric('Command', intent.command || 'none'),
-      metric('Acknowledged at', result.event && result.event.acknowledgedAt || 'none'),
-      metric('Gate', gate.key ? gate.status + ' | ' + gate.key + ' | ' + gate.summary : 'none')
+      metric('意图 ID', intent.id || 'none'),
+      metric('提醒 ID', result.event && result.event.id || intent.eventId || 'none'),
+      metric('执行者', intent.actor || 'operator'),
+      metric('原因', intent.reason || 'none'),
+      metric('审计记录', ledger.recorded ? ledger.recordId || 'recorded' : ledger.reason || 'not recorded'),
+      metric('执行记录', executionLedger.recorded ? [executionLedger.status, executionLedger.key, executionLedger.replayed ? 'replayed' : 'new'].filter(Boolean).join(' · ') : executionLedger.reason || 'not recorded'),
+      metric('接口计划', [api.method, api.path].filter(Boolean).join(' ') || 'manual'),
+      metric('命令', intent.command || 'none'),
+      metric('确认时间', result.event && result.event.acknowledgedAt || 'none'),
+      metric('门禁', gate.key ? gate.status + ' · ' + gate.key + ' · ' + gate.summary : 'none')
     ].join(''), 'wide'),
-    panel('Intent evidence', '<pre>' + escapeHtml(JSON.stringify({
+    panel('动作证据', '<pre>' + escapeHtml(JSON.stringify({
       api: intent.api,
       ledger: result.ledger,
       executionLedger: result.executionLedger,
@@ -8654,16 +8654,16 @@ function renderNotificationEventOverviewLegacy(overview) {
 
 function renderNotificationSynthesisPolicyLegacy(policy) {
   const defaults = policy.defaults || {};
-  return panel('Notification synthesis policy', [
+  return panel('提醒生成规则', [
     '<div class="summary-strip event-summary-strip">' + [
-      summaryTile('Dry-run', defaults.dryRun ? 'yes' : 'no', defaults.dryRun ? 'ok' : 'warn'),
-      summaryTile('Alert severities', String((defaults.alertSeverities || []).length), 'warn'),
-      summaryTile('Source threshold', String(defaults.sourceAttentionPriorityScoreThreshold || 0), 'warn'),
-      summaryTile('Event types', String((policy.eventTypes || []).length), 'ok')
+      summaryTile('预演', defaults.dryRun ? '是' : '否', defaults.dryRun ? 'ok' : 'warn'),
+      summaryTile('提醒级别', String((defaults.alertSeverities || []).length), 'warn'),
+      summaryTile('来源阈值', String(defaults.sourceAttentionPriorityScoreThreshold || 0), 'warn'),
+      summaryTile('提醒类型', String((policy.eventTypes || []).length), 'ok')
     ].join('') + '</div>',
-    metric('Immutable', (defaults.immutableExistingStates || []).join(',') || 'none'),
-    metric('Mutation statuses', (defaults.mutationStatuses || []).join(',') || 'none'),
-    metric('Next', policy.recommendedNextAction || 'none'),
+    metric('不改动状态', (defaults.immutableExistingStates || []).join(',') || 'none'),
+    metric('可变更状态', (defaults.mutationStatuses || []).join(',') || 'none'),
+    metric('下一步', policy.recommendedNextAction || 'none'),
     renderNotificationSynthesisPolicyRows(policy.eventTypes || []),
     evidenceList((policy.sharedRules || []).map(function (rule) {
       return rule.key + ' | ' + rule.summary;
@@ -8672,7 +8672,7 @@ function renderNotificationSynthesisPolicyLegacy(policy) {
 }
 
 function renderNotificationSynthesisPolicyRowsLegacy(eventTypes) {
-  if (!eventTypes.length) return '<div class="muted">No synthesis policy event types.</div>';
+  if (!eventTypes.length) return '<div class="muted">暂无提醒生成规则。</div>';
   return '<div class="source-hotspot-list">' + eventTypes.map(function (item) {
     const rules = (item.alertRules || []).map(function (rule) {
       return rule.threshold === undefined ? rule.key : rule.key + '=' + rule.threshold;
@@ -8721,7 +8721,7 @@ function renderNotificationEventRowLegacy(event) {
 }
 
 function renderNotificationEventRowLegacy2(event) {
-  const ackLabel = event.acknowledgedAt ? 'Acknowledged' : 'Acknowledge';
+  const ackLabel = event.acknowledgedAt ? '已确认' : '确认提醒';
   const disabled = event.acknowledgedAt ? ' disabled' : '';
   const title = event.title || event.summary || event.id || 'untitled-event';
   const summary = event.summary && event.summary !== title ? '<small>' + escapeHtml(event.summary) + '</small>' : '';
@@ -8737,12 +8737,12 @@ function renderNotificationEventRowLegacy2(event) {
 
 function renderEventDetailButtonControl(event) {
   if (!event || !event.id) return '';
-  return '<button class="inline-button secondary-inline-button" type="button" data-action="load-event-detail" data-event-id="' + escapeHtml(event.id) + '">Detail</button>';
+  return '<button class="inline-button secondary-inline-button" type="button" data-action="load-event-detail" data-event-id="' + escapeHtml(event.id) + '">详情</button>';
 }
 
 function renderEventTaskDetailButton(event) {
   if (!event || !event.taskId) return '';
-  return '<button class="inline-button secondary-inline-button" type="button" data-action="load-task-detail" data-task-id="' + escapeHtml(event.taskId) + '" data-trace-limit="20">Task</button>';
+  return '<button class="inline-button secondary-inline-button" type="button" data-action="load-task-detail" data-task-id="' + escapeHtml(event.taskId) + '" data-trace-limit="20">任务</button>';
 }
 
 function renderNotificationSourceHotspotsLegacy(hotspots) {
@@ -8769,7 +8769,7 @@ function renderEventList(result) {
   const overview = result.overview;
   const policy = result.policy;
   const summary = renderEventListSummary(events);
-  const title = 'Notification stream | ' + currentEventFilterSummary();
+  const title = '提醒流 · ' + currentEventFilterSummary();
   const listPanel = events.length === 0
     ? panel(title, summary + renderNotificationEventEmptyState(overview), 'wide')
     : panel(title, summary + events.map(renderNotificationEventRow).join(''), 'wide');
@@ -8834,14 +8834,14 @@ function renderNotificationDispatchPreview(overview) {
   });
   return panel('提醒投递预览', [
     '<div class="summary-strip event-summary-strip">' + [
-      summaryTile('模式', 'dry-run', 'warn'),
+      summaryTile('模式', '预演', 'warn'),
       summaryTile('候选', String(candidateCount), candidateCount > 0 ? 'warn' : 'ok'),
       summaryTile('到期', String(dueCount), dueCount > 0 ? 'warn' : 'ok'),
       summaryTile('失败', String(failedCount), failedCount > 0 ? 'fail' : 'ok'),
       summaryTile('重试耗尽', String(retryExhaustedCount), retryExhaustedCount > 0 ? 'fail' : 'ok')
     ].join('') + '</div>',
-    metric('副作用', 'none'),
-    metric('渠道准备', safeOverview.channelStatus || safeOverview.channel || 'not evaluated'),
+    metric('副作用', '无'),
+    metric('渠道准备', safeOverview.channelStatus || safeOverview.channel || '未评估'),
     metric('下次投递', safeOverview.nextDeliveryAt || 'none'),
     metric('复核后命令', command),
     metric('下一步', dispatchPreviewNextAction(safeOverview)),
@@ -8851,10 +8851,10 @@ function renderNotificationDispatchPreview(overview) {
 
 function dispatchPreviewNextAction(overview) {
   const safeOverview = overview || {};
-  if ((safeOverview.retryExhaustedCount || 0) > 0) return 'Inspect retry-exhausted events before real dispatch.';
-  if ((safeOverview.failedCount || 0) > 0) return 'Dispatch can retry failed notification events after checking channel health.';
-  if ((safeOverview.dueForDeliveryCount || 0) > 0) return 'Dispatch can deliver due pending events from the Events tab or CLI.';
-  return safeOverview.recommendedNextAction || 'No dispatchable notification events in the current window.';
+  if ((safeOverview.retryExhaustedCount || 0) > 0) return '正式投递前先检查重试耗尽的提醒。';
+  if ((safeOverview.failedCount || 0) > 0) return '确认渠道健康后，可以重试失败提醒。';
+  if ((safeOverview.dueForDeliveryCount || 0) > 0) return '当前窗口有到期提醒，可以从提醒处理或命令行投递。';
+  return safeOverview.recommendedNextAction || '当前窗口没有可投递提醒。';
 }
 
 function notificationOutboxSignal(label, value, variant) {
@@ -8862,26 +8862,30 @@ function notificationOutboxSignal(label, value, variant) {
 }
 
 function notificationOutboxAttentionRow(event, label) {
+  const labelText = {
+    failed: '失败',
+    reviewable: '待复核'
+  }[label] || label;
   return '<div class="notification-outbox-attention-row">' +
     '<strong>' + escapeHtml(event.type || 'notification') + '</strong>' +
-    '<small>' + escapeHtml([label, event.deliveryStatus || 'unknown', event.id, event.deliveryAttempts === undefined ? undefined : 'attempts=' + event.deliveryAttempts].filter(Boolean).join(' | ')) + '</small>' +
+    '<small>' + escapeHtml([labelText, event.deliveryStatus || 'unknown', event.id, event.deliveryAttempts === undefined ? undefined : '尝试=' + event.deliveryAttempts].filter(Boolean).join(' · ')) + '</small>' +
     '</div>';
 }
 
 function renderNotificationSynthesisPolicy(policy) {
   const defaults = policy.defaults || {};
-  return panel('Notification synthesis policy', [
+  return panel('提醒生成规则', [
     '<div class="notification-policy-shell">',
       '<section class="notification-policy-head">',
-        '<span>Policy guard</span>',
-        '<strong>' + escapeHtml(policy.recommendedNextAction || 'Use dry-run synthesis before executing notification alerts.') + '</strong>',
-        '<small>' + escapeHtml('immutable=' + ((defaults.immutableExistingStates || []).join(',') || 'none') + ' | mutation=' + ((defaults.mutationStatuses || []).join(',') || 'none')) + '</small>',
+        '<span>规则保护</span>',
+        '<strong>' + escapeHtml(policy.recommendedNextAction || '创建提醒前先预演，确认不会重复打扰。') + '</strong>',
+        '<small>' + escapeHtml('不改动=' + ((defaults.immutableExistingStates || []).join(',') || 'none') + ' · 可变更=' + ((defaults.mutationStatuses || []).join(',') || 'none')) + '</small>',
       '</section>',
       '<div class="summary-strip event-summary-strip notification-policy-summary">' + [
-        summaryTile('Dry-run', defaults.dryRun ? 'yes' : 'no', defaults.dryRun ? 'ok' : 'warn'),
-        summaryTile('Alert severities', String((defaults.alertSeverities || []).length), 'warn'),
-        summaryTile('Source threshold', String(defaults.sourceAttentionPriorityScoreThreshold || 0), 'warn'),
-        summaryTile('Event types', String((policy.eventTypes || []).length), 'ok')
+        summaryTile('预演', defaults.dryRun ? '是' : '否', defaults.dryRun ? 'ok' : 'warn'),
+        summaryTile('提醒级别', String((defaults.alertSeverities || []).length), 'warn'),
+        summaryTile('来源阈值', String(defaults.sourceAttentionPriorityScoreThreshold || 0), 'warn'),
+        summaryTile('提醒类型', String((policy.eventTypes || []).length), 'ok')
       ].join('') + '</div>',
       renderNotificationSynthesisPolicyRows(policy.eventTypes || []),
       '<div class="notification-policy-rules">' + (policy.sharedRules || []).map(function (rule) {
@@ -8892,7 +8896,7 @@ function renderNotificationSynthesisPolicy(policy) {
 }
 
 function renderNotificationSynthesisPolicyRows(eventTypes) {
-  if (!eventTypes.length) return '<div class="muted">No synthesis policy event types.</div>';
+  if (!eventTypes.length) return '<div class="muted">暂无提醒生成规则。</div>';
   return '<div class="notification-policy-list">' + eventTypes.map(function (item) {
     const rules = (item.alertRules || []).map(function (rule) {
       return rule.threshold === undefined ? rule.key : rule.key + '=' + rule.threshold;
@@ -8905,12 +8909,12 @@ function renderNotificationSynthesisPolicyRows(eventTypes) {
     ].filter(Boolean).join(' | ');
     return '<div class="notification-policy-row">' +
       '<section>' +
-        '<span class="notification-policy-type">' + escapeHtml(item.sourceScoped ? 'source-scoped' : 'global') + '</span>' +
+        '<span class="notification-policy-type">' + escapeHtml(item.sourceScoped ? '按来源' : '全局') + '</span>' +
         '<strong>' + escapeHtml(item.type || 'unknown-type') + '</strong>' +
         '<small>' + escapeHtml(details) + '</small>' +
       '</section>' +
       '<div class="notification-policy-state">' +
-        statusBadge(item.staleResolution ? 'managed' : 'direct', item.staleResolution ? 'ok' : 'muted') +
+        statusBadge(item.staleResolution ? '自动维护' : '直接生成', item.staleResolution ? 'ok' : 'muted') +
       '</div>' +
       '</div>';
   }).join('') + '</div>';
@@ -8922,20 +8926,20 @@ function renderEventListSummary(events) {
   const resolved = events.filter(function (event) { return event.deliveryStatus === 'resolved'; }).length;
   const open = events.filter(function (event) { return !event.acknowledgedAt; }).length;
   return '<div class="summary-strip event-summary-strip">' + [
-    summaryTile('Shown', String(events.length)),
-    summaryTile('Open', String(open), open > 0 ? 'warn' : 'ok'),
-    summaryTile('Pending', String(pending), pending > 0 ? 'warn' : 'ok'),
-    summaryTile('Failed', String(failed), failed > 0 ? 'fail' : 'ok'),
-    summaryTile('Resolved', String(resolved), 'ok')
+    summaryTile('显示', String(events.length)),
+    summaryTile('未确认', String(open), open > 0 ? 'warn' : 'ok'),
+    summaryTile('待投递', String(pending), pending > 0 ? 'warn' : 'ok'),
+    summaryTile('失败', String(failed), failed > 0 ? 'fail' : 'ok'),
+    summaryTile('已解决', String(resolved), 'ok')
   ].join('') + '</div>';
 }
 
 function renderNotificationEventRow(event) {
-  const ackLabel = event.acknowledgedAt ? 'Acknowledged' : 'Acknowledge';
+  const ackLabel = event.acknowledgedAt ? '已确认' : '确认提醒';
   const disabled = event.acknowledgedAt ? ' disabled' : '';
-  const title = event.title || event.summary || event.id || 'untitled-event';
-  const summary = event.summary && event.summary !== title ? event.summary : 'Notification event is waiting in the current outbox window.';
-  const source = [event.sourceKey, event.sourceId].filter(Boolean).join(' / ') || 'global';
+  const title = event.title || event.summary || event.id || '未命名提醒';
+  const summary = event.summary && event.summary !== title ? event.summary : '这条提醒正在当前窗口等待处理。';
+  const source = [event.sourceKey, event.sourceId].filter(Boolean).join(' / ') || '全部来源';
   const controls = '<section class="notification-event-actions button-group source-op-buttons">' +
     renderEventDetailButtonControl(event) +
     renderEventSourceDrilldownButton(event) +
@@ -8946,16 +8950,16 @@ function renderNotificationEventRow(event) {
     '<section class="notification-event-anchor">' +
       '<span class="notification-event-source">' + escapeHtml(source) + '</span>' +
       '<strong>' + escapeHtml(event.type || 'notification') + '</strong>' +
-      '<small>' + escapeHtml(event.createdAt || 'time unknown') + '</small>' +
+      '<small>' + escapeHtml(event.createdAt || '未知时间') + '</small>' +
     '</section>' +
     '<section class="notification-event-brief">' +
       '<p>' + escapeHtml(title) + '</p>' +
       '<small>' + escapeHtml(summary) + '</small>' +
       '<div class="notification-event-chips">' +
-        authorMetaChip('severity', event.severity || 'unknown', statusVariant(event.severity)) +
-        authorMetaChip('delivery', event.deliveryStatus || 'pending', statusVariant(event.deliveryStatus || 'pending')) +
-        authorMetaChip('attempts', event.deliveryAttempts || 0, (event.deliveryAttempts || 0) > 0 ? 'warn' : 'muted') +
-        authorMetaChip('ack', event.acknowledgedAt ? 'yes' : 'no', event.acknowledgedAt ? 'ok' : 'warn') +
+        authorMetaChip('级别', event.severity || 'unknown', statusVariant(event.severity)) +
+        authorMetaChip('投递', event.deliveryStatus || 'pending', statusVariant(event.deliveryStatus || 'pending')) +
+        authorMetaChip('尝试', event.deliveryAttempts || 0, (event.deliveryAttempts || 0) > 0 ? 'warn' : 'muted') +
+        authorMetaChip('确认', event.acknowledgedAt ? '是' : '否', event.acknowledgedAt ? 'ok' : 'warn') +
       '</div>' +
     '</section>' +
     controls +
@@ -8964,22 +8968,22 @@ function renderNotificationEventRow(event) {
 
 function renderNotificationEventEmptyState(overview) {
   return '<div class="notification-empty-state">' +
-    '<span>Standby</span>' +
-    '<strong>No notification events match this filter.</strong>' +
-    '<small>' + escapeHtml(overview && overview.recommendedNextAction || 'Generate alerts from source attention, author review, or runbook checks when something needs operator action.') + '</small>' +
+    '<span>清爽</span>' +
+    '<strong>当前筛选下没有提醒。</strong>' +
+    '<small>' + escapeHtml(overview && overview.recommendedNextAction || '当来源关注、作者复核或操作清单需要处理时，会在这里生成提醒。') + '</small>' +
     '</div>';
 }
 
 function renderNotificationSourceHotspots(hotspots) {
   if (!hotspots.length) return '';
-  return '<section class="notification-hotspots"><span>Source hotspots</span>' + hotspots.slice(0, 5).map(function (hotspot) {
+  return '<section class="notification-hotspots"><span>来源关注</span>' + hotspots.slice(0, 5).map(function (hotspot) {
     const details = [
-      'open=' + (hotspot.openCount || 0),
-      'failed=' + (hotspot.failedCount || 0),
-      'due=' + (hotspot.dueForDeliveryCount || 0),
-      'exhausted=' + (hotspot.retryExhaustedCount || 0),
-      hotspot.oldestUnacknowledgedAt ? 'oldest=' + hotspot.oldestUnacknowledgedAt : undefined
-    ].filter(Boolean).join(' | ');
+      '未读=' + (hotspot.openCount || 0),
+      '失败=' + (hotspot.failedCount || 0),
+      '到期=' + (hotspot.dueForDeliveryCount || 0),
+      '耗尽=' + (hotspot.retryExhaustedCount || 0),
+      hotspot.oldestUnacknowledgedAt ? '最早=' + hotspot.oldestUnacknowledgedAt : undefined
+    ].filter(Boolean).join(' · ');
     return '<div class="notification-hotspot-row"><section>' +
       '<strong>' + escapeHtml(hotspot.sourceKey || hotspot.sourceId || 'unknown-source') + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
@@ -8991,8 +8995,8 @@ function renderNotificationSourceHotspots(hotspots) {
 
 function renderEventSourceDrilldownButton(source) {
   if (!source || (!source.sourceId && !source.sourceKey)) return '';
-  return '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-drilldown" data-source-id="' + escapeHtml(source.sourceId || '') + '" data-source-key="' + escapeHtml(source.sourceKey || '') + '" data-limit="50">Ops</button>' +
-    '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-collection-health" data-source-id="' + escapeHtml(source.sourceId || '') + '" data-source-key="' + escapeHtml(source.sourceKey || '') + '" data-limit="50">Health</button>';
+  return '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-drilldown" data-source-id="' + escapeHtml(source.sourceId || '') + '" data-source-key="' + escapeHtml(source.sourceKey || '') + '" data-limit="50">查看路径</button>' +
+    '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-collection-health" data-source-id="' + escapeHtml(source.sourceId || '') + '" data-source-key="' + escapeHtml(source.sourceKey || '') + '" data-limit="50">健康简报</button>';
 }
 
 function eventMetadata(event) {
@@ -9023,7 +9027,7 @@ function currentEventFilterSummary() {
     deliveryStatus || '全部状态',
     type || '全部类型',
     sourceKey || '全部来源',
-    sourceId || 'all source ids'
+    sourceId || '全部来源 ID'
   ].join(' · ');
 }
 
@@ -9031,8 +9035,8 @@ function renderEventDispatchResult(result) {
   const filters = result.filters || {};
   return panel('事件投递完成', [
     metric('通道', result.channelKey),
-    metric('Scope', formatEventSourceScope(filters)),
-    metric('Limit', filters.limit || 'default'),
+    metric('范围', formatEventSourceScope(filters)),
+    metric('数量', filters.limit || '默认'),
     metric('已投递', result.dispatchedCount),
     metric('失败', result.failedCount),
     metric('跳过', result.skippedCount)
@@ -9041,10 +9045,10 @@ function renderEventDispatchResult(result) {
 
 function formatEventSourceScope(filters) {
   const parts = [
-    filters.sourceKey ? 'sourceKey=' + filters.sourceKey : undefined,
-    filters.sourceId ? 'sourceId=' + filters.sourceId : undefined
+    filters.sourceKey ? '来源代号=' + filters.sourceKey : undefined,
+    filters.sourceId ? '来源 ID=' + filters.sourceId : undefined
   ].filter(Boolean);
-  return parts.length > 0 ? parts.join(' | ') : 'all sources';
+  return parts.length > 0 ? parts.join(' · ') : '全部来源';
 }
 
 function renderEventAckResult(result) {
@@ -9060,13 +9064,13 @@ function renderEventBatchAckResult(result) {
   return panel(title, [
     '<div class="summary-strip event-summary-strip">' + [
       summaryTile('状态', result.status || 'unknown', statusVariant(result.status)),
-      summaryTile('预演', result.dryRun ? 'yes' : 'no', result.dryRun ? 'warn' : 'ok'),
+      summaryTile('预演', result.dryRun ? '是' : '否', result.dryRun ? 'warn' : 'ok'),
       summaryTile('候选', String(result.candidateCount || 0), result.candidateCount > 0 ? 'warn' : 'muted'),
       summaryTile('已确认', String(result.acknowledgedCount || 0), result.acknowledgedCount > 0 ? 'ok' : 'muted'),
       summaryTile('跳过', String(result.skippedCount || 0), result.skippedCount > 0 ? 'warn' : 'ok'),
       summaryTile('窗口', String(result.eventCount || 0))
     ].join('') + '</div>',
-    metric('确认人', result.acknowledgedBy || 'system'),
+    metric('确认人', result.acknowledgedBy || '系统'),
     evidenceList((result.results || []).slice(0, 8).map(function (item) {
       return item.status + ' | ' + item.eventId + (item.reason ? ' | ' + item.reason : '');
     }))
@@ -9075,25 +9079,25 @@ function renderEventBatchAckResult(result) {
 
 function renderEventArchiveResult(result) {
   const rows = result.results && result.results.length ? result.results : result.candidates || [];
-  return panel('Notification event archive', [
+  return panel('提醒归档', [
     '<div class="summary-strip event-summary-strip">' + [
-      summaryTile('Status', result.status || 'unknown', statusVariant(result.status)),
-      summaryTile('Dry-run', result.dryRun ? 'yes' : 'no', result.dryRun ? 'warn' : 'ok'),
-      summaryTile('Candidates', String(result.candidateCount || 0), result.candidateCount > 0 ? 'warn' : 'ok'),
-      summaryTile('Archived', String(result.archivedCount || 0), result.archivedCount > 0 ? 'ok' : 'muted')
+      summaryTile('状态', result.status || 'unknown', statusVariant(result.status)),
+      summaryTile('预演', result.dryRun ? '是' : '否', result.dryRun ? 'warn' : 'ok'),
+      summaryTile('候选', String(result.candidateCount || 0), result.candidateCount > 0 ? 'warn' : 'ok'),
+      summaryTile('已归档', String(result.archivedCount || 0), result.archivedCount > 0 ? 'ok' : 'muted')
     ].join('') + '</div>',
-    metric('Cutoff', result.cutoffAt || 'none'),
-    metric('Batch', result.batchId || 'none'),
+    metric('归档线', result.cutoffAt || 'none'),
+    metric('批次', result.batchId || 'none'),
     evidenceList(rows.slice(0, 8).map(function (item) {
       return (item.status || 'candidate') + ' | ' + (item.eventId || item.id) + ' | ' + (item.sourceKey || (item.event && item.event.sourceKey) || 'unknown');
     })),
-    metric('Next', result.recommendedNextAction || 'none')
+    metric('下一步', result.recommendedNextAction || 'none')
   ].join(''), 'wide');
 }
 
 function renderSemanticInsights(insights) {
   return panel('语义增强', [
-    metric('Provider', insights.provider),
+    metric('提供方', insights.provider),
     metric('摘要', insights.summary),
     evidenceList((insights.entityInsights || []).slice(0, 5).map(function (item) {
       const refs = (item.evidenceRefs || []).map(function (ref) { return '#' + ref.floor; }).join(', ');
@@ -9119,24 +9123,24 @@ function renderRawPageFetchResult(result) {
 
 function renderRawPageFetchWindowResult(windowResult) {
   if (!windowResult || !Array.isArray(windowResult.results) || windowResult.results.length === 0) {
-    return '<div class="muted">No raw pages were fetched.</div>';
+    return '<div class="muted">没有抓取到原始页。</div>';
   }
   if (windowResult.results.length === 1) return renderRawPageFetchResult(windowResult.results[0].result);
   const rows = windowResult.results.map(function (item) {
     const rawPage = item.result && item.result.rawPage || {};
     const details = [
-      'page=' + item.page,
+      '页=' + item.page,
       rawPage.contentSha1 ? 'sha1=' + rawPage.contentSha1 : undefined,
       rawPage.sourceUrl || undefined,
-      item.result && item.result.duplicate ? 'duplicate' : 'new'
-    ].filter(Boolean).join(' | ');
+      item.result && item.result.duplicate ? '重复' : '新增'
+    ].filter(Boolean).join(' · ');
     return '<div class="action-row"><span>' +
-      escapeHtml(rawPage.sourceUrl || ('page ' + item.page)) +
+      escapeHtml(rawPage.sourceUrl || ('第 ' + item.page + ' 页')) +
       '<small>' + escapeHtml(details) + '</small></span></div>';
   }).join('');
-  return panel('Raw pages fetched', [
-    metric('Start page', windowResult.startPage),
-    metric('Pages', windowResult.pageCount),
+  return panel('原始页已抓取', [
+    metric('起始页', windowResult.startPage),
+    metric('页数', windowResult.pageCount),
     rows
   ].join(''), 'wide');
 }
@@ -9193,8 +9197,8 @@ function renderSourceOpsList(result) {
   const sourceDiagnostics = result.diagnostics || {};
   const diagnosticsBySourceId = sourceDiagnosticMap(sourceDiagnostics);
   const diagnosticsPanel = renderSourceDiagnostics(sourceDiagnostics);
-  if (sources.length === 0) return diagnosticsPanel + panel('Tracked sources', '<div class="muted">No tracked sources yet.</div>', 'wide');
-  return diagnosticsPanel + panel('Tracked sources', sources.map(function (source) {
+  if (sources.length === 0) return diagnosticsPanel + panel('跟踪来源', '<div class="muted">还没有跟踪来源。</div>', 'wide');
+  return diagnosticsPanel + panel('跟踪来源', sources.map(function (source) {
     const runState = source.runState || {};
     const schedule = source.schedule || {};
     const cursor = source.cursor || {};
@@ -9203,24 +9207,24 @@ function renderSourceOpsList(result) {
     const runLabel = runState.status || 'never-run';
     const controls = '<section class="source-work-actions button-group source-op-buttons">' +
       renderSourceDrilldownButton(source) +
-      '<button class="inline-button" type="button" data-action="run-source" data-source-id="' + escapeHtml(source.id) + '">Run</button>' +
-      '<button class="inline-button secondary-inline-button" type="button" data-action="run-source-pipeline" data-source-id="' + escapeHtml(source.id) + '">Insight</button>' +
+      '<button class="inline-button" type="button" data-action="run-source" data-source-id="' + escapeHtml(source.id) + '">运行</button>' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="run-source-pipeline" data-source-id="' + escapeHtml(source.id) + '">洞察</button>' +
       '</section>';
     return '<div class="source-work-row tracked-source-row ' + statusClassName(statusVariant(runState.status || diagnostics && diagnostics.status || 'ok')) + '">' +
       '<section class="source-work-anchor">' +
         '<span class="source-work-scope">' + escapeHtml(source.sourceType || source.sourceKey || 'source') + '</span>' +
         '<strong>' + escapeHtml(source.displayName || source.id) + '</strong>' +
-        '<small>' + escapeHtml(source.id || 'unknown source') + '</small>' +
+        '<small>' + escapeHtml(source.id || '未知来源') + '</small>' +
       '</section>' +
       '<section class="source-work-brief">' +
-        '<p>' + escapeHtml([formatSourceLocationSummary(source.location || {}), runState.lastTaskId].filter(Boolean).join(' | ') || 'Tracked source is ready for operation.') + '</p>' +
+        '<p>' + escapeHtml([formatSourceLocationSummary(source.location || {}), runState.lastTaskId].filter(Boolean).join(' · ') || '这个来源已准备好运行。') + '</p>' +
         '<div class="source-work-chips">' +
-          authorMetaChip('key', source.sourceKey || 'none', source.sourceKey ? 'info' : 'muted') +
-          authorMetaChip('run', runLabel, statusVariant(runLabel)) +
-          authorMetaChip('config', diagnostics ? diagnostics.status : 'unknown', diagnostics ? statusVariant(diagnostics.status) : 'muted') +
-          authorMetaChip('every', schedule.intervalMinutes ? schedule.intervalMinutes + 'm' : 'none', schedule.intervalMinutes ? 'info' : 'muted') +
-          authorMetaChip('posts', cursor.postCount !== undefined ? cursor.postCount + ' / #' + cursor.lastFloor : 'none', cursor.postCount !== undefined ? 'ok' : 'muted') +
-          authorMetaChip('new', cursorDiff.newPostCount !== undefined ? '+' + cursorDiff.newPostCount : 'none', cursorDiff.newPostCount > 0 ? 'ok' : 'muted') +
+          authorMetaChip('代号', source.sourceKey || 'none', source.sourceKey ? 'info' : 'muted') +
+          authorMetaChip('运行', runLabel, statusVariant(runLabel)) +
+          authorMetaChip('配置', diagnostics ? diagnostics.status : 'unknown', diagnostics ? statusVariant(diagnostics.status) : 'muted') +
+          authorMetaChip('间隔', schedule.intervalMinutes ? schedule.intervalMinutes + 'm' : 'none', schedule.intervalMinutes ? 'info' : 'muted') +
+          authorMetaChip('楼层', cursor.postCount !== undefined ? cursor.postCount + ' / #' + cursor.lastFloor : 'none', cursor.postCount !== undefined ? 'ok' : 'muted') +
+          authorMetaChip('新增', cursorDiff.newPostCount !== undefined ? '+' + cursorDiff.newPostCount : 'none', cursorDiff.newPostCount > 0 ? 'ok' : 'muted') +
         '</div>' +
       '</section>' +
       controls +
@@ -9234,17 +9238,17 @@ function formatSourceLocationSummary(location) {
   if (location.startPage || location.pageCount) {
     const startPage = location.startPage || 1;
     const pageCount = location.pageCount || 1;
-    parts.push('pages ' + startPage + '-' + (startPage + pageCount - 1));
+    parts.push('页 ' + startPage + '-' + (startPage + pageCount - 1));
   }
-  if (location.url) parts.push('url');
-  if (location.inputDir) parts.push('dir');
-  if (location.inputFile) parts.push('file');
-  return parts.length ? parts.join(' / ') : undefined;
+  if (location.url) parts.push('在线链接');
+  if (location.inputDir) parts.push('本地目录');
+  if (location.inputFile) parts.push('本地文件');
+  return parts.length ? parts.join(' · ') : undefined;
 }
 
 function renderSourceDiagnostics(diagnostics) {
   const sources = diagnostics.sources || [];
-  if (sources.length === 0) return panel('来源接入诊断', '<div class="muted">No source diagnostics.</div>', 'wide');
+  if (sources.length === 0) return panel('来源接入诊断', '<div class="muted">暂无来源诊断。</div>', 'wide');
   const rows = sources.slice(0, 10).map(function (source) {
     const failed = (source.checks || []).filter(function (check) {
       return check.status !== 'ok';
@@ -9279,7 +9283,7 @@ function metric(label, value) {
 }
 
 function evidenceList(items) {
-  if (!items || items.length === 0) return emptySignal('No evidence signals yet.', 'Standby');
+  if (!items || items.length === 0) return emptySignal('暂无证据信号。', '清爽');
   return items.map(function (item) {
     return '<div class="evidence-row"><span>' + escapeHtml(item) + '</span></div>';
   }).join('');
@@ -9287,8 +9291,8 @@ function evidenceList(items) {
 
 function emptySignal(message, label) {
   return '<div class="empty-signal" role="status">' +
-    '<span>' + escapeHtml(label || 'Standby') + '</span>' +
-    '<strong>' + escapeHtml(message || 'No signal yet.') + '</strong>' +
+    '<span>' + escapeHtml(label || '清爽') + '</span>' +
+    '<strong>' + escapeHtml(message || '暂时没有需要处理的信号。') + '</strong>' +
     '<i aria-hidden="true"></i>' +
     '</div>';
 }
@@ -9330,7 +9334,7 @@ function schemaDriftSummary(schemaDrift) {
 }
 
 function tagList(items) {
-  if (!items || items.length === 0) return emptySignal('No tags yet.', 'Quiet');
+  if (!items || items.length === 0) return emptySignal('暂无标签。', '清爽');
   return '<div class="tag-list">' + items.map(function (item) {
     return '<span class="tag">' + escapeHtml(item) + '</span>';
   }).join('') + '</div>';
@@ -9410,9 +9414,9 @@ async function copyCommandFromButton(button) {
   const originalText = button.textContent;
   try {
     await copyTextToClipboard(command);
-    button.textContent = 'Copied';
+    button.textContent = '已复制';
   } catch (error) {
-    button.textContent = 'Copy failed';
+    button.textContent = '复制失败';
   }
   window.setTimeout(function () {
     button.textContent = originalText;
@@ -9494,9 +9498,9 @@ function renderError(targetId, error) {
 
 function renderFeedbackState(type, message) {
   const isError = type === 'error';
-  const safeMessage = escapeHtml(message || (isError ? 'Request failed.' : 'Loading...'));
+  const safeMessage = escapeHtml(message || (isError ? '请求失败。' : '正在加载...'));
   const role = isError ? 'alert' : 'status';
-  const label = isError ? 'Blocked' : 'Working';
+  const label = isError ? '受阻' : '处理中';
   const detail = isError ? '请求未完成。' : '结果准备中。';
   const skeleton = isError ? '' : '<div class="feedback-skeleton" aria-hidden="true"><span></span><span></span><span></span></div>';
   return '<div class="' + (isError ? 'error ' : 'empty ') + 'feedback-state feedback-state-' + (isError ? 'error' : 'loading') + '" role="' + role + '" aria-live="polite">' +
