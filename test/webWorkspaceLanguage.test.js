@@ -602,3 +602,18 @@ test('source type readiness panels avoid connector-console copy', function () {
     "' | enabled=' + sourceType.enabledSourceCount"
   ]);
 });
+
+test('source cockpit action plan avoids executor-console copy', function () {
+  const app = readProjectFile('src/presentation/web/app.js');
+
+  assertAbsent(app, [
+    'No cockpit actions are available.',
+    "action.mode || 'manual'",
+    "action.key || 'unknown'",
+    "api.method && api.path ? api.method + ' ' + api.path : undefined",
+    "action.destructive ? 'destructive' : undefined",
+    "action.confirmationRequired ? 'confirmation' : undefined",
+    "action.label || action.key || 'Action'",
+    "statusBadge(action.mode || 'manual'"
+  ]);
+});

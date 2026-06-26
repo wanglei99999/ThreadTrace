@@ -6779,14 +6779,14 @@ function renderSourceCockpitActionPlan(plan) {
   return [
     panel('来源动作计划', [
       '<div class="summary-strip">',
-      summaryTile('状态', plan.status || 'unknown', statusVariant(plan.status === 'actionable' ? 'warn' : 'ok')),
+      summaryTile('状态', workspaceStatusLabel(plan.status), statusVariant(plan.status === 'actionable' ? 'warn' : 'ok')),
       summaryTile('动作', String(summary.actionCount || 0), (summary.actionCount || 0) > 0 ? 'ok' : 'muted'),
       summaryTile('预演', String(summary.dryRunCount || 0), (summary.dryRunCount || 0) > 0 ? 'warn' : 'ok'),
       summaryTile('执行', String(summary.executeCount || 0), (summary.executeCount || 0) > 0 ? 'warn' : 'ok'),
       summaryTile('高风险', String(summary.destructiveCount || 0), (summary.destructiveCount || 0) > 0 ? 'fail' : 'ok'),
       '</div>',
-      metric('队列项', '#' + (item.rank || '?') + ' ' + (item.title || item.id || 'unknown')),
-      metric('类型', item.kind || 'unknown'),
+      metric('队列项', '#' + (item.rank || '?') + ' ' + sourceQueueTitle(item)),
+      metric('类型', sourceQueueKindLabel(item.kind)),
       metric('优先级', item.priorityScore || 0),
       metric('下一步', plan.recommendedNextAction || '暂无')
     ].join(''), 'wide'),
@@ -6794,25 +6794,74 @@ function renderSourceCockpitActionPlan(plan) {
   ].join('');
 }
 
+function sourceCockpitActionKeyLabel(key) {
+  const labels = {
+    'source.drilldown': '查看来源路径',
+    'source.run-ingest': '采集来源',
+    'source.run-insight': '生成洞察',
+    'source.failure-reset.preview': '预览恢复',
+    'source.failure-reset.execute': '立即重试',
+    'source.enable.preview': '预览启用',
+    'source.enable.execute': '启用来源',
+    'source-attention.events.preview': '预览关注提醒',
+    'runbook.events.preview': '预览操作提醒',
+    'source-type.drilldown': '查看类型路径',
+    'source-type-operations.events.preview': '预览类型提醒',
+    'source-type.run-due-insight': '运行到期洞察'
+  };
+  return labels[key] || undefined;
+}
+
+function sourceCockpitActionTitle(action) {
+  return sourceCockpitActionKeyLabel(action.key) || action.label || '建议动作';
+}
+
+function sourceCockpitActionModeLabel(mode) {
+  const labels = {
+    manual: '人工确认',
+    preview: '先预演',
+    'dry-run': '先预演',
+    check: '检查',
+    execute: '执行'
+  };
+  return labels[mode] || workspaceStatusLabel(mode);
+}
+
+function sourceCockpitActionSafetyLabel(action) {
+  if (action.destructive) return '高风险';
+  if (action.confirmationRequired) return '需确认';
+  if (action.mode === 'execute') return '会改写状态';
+  if (action.mode === 'preview' || action.mode === 'dry-run') return '只预览';
+  return '安全查看';
+}
+
+function sourceCockpitActionVariant(action) {
+  if (action.destructive) return 'fail';
+  if (action.confirmationRequired || action.mode === 'execute') return 'warn';
+  if (action.mode === 'preview' || action.mode === 'dry-run') return 'ok';
+  return 'muted';
+}
+
+function sourceCockpitActionDetails(action) {
+  const api = action.api || {};
+  return [
+    sourceCockpitActionModeLabel(action.mode),
+    api.method && api.path ? '接口 ' + api.method + ' ' + api.path : undefined,
+    sourceCockpitActionSafetyLabel(action)
+  ].filter(Boolean).join(' · ');
+}
+
 function renderSourceCockpitActionRows(actions, item) {
-  if (!actions.length) return '<div class="muted">No cockpit actions are available.</div>';
+  if (!actions.length) return '<div class="muted">当前没有可用的来源动作。</div>';
   return actions.map(function (action) {
-    const api = action.api || {};
-    const details = [
-      action.mode || 'manual',
-      action.key || 'unknown',
-      api.method && api.path ? api.method + ' ' + api.path : undefined,
-      action.destructive ? 'destructive' : undefined,
-      action.confirmationRequired ? 'confirmation' : undefined
-    ].filter(Boolean).join(' | ');
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml(action.label || action.key || 'Action') + '</strong>' +
-      '<small>' + escapeHtml(details) + '</small>' +
-      '<small>' + escapeHtml(action.summary || '') + '</small>' +
+      '<strong>' + escapeHtml(sourceCockpitActionTitle(action)) + '</strong>' +
+      '<small>' + escapeHtml(sourceCockpitActionDetails(action)) + '</small>' +
+      '<small>' + escapeHtml(action.summary || '查看这项建议，并保留原始命令作为证据。') + '</small>' +
       (action.command ? '<small>' + escapeHtml(action.command) + '</small>' : '') +
       '</span><span class="button-group source-op-buttons">' +
       renderSourceCockpitActionButton(action, item) +
-      statusBadge(action.mode || 'manual', action.destructive ? 'fail' : (action.mode === 'execute' ? 'warn' : 'ok')) +
+      statusBadge(sourceCockpitActionModeLabel(action.mode), sourceCockpitActionVariant(action)) +
       '</span></div>';
   }).join('');
 }
@@ -8743,6 +8792,27 @@ function renderNotificationEventDetailActions(actions, eventId) {
   }).join('');
 }
 
+function notificationEventActionLabel(action) {
+  const safeAction = action || {};
+  const labels = {
+    'event.acknowledge': '确认提醒',
+    'event.dispatch': '投递提醒',
+    'event.source-drilldown': '查看来源路径',
+    'event.task-detail': '查看任务路径'
+  };
+  return safeAction.title || labels[safeAction.key] || safeAction.summary || '提醒动作';
+}
+
+function notificationEventModeLabel(mode) {
+  const labels = {
+    'dry-run': '预演',
+    preview: '预演',
+    execute: '执行',
+    executed: '已执行'
+  };
+  return labels[mode] || workspaceStatusLabel(mode);
+}
+
 function renderNotificationEventActionIntent(result) {
   if (result && result.error) {
     return panel('动作预演失败', [
@@ -8759,21 +8829,21 @@ function renderNotificationEventActionIntent(result) {
   return [
     panel(executed ? '提醒动作已执行' : '提醒动作预演', [
       '<div class="summary-strip event-summary-strip">' + [
-        summaryTile('状态', result.status || 'unknown', statusVariant(result.status)),
-        summaryTile('模式', result.mode || 'dry-run', 'ok'),
+        summaryTile('状态', workspaceStatusLabel(result.status || 'unknown'), statusVariant(result.status)),
+        summaryTile('模式', notificationEventModeLabel(result.mode || 'dry-run'), 'ok'),
         summaryTile('已执行', executed ? '是' : '否', executed ? 'warn' : 'ok'),
-        summaryTile('动作', result.action && result.action.key || 'unknown')
+        summaryTile('动作', notificationEventActionLabel(result.action))
       ].join('') + '</div>',
-      metric('意图 ID', intent.id || 'none'),
-      metric('提醒 ID', result.event && result.event.id || intent.eventId || 'none'),
-      metric('执行者', intent.actor || 'operator'),
-      metric('原因', intent.reason || 'none'),
-      metric('审计记录', ledger.recorded ? ledger.recordId || 'recorded' : ledger.reason || 'not recorded'),
-      metric('执行记录', executionLedger.recorded ? [executionLedger.status, executionLedger.key, executionLedger.replayed ? 'replayed' : 'new'].filter(Boolean).join(' · ') : executionLedger.reason || 'not recorded'),
-      metric('接口计划', [api.method, api.path].filter(Boolean).join(' ') || 'manual'),
-      metric('命令', intent.command || 'none'),
-      metric('确认时间', result.event && result.event.acknowledgedAt || 'none'),
-      metric('门禁', gate.key ? gate.status + ' · ' + gate.key + ' · ' + gate.summary : 'none')
+      metric('意图 ID', intent.id || '暂无'),
+      metric('提醒 ID', result.event && result.event.id || intent.eventId || '暂无'),
+      metric('执行者', intent.actor || '工作区'),
+      metric('原因', intent.reason || '暂无'),
+      metric('审计记录', ledger.recorded ? ledger.recordId || '已记录' : ledger.reason || '未记录'),
+      metric('执行记录', executionLedger.recorded ? [workspaceStatusLabel(executionLedger.status), executionLedger.key, executionLedger.replayed ? '已复用' : '新记录'].filter(Boolean).join(' · ') : executionLedger.reason || '未记录'),
+      metric('接口计划', [api.method, api.path].filter(Boolean).join(' ') || '无需接口'),
+      metric('命令', intent.command || '暂无'),
+      metric('确认时间', result.event && result.event.acknowledgedAt || '暂无'),
+      metric('门禁', gate.key ? workspaceStatusLabel(gate.status) + ' · ' + gate.key + ' · ' + gate.summary : '暂无')
     ].join(''), 'wide'),
     panel('动作证据', '<pre>' + escapeHtml(JSON.stringify({
       api: intent.api,
