@@ -2034,6 +2034,8 @@ test('http server exposes deployment checklist API', async function () {
     assert.ok(openApi.components.schemas.AutomationReadinessPlan.properties.automation);
     assert.equal(openApi.components.schemas.AutomationCockpitSnapshot.properties.plan.$ref, '#/components/schemas/AutomationReadinessPlan');
     assert.equal(openApi.components.schemas.AutomationCockpitSnapshot.properties.operatorRunbook.$ref, '#/components/schemas/AutomationCockpitOperatorRunbook');
+    assert.ok(openApi.components.schemas.AutomationCockpitOperatorRunbook.properties.actionableCommandCount);
+    assert.ok(openApi.components.schemas.AutomationCockpitOperatorRunbook.properties.executeCommandCount);
     assert.ok(openApi.components.schemas.AutomationCockpitOperatorRunbook.properties.sections.items.properties.commands.items.properties.intent);
     assert.equal(openApi.components.schemas.AutomationCockpitSnapshot.properties.reviewActionExecutions.$ref, '#/components/schemas/ContextReviewActionExecutionListResult');
     assert.equal(openApi.components.schemas.AutomationReadinessPlan.properties.remediation.$ref, '#/components/schemas/AutomationReadinessRemediationPlan');

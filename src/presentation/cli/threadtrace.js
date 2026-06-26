@@ -3656,7 +3656,7 @@ function printAutomationRemediation(remediation) {
 
 function printAutomationOperatorRunbook(runbook) {
   if (!runbook) return;
-  console.log('Operator runbook: ' + (runbook.status || 'unknown') + ', commands=' + (runbook.commandCount || 0));
+  console.log('Operator runbook: ' + (runbook.status || 'unknown') + ', commands=' + (runbook.commandCount || 0) + ', actionable=' + (runbook.actionableCommandCount || 0) + ', dryRun=' + (runbook.dryRunCommandCount || 0) + ', execute=' + (runbook.executeCommandCount || 0));
   (runbook.sections || []).forEach(function (section) {
     console.log('runbook\t' + (section.status || 'unknown') + '\t' + (section.key || 'section') + '\tcommands=' + (section.commandCount || 0));
     (section.commands || []).slice(0, 3).forEach(function (command) {

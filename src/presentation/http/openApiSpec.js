@@ -7316,6 +7316,10 @@ function createOpenApiSpec() {
           properties: {
             status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
             commandCount: { type: 'number', example: 4 },
+            actionableCommandCount: { type: 'number', example: 2 },
+            dryRunCommandCount: { type: 'number', example: 1 },
+            executeCommandCount: { type: 'number', example: 1 },
+            copyOnlyCommandCount: { type: 'number', example: 2 },
             nextCommand: { type: 'object', additionalProperties: true },
             sections: {
               type: 'array',

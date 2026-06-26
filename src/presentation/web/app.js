@@ -5570,6 +5570,8 @@ function renderAutomationOperatorRunbook(runbook) {
     '<div class="summary-strip">',
     summaryTile('Status', safeRunbook.status || 'unknown', statusVariant(safeRunbook.status)),
     summaryTile('Commands', String(safeRunbook.commandCount || 0), (safeRunbook.commandCount || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('Actionable', String(safeRunbook.actionableCommandCount || 0), (safeRunbook.actionableCommandCount || 0) > 0 ? 'warn' : 'muted'),
+    summaryTile('Apply', String(safeRunbook.executeCommandCount || 0), (safeRunbook.executeCommandCount || 0) > 0 ? 'warn' : 'muted'),
     summaryTile('Sections', String(sections.length), sections.length > 0 ? 'ok' : 'muted'),
     summaryTile('Next', safeRunbook.nextCommand && safeRunbook.nextCommand.title || 'none', safeRunbook.nextCommand ? 'warn' : 'muted'),
     '</div>'

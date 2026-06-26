@@ -75,6 +75,10 @@ test('automation cockpit snapshot aggregates readiness and operating pressure', 
   assert.equal(snapshot.summary.auditCount, 3);
   assert.equal(snapshot.summary.executionCount, 4);
   assert.equal(snapshot.operatorRunbook.commandCount, 6);
+  assert.equal(snapshot.operatorRunbook.actionableCommandCount, 2);
+  assert.equal(snapshot.operatorRunbook.dryRunCommandCount, 1);
+  assert.equal(snapshot.operatorRunbook.executeCommandCount, 1);
+  assert.equal(snapshot.operatorRunbook.copyOnlyCommandCount, 4);
   assert.equal(snapshot.operatorRunbook.sections.find(function (section) {
     return section.key === 'workers';
   }).commands[0].command, 'node src/presentation/worker/operationsWorkerMain.js --loop');

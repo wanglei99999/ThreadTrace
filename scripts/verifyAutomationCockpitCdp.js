@@ -220,6 +220,7 @@ function viewportAuditExpression() {
     "    bodyTextIncludesOutbox: document.body.innerText.includes('Notification outbox'),",
     "    bodyTextIncludesAudit: document.body.innerText.includes('Review audit ledger'),",
     "    bodyTextIncludesRunbook: document.body.innerText.includes('Operator runbook'),",
+    "    bodyTextIncludesActionable: document.body.innerText.includes('Actionable'),",
     "    runbookCommandCount: document.querySelectorAll('.automation-runbook-command-row').length,",
     "    runbookCopyButtonCount: document.querySelectorAll('.automation-runbook-panel button[data-action=\"copy-lifecycle-command\"]').length,",
     "    runbookScheduleCommandCount: Array.from(document.querySelectorAll('.automation-runbook-command-row code')).filter((code) => code.textContent.includes('configure-source-schedule')).length,",
@@ -330,6 +331,7 @@ function assertAudit(label, audit) {
   if (!audit.bodyTextIncludesOutbox) failures.push('missing Notification outbox text');
   if (!audit.bodyTextIncludesAudit) failures.push('missing Review audit ledger text');
   if (!audit.bodyTextIncludesRunbook) failures.push('missing Operator runbook text');
+  if (!audit.bodyTextIncludesActionable) failures.push('missing Actionable runbook summary text');
   if (audit.runbookCommandCount > 0 && audit.runbookCopyButtonCount < audit.runbookCommandCount) failures.push('runbook commands are missing copy controls');
   if (audit.runbookScheduleCommandCount > 0 && audit.runbookScheduleButtonCount < audit.runbookScheduleCommandCount) failures.push('schedule runbook commands are missing Preview/Apply controls');
   if (audit.heroTop === null || audit.heroTop > audit.clientWidth * 3) failures.push('cockpit appears too late in the page');

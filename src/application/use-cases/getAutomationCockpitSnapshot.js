@@ -101,9 +101,14 @@ function buildOperatorRunbook(input) {
   const commandCount = sections.reduce(function (total, item) {
     return total + item.commands.length;
   }, 0);
+  const intentSummary = summarizeRunbookIntents(sections);
   return {
     status: commandCount > 0 ? input.status : 'ok',
     commandCount,
+    actionableCommandCount: intentSummary.actionable,
+    dryRunCommandCount: intentSummary.dryRun,
+    executeCommandCount: intentSummary.execute,
+    copyOnlyCommandCount: commandCount - intentSummary.actionable,
     sections,
     nextCommand: firstCommand(sections)
   };
@@ -125,6 +130,23 @@ function commandItem(key, title, command, metadata) {
     title,
     command
   }, metadata || {});
+}
+
+function summarizeRunbookIntents(sections) {
+  const summary = {
+    actionable: 0,
+    dryRun: 0,
+    execute: 0
+  };
+  (sections || []).forEach(function (item) {
+    (item.commands || []).forEach(function (command) {
+      if (!command.intent) return;
+      summary.actionable += 1;
+      if (command.intent.execute === true) summary.execute += 1;
+      else summary.dryRun += 1;
+    });
+  });
+  return summary;
 }
 
 function scheduleIntent(action, api, execute) {
