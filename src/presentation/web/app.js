@@ -1039,7 +1039,7 @@ async function runRolloutReadinessChecks(manifest) {
     }),
     runManifestCheck({
       key: 'deploymentGate',
-      title: 'Deployment gate',
+      title: '应用门禁',
       url: '/api/deployment/gate',
       targetId: 'deploymentGateResult',
       renderer: renderDeploymentGateReport,
@@ -4223,11 +4223,11 @@ function renderRecipeLocationRows(sourceTypeSpec, requiredFields, optionalFields
       property.type,
       property.format,
       property.description
-    ].filter(Boolean).join(' | ');
+    ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row"><span>' +
       '<strong>' + escapeHtml(field) + '</strong>' +
-      '<small>' + escapeHtml(detail || 'location value') + '</small>' +
-      '</span>' + statusBadge(required ? 'required' : 'optional', required ? 'warning' : 'muted') + '</div>';
+      '<small>' + escapeHtml(detail || '位置值') + '</small>' +
+      '</span>' + statusBadge(required ? '必填' : '选填', required ? 'warning' : 'muted') + '</div>';
   }).join('');
 }
 
@@ -4235,10 +4235,10 @@ function renderRecipeFlowRows(flow) {
   if (!flow.length) return '<div class="muted">暂无建议流程。</div>';
   return flow.map(function (step) {
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml((step.phase || 'step') + ' | ' + (step.key || 'unknown')) + '</strong>' +
+      '<strong>' + escapeHtml((step.phase || '步骤') + ' · ' + (step.key || '未知步骤')) + '</strong>' +
       '<small>' + escapeHtml(step.summary || '') + '</small>' +
-      '<small>' + escapeHtml([step.cli, step.api].filter(Boolean).join(' | ')) + '</small>' +
-      '</span>' + statusBadge(step.key || 'step', 'muted') + '</div>';
+      '<small>' + escapeHtml([step.cli, step.api].filter(Boolean).join(' · ')) + '</small>' +
+      '</span>' + statusBadge(step.key || '步骤', 'muted') + '</div>';
   }).join('');
 }
 
@@ -4250,37 +4250,37 @@ function renderSourceOnboardingPreflight(result) {
   });
   const panels = [
     panel('来源接入预检', [
-      metric('状态', result.status),
-      metric('论坛', result.sourceKey || 'unknown'),
-      metric('来源类型', result.sourceType || 'unknown'),
+      metric('状态', workspaceStatusLabel(result.status)),
+      metric('论坛', result.sourceKey || '未知'),
+      metric('来源类型', result.sourceType || '未知'),
       metric('步骤', steps.length),
       metric('失败', failedSteps.length)
     ].join('')),
     panel('预检步骤', evidenceList(steps.map(function (step) {
-      return step.status + ' · ' + step.key + ' · ' + step.summary;
+      return workspaceStatusLabel(step.status) + ' · ' + step.key + ' · ' + step.summary;
     })), 'wide')
   ];
   if ((result.nextActions || []).length > 0) {
-    panels.push(panel('Onboarding next actions', evidenceList((result.nextActions || []).map(function (action) {
+    panels.push(panel('接入建议', evidenceList((result.nextActions || []).map(function (action) {
       const commands = action.commands || (action.command ? [action.command] : []);
       const details = (action.details || []).map(function (detail) {
-        return detail.key + (detail.evidenceSummary ? ' evidence=' + detail.evidenceSummary : '');
-      }).join(' | ');
-      return action.severity + ' | ' + action.key + ' | ' + action.summary + ' | ' + commands.join(' | ') + (action.evidenceSummary ? ' evidence=' + action.evidenceSummary : '') + (details ? ' details=' + details : '');
+        return detail.key + (detail.evidenceSummary ? ' 证据 ' + detail.evidenceSummary : '');
+      }).join(' · ');
+      return workspaceStatusLabel(action.severity) + ' · ' + action.key + ' · ' + action.summary + ' · ' + commands.join(' · ') + (action.evidenceSummary ? ' · 证据 ' + action.evidenceSummary : '') + (details ? ' · 明细 ' + details : '');
     })), 'wide'));
   }
   if (result.sourceValidation && result.sourceValidation.source) {
     panels.push(panel('来源草稿', [
       metric('来源 ID', result.sourceValidation.source.id),
-      metric('可保存', result.sourceValidation.valid ? 'yes' : 'no'),
-      metric('诊断', result.sourceValidation.status)
+      metric('可保存', result.sourceValidation.valid ? '是' : '否'),
+      metric('诊断', workspaceStatusLabel(result.sourceValidation.status))
     ].join('')));
   }
   if (result.rolloutManifestDraft) {
-    panels.push(panel('Rollout manifest draft', [
+    panels.push(panel('发布清单草稿', [
       '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml(result.rolloutManifestDraft.name || 'manifest') + '</strong>' +
-      '<small>' + escapeHtml((result.rolloutManifestDraft.source && result.rolloutManifestDraft.source.sourceKey || 'unknown') + ' | ' + (result.rolloutManifestDraft.source && result.rolloutManifestDraft.source.sourceType || 'unknown')) + '</small>' +
+      '<strong>' + escapeHtml(result.rolloutManifestDraft.name || '未命名清单') + '</strong>' +
+      '<small>' + escapeHtml((result.rolloutManifestDraft.source && result.rolloutManifestDraft.source.sourceKey || '未知') + ' · ' + (result.rolloutManifestDraft.source && result.rolloutManifestDraft.source.sourceType || '未知')) + '</small>' +
       '</span><span class="button-group source-op-buttons">' +
       '<button class="inline-button secondary-inline-button" type="button" data-action="load-rollout-manifest-draft">使用草稿</button>' +
       '<button class="inline-button secondary-inline-button" type="button" data-action="preflight-rollout-manifest-draft">检查草稿</button>' +
@@ -4292,22 +4292,22 @@ function renderSourceOnboardingPreflight(result) {
   if (result.connectorModuleValidation) {
     rememberConnectorContractSourceTypes(result.connectorModuleValidation.contractSummary);
     rememberConnectorPackageManifests(result.connectorModuleValidation.packageManifests);
-    panels.push(panel('Connector 模块', [
+    panels.push(panel('接入模块', [
       renderConnectorContractTiles(result.connectorModuleValidation.contractSummary),
-      metric('可加载', result.connectorModuleValidation.valid ? 'yes' : 'no'),
-      metric('状态', result.connectorModuleValidation.status),
-      metric('模块', result.connectorModuleValidation.modulePath || 'missing'),
+      metric('可加载', result.connectorModuleValidation.valid ? '是' : '否'),
+      metric('状态', workspaceStatusLabel(result.connectorModuleValidation.status)),
+      metric('模块', result.connectorModuleValidation.modulePath || '未提供'),
       metric('错误', (result.connectorModuleValidation.errors || []).length)
     ].join('')));
     if (hasConnectorContractDetails(result.connectorModuleValidation.contractSummary)) {
-      panels.push(panel('Connector contract summary', renderConnectorContractSummary(result.connectorModuleValidation.contractSummary), 'wide'));
+      panels.push(panel('接入契约概览', renderConnectorContractSummary(result.connectorModuleValidation.contractSummary), 'wide'));
     }
     if ((result.connectorModuleValidation.packageManifests || []).length > 0) {
       panels.push(panel('来源包', renderConnectorPackageManifestRows(result.connectorModuleValidation.packageManifests), 'wide'));
     }
     const failureRows = connectorContractFailureRows(result.connectorModuleValidation.checks || []);
     if (failureRows.length > 0) {
-      panels.push(panel('Connector contract failures', evidenceList(failureRows), 'wide'));
+      panels.push(panel('接入契约问题', evidenceList(failureRows), 'wide'));
     }
   }
   if (result.threadJsonValidation) {
@@ -4492,13 +4492,13 @@ function connectorContractFailureRows(checks) {
   }).reduce(function (rows, check) {
     const value = check.value || {};
     if (Array.isArray(value.duplicateForumAdapters) && value.duplicateForumAdapters.length > 0) {
-      rows.push(check.key + ' | duplicate adapters: ' + value.duplicateForumAdapters.join(','));
+      rows.push(check.key + ' · 重复适配器 ' + value.duplicateForumAdapters.join('、'));
     }
     if (Array.isArray(value.duplicateSourceIngestHandlers) && value.duplicateSourceIngestHandlers.length > 0) {
-      rows.push(check.key + ' | duplicate handlers: ' + value.duplicateSourceIngestHandlers.join(','));
+      rows.push(check.key + ' · 重复采集处理 ' + value.duplicateSourceIngestHandlers.join('、'));
     }
     (value.failures || []).forEach(function (failure) {
-      rows.push(check.key + ' | ' + (failure.sourceKey || failure.sourceType || 'unknown') + ' missing: ' + (failure.missing || []).join(','));
+      rows.push(check.key + ' · ' + workspaceValue(failure.sourceKey || failure.sourceType, '未知来源') + ' · 缺少字段 ' + (failure.missing || []).join('、'));
     });
     return rows;
   }, []);
@@ -4507,21 +4507,21 @@ function connectorContractFailureRows(checks) {
 function renderSourceIngestDryRun(result) {
   const checks = result.checks || [];
   const panels = [
-    panel('Source ingest dry-run', [
-      metric('Status', result.status),
-      metric('Dry run', result.dryRun ? 'yes' : 'no'),
-      metric('Source', result.source ? result.source.sourceKey + ' / ' + result.source.sourceType : 'unknown'),
-      metric('Thread', result.thread ? result.thread.sourceThreadId : 'none'),
-      metric('Posts', result.thread ? result.thread.postCount : 0)
+    panel('来源采集试跑', [
+      metric('状态', workspaceStatusLabel(result.status)),
+      metric('试跑', result.dryRun ? '是' : '否'),
+      metric('来源', result.source ? result.source.sourceKey + ' / ' + result.source.sourceType : '未知'),
+      metric('主题', result.thread ? result.thread.sourceThreadId : '暂无'),
+      metric('发言', result.thread ? result.thread.postCount : 0)
     ].join('')),
-    panel('Isolated writes', [
-      metric('Snapshots', result.repositoryWrites ? result.repositoryWrites.threadSnapshots : 0),
-      metric('Reports', result.repositoryWrites ? result.repositoryWrites.reports : 0),
-      metric('Tasks', result.repositoryWrites ? result.repositoryWrites.tasks : 0),
-      metric('Raw pages', result.repositoryWrites ? result.repositoryWrites.rawThreadPages : 0)
+    panel('隔离写入', [
+      metric('快照', result.repositoryWrites ? result.repositoryWrites.threadSnapshots : 0),
+      metric('报告', result.repositoryWrites ? result.repositoryWrites.reports : 0),
+      metric('任务', result.repositoryWrites ? result.repositoryWrites.tasks : 0),
+      metric('原始页', result.repositoryWrites ? result.repositoryWrites.rawThreadPages : 0)
     ].join('')),
     panel('预演检查', evidenceList(checks.map(function (check) {
-      return check.status + ' 路 ' + check.key + ' 路 ' + check.summary;
+      return workspaceStatusLabel(check.status) + ' · ' + check.key + ' · ' + check.summary;
     })), 'wide')
   ];
   if (result.error) {
@@ -4542,26 +4542,26 @@ function renderConnectorRolloutPlan(result) {
     rememberConnectorPackageManifests(moduleValidation.packageManifests);
   }
   const panels = [
-    panel('Connector rollout plan', [
+    panel('来源上线计划', [
       moduleValidation ? renderConnectorContractTiles(moduleValidation.contractSummary) : '',
-      metric('Status', result.status),
-      metric('Source', (result.sourceKey || 'unknown') + ' / ' + (result.sourceType || 'unknown')),
-      metric('Module', result.modulePath || 'not provided'),
-      metric('Steps', steps.length)
+      metric('状态', workspaceStatusLabel(result.status)),
+      metric('来源', workspaceValue(result.sourceKey, '未知') + ' / ' + workspaceValue(result.sourceType, '未知')),
+      metric('模块', result.modulePath || '未提供'),
+      metric('步骤', steps.length)
     ].join('')),
-    panel('Rollout steps', evidenceList(steps.map(function (step) {
-      return step.status + ' 路 ' + step.key + ' 路 ' + step.summary;
+    panel('上线步骤', evidenceList(steps.map(function (step) {
+      return workspaceStatusLabel(step.status) + ' · ' + step.key + ' · ' + step.summary;
     })), 'wide')
   ];
   if (result.sourceIngestDryRun) {
-    panels.push(panel('Ingest dry-run', [
-      metric('Status', result.sourceIngestDryRun.status),
-      metric('Thread', result.sourceIngestDryRun.thread ? result.sourceIngestDryRun.thread.sourceThreadId : 'none'),
-      metric('Posts', result.sourceIngestDryRun.thread ? result.sourceIngestDryRun.thread.postCount : 0)
+    panels.push(panel('采集试跑', [
+      metric('状态', workspaceStatusLabel(result.sourceIngestDryRun.status)),
+      metric('主题', result.sourceIngestDryRun.thread ? result.sourceIngestDryRun.thread.sourceThreadId : '暂无'),
+      metric('发言', result.sourceIngestDryRun.thread ? result.sourceIngestDryRun.thread.postCount : 0)
     ].join('')));
   }
   if (moduleValidation && hasConnectorContractDetails(moduleValidation.contractSummary)) {
-    panels.push(panel('Connector contract summary', renderConnectorContractSummary(moduleValidation.contractSummary), 'wide'));
+    panels.push(panel('接入契约概览', renderConnectorContractSummary(moduleValidation.contractSummary), 'wide'));
   }
   if (moduleValidation && (moduleValidation.packageManifests || []).length > 0) {
     panels.push(panel('来源包', renderConnectorPackageManifestRows(moduleValidation.packageManifests), 'wide'));
@@ -4569,12 +4569,12 @@ function renderConnectorRolloutPlan(result) {
   if (moduleValidation) {
     const failureRows = connectorContractFailureRows(moduleValidation.checks || []);
     if (failureRows.length > 0) {
-      panels.push(panel('Connector contract failures', evidenceList(failureRows), 'wide'));
+      panels.push(panel('接入契约问题', evidenceList(failureRows), 'wide'));
     }
   }
   if (actions.length > 0) {
     panels.push(panel('下一步', evidenceList(actions.map(function (action) {
-      return action.severity + ' 路 ' + action.key + ' 路 ' + action.command;
+      return workspaceStatusLabel(action.severity) + ' · ' + action.key + ' · ' + action.command;
     })), 'wide'));
   }
   return panels.join('');
@@ -4584,21 +4584,21 @@ function renderWorkerTopologyPlan(result) {
   const workers = result.workers || [];
   const checks = result.checks || [];
   return [
-    panel('Worker topology plan', [
-      metric('Status', result.status),
-      metric('Topology', result.topology),
-      metric('Storage', result.storageMode),
+    panel('执行拓扑计划', [
+      metric('状态', workspaceStatusLabel(result.status)),
+      metric('拓扑', result.topology),
+      metric('存储', result.storageMode),
       metric('来源模式', result.sourceTaskMode),
-      metric('Scope', formatEventSourceScope(result.scope || {
+      metric('范围', formatEventSourceScope(result.scope || {
         sourceKey: result.sourceKey,
         sourceId: result.sourceId
       }))
     ].join('')),
-    panel('Workers', evidenceList(workers.map(function (worker) {
-      return worker.workerType + ' 路 ' + worker.scale + ' 路 ' + worker.leaseKey + ' 路 ' + worker.command;
+    panel('执行器', evidenceList(workers.map(function (worker) {
+      return worker.workerType + ' · 规模 ' + worker.scale + ' · 占用 ' + worker.leaseKey + ' · ' + worker.command;
     })), 'wide'),
-    panel('Topology checks', evidenceList(checks.map(function (check) {
-      return check.status + ' 路 ' + check.key + ' 路 ' + check.summary;
+    panel('拓扑检查', evidenceList(checks.map(function (check) {
+      return workspaceStatusLabel(check.status) + ' · ' + check.key + ' · ' + check.summary;
     })), 'wide')
   ].join('');
 }
@@ -4607,34 +4607,34 @@ function renderRolloutManifestPlan(result) {
   const steps = result.steps || [];
   const actions = result.nextActions || [];
   const panels = [
-    panel('Rollout manifest plan', [
-      metric('Status', result.status),
-      metric('Manifest', (result.name || 'unnamed') + ' / ' + (result.manifestVersion || '1.0')),
-      metric('Source', (result.sourceKey || 'unknown') + ' / ' + (result.sourceType || 'unknown')),
-      metric('Module', result.modulePath || 'not provided')
+    panel('发布清单计划', [
+      metric('状态', workspaceStatusLabel(result.status)),
+      metric('清单', (result.name || '未命名') + ' / ' + (result.manifestVersion || '1.0')),
+      metric('来源', workspaceValue(result.sourceKey, '未知') + ' / ' + workspaceValue(result.sourceType, '未知')),
+      metric('模块', result.modulePath || '未提供')
     ].join('')),
-    panel('Manifest steps', evidenceList(steps.map(function (step) {
-      return step.status + ' 路 ' + step.key + ' 路 ' + step.summary;
+    panel('清单步骤', evidenceList(steps.map(function (step) {
+      return workspaceStatusLabel(step.status) + ' · ' + step.key + ' · ' + step.summary;
     })), 'wide')
   ];
   if (result.connectorRolloutPlan) {
-    panels.push(panel('Connector rollout', [
-      metric('Status', result.connectorRolloutPlan.status),
-      metric('Steps', (result.connectorRolloutPlan.steps || []).length),
+    panels.push(panel('接入计划', [
+      metric('状态', workspaceStatusLabel(result.connectorRolloutPlan.status)),
+      metric('步骤', (result.connectorRolloutPlan.steps || []).length),
       metric('下一步', (result.connectorRolloutPlan.nextActions || []).length)
     ].join('')));
   }
   if (result.workerTopologyPlan) {
-    panels.push(panel('Worker topology', [
-      metric('Status', result.workerTopologyPlan.status),
-      metric('Topology', result.workerTopologyPlan.topology),
-      metric('Workers', (result.workerTopologyPlan.workers || []).length)
+    panels.push(panel('执行拓扑', [
+      metric('状态', workspaceStatusLabel(result.workerTopologyPlan.status)),
+      metric('拓扑', result.workerTopologyPlan.topology),
+      metric('执行器', (result.workerTopologyPlan.workers || []).length)
     ].join('')));
   }
   if (actions.length > 0) {
-    panels.push(panel('Manifest actions', evidenceList(actions.map(function (action) {
-      const related = (action.relatedCommands || []).length > 0 ? ' -> ' + action.relatedCommands.join(' | ') : '';
-      return action.severity + ' 路 ' + action.key + ' 路 ' + action.command + related;
+    panels.push(panel('清单建议', evidenceList(actions.map(function (action) {
+      const related = (action.relatedCommands || []).length > 0 ? ' · 相关命令 ' + action.relatedCommands.join(' · ') : '';
+      return workspaceStatusLabel(action.severity) + ' · ' + action.key + ' · ' + action.command + related;
     })), 'wide'));
   }
   return panels.join('');
@@ -4644,25 +4644,25 @@ function renderResourceProvisioningPlan(result) {
   const resources = result.resources || [];
   const actions = result.nextActions || [];
   const panels = [
-    panel('Resource provisioning plan', [
-      metric('Status', result.status),
-      metric('Storage', result.environment ? result.environment.storageMode : 'unknown'),
-      metric('Source', result.environment ? (result.environment.sourceKey || 'unknown') + ' / ' + (result.environment.sourceType || 'unknown') : 'unknown'),
-      metric('LLM', result.environment ? result.environment.llmProvider || 'unknown' : 'unknown')
+    panel('资源准备计划', [
+      metric('状态', workspaceStatusLabel(result.status)),
+      metric('存储', result.environment ? result.environment.storageMode : '未知'),
+      metric('来源', result.environment ? workspaceValue(result.environment.sourceKey, '未知') + ' / ' + workspaceValue(result.environment.sourceType, '未知') : '未知'),
+      metric('助手', result.environment ? workspaceValue(result.environment.llmProvider, '未知') : '未知')
     ].join('')),
-    panel('Resources', evidenceList(resources.map(function (item) {
-      const env = item.env && item.env.length > 0 ? ' env=' + item.env.join(',') : '';
-      const evidence = item.evidenceSummary ? ' evidence=' + item.evidenceSummary : '';
-      const drift = item.schemaDrift && item.schemaDrift.status !== 'ok' ? ' drift=' + schemaDriftSummary(item.schemaDrift) : '';
-      return item.status + ' 路 ' + item.area + ' 路 ' + item.key + ' 路 ' + (item.required ? 'required' : 'optional') + ' 路 ' + item.summary + env + evidence + drift;
+    panel('资源检查', evidenceList(resources.map(function (item) {
+      const env = item.env && item.env.length > 0 ? ' · 环境 ' + item.env.join('、') : '';
+      const evidence = item.evidenceSummary ? ' · 证据 ' + item.evidenceSummary : '';
+      const drift = item.schemaDrift && item.schemaDrift.status !== 'ok' ? ' · 结构差异 ' + schemaDriftSummary(item.schemaDrift) : '';
+      return workspaceStatusLabel(item.status) + ' · ' + item.area + ' · ' + item.key + ' · ' + (item.required ? '必需' : '可选') + ' · ' + item.summary + env + evidence + drift;
     })), 'wide')
   ];
   if (actions.length > 0) {
-    panels.push(panel('Resource actions', evidenceList(actions.map(function (action) {
+    panels.push(panel('资源建议', evidenceList(actions.map(function (action) {
       const details = (action.details || []).map(function (detail) {
-        return detail.key + (detail.evidenceSummary ? ' evidence=' + detail.evidenceSummary : '');
-      }).join(' | ');
-      return action.severity + ' 路 ' + action.key + ' 路 ' + action.summary + ' 路 ' + (action.commands || []).join(' | ') + (details ? ' details=' + details : '');
+        return detail.key + (detail.evidenceSummary ? ' 证据 ' + detail.evidenceSummary : '');
+      }).join(' · ');
+      return workspaceStatusLabel(action.severity) + ' · ' + action.key + ' · ' + action.summary + ' · ' + (action.commands || []).join(' · ') + (details ? ' · 明细 ' + details : '');
     })), 'wide'));
   }
   return panels.join('');
@@ -4672,23 +4672,23 @@ function renderDeploymentGateReport(result) {
   const gates = result.gates || [];
   const actions = result.nextActions || [];
   const panels = [
-    panel('Deployment gate', [
-      metric('Status', result.status),
-      metric('Gates', result.gateCount || gates.length),
+    panel('应用门禁', [
+      metric('状态', workspaceStatusLabel(result.status)),
+      metric('检查项', result.gateCount || gates.length),
       metric('下一步', actions.length)
     ].join('')),
-    panel('Gate results', evidenceList(gates.map(function (gate) {
-      return gate.status + ' 路 ' + gate.area + ' 路 ' + gate.key + ' 路 ' + gate.summary;
+    panel('门禁结果', evidenceList(gates.map(function (gate) {
+      return workspaceStatusLabel(gate.status) + ' · ' + gate.area + ' · ' + gate.key + ' · ' + gate.summary;
     })), 'wide')
   ];
   const llmSummary = renderDeploymentGateLlmSummary(result);
   if (llmSummary) panels.push(llmSummary);
   if (actions.length > 0) {
-    panels.push(panel('Gate actions', evidenceList(actions.map(function (action) {
+    panels.push(panel('门禁建议', evidenceList(actions.map(function (action) {
       const details = (action.details || []).map(function (detail) {
-        return detail.key + (detail.evidenceSummary ? ' evidence=' + detail.evidenceSummary : '');
-      }).join(' | ');
-      return action.severity + ' 路 ' + action.key + ' 路 ' + action.summary + ' 路 ' + (action.commands || []).join(' | ') + (details ? ' details=' + details : '');
+        return detail.key + (detail.evidenceSummary ? ' 证据 ' + detail.evidenceSummary : '');
+      }).join(' · ');
+      return workspaceStatusLabel(action.severity) + ' · ' + action.key + ' · ' + action.summary + ' · ' + (action.commands || []).join(' · ') + (details ? ' · 明细 ' + details : '');
     })), 'wide'));
   }
   return panels.join('');
@@ -4894,9 +4894,9 @@ function renderRolloutManifestApply(result) {
   if (actions.length > 0) {
     panels.push(panel('应用动作', evidenceList(actions.map(function (action) {
       const details = (action.details || []).map(function (detail) {
-        return detail.key + (detail.evidenceSummary ? ' evidence=' + detail.evidenceSummary : '');
-      }).join(' | ');
-      return action.severity + ' 路 ' + action.key + ' 路 ' + action.summary + ' 路 ' + (action.commands || []).join(' | ') + (details ? ' details=' + details : '');
+        return detail.key + (detail.evidenceSummary ? ' 证据 ' + detail.evidenceSummary : '');
+      }).join(' · ');
+      return workspaceStatusLabel(action.severity) + ' · ' + action.key + ' · ' + action.summary + ' · ' + (action.commands || []).join(' · ') + (details ? ' · 明细 ' + details : '');
     })), 'wide'));
   }
   return panels.join('');
@@ -9390,7 +9390,7 @@ function renderSourceDiagnostics(diagnostics) {
   });
   const actions = (diagnostics.nextActions || []).slice(0, 8).map(function (action) {
     const commands = action.commands || (action.command ? [action.command] : []);
-    return action.severity + ' | ' + action.sourceId + ' | ' + action.key + ' | ' + commands.join(' | ') + (action.evidenceSummary ? ' evidence=' + action.evidenceSummary : '');
+    return workspaceStatusLabel(action.severity) + ' · 来源 ID ' + action.sourceId + ' · ' + action.key + ' · ' + commands.join(' · ') + (action.evidenceSummary ? ' · 证据 ' + action.evidenceSummary : '');
   });
   return panel('来源接入诊断', evidenceList(rows.concat(actions)), 'wide');
 }

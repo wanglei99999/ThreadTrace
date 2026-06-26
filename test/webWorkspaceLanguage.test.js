@@ -497,3 +497,54 @@ test('automation readiness and freshness panels avoid worker-console copy', func
     "source.generatedAt || 'missing'"
   ]);
 });
+
+test('deployment and resource panels avoid rollout-console copy', function () {
+  const app = readProjectFile('src/presentation/web/app.js');
+
+  assertAbsent(app, [
+    "panel('Source ingest dry-run'",
+    "metric('Status', result.status)",
+    "metric('Dry run'",
+    "metric('Source'",
+    "metric('Thread'",
+    "metric('Posts'",
+    "panel('Isolated writes'",
+    "metric('Snapshots'",
+    "metric('Reports'",
+    "metric('Tasks'",
+    "metric('Raw pages'",
+    "panel('Connector rollout plan'",
+    "metric('Module'",
+    "metric('Steps'",
+    "panel('Rollout steps'",
+    "panel('Ingest dry-run'",
+    "panel('Connector contract summary'",
+    "panel('Connector contract failures'",
+    "panel('Worker topology plan'",
+    "metric('Topology'",
+    "metric('Storage'",
+    "metric('Scope'",
+    "panel('Workers'",
+    "panel('Topology checks'",
+    "panel('Rollout manifest plan'",
+    "metric('Manifest'",
+    "panel('Manifest steps'",
+    "panel('Connector rollout'",
+    "panel('Worker topology'",
+    "panel('Manifest actions'",
+    "panel('Resource provisioning plan'",
+    "panel('Resources'",
+    "panel('Resource actions'",
+    "panel('Deployment gate'",
+    "panel('Gate results'",
+    "panel('Gate actions'",
+    "' env=' +",
+    "' evidence=' +",
+    "' drift=' +",
+    "' details=' +",
+    "'required' : 'optional'",
+    "'duplicate adapters: '",
+    "'duplicate handlers: '",
+    "' missing: '"
+  ]);
+});
