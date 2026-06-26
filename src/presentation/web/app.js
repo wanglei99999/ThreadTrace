@@ -6551,10 +6551,10 @@ function renderSourceOperations(result) {
     panel('来源关注', renderSourceAttentionRows(attentionItems), 'wide'),
     panel('来源类型运行', renderSourceTypeOperations(sourceTypeOperations), 'wide'),
     panel('来源类型准备度', renderSourceTypeReadiness(sourceTypeReadiness), 'wide'),
-    panel('到期来源', renderScheduleDecisionRows(schedule.dueSources || [], 'No due sources.', true), 'wide'),
-    panel('等待重试的来源', renderScheduleDecisionRows(filterScheduleSourcesByCollectionStatus(schedule.sources || [], 'retry-waiting'), 'No retry-waiting sources.', false), 'wide'),
-    panel('未排期或已停用来源', renderScheduleDecisionRows(filterScheduleSourcesByCollectionStatus(schedule.sources || [], ['unscheduled', 'disabled']), 'No unscheduled or disabled sources.', false), 'wide'),
-    panel('已跳过来源', renderScheduleDecisionRows((schedule.skippedSources || []).slice(0, 10), 'No skipped sources.', false), 'wide'),
+    panel('到期来源', renderScheduleDecisionRows(schedule.dueSources || [], '当前没有到期来源。', true), 'wide'),
+    panel('等待重试的来源', renderScheduleDecisionRows(filterScheduleSourcesByCollectionStatus(schedule.sources || [], 'retry-waiting'), '当前没有等待重试的来源。', false), 'wide'),
+    panel('未排期或已停用来源', renderScheduleDecisionRows(filterScheduleSourcesByCollectionStatus(schedule.sources || [], ['unscheduled', 'disabled']), '当前没有未排期或已停用来源。', false), 'wide'),
+    panel('已跳过来源', renderScheduleDecisionRows((schedule.skippedSources || []).slice(0, 10), '当前没有已跳过来源。', false), 'wide'),
     panel('生命周期关注', renderLifecycleAttentionRows(lifecycle.sources || []), 'wide')
   ];
   if (sourceActions.length > 0) {
@@ -6582,14 +6582,14 @@ function renderSourceOperationsHero(view) {
     '<section class="source-ops-main">',
     '<div class="source-ops-header">',
     '<span class="source-ops-label">来源运行</span>',
-    statusBadge(cockpit.status || lifecycle.status || schedule.status || 'unknown', statusVariant(cockpit.status || lifecycle.status || schedule.status)),
+    statusBadge(workspaceStatusLabel(cockpit.status || lifecycle.status || schedule.status), statusVariant(cockpit.status || lifecycle.status || schedule.status)),
     '</div>',
     '<h3>' + escapeHtml(headline) + '</h3>',
     '<p>' + escapeHtml([
-      '生命周期=' + (lifecycle.status || 'unknown'),
-      '排期=' + (schedule.status || 'unknown'),
-      '操作=' + (runbook.status || 'unknown'),
-      '启用=' + String(lifecycleSummary.enabled || 0) + '/' + String(lifecycleSummary.total || 0)
+      '生命周期 ' + workspaceStatusLabel(lifecycle.status),
+      '排期 ' + workspaceStatusLabel(schedule.status),
+      '操作 ' + workspaceStatusLabel(runbook.status),
+      '启用 ' + String(lifecycleSummary.enabled || 0) + '/' + String(lifecycleSummary.total || 0)
     ].join(' · ')) + '</p>',
     '<div class="source-ops-actions button-group">' +
       sourceOpsAlertControl('操作检查', '创建操作提醒', 'synthesize-runbook-events', alertableCount, 'data-limit="100"') +
@@ -6612,16 +6612,16 @@ function renderSourceOperationsHero(view) {
     '<section class="source-ops-foot">',
     '<span>自动运行压力</span>',
     '<strong>' + escapeHtml([
-      '操作=' + alertableCount,
-      '来源=' + sourceAttentionAlertableCount,
-      '类型=' + sourceTypeOperationsAlertableCount
+      '操作 ' + alertableCount,
+      '来源 ' + sourceAttentionAlertableCount,
+      '类型 ' + sourceTypeOperationsAlertableCount
     ].join(' · ')) + '</strong>',
     '<small>' + escapeHtml([
-      'warnings=' + (summary.warning || 0),
-      'skipped=' + (scheduleSummary.skipped || 0),
-      'planRetry=' + (collectionSummary['retry-waiting'] || 0),
-      'disableBlocked=' + (lifecycleSummary.disableBlocked || 0)
-    ].join(' | ')) + '</small>',
+      '提醒 ' + (summary.warning || 0),
+      '已跳过 ' + (scheduleSummary.skipped || 0),
+      '等待重试 ' + (collectionSummary['retry-waiting'] || 0),
+      '停用受阻 ' + (lifecycleSummary.disableBlocked || 0)
+    ].join(' · ')) + '</small>',
     '</section>',
     '</article>'
   ].join('');
@@ -6631,38 +6631,64 @@ function sourceOperationsHeadline(cockpit, schedule, lifecycle) {
   const summary = cockpit.summary || {};
   const scheduleSummary = schedule.summary || {};
   const lifecycleSummary = lifecycle.summary || {};
-  if ((summary.fail || 0) > 0) return 'Critical source work is waiting for a plan.';
-  if ((scheduleSummary.due || 0) > 0) return 'Sources are due now; choose the next run deliberately.';
-  if ((lifecycleSummary.failureRetryWaiting || 0) > 0) return 'Retry windows are open, with recovery work queued.';
-  if ((summary.warning || 0) > 0) return 'Source runtime is stable, but needs attention.';
-  return 'Source runtime is quiet and ready for the next signal.';
+  if ((summary.fail || 0) > 0) return '有关键来源等待处理计划。';
+  if ((scheduleSummary.due || 0) > 0) return '有来源已经到期，先确认下一次采集路径。';
+  if ((lifecycleSummary.failureRetryWaiting || 0) > 0) return '重试窗口已打开，恢复工作正在排队。';
+  if ((summary.warning || 0) > 0) return '来源运行稳定，但有几处需要关注。';
+  return '来源运行清爽，等待下一条有效信号。';
 }
 
 function sourceOpsSignal(label, value, variant) {
   return '<div class="source-ops-signal ' + statusClassName(variant) + '"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(value) + '</strong></div>';
 }
 
+function sourceQueueTitle(item) {
+  return item.title || item.id || '来源队列项';
+}
+
+function sourceScopeLabel(scope) {
+  const labels = {
+    source: '来源',
+    'source-type': '来源类型',
+    operations: '运行建议',
+    collection: '采集',
+    attention: '来源关注'
+  };
+  return labels[scope] || workspaceValue(scope, '来源');
+}
+
+function sourceQueueKindLabel(kind) {
+  const labels = {
+    'source-attention': '来源关注',
+    'source-type-operations': '来源类型运行',
+    runbook: '操作建议',
+    'due-source': '到期来源',
+    operations: '运行建议'
+  };
+  return labels[kind] || workspaceValue(kind, '来源建议');
+}
+
 function renderSourceOperationsHeroQueue(queue) {
   if (!queue || queue.length === 0) {
-    return '<div class="source-ops-empty">No operator queue items.</div>';
+    return '<div class="source-ops-empty">当前没有待处理的来源队列。</div>';
   }
   return queue.slice(0, 3).map(function (item) {
     const source = item.source || {};
     const details = [
-      item.kind,
-      item.scope,
-      'priority=' + (item.priorityScore || 0),
-      item.signalCount !== undefined ? 'signals=' + item.signalCount : undefined,
+      item.kind ? sourceQueueKindLabel(item.kind) : undefined,
+      item.scope ? sourceScopeLabel(item.scope) : undefined,
+      '优先级 ' + (item.priorityScore || 0),
+      item.signalCount !== undefined ? '信号 ' + item.signalCount : undefined,
       item.recommendedNextAction
-    ].filter(Boolean).join(' | ');
+    ].filter(Boolean).join(' · ');
     return '<div class="source-ops-queue-row">' +
       '<div>' +
-      '<strong>' + escapeHtml('#' + (item.rank || '?') + ' ' + (item.title || item.id || 'Queue item')) + '</strong>' +
+      '<strong>' + escapeHtml('#' + (item.rank || '?') + ' ' + sourceQueueTitle(item)) + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
       '</div>' +
       '<span class="button-group source-op-buttons">' +
       renderSourceOperationsCockpitControls(item, source) +
-      statusBadge(item.severity || 'info', attentionStatusVariant(item.severity)) +
+      statusBadge(workspaceStatusLabel(item.severity || 'info'), attentionStatusVariant(item.severity)) +
       '</span>' +
       '</div>';
   }).join('');
@@ -6696,30 +6722,30 @@ function renderSourceOperationsCockpit(cockpit) {
 }
 
 function renderSourceOperationsCockpitRows(queue) {
-  if (!queue.length) return '<div class="muted">No operator queue items.</div>';
+  if (!queue.length) return '<div class="muted">当前没有待处理的来源队列。</div>';
   return '<div class="source-work-list">' + queue.map(function (item) {
     const source = item.source || {};
-    const sourceLabel = item.sourceType || source.sourceType || source.sourceKey || item.scope || 'source';
+    const sourceLabel = item.sourceType || source.sourceType || source.sourceKey || sourceScopeLabel(item.scope);
     const commands = [item.recommendedCommand].concat(item.relatedCommands || []).filter(Boolean).slice(0, 3);
     return '<div class="source-work-row ' + statusClassName(attentionStatusVariant(item.severity)) + '">' +
       '<section class="source-work-anchor">' +
         '<span class="source-work-scope">' + escapeHtml(sourceLabel) + '</span>' +
-        '<strong>' + escapeHtml('#' + (item.rank || '?') + ' ' + (item.title || item.id || 'Queue item')) + '</strong>' +
-        '<small>' + escapeHtml([item.kind, item.scope].filter(Boolean).join(' / ') || 'operator queue') + '</small>' +
+        '<strong>' + escapeHtml('#' + (item.rank || '?') + ' ' + sourceQueueTitle(item)) + '</strong>' +
+        '<small>' + escapeHtml([sourceQueueKindLabel(item.kind), sourceScopeLabel(item.scope)].filter(Boolean).join(' · ') || '来源队列') + '</small>' +
       '</section>' +
       '<section class="source-work-brief">' +
-        '<p>' + escapeHtml(item.summary || item.recommendedNextAction || 'Review source operations before automation.') + '</p>' +
+        '<p>' + escapeHtml(item.summary || item.recommendedNextAction || '先检查来源运行建议，再决定是否自动处理。') + '</p>' +
         '<div class="source-work-chips">' +
-          authorMetaChip('priority', item.priorityScore || 0, (item.priorityScore || 0) >= 100 ? 'warn' : 'info') +
-          authorMetaChip('signals', item.signalCount === undefined ? 0 : item.signalCount, item.signalCount > 0 ? 'warn' : 'muted') +
-          authorMetaChip('runnable', item.runnable ? 'yes' : 'no', item.runnable ? 'ok' : 'muted') +
-          authorMetaChip('scope', item.scope, item.scope === 'source-type' ? 'info' : 'muted') +
+          authorMetaChip('优先级', item.priorityScore || 0, (item.priorityScore || 0) >= 100 ? 'warn' : 'info') +
+          authorMetaChip('信号', item.signalCount === undefined ? 0 : item.signalCount, item.signalCount > 0 ? 'warn' : 'muted') +
+          authorMetaChip('可执行', item.runnable ? '是' : '否', item.runnable ? 'ok' : 'muted') +
+          authorMetaChip('范围', sourceScopeLabel(item.scope), item.scope === 'source-type' ? 'info' : 'muted') +
         '</div>' +
         renderSourceCommandChips(commands) +
       '</section>' +
       '<section class="source-work-actions button-group source-op-buttons">' +
         renderSourceOperationsCockpitControls(item, source) +
-        statusBadge(item.severity || 'info', attentionStatusVariant(item.severity)) +
+        statusBadge(workspaceStatusLabel(item.severity || 'info'), attentionStatusVariant(item.severity)) +
       '</section>' +
       '</div>';
   }).join('') + '</div>';
@@ -6743,7 +6769,7 @@ function renderSourceOperationsCockpitControls(item, source) {
 function renderSourceOperationsCockpitNextActions(actions) {
   if (!actions.length) return '';
   return '<div class="tag-list reason-tags">' + evidenceList(actions.slice(0, 5).map(function (action) {
-    return [action.severity || 'info', action.summary || action.key, action.recommendedCommand].filter(Boolean).join(' | ');
+    return [workspaceStatusLabel(action.severity || 'info'), action.summary || action.key, action.recommendedCommand].filter(Boolean).join(' · ');
   })) + '</div>';
 }
 
@@ -7066,7 +7092,7 @@ function addSourceAttention(map, source, signal) {
   if (signal.command) item.commands.push(signal.command);
   item.signals.push({
     severity: signal.severity || 'info',
-    label: signal.label || 'attention',
+    label: signal.label || '关注',
     summary: signal.summary,
     reason: signal.reason,
     action: signal.action,
@@ -7138,11 +7164,11 @@ function renderSourceAttentionRows(items) {
     const priorityScore = item.priorityScore === undefined ? scoreWebSourceAttention(item) : item.priorityScore;
     const signalLabels = uniqueText((item.signals || []).map(function (signal) {
       return signal.label;
-    })).join(' + ');
+    })).join('、');
     const canRunSourceActions = Boolean(source.id);
     const controls = '<section class="source-work-actions button-group source-op-buttons source-attention-controls">' +
       (item.attentionRank ? statusBadge('#' + item.attentionRank, attentionStatusVariant(item.severity)) : '') +
-      statusBadge(signalLabels || item.severity || 'attention', attentionStatusVariant(item.severity)) +
+      statusBadge(signalLabels || workspaceStatusLabel(item.severity || 'info'), attentionStatusVariant(item.severity)) +
       renderSourceDrilldownButton(source) +
       (item.runnable && canRunSourceActions ? renderSourceRunButtons(source) : '') +
       (canRunSourceActions ? renderSourceEnablementButtons(source) : '') +
@@ -7150,7 +7176,7 @@ function renderSourceAttentionRows(items) {
       '</section>';
     return '<div class="source-work-row source-attention-work-row ' + statusClassName(attentionStatusVariant(item.severity)) + '">' +
       '<section class="source-work-anchor">' +
-        '<span class="source-work-scope">' + escapeHtml(source.sourceType || source.sourceKey || 'source') + '</span>' +
+        '<span class="source-work-scope">' + escapeHtml(source.sourceType || source.sourceKey || '来源') + '</span>' +
         '<strong>' + escapeHtml(source.displayName || source.id || source.sourceKey || '未知来源') + '</strong>' +
         '<small>' + escapeHtml(source.id || source.sourceKey || item.key || '未知范围') + '</small>' +
       '</section>' +
@@ -7218,7 +7244,7 @@ function attentionSignalDetail(signals) {
 function renderSourceAttentionSignalRows(signals) {
   return (signals || []).slice(0, 4).map(function (signal) {
     return '<small class="source-attention-signal">' +
-      escapeHtml((signal.label || 'attention') + ': ' + (signal.summary || 'Review this source.')) +
+      escapeHtml((signal.label || '关注') + '：' + (signal.summary || '查看这个来源的关注信号。')) +
       '</small>';
   }).join('');
 }
@@ -7560,19 +7586,20 @@ function formatSourceTypeDrilldownSourceRow(source) {
 
 function renderSourceDrilldownAttention(attention) {
   if (!attention || !attention.found) return '<div class="muted">当前范围暂无来源关注项。</div>';
+  const severityLabel = workspaceStatusLabel(attention.severity || 'info');
   const lines = [
-    '排名 #' + (attention.attentionRank || '?') + ' · 优先级 ' + (attention.priorityScore || 0) + ' · 级别 ' + (attention.severity || 'info'),
+    '排名 #' + (attention.attentionRank || '?') + ' · 优先级 ' + (attention.priorityScore || 0) + ' · 级别 ' + severityLabel,
     attention.recommendedNextAction ? '下一步 ' + attention.recommendedNextAction : undefined,
     attention.recommendedCommand ? '命令 ' + attention.recommendedCommand : undefined
   ].filter(Boolean);
   return '<div class="source-work-row source-attention-work-row ' + statusClassName(attentionStatusVariant(attention.severity)) + '">' +
     '<section class="source-work-anchor">' +
-      '<span class="source-work-scope">attention</span>' +
-      '<strong>' + escapeHtml((attention.severity || 'info') + ' · 来源关注') + '</strong>' +
+      '<span class="source-work-scope">来源关注</span>' +
+      '<strong>' + escapeHtml(severityLabel + ' · 来源关注') + '</strong>' +
       '<small>' + escapeHtml('排名 #' + (attention.attentionRank || '?')) + '</small>' +
     '</section>' +
     '<section class="source-work-brief">' +
-      '<p>' + escapeHtml(attention.recommendedNextAction || 'Review this source attention item.') + '</p>' +
+      '<p>' + escapeHtml(attention.recommendedNextAction || '查看这个来源的关注信号。') + '</p>' +
       '<div class="source-work-chips">' +
         authorMetaChip('优先级', attention.priorityScore || 0, (attention.priorityScore || 0) >= 100 ? 'warn' : 'info') +
         authorMetaChip('信号', attention.signalCount || (attention.signals || []).length || 0, 'warn') +
@@ -7723,10 +7750,10 @@ function renderCollectionStatusOverview(schedule) {
   const statusTags = statuses.filter(function (status) {
     return (byStatus[status] || 0) > 0;
   }).map(function (status) {
-    return '<span class="tag">' + escapeHtml(status + ': ' + byStatus[status]) + '</span>';
+    return '<span class="tag">' + escapeHtml(workspaceStatusLabel(status) + ' ' + byStatus[status]) + '</span>';
   }).join('');
   const filtered = schedule && schedule.collectionStatus && schedule.collectionStatus.length
-    ? '<small>' + escapeHtml('筛选 ' + schedule.collectionStatus.join(',')) + '</small>'
+    ? '<small>' + escapeHtml('筛选 ' + schedule.collectionStatus.map(workspaceStatusLabel).join('、')) + '</small>'
     : '';
   return '<div class="tag-list reason-tags">' + (statusTags || '<span class="tag">暂无采集状态</span>') + '</div>' + filtered;
 }
@@ -7786,8 +7813,8 @@ function renderScheduleDecisionRows(sources, emptyText, runnable) {
       '<section class="source-work-brief">' +
         '<p>' + escapeHtml('原因 ' + (decision.reason || '未知')) + '</p>' +
         '<div class="source-work-chips">' +
-          authorMetaChip('计划', collectionPlan.status || '未知', collectionStatusVariant(collectionPlan.status)) +
-          authorMetaChip('运行', runState.status || '未知', statusVariant(runState.status)) +
+          authorMetaChip('计划', workspaceStatusLabel(collectionPlan.status), collectionStatusVariant(collectionPlan.status)) +
+          authorMetaChip('运行', workspaceStatusLabel(runState.status), statusVariant(runState.status)) +
           authorMetaChip('间隔', schedule.intervalMinutes ? schedule.intervalMinutes + 'm' : '暂无', schedule.intervalMinutes ? 'info' : 'muted') +
           authorMetaChip('下次', decision.nextRunAt || '暂无', decision.nextRunAt ? 'info' : 'muted') +
           authorMetaChip('重试', decision.retryAt || '暂无', decision.retryAt ? 'warn' : 'muted') +
@@ -7801,7 +7828,7 @@ function renderScheduleDecisionRows(sources, emptyText, runnable) {
 
 function renderScheduleSourceControls(source, runnable) {
   return '<section class="source-work-actions button-group source-op-buttons schedule-op-buttons">' +
-    statusBadge(runnable ? 'due' : 'skip', runnable ? 'ok' : 'muted') +
+    statusBadge(runnable ? '到期' : '暂缓', runnable ? 'ok' : 'muted') +
     renderSourceDrilldownButton(source) +
     renderSourceScheduleButtons(source) +
     (runnable ? renderSourceRunButtons(source) : '') +
@@ -7816,7 +7843,7 @@ function renderCollectionPlanDetails(plan) {
   return '<div class="source-work-row source-action-row ' + statusClassName(collectionStatusVariant(plan.status)) + '">' +
     '<section class="source-work-anchor">' +
       '<span class="source-work-scope">计划</span>' +
-      '<strong>' + escapeHtml(plan.status || '未知') + '</strong>' +
+      '<strong>' + escapeHtml(workspaceStatusLabel(plan.status)) + '</strong>' +
       '<small>' + escapeHtml(plan.strategy && plan.strategy.mode || '采集') + '</small>' +
     '</section>' +
     '<section class="source-work-brief">' +
@@ -7832,7 +7859,7 @@ function renderCollectionPlanDetails(plan) {
       renderSourceCommandChips(plan.recommendedCommands || []) +
     '</section>' +
     '<section class="source-work-actions button-group source-op-buttons">' +
-      statusBadge(plan.status || 'unknown', collectionStatusVariant(plan.status)) +
+      statusBadge(workspaceStatusLabel(plan.status), collectionStatusVariant(plan.status)) +
     '</section>' +
     '</div>';
 }
@@ -7842,7 +7869,7 @@ function formatCollectionPlanSummary(plan) {
   const schedule = plan.schedule || {};
   const decision = schedule.decision || {};
   return [
-    plan.status,
+    workspaceStatusLabel(plan.status),
     plan.strategy && plan.strategy.mode,
     '原因 ' + (decision.reason || '未知'),
     decision.nextRunAt ? '下次 ' + decision.nextRunAt : undefined,
@@ -8189,6 +8216,8 @@ function workspaceStatusLabel(status) {
     due: '到期',
     skip: '暂缓',
     scheduled: '已排期',
+    'retry-waiting': '等待重试',
+    'failed-waiting': '失败待处理',
     unscheduled: '未排期',
     disabled: '已停用',
     enabled: '已启用',
@@ -8198,6 +8227,8 @@ function workspaceStatusLabel(status) {
     stale: '停滞',
     expired: '已过期',
     available: '可用',
+    unknown: '未知',
+    'unknown-status': '未知状态',
     'not-evaluated': '未评估',
     'not-run': '未试跑',
     'not run': '未运行'

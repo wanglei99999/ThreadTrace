@@ -548,3 +548,35 @@ test('deployment and resource panels avoid rollout-console copy', function () {
     "' missing: '"
   ]);
 });
+
+test('source schedule and attention panels avoid operations-console copy', function () {
+  const app = readProjectFile('src/presentation/web/app.js');
+
+  assertAbsent(app, [
+    'No due sources.',
+    'No retry-waiting sources.',
+    'No unscheduled or disabled sources.',
+    'No skipped sources.',
+    'No operator queue items.',
+    'Review source operations before automation.',
+    "item.title || item.id || 'Queue item'",
+    "|| 'operator queue'",
+    "authorMetaChip('priority'",
+    "authorMetaChip('signals'",
+    "authorMetaChip('runnable'",
+    "authorMetaChip('scope'",
+    "item.runnable ? 'yes' : 'no'",
+    "signal.label || 'attention'",
+    'Review this source.',
+    '<span class="source-work-scope">attention</span>',
+    "(attention.severity || 'info') + ' · 来源关注'",
+    'Review this source attention item.',
+    "'生命周期=' +",
+    "'排期=' +",
+    "'操作=' +",
+    "'启用=' +",
+    "status + ': ' + byStatus[status]",
+    "schedule.collectionStatus.join(',')",
+    "statusBadge(runnable ? 'due' : 'skip'"
+  ]);
+});
