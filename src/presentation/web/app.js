@@ -672,6 +672,10 @@ function buildSourceOnboardingRequest(form) {
 async function handleAutomationReadinessAction(event) {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
+  if (isCopyCommandAction(button)) {
+    await copyCommandFromButton(button);
+    return;
+  }
   if (button.dataset.action === 'refresh-automation-readiness') {
     await loadAutomationReadiness();
     return;
@@ -5276,6 +5280,7 @@ function renderAutomationReadinessPlan(input) {
     renderAutomationCockpitHero(plan, cockpit),
     panel('Notification and audit pressure', renderAutomationOperatingPressure(cockpit), 'wide automation-pressure-panel'),
     panel('Automation gates', renderAutomationReadinessChecks(plan.checks || []), 'wide automation-gates-panel'),
+    panel('Operator runbook', renderAutomationOperatorRunbook(cockpit.operatorRunbook), 'wide automation-runbook-panel'),
     panel('Automation remediation', renderAutomationRemediation(plan.remediation), 'wide automation-remediation-panel'),
     panel('Worker commands', renderAutomationWorkerCommands(plan.automation && plan.automation.workerCommands || []), 'wide automation-worker-panel'),
     panel('Next actions', renderAutomationNextActions(plan.nextActions || []), 'wide automation-next-panel')
@@ -5290,7 +5295,8 @@ function normalizeAutomationCockpitInput(input) {
       notificationOverview: safeInput.notificationOverview || {},
       reviewActionAuditOverview: safeInput.reviewActionAuditOverview || {},
       reviewActionExecutions: safeInput.reviewActionExecutions || {},
-      notificationDiagnostics: safeInput.notificationDiagnostics || {}
+      notificationDiagnostics: safeInput.notificationDiagnostics || {},
+      operatorRunbook: safeInput.operatorRunbook || {}
     };
   }
   return {
@@ -5298,7 +5304,8 @@ function normalizeAutomationCockpitInput(input) {
     notificationOverview: {},
     reviewActionAuditOverview: {},
     reviewActionExecutions: {},
-    notificationDiagnostics: {}
+    notificationDiagnostics: {},
+    operatorRunbook: {}
   };
 }
 
@@ -5554,6 +5561,37 @@ function renderAutomationWorkerCommands(commands) {
       '<small>' + escapeHtml(worker.command || '') + '</small>' +
       '</span></div>';
   }).join('');
+}
+
+function renderAutomationOperatorRunbook(runbook) {
+  const safeRunbook = runbook || {};
+  const sections = safeRunbook.sections || [];
+  const rows = [
+    '<div class="summary-strip">',
+    summaryTile('Status', safeRunbook.status || 'unknown', statusVariant(safeRunbook.status)),
+    summaryTile('Commands', String(safeRunbook.commandCount || 0), (safeRunbook.commandCount || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('Sections', String(sections.length), sections.length > 0 ? 'ok' : 'muted'),
+    summaryTile('Next', safeRunbook.nextCommand && safeRunbook.nextCommand.title || 'none', safeRunbook.nextCommand ? 'warn' : 'muted'),
+    '</div>'
+  ];
+  if (sections.length === 0) {
+    rows.push('<div class="muted">No operator runbook returned.</div>');
+    return rows.join('');
+  }
+  sections.forEach(function (section) {
+    const commands = (section.commands || []).map(function (command) {
+      return command.command;
+    }).filter(Boolean);
+    rows.push('<div class="action-row ops-row automation-runbook-row">' +
+      '<span>' +
+      '<strong>' + escapeHtml(section.title || section.key || 'Runbook section') + '</strong>' +
+      '<small>' + escapeHtml('commands=' + (section.commandCount || commands.length || 0)) + '</small>' +
+      renderReadinessCommandRows(commands) +
+      '</span>' +
+      statusBadge(section.status || 'unknown', statusVariant(section.status)) +
+      '</div>');
+  });
+  return rows.join('');
 }
 
 function renderAutomationRemediation(remediation) {

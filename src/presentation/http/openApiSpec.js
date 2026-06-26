@@ -7307,7 +7307,42 @@ function createOpenApiSpec() {
             notificationOverview: { $ref: '#/components/schemas/NotificationEventOverview' },
             reviewActionAuditOverview: { $ref: '#/components/schemas/ContextReviewActionAuditOverview' },
             reviewActionExecutions: { $ref: '#/components/schemas/ContextReviewActionExecutionListResult' },
-            notificationDiagnostics: { type: 'object', additionalProperties: true }
+            notificationDiagnostics: { type: 'object', additionalProperties: true },
+            operatorRunbook: { $ref: '#/components/schemas/AutomationCockpitOperatorRunbook' }
+          }
+        },
+        AutomationCockpitOperatorRunbook: {
+          type: 'object',
+          properties: {
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            commandCount: { type: 'number', example: 4 },
+            nextCommand: { type: 'object', additionalProperties: true },
+            sections: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  key: { type: 'string', example: 'workers' },
+                  title: { type: 'string', example: 'Start long-running workers' },
+                  status: { type: 'string', enum: ['ok', 'warn', 'fail', 'unknown'] },
+                  commandCount: { type: 'number' },
+                  commands: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        key: { type: 'string' },
+                        title: { type: 'string' },
+                        command: { type: 'string' },
+                        severity: { type: 'string' }
+                      },
+                      additionalProperties: true
+                    }
+                  }
+                },
+                additionalProperties: true
+              }
+            }
           }
         },
         AutomationReadinessRemediationPlan: {

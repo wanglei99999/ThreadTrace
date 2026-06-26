@@ -16,6 +16,14 @@ function getAutomationCockpitSnapshot(input) {
     diagnosticsStatus
   ].filter(Boolean);
   const status = aggregateStatus(componentStatuses);
+  const operatorRunbook = buildOperatorRunbook({
+    plan,
+    notificationOverview,
+    reviewActionAuditOverview,
+    reviewActionExecutions,
+    diagnosticsStatus,
+    status
+  });
   return {
     schemaVersion: 'automation-cockpit-snapshot.v1',
     generatedAt: safeInput.now || plan.generatedAt || new Date().toISOString(),
@@ -26,6 +34,7 @@ function getAutomationCockpitSnapshot(input) {
     reviewActionAuditOverview,
     reviewActionExecutions,
     notificationDiagnostics,
+    operatorRunbook,
     summary: {
       readinessStatus: plan.status || 'unknown',
       notificationStatus: notificationOverview.status || 'unknown',
@@ -38,6 +47,94 @@ function getAutomationCockpitSnapshot(input) {
       executionCount: reviewActionExecutions.count
     }
   };
+}
+
+function buildOperatorRunbook(input) {
+  const plan = input.plan || {};
+  const automation = plan.automation || {};
+  const remediation = plan.remediation || {};
+  const workerCommands = (automation.workerCommands || []).filter(function (worker) {
+    return worker && worker.command;
+  });
+  const remediationCommands = [];
+  (remediation.actions || []).forEach(function (action) {
+    if (action.command) {
+      remediationCommands.push(commandItem('schedule.preview.' + (action.key || remediationCommands.length), 'Preview schedule remediation', action.command, {
+        sourceId: action.scope && action.scope.sourceId,
+        sourceKey: action.scope && action.scope.sourceKey,
+        severity: action.severity || 'warning'
+      }));
+    }
+    if (action.executeCommand) {
+      remediationCommands.push(commandItem('schedule.execute.' + (action.key || remediationCommands.length), 'Execute schedule remediation', action.executeCommand, {
+        sourceId: action.scope && action.scope.sourceId,
+        sourceKey: action.scope && action.scope.sourceKey,
+        severity: action.severity || 'warning'
+      }));
+    }
+  });
+  const manualCommands = (remediation.manualActions || []).filter(function (action) {
+    return action && action.command;
+  }).map(function (action, index) {
+    return commandItem('manual.' + (action.key || action.checkKey || index), action.summary || action.checkKey || 'Manual review', action.command, {
+      severity: action.severity || 'warning'
+    });
+  });
+  const validationCommands = [
+    commandItem('validate.snapshot', 'Read Automation Cockpit snapshot', 'node src/presentation/cli/threadtrace.js automation-cockpit --json true', { severity: 'info' }),
+    commandItem('validate.web', 'Verify Automation Cockpit browser surface', 'npm run verify:web:automation-cockpit', { severity: 'info' })
+  ];
+  const sections = [
+    section('workers', 'Start long-running workers', statusFromWorkers(plan), workerCommands.map(function (worker, index) {
+      return commandItem('worker.' + (worker.key || worker.workerType || index), worker.workerType || worker.key || 'worker', worker.command, {
+        leaseKey: worker.leaseKey,
+        intervalMs: worker.intervalMs,
+        severity: statusFromWorkers(plan) === 'fail' ? 'critical' : 'info'
+      });
+    })),
+    section('schedule', 'Close schedule gaps', remediationCommands.length > 0 ? 'warn' : 'ok', remediationCommands),
+    section('manual-review', 'Manual readiness checks', manualCommands.length > 0 ? 'warn' : 'ok', manualCommands),
+    section('verification', 'Verify cockpit health', input.status === 'fail' ? 'fail' : input.status === 'warn' ? 'warn' : 'ok', validationCommands)
+  ];
+  const commandCount = sections.reduce(function (total, item) {
+    return total + item.commands.length;
+  }, 0);
+  return {
+    status: commandCount > 0 ? input.status : 'ok',
+    commandCount,
+    sections,
+    nextCommand: firstCommand(sections)
+  };
+}
+
+function section(key, title, status, commands) {
+  return {
+    key,
+    title,
+    status: status || 'unknown',
+    commandCount: (commands || []).length,
+    commands: commands || []
+  };
+}
+
+function commandItem(key, title, command, metadata) {
+  return Object.assign({
+    key,
+    title,
+    command
+  }, metadata || {});
+}
+
+function statusFromWorkers(plan) {
+  return plan && plan.summary && plan.summary.workers && plan.summary.workers.status || 'unknown';
+}
+
+function firstCommand(sections) {
+  for (let sectionIndex = 0; sectionIndex < sections.length; sectionIndex += 1) {
+    const commands = sections[sectionIndex].commands || [];
+    if (commands.length > 0) return commands[0];
+  }
+  return undefined;
 }
 
 function firstNumber() {

@@ -1017,6 +1017,7 @@ function main(argv) {
       console.log('Notifications: open=' + (summary.openNotificationCount || 0) + ', pending=' + (summary.pendingNotificationCount || 0));
       console.log('Review actions: audits=' + (summary.auditCount || 0) + ', executions=' + (summary.executionCount || 0));
       console.log('Sources: total=' + (planSummary.sources && planSummary.sources.total || 0) + ', due=' + (planSummary.sources && planSummary.sources.due || 0) + ', queue=' + (planSummary.operations && planSummary.operations.queueTotal || 0));
+      printAutomationOperatorRunbook(snapshot.operatorRunbook);
       printAutomationRemediation(plan.remediation);
       (plan.nextActions || []).forEach(printActionWithDetails);
       if (snapshot.status === 'fail') process.exitCode = 2;
@@ -3650,6 +3651,17 @@ function printAutomationRemediation(remediation) {
   });
   (remediation.manualActions || []).slice(0, 5).forEach(function (action) {
     console.log('manual\t' + action.checkKey + '\t' + (action.command || ''));
+  });
+}
+
+function printAutomationOperatorRunbook(runbook) {
+  if (!runbook) return;
+  console.log('Operator runbook: ' + (runbook.status || 'unknown') + ', commands=' + (runbook.commandCount || 0));
+  (runbook.sections || []).forEach(function (section) {
+    console.log('runbook\t' + (section.status || 'unknown') + '\t' + (section.key || 'section') + '\tcommands=' + (section.commandCount || 0));
+    (section.commands || []).slice(0, 3).forEach(function (command) {
+      console.log('command\t' + (command.key || 'command') + '\t' + (command.command || ''));
+    });
   });
 }
 

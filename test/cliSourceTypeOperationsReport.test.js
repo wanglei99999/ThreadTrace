@@ -410,6 +410,15 @@ test('CLI prints automation cockpit snapshot as JSON', async function () {
     assert.equal(snapshot.reviewActionExecutions.count, 0);
     assert.equal(snapshot.summary.readinessStatus, 'fail');
     assert.equal(snapshot.summary.diagnosticsStatus, 'ok');
+    assert.ok(snapshot.operatorRunbook.commandCount >= 3);
+    assert.ok(snapshot.operatorRunbook.sections.find(function (section) {
+      return section.key === 'workers';
+    }));
+    assert.ok(snapshot.operatorRunbook.sections.find(function (section) {
+      return section.key === 'verification';
+    }).commands.some(function (command) {
+      return command.command === 'npm run verify:web:automation-cockpit';
+    }));
     assert.equal(error.stderr, '');
     return true;
   });

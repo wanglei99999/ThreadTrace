@@ -3491,6 +3491,20 @@ form button[type="submit"]:hover {
   background: rgba(255, 255, 255, 0.82);
 }
 
+.automation-runbook-panel {
+  border-color: rgba(36, 95, 159, 0.2);
+}
+
+.automation-runbook-row {
+  align-items: start;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(240, 247, 255, 0.78) 58%, rgba(255, 247, 230, 0.54));
+}
+
+.automation-runbook-row .lifecycle-command-list {
+  margin-top: 8px;
+}
+
 .automation-cockpit-hero {
   position: relative;
   grid-column: span 12;

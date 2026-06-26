@@ -216,7 +216,8 @@ function viewportAuditExpression() {
     '    heroHeight: heroRect ? Math.round(heroRect.height) : null,',
     '    statusTop: statusRect ? Math.round(statusRect.top) : null,',
     "    bodyTextIncludesOutbox: document.body.innerText.includes('Notification outbox'),",
-    "    bodyTextIncludesAudit: document.body.innerText.includes('Review audit ledger')",
+    "    bodyTextIncludesAudit: document.body.innerText.includes('Review audit ledger'),",
+    "    bodyTextIncludesRunbook: document.body.innerText.includes('Operator runbook')",
     '  };',
     '})()'
   ].join('\n');
@@ -286,6 +287,7 @@ function assertAudit(label, audit) {
   });
   if (!audit.bodyTextIncludesOutbox) failures.push('missing Notification outbox text');
   if (!audit.bodyTextIncludesAudit) failures.push('missing Review audit ledger text');
+  if (!audit.bodyTextIncludesRunbook) failures.push('missing Operator runbook text');
   if (audit.heroTop === null || audit.heroTop > audit.clientWidth * 3) failures.push('cockpit appears too late in the page');
   if (failures.length > 0) {
     throw new Error(label + ' Automation Cockpit verification failed: ' + failures.join('; '));
