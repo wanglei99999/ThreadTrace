@@ -5140,7 +5140,7 @@ function formatLlmEvaluationSampleRow(result) {
   const warnings = (result.qualityChecks || []).filter(function (check) {
     return check.status !== 'ok';
   }).map(function (check) {
-    return check.key + '=' + check.status;
+    return sourceDiagnosticCheckSummary(check);
   }).join(', ');
   return [
     result.status || 'unknown',
@@ -6281,7 +6281,7 @@ function renderAutomationOperatingPressure(cockpit) {
     checks.length > 0
       ? '<div class="action-row ops-row"><span>' +
         '<strong>提醒渠道</strong>' +
-        '<small>' + escapeHtml(checks.map(function (check) { return check.key + '=' + check.status; }).join(' | ')) + '</small>' +
+        '<small>' + escapeHtml(checks.map(sourceDiagnosticCheckSummary).join('；')) + '</small>' +
         '</span>' + statusBadge(pressure.channelStatus, statusVariant(pressure.channelStatus)) + '</div>'
       : ''
   ].join('');
@@ -9627,18 +9627,34 @@ function renderSourceDiagnostics(diagnostics) {
   const sources = diagnostics.sources || [];
   if (sources.length === 0) return panel('来源接入诊断', '<div class="muted">暂无来源诊断。</div>', 'wide');
   const rows = sources.slice(0, 10).map(function (source) {
-    const failed = (source.checks || []).filter(function (check) {
-      return check.status !== 'ok';
-    }).map(function (check) {
-      return check.key + '=' + check.status;
-    }).join(', ');
-    return source.status + ' | ' + source.displayName + (failed ? ' | ' + failed : '');
+    return sourceDiagnosticSummaryLine(source);
   });
   const actions = (diagnostics.nextActions || []).slice(0, 8).map(function (action) {
     const commands = action.commands || (action.command ? [action.command] : []);
     return workspaceStatusLabel(action.severity) + ' · 来源 ID ' + action.sourceId + ' · ' + action.key + ' · ' + commands.join(' · ') + (action.evidenceSummary ? ' · 证据 ' + action.evidenceSummary : '');
   });
   return panel('来源接入诊断', evidenceList(rows.concat(actions)), 'wide');
+}
+
+function sourceDiagnosticSummaryLine(source) {
+  const safeSource = source || {};
+  const failedChecks = (safeSource.checks || []).filter(function (check) {
+    return check.status !== 'ok';
+  }).map(sourceDiagnosticCheckSummary);
+  return [
+    workspaceStatusLabel(safeSource.status || 'unknown'),
+    '来源 ' + workspaceValue(safeSource.displayName || safeSource.sourceKey || safeSource.sourceId, '未知来源'),
+    failedChecks.length ? '需要处理 ' + failedChecks.join('；') : '检查通过'
+  ].join(' · ');
+}
+
+function sourceDiagnosticCheckSummary(check) {
+  const safeCheck = check || {};
+  return [
+    safeCheck.summary || safeCheck.key || '检查项',
+    workspaceStatusLabel(safeCheck.status || 'unknown'),
+    safeCheck.value ? '证据 ' + safeCheck.value : undefined
+  ].filter(Boolean).join(' · ');
 }
 
 function sourceDiagnosticMap(diagnostics) {

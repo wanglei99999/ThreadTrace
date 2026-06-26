@@ -677,3 +677,13 @@ test('notification batch results avoid archive-console copy', function () {
     "metric('下一步', result.recommendedNextAction || 'none')"
   ]);
 });
+
+test('source diagnostics avoid status-pipe copy', function () {
+  const app = readProjectFile('src/presentation/web/app.js');
+
+  assertAbsent(app, [
+    "return check.key + '=' + check.status;",
+    "return source.status + ' | ' + source.displayName",
+    "failed ? ' | ' + failed : ''"
+  ]);
+});
