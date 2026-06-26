@@ -1468,6 +1468,8 @@ test('http server exposes source operations drilldown API', async function () {
     assert.match(webAppJs, /gate-preview/);
     assert.match(webAppJs, /Gate preview/);
     assert.match(webAppJs, /execution-overview/);
+    assert.match(webAppJs, /executor-diagnostics/);
+    assert.match(webAppJs, /Executor diagnostics/);
     assert.match(webAppJs, /renderAutomationOperatorRunbook/);
     assert.match(webAppJs, /renderAutomationRunbookIntentButton/);
     assert.match(webAppJs, /renderAutomationRemediation/);

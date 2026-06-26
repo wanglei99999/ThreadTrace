@@ -5923,6 +5923,22 @@ async function runAutomationPressureAction(button) {
         next: result.message || 'Inspect stale or failed automation action executions.'
       }, renderContextReviewActionExecutionPanel(result));
     }, automationActionRenderOptions(resolveAutomationActionTarget(), 'Loading review action executions...'));
+    return;
+  }
+  if (action === 'executor-diagnostics') {
+    await renderAsync(resolveAutomationActionTarget(), function () {
+      return fetchJson('/api/context-review-results/action-executor/diagnostics?limit=100', {
+        acceptErrorStatus: true
+      });
+    }, function (result) {
+      return renderAutomationActionResult('Executor diagnostics', {
+        status: result.status,
+        mode: 'read-only',
+        subject: 'Review action executor',
+        changed: 'No change',
+        next: (result.nextActions || [])[0] && (result.nextActions || [])[0].summary || 'Inspect review action executor readiness.'
+      }, renderContextReviewActionExecutorDiagnostics(result));
+    }, automationActionRenderOptions(resolveAutomationActionTarget(), 'Loading review action executor diagnostics...'));
   }
 }
 
@@ -5987,6 +6003,7 @@ function renderAutomationOperatingPressure(cockpit) {
       '<small>' + escapeHtml('Notification delivery and review actions stay observable before real executors are enabled.') + '</small>' +
       '</span><span class="button-group automation-pressure-actions">' +
         '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="execution-overview">Open executions</button>' +
+        '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="executor-diagnostics">Executor diagnostics</button>' +
       '</span>' + statusBadge(actionExecutions.status || 'unknown', pressure.executionVariant) + '</div>',
     checks.length > 0
       ? '<div class="action-row ops-row"><span>' +
