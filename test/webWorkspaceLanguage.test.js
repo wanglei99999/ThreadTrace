@@ -342,3 +342,75 @@ test('source run result surfaces avoid operations-console copy', function () {
     "return [safeScope.sourceId, safeScope.sourceKey].filter(Boolean).join(' / ') || 'all sources'"
   ]);
 });
+
+test('runtime and action summaries avoid backend shorthand', function () {
+  const app = readProjectFile('src/presentation/web/app.js');
+
+  assertAbsent(app, [
+    "'服务=' +",
+    "'存储=' +",
+    "'来源模式=' +",
+    "'更新=' +",
+    "'作者复核=' + authorReviewQueueStatusSummary",
+    "'复核动作=' + reviewActionStatusSummary",
+    "'提醒动作=' + eventActionStatusSummary",
+    "'score ' + (attention.priorityScore || 0)",
+    "'signals ' + (attention.signalCount || 0)",
+    "sourceHealth.schedule ? ((sourceHealth.schedule.due ? 'due' : 'skip')",
+    "'total ' + (tasks.total || 0)",
+    "'open ' + (events.unacknowledged || 0)",
+    "'audits ' + (reviewActions.auditCount || 0)",
+    "'executions ' + (eventActions.count || 0)",
+    "'open ' + (authorQueue.openCount || 0)",
+    "audit.sourceKey ? 'source='",
+    "audit.sourceId ? 'sourceId='",
+    "request.taskId ? 'task='",
+    "execution.sourceKey ? 'source='",
+    "execution.sourceId ? 'sourceId='",
+    "execution.taskId ? 'task='",
+    "execution.requestHash ? 'hash='",
+    "execution.attemptCount ? 'attempts='",
+    "execution.runningAgeMs === undefined ? undefined : 'ageMs='",
+    "statusBadge(execution.staleRunning ? 'stale running'",
+    "'最早未读=' +",
+    "'未读来源=' + compactCountMap",
+    "metric('下次投递', safeOverview.nextDeliveryAt || 'none')",
+    "'不改动=' +",
+    "'可变更=' +",
+    "'audits ' + (summary.auditCount || 0)",
+    "'executions ' + (executions.count || 0)",
+    "'running ' + (executions.running || 0)",
+    "'failed ' + (executions.failed || 0)",
+    "'sources ' + compactCountMap",
+    "'latest ' + (summary.latestGeneratedAt || executions.latestUpdatedAt || 'none')",
+    "'stale ' + (executions.staleRunning || 0)",
+    "if (entries.length === 0) return 'none';"
+  ]);
+});
+
+test('automation runbook schedule preview avoids deployment-console copy', function () {
+  const app = readProjectFile('src/presentation/web/app.js');
+  const cdpProbe = readProjectFile('scripts/verifyAutomationCockpitCdp.js');
+
+  assertAbsent(app, [
+    "renderAutomationActionResult('Source schedule'",
+    "mode: update.dryRun ? 'Preview only' : 'Apply'",
+    "changed: update.changed ? 'Changed' : 'No change'",
+    "next: schedule.nextRunAt || 'next run unchanged'",
+    "execute ? 'Applying source schedule...' : 'Previewing source schedule...'",
+    "const label = safeIntent.execute ? 'Apply' : 'Preview'",
+    "No safe runbook preview is available right now.",
+    "No remediation plan returned.",
+    "summaryTile('Status', remediation.status",
+    "summaryTile('Actions'",
+    "summaryTile('Manual'",
+    "summaryTile('Safe'",
+    "remediation.safeToAutoApply ? 'yes' : 'no'"
+  ]);
+
+  assertAbsent(cdpProbe, [
+    "text.includes('Source schedule')",
+    "text.includes('dry-run')",
+    "Preview/Apply controls"
+  ]);
+});

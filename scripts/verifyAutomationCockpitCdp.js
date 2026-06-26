@@ -975,7 +975,7 @@ async function verifyAutomationRunbookPreview(client) {
       "  const text = result ? result.innerText : '';",
       "  const rect = result ? result.getBoundingClientRect() : null;",
       "  const visible = rect ? rect.bottom > 0 && rect.top < window.innerHeight : false;",
-      "  return text.includes('最近动作') && text.includes('Source schedule') && text.includes('dry-run') && visible;",
+      "  return text.includes('最近动作') && text.includes('来源排期') && text.includes('预演') && visible;",
       '})()'
     ].join('\n'));
   }, 30000, 'Timed out waiting for Automation Cockpit runbook schedule preview: ' + JSON.stringify(await automationActionDiagnostic(client)));
@@ -987,9 +987,9 @@ async function verifyAutomationRunbookPreview(client) {
     '  return {',
     '    skipped: false,',
     "    hasSummary: text.includes('最近动作'),",
-    "    hasResult: text.includes('Source schedule'),",
-    "    dryRun: text.includes('dry-run'),",
-    "    changed: text.includes('Changed'),",
+    "    hasResult: text.includes('来源排期'),",
+    "    dryRun: text.includes('预演'),",
+    "    changed: text.includes('已变化') || text.includes('无变化'),",
     "    resultTop: rect ? Math.round(rect.top) : null,",
     "    resultBottom: rect ? Math.round(rect.bottom) : null,",
     "    visible: rect ? rect.bottom > 0 && rect.top < window.innerHeight : false",
@@ -1182,7 +1182,7 @@ async function verifyAutomationAttentionAction(client) {
       "  const text = result ? result.innerText : '';",
       "  const rect = result ? result.getBoundingClientRect() : null;",
       "  const visible = rect ? rect.bottom > 0 && rect.top < window.innerHeight : false;",
-      "  return Boolean(result && text.includes('最近动作') && text.includes('Source schedule') && text.includes('dry-run') && visible);",
+      "  return Boolean(result && text.includes('最近动作') && text.includes('来源排期') && text.includes('预演') && visible);",
       '})()'
     ].join('\n'));
   }, 30000, 'Timed out waiting for Automation Cockpit attention action result.');
@@ -1196,8 +1196,8 @@ async function verifyAutomationAttentionAction(client) {
     '    skipped: false,',
     '    action: ' + JSON.stringify(clicked.action) + ',',
     '    label: ' + JSON.stringify(clicked.label) + ',',
-    "    hasResult: text.includes('最近动作') && text.includes('Source schedule'),",
-    "    dryRun: text.includes('dry-run'),",
+    "    hasResult: text.includes('最近动作') && text.includes('来源排期'),",
+    "    dryRun: text.includes('预演'),",
     "    visible: rect ? rect.bottom > 0 && rect.top < window.innerHeight : false",
     '  };',
     '})()'
@@ -1243,7 +1243,7 @@ function assertAudit(label, audit) {
   if (audit.pressureActionButtonCount <= 0) failures.push('pressure panel is missing outbox action controls');
   if (audit.autoRefreshToggleCount !== 1) failures.push('automation cockpit auto-refresh toggle count is ' + audit.autoRefreshToggleCount);
   if (audit.runbookCommandCount > 0 && audit.runbookCopyButtonCount < audit.runbookCommandCount) failures.push('runbook commands are missing copy controls');
-  if (audit.runbookScheduleCommandCount > 0 && audit.runbookScheduleButtonCount < audit.runbookScheduleCommandCount) failures.push('schedule runbook commands are missing Preview/Apply controls');
+  if (audit.runbookScheduleCommandCount > 0 && audit.runbookScheduleButtonCount < audit.runbookScheduleCommandCount) failures.push('schedule runbook commands are missing schedule controls');
   if (audit.heroTop === null || audit.heroTop > audit.clientWidth * 3) failures.push('cockpit appears too late in the page');
   if (failures.length > 0) {
     throw new Error(label + ' Automation Cockpit verification failed: ' + failures.join('; '));
