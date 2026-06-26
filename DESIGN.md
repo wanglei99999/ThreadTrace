@@ -120,7 +120,7 @@ The palette is a cool technical neutral system with a light command shell, teal 
 - **Success Green** (`ok`), **Attention Amber** (`warn`), and **Failure Red** (`fail`): Used only for semantic status, not decoration.
 
 ### Neutral
-- **Daylight Command Dock** (`sidebar`, `sidebar-raised`): Used for the persistent navigation shell. It should feel light, modern, and AI-native rather than like an old dark admin sidebar. The dock uses subtle structure, compact capsules, and multi-accent identity marks instead of heavy cards.
+- **Daylight Command Dock** (`sidebar`, `sidebar-raised`): Used for the persistent navigation shell. It should feel light, modern, and AI-native rather than like an old dark admin sidebar. The dock uses subtle structure, compact capsules, and active-state accents instead of per-item color blocks or heavy cards.
 - **Cool Work Surface** (`workspace-bg`, `workspace-surface`): Used for the main analysis canvas.
 - **Raised Panel White** (`panel`, `panel-subtle`): Used for forms, result panels, and readable evidence areas.
 - **Ink Text** (`text`, `text-strong`) and **Muted Text** (`muted`): Used for hierarchy and scanning.
@@ -189,7 +189,7 @@ ThreadTrace uses hybrid depth: tonal layers establish the main hierarchy, while 
 - **Error / Disabled:** Error states use semantic amber/red; disabled states lower contrast and remove interactive shadow.
 
 ### Navigation
-- **Style:** Persistent daylight command dock with strong active item treatment. Navigation uses clear labels, compact spacing, soft elevation, and small color anchors for recognition.
+- **Style:** Persistent daylight command dock with strong active item treatment. Navigation uses clear labels, compact spacing, soft elevation, and color only where it clarifies the current selection.
 - **Mobile:** The dock collapses into a compact top command shell with two-column or four-column nav depending on width.
 
 ## 6. Do's and Don'ts
