@@ -617,3 +617,21 @@ test('source cockpit action plan avoids executor-console copy', function () {
     "statusBadge(action.mode || 'manual'"
   ]);
 });
+
+test('notification event detail avoids action-gate console copy', function () {
+  const app = readProjectFile('src/presentation/web/app.js');
+
+  assertAbsent(app, [
+    "summaryTile('状态', event.deliveryStatus || 'pending'",
+    "summaryTile('级别', event.severity || 'unknown'",
+    "summaryTile('类型', event.type || 'unknown'",
+    "metric('提醒 ID', event.id || 'none')",
+    "metric('创建时间', event.createdAt || 'unknown')",
+    "metric('下次投递', event.nextDeliveryAt || 'none')",
+    "summaryTile('状态', readiness.status || 'unknown'",
+    "(gate.status || 'unknown') + ' · ' + (gate.key || 'gate')",
+    "statusBadge(gate.status || 'unknown'",
+    "(action.severity || 'info') + ' · ' + (action.key || 'event.action')",
+    "statusBadge(action.severity || 'info'"
+  ]);
+});

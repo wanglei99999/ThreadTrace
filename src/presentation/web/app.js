@@ -4829,11 +4829,17 @@ function renderRolloutReadinessActionRows(checks) {
   (checks || []).forEach(function (check) {
     (check.result && check.result.nextActions || []).forEach(function (action) {
       const commands = action.commands || (action.command ? [action.command] : []);
+      const details = [
+        check.key ? '检查 ' + check.key : undefined,
+        '重要程度 ' + workspaceStatusLabel(action.severity || 'info'),
+        action.key ? '动作 ' + action.key : undefined
+      ].filter(Boolean).join(' · ');
       rows.push('<div class="action-row ops-row"><span>' +
-        '<strong>' + escapeHtml(check.key + ' | ' + (action.severity || 'info') + ' | ' + (action.key || 'action')) + '</strong>' +
+        '<strong>' + escapeHtml(action.title || check.title || '准备建议') + '</strong>' +
+        '<small>' + escapeHtml(details) + '</small>' +
         '<small>' + escapeHtml(action.summary || action.command || '') + '</small>' +
         renderReadinessCommandRows(commands) +
-        '</span>' + statusBadge(action.severity || 'info', action.severity === 'critical' ? 'fail' : statusVariant(action.severity)) + '</div>');
+        '</span>' + statusBadge(workspaceStatusLabel(action.severity || 'info'), action.severity === 'critical' ? 'fail' : statusVariant(action.severity)) + '</div>');
     });
   });
   return rows.join('');
@@ -5186,15 +5192,20 @@ function renderNextActionRows(actions) {
     const details = (action.details || []).map(function (detail) {
       return detail.key + (detail.evidenceSummary ? ' · 证据 ' + detail.evidenceSummary : '');
     }).join(' · ');
+    const actionDetails = [
+      '重要程度 ' + workspaceStatusLabel(action.severity || 'info'),
+      action.key ? '动作 ' + action.key : undefined
+    ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row automation-action-command-row">' +
       '<span>' +
-      '<strong>' + escapeHtml((action.severity || 'info') + ' · ' + (action.key || 'action')) + '</strong>' +
+      '<strong>' + escapeHtml(action.title || action.summary || '后续建议') + '</strong>' +
+      '<small>' + escapeHtml(actionDetails) + '</small>' +
       '<small>' + escapeHtml(action.summary || action.command || '') + '</small>' +
       (action.evidenceSummary ? '<small>' + escapeHtml('证据 ' + action.evidenceSummary) + '</small>' : '') +
       (details ? '<small>' + escapeHtml('详情 ' + details) + '</small>' : '') +
       renderReadinessCommandRows(commands) +
       '</span>' +
-      statusBadge(action.severity || 'info', action.severity === 'critical' ? 'fail' : statusVariant(action.severity)) +
+      statusBadge(workspaceStatusLabel(action.severity || 'info'), action.severity === 'critical' ? 'fail' : statusVariant(action.severity)) +
       '</div>';
   }).join('') + '</div>';
 }
@@ -5435,12 +5446,17 @@ function renderTaskDetailButtons(result) {
 function renderTaskDetailActions(actions) {
   if (!actions.length) return '<div class="muted">暂无建议动作。</div>';
   return actions.map(function (action) {
+    const details = [
+      '重要程度 ' + workspaceStatusLabel(action.severity || 'info'),
+      action.key ? '动作 ' + action.key : undefined
+    ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml((action.severity || 'info') + ' · ' + (action.key || 'task.action')) + '</strong>' +
-      '<small>' + escapeHtml(action.summary || '') + '</small>' +
+      '<strong>' + escapeHtml(action.title || action.summary || '任务建议') + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '<small>' + escapeHtml(action.summary || '查看任务建议，并保留命令作为证据。') + '</small>' +
       (action.command ? '<small>' + escapeHtml(action.command) + '</small>' : '') +
       '</span>' +
-      statusBadge(action.severity || 'info', action.severity === 'warning' ? 'warn' : statusVariant(action.severity)) +
+      statusBadge(workspaceStatusLabel(action.severity || 'info'), action.severity === 'warning' ? 'warn' : statusVariant(action.severity)) +
       '</div>';
   }).join('');
 }
@@ -6498,13 +6514,18 @@ function renderAutomationRemediation(remediation) {
 }
 
 function renderAutomationNextActions(actions) {
-  if (!actions.length) return '<div class="muted">No next actions.</div>';
+  if (!actions.length) return '<div class="muted">暂无下一步建议。</div>';
   return actions.map(function (action) {
+    const details = [
+      '重要程度 ' + workspaceStatusLabel(action.severity || 'info'),
+      action.key ? '动作 ' + action.key : undefined
+    ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml(action.key || 'action') + '</strong>' +
-      '<small>' + escapeHtml(action.summary || '') + '</small>' +
+      '<strong>' + escapeHtml(action.title || action.summary || '自动运行建议') + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '<small>' + escapeHtml(action.summary || '查看这项建议，并保留命令作为证据。') + '</small>' +
       (action.recommendedCommand ? '<small>' + escapeHtml(action.recommendedCommand) + '</small>' : '') +
-      '</span>' + statusBadge(action.severity || 'info', attentionStatusVariant(action.severity)) + '</div>';
+      '</span>' + statusBadge(workspaceStatusLabel(action.severity || 'info'), attentionStatusVariant(action.severity)) + '</div>';
   }).join('');
 }
 
@@ -7347,10 +7368,15 @@ function renderSourceCollectionHealthProfile(profile) {
       metric('运行记录', ['任务失败 ' + (operations.tasks && operations.tasks.failed || 0), '未确认提醒 ' + (operations.events && operations.events.unacknowledged || 0), '提醒失败 ' + (operations.events && operations.events.failed || 0), '时间线 ' + (operations.timelineCount || 0)].join(' · '))
     ].join(''), 'wide'),
     panel('采集健康检查', evidenceList((profile.checks || []).map(function (check) {
-      return check.status + ' · ' + check.area + ' · ' + check.key + ' · ' + check.summary + ' · ' + check.value;
+      return workspaceStatusLabel(check.status) + ' · ' + (check.area || '采集') + ' · ' + (check.summary || check.key || '检查项') + ' · ' + workspaceValue(check.value, '暂无');
     })), 'wide'),
     panel('采集健康建议', evidenceList((profile.nextActions || []).map(function (action) {
-      return (action.severity || 'info') + ' · ' + (action.key || 'action') + ' · ' + (action.summary || '') + ' · ' + (action.recommendedCommand || (action.commands || []).join(' · '));
+      return [
+        workspaceStatusLabel(action.severity || 'info'),
+        action.summary || action.title || '来源建议',
+        action.key ? '动作 ' + action.key : undefined,
+        action.recommendedCommand || (action.commands || []).join(' · ')
+      ].filter(Boolean).join(' · ');
     })), 'wide')
   ].join('');
 }
@@ -7668,16 +7694,16 @@ function renderSourceDrilldownActions(actions) {
   return '<div class="source-work-list">' + actions.map(function (action) {
     return '<div class="source-work-row source-action-row ' + statusClassName(action.severity === 'critical' ? 'warn' : statusVariant(action.severity)) + '">' +
       '<section class="source-work-anchor">' +
-        '<span class="source-work-scope">' + escapeHtml(action.severity || 'info') + '</span>' +
-        '<strong>' + escapeHtml(action.key || 'action') + '</strong>' +
-        '<small>' + escapeHtml(action.mode || '建议') + '</small>' +
+        '<span class="source-work-scope">' + escapeHtml(workspaceStatusLabel(action.severity || 'info')) + '</span>' +
+        '<strong>' + escapeHtml(action.title || action.summary || '来源建议') + '</strong>' +
+        '<small>' + escapeHtml([action.mode ? sourceCockpitActionModeLabel(action.mode) : '建议', action.key ? '动作 ' + action.key : undefined].filter(Boolean).join(' · ')) + '</small>' +
       '</section>' +
       '<section class="source-work-brief">' +
         '<p>' + escapeHtml(action.summary || '检查来源动作。') + '</p>' +
         renderSourceCommandChips([action.recommendedCommand].filter(Boolean).concat(action.commands || [])) +
       '</section>' +
       '<section class="source-work-actions button-group source-op-buttons">' +
-        statusBadge(action.severity || 'info', action.severity === 'critical' ? 'warn' : statusVariant(action.severity)) +
+        statusBadge(workspaceStatusLabel(action.severity || 'info'), action.severity === 'critical' ? 'warn' : statusVariant(action.severity)) +
       '</section>' +
       '</div>';
   }).join('') + '</div>';
@@ -8218,7 +8244,7 @@ function renderRunbookActionRows(actions) {
       evidenceRow +
       command +
       '</span>' +
-      statusBadge(action.severity || 'info', action.severity === 'critical' ? 'fail' : 'warn') +
+      statusBadge(workspaceStatusLabel(action.severity || 'info'), action.severity === 'critical' ? 'fail' : 'warn') +
       '</div>';
   }).join('');
 }
@@ -8708,18 +8734,18 @@ function renderNotificationEventDetail(result) {
   return [
     panel('提醒详情', [
       '<div class="summary-strip event-summary-strip">' + [
-        summaryTile('状态', event.deliveryStatus || 'pending', statusVariant(event.deliveryStatus || 'pending')),
-        summaryTile('级别', event.severity || 'unknown', statusVariant(event.severity)),
-        summaryTile('类型', event.type || 'unknown'),
+        summaryTile('状态', workspaceStatusLabel(event.deliveryStatus || 'pending'), statusVariant(event.deliveryStatus || 'pending')),
+        summaryTile('级别', workspaceStatusLabel(event.severity || 'unknown'), statusVariant(event.severity)),
+        summaryTile('类型', notificationEventTypeLabel(event.type)),
         summaryTile('来源', sourceScope.sourceId || sourceScope.sourceKey || '未绑定', sourceScope.sourceId || sourceScope.sourceKey ? 'ok' : 'muted')
       ].join('') + '</div>',
-      metric('提醒 ID', event.id || 'none'),
-      metric('创建时间', event.createdAt || 'unknown'),
-      metric('下次投递', event.nextDeliveryAt || 'none'),
+      metric('提醒 ID', event.id || '暂无'),
+      metric('创建时间', event.createdAt || '暂无'),
+      metric('下次投递', event.nextDeliveryAt || '暂无'),
       metric('尝试次数', event.deliveryAttempts || 0),
       metric('确认状态', event.acknowledgedAt || '未确认'),
       metric('来源范围', formatTaskSourceScope(sourceScope)),
-      metric('关联任务', relatedTask.id ? relatedTask.id + (relatedTask.missing ? '（未找到）' : ' · ' + [relatedTask.status, relatedTask.type].filter(Boolean).join('/')) : '无'),
+      metric('关联任务', relatedTask.id ? relatedTask.id + (relatedTask.missing ? '（未找到）' : ' · ' + [workspaceStatusLabel(relatedTask.status), relatedTask.type].filter(Boolean).join(' / ')) : '无'),
       renderNotificationEventDetailButtons(result)
     ].join(''), 'wide'),
     panel('动作准备', renderNotificationEventActionReadiness(result.actionReadiness), 'wide'),
@@ -8739,17 +8765,18 @@ function renderNotificationEventActionReadiness(readiness) {
   const gates = readiness.gates || [];
   return [
     '<div class="summary-strip event-summary-strip">' + [
-      summaryTile('状态', readiness.status || 'unknown', statusVariant(readiness.status)),
+      summaryTile('状态', workspaceStatusLabel(readiness.status || 'unknown'), statusVariant(readiness.status)),
       summaryTile('检查项', readiness.gateCount || gates.length),
       summaryTile('提醒', readiness.warningCount || 0, readiness.warningCount ? 'warn' : 'ok'),
       summaryTile('可执行', (readiness.executableActionKeys || []).length)
     ].join('') + '</div>',
     gates.map(function (gate) {
       return '<div class="action-row ops-row"><span>' +
-        '<strong>' + escapeHtml((gate.status || 'unknown') + ' · ' + (gate.key || 'gate')) + '</strong>' +
-        '<small>' + escapeHtml(gate.summary || '') + '</small>' +
+        '<strong>' + escapeHtml(notificationEventGateTitle(gate)) + '</strong>' +
+        '<small>' + escapeHtml(gate.summary || '这项检查没有返回额外说明。') + '</small>' +
+        '<small>' + escapeHtml(notificationEventGateDetails(gate)) + '</small>' +
         '</span>' +
-        statusBadge(gate.status || 'unknown', gate.status === 'warn' ? 'warn' : statusVariant(gate.status)) +
+        statusBadge(workspaceStatusLabel(gate.status || 'unknown'), gate.status === 'warn' ? 'warn' : statusVariant(gate.status)) +
         '</div>';
     }).join('')
   ].join('');
@@ -8779,17 +8806,55 @@ function renderNotificationEventDetailActions(actions, eventId) {
       ? '<button class="inline-button" type="button" data-action="execute-event-action" data-event-id="' + escapeHtml(eventId) + '" data-action-key="' + escapeHtml(action.key) + '">执行确认</button>'
       : '';
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml((action.severity || 'info') + ' · ' + (action.key || 'event.action')) + '</strong>' +
-      '<small>' + escapeHtml(action.summary || '') + '</small>' +
+      '<strong>' + escapeHtml(notificationEventActionLabel(action)) + '</strong>' +
+      '<small>' + escapeHtml(notificationEventActionDetails(action)) + '</small>' +
+      '<small>' + escapeHtml(action.summary || '查看这项提醒建议，并保留动作证据。') + '</small>' +
       (action.command ? '<small>' + escapeHtml(action.command) + '</small>' : '') +
       '</span>' +
       '<span class="button-group source-op-buttons">' +
       intentButton +
       executeButton +
-      statusBadge(action.severity || 'info', action.severity === 'warning' ? 'warn' : statusVariant(action.severity)) +
+      statusBadge(workspaceStatusLabel(action.severity || 'info'), action.severity === 'warning' ? 'warn' : statusVariant(action.severity)) +
       '</span>' +
       '</div>';
   }).join('');
+}
+
+function notificationEventTypeLabel(type) {
+  const labels = {
+    'author-review': '作者复核',
+    'context-review-result': '上下文复核',
+    'runbook-action': '操作提醒',
+    'source-attention': '来源关注',
+    'source-type-operations': '来源类型',
+    'system-readiness': '工作区状态'
+  };
+  return labels[type] || workspaceValue(type, '未知类型');
+}
+
+function notificationEventGateTitle(gate) {
+  const safeGate = gate || {};
+  const labels = {
+    acknowledged: '确认状态',
+    delivered: '投递状态',
+    event: '提醒记录',
+    'event-exists': '提醒记录',
+    'event-open': '提醒仍需处理',
+    'event-source-scope': '来源范围',
+    'event-task-scope': '任务关联',
+    'not-acknowledged': '尚未确认',
+    source: '来源范围',
+    task: '任务关联'
+  };
+  return labels[safeGate.key] || safeGate.title || '提醒检查';
+}
+
+function notificationEventGateDetails(gate) {
+  const safeGate = gate || {};
+  return [
+    '状态 ' + workspaceStatusLabel(safeGate.status || 'unknown'),
+    safeGate.key ? '检查 ' + safeGate.key : undefined
+  ].filter(Boolean).join(' · ');
 }
 
 function notificationEventActionLabel(action) {
@@ -8801,6 +8866,14 @@ function notificationEventActionLabel(action) {
     'event.task-detail': '查看任务路径'
   };
   return safeAction.title || labels[safeAction.key] || safeAction.summary || '提醒动作';
+}
+
+function notificationEventActionDetails(action) {
+  const safeAction = action || {};
+  return [
+    '重要程度 ' + workspaceStatusLabel(safeAction.severity || 'info'),
+    safeAction.key ? '动作 ' + safeAction.key : undefined
+  ].filter(Boolean).join(' · ');
 }
 
 function notificationEventModeLabel(mode) {
