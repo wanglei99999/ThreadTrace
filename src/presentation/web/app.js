@@ -2380,7 +2380,7 @@ async function runLlmPreflight(targetId) {
       changed: result.validation && result.validation.status,
       next: firstNextActionSummary(result.nextActions)
     }, renderLlmPreflightReport(result));
-  }, automationActionRenderOptions(resolvedTargetId));
+  }, automationActionRenderOptions(resolvedTargetId, 'Running LLM preflight...'));
   await loadSystemStatus();
   await loadAutomationReadiness();
   refocusAutomationActionResult(resolvedTargetId);
@@ -2403,7 +2403,7 @@ async function runLlmReadiness(targetId) {
       changed: readiness.realProviderCandidate ? 'real provider' : 'mock/default',
       next: firstNextActionSummary(result.nextActions)
     }, renderLlmReadinessProfile(result));
-  }, automationActionRenderOptions(resolvedTargetId));
+  }, automationActionRenderOptions(resolvedTargetId, 'Checking LLM readiness...'));
   await loadSystemStatus();
   await loadAutomationReadiness();
   refocusAutomationActionResult(resolvedTargetId);
@@ -2422,7 +2422,7 @@ async function runLlmEvaluation(targetId) {
       changed: 'warn=' + String(summary.warn || 0) + ' fail=' + String(summary.fail || 0),
       next: firstNextActionSummary(result.nextActions)
     }, renderLlmEvaluationReport(result));
-  }, automationActionRenderOptions(resolvedTargetId));
+  }, automationActionRenderOptions(resolvedTargetId, 'Evaluating LLM quality gates...'));
   await loadSystemStatus();
   await loadAutomationReadiness();
   refocusAutomationActionResult(resolvedTargetId);
@@ -2450,7 +2450,7 @@ async function runDemoCycle(targetId) {
       changed: 'completed=' + String(summary.completedCount || 0) + ' failed=' + String(summary.failedCount || 0),
       next: firstNextActionSummary(result.nextActions)
     }, renderSourceDemoCycleReport(result));
-  }, automationActionRenderOptions(resolvedTargetId));
+  }, automationActionRenderOptions(resolvedTargetId, 'Running demo automation cycle...'));
   await loadSystemStatus();
   await loadTasks();
   await loadSources();
@@ -2574,7 +2574,7 @@ async function setSourceScheduleFromButton(button, execute, targetId) {
       changed: update.changed ? 'Changed' : 'No change',
       next: schedule.nextRunAt || 'next run unchanged'
     }, rendered);
-  }, automationActionRenderOptions(resolvedTargetId));
+  }, automationActionRenderOptions(resolvedTargetId, execute ? 'Applying source schedule...' : 'Previewing source schedule...'));
   await loadSystemStatus();
   await loadTasks();
   await loadSources();
@@ -2730,7 +2730,7 @@ async function renderAsync(targetId, task, renderer, options) {
   const target = document.getElementById(targetId);
   if (safeOptions.focus) focusResultTarget(targetId);
   target.setAttribute('aria-busy', 'true');
-  target.innerHTML = renderFeedbackState('loading', '分析中...');
+  target.innerHTML = renderFeedbackState('loading', safeOptions.loadingMessage || 'Working...');
   try {
     const result = await task();
     target.innerHTML = renderer(result);
@@ -2753,9 +2753,10 @@ function scrollResultIntoView(targetId) {
   });
 }
 
-function automationActionRenderOptions(targetId) {
+function automationActionRenderOptions(targetId, loadingMessage) {
   return {
-    focus: targetId === 'automationActionResult'
+    focus: targetId === 'automationActionResult',
+    loadingMessage: loadingMessage || 'Running automation action...'
   };
 }
 

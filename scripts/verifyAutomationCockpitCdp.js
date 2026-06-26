@@ -35,6 +35,7 @@ async function main() {
         width: 1440,
         height: 1100,
         mobile: false,
+        verifyLoading: true,
         runPreview: true,
         runAction: true,
         screenshotPath: path.join(outputDir, 'automation-cockpit-cdp-desktop.png')
@@ -163,6 +164,8 @@ async function verifyViewport(client, options) {
   });
   await client.send('Page.navigate', { url: options.url });
   await waitForCockpit(client);
+  const loadingState = options.verifyLoading ? await verifyAutomationLoadingState(client) : undefined;
+  if (options.verifyLoading) await waitForCockpit(client);
   const runbookPreview = options.runPreview ? await verifyAutomationRunbookPreview(client) : undefined;
   if (options.runPreview || options.runAction) await waitForCockpit(client);
   const actionResult = options.runAction ? await verifyAutomationActionResult(client) : undefined;
@@ -178,6 +181,7 @@ async function verifyViewport(client, options) {
   assertRunbookPreview(options.label, runbookPreview, options);
   assertScreenshot(options.label, png, stats, options, audit);
   return Object.assign({}, audit, {
+    loadingState,
     runbookPreview,
     actionResult,
     screenshotPath: options.screenshotPath,
@@ -248,6 +252,7 @@ function viewportAuditExpression() {
     "    bodyTextIncludesRunbook: document.body.innerText.includes('Operator runbook'),",
     "    bodyTextIncludesActionable: document.body.innerText.includes('Actionable'),",
     "    bodyTextIncludesFreshness: document.body.innerText.includes('Snapshot freshness'),",
+    "    bodyTextHasMojibake: document.body.innerText.includes('\\u9352') || document.body.innerText.includes('\\u55d8'),",
     "    runbookCommandCount: document.querySelectorAll('.automation-runbook-command-row').length,",
     "    runbookCopyButtonCount: document.querySelectorAll('.automation-runbook-panel button[data-action=\"copy-lifecycle-command\"]').length,",
     "    runbookScheduleCommandCount: Array.from(document.querySelectorAll('.automation-runbook-command-row code')).filter((code) => code.textContent.includes('configure-source-schedule')).length,",
@@ -298,6 +303,81 @@ async function verifyAutomationActionResult(client) {
     '  };',
     '})()'
   ].join('\n'));
+}
+
+async function verifyAutomationLoadingState(client) {
+  await evaluateByValue(client, [
+    '(() => {',
+    '  const originalFetch = window.fetch.bind(window);',
+    '  let releaseFetch;',
+    '  const gate = new Promise((resolve) => { releaseFetch = resolve; });',
+    '  window.__threadtraceReleaseDelayedFetch = () => {',
+    '    releaseFetch();',
+    '    window.fetch = originalFetch;',
+    '    delete window.__threadtraceReleaseDelayedFetch;',
+    '  };',
+    '  window.fetch = async function (input, init) {',
+    "    const url = typeof input === 'string' ? input : input && input.url || '';",
+    "    if (!window.__threadtraceDelayedPreflightFetchUsed && url.includes('/api/llm/preflight')) {",
+    '      window.__threadtraceDelayedPreflightFetchUsed = true;',
+    '      await gate;',
+    '    }',
+    '    return originalFetch(input, init);',
+    '  };',
+    '  return true;',
+    '})()'
+  ].join('\n'));
+  const clicked = await evaluateByValue(client, [
+    '(() => {',
+    "  const buttons = Array.from(document.querySelectorAll('.automation-cockpit-hero button'));",
+    "  const button = buttons.find((candidate) => candidate.textContent.trim() === 'LLM preflight');",
+    '  if (!button) return false;',
+    '  button.click();',
+    '  return true;',
+    '})()'
+  ].join('\n'));
+  if (!clicked) {
+    throw new Error('Could not click Automation Cockpit LLM preflight button.');
+  }
+  await waitFor(async function () {
+    return evaluateByValue(client, [
+      '(() => {',
+      "  const result = document.querySelector('#automationActionResult');",
+      "  const text = result ? result.innerText : '';",
+      "  return Boolean(result && result.getAttribute('aria-busy') === 'true' && text.includes('Running LLM preflight...'));",
+      '})()'
+    ].join('\n'));
+  }, 10000, 'Timed out waiting for Automation Cockpit loading state.');
+  const loading = await evaluateByValue(client, [
+    '(() => {',
+    "  const result = document.querySelector('#automationActionResult');",
+    "  const text = result ? result.innerText : '';",
+    '  return {',
+    "    busy: result ? result.getAttribute('aria-busy') : 'missing',",
+    "    hasLoadingMessage: text.includes('Running LLM preflight...'),",
+    "    hasMojibake: text.includes('\\u9352') || text.includes('\\u55d8'),",
+    "    preview: text.slice(0, 120)",
+    '  };',
+    '})()'
+  ].join('\n'));
+  if (!loading.hasLoadingMessage || loading.hasMojibake || loading.busy !== 'true') {
+    throw new Error('Automation Cockpit loading verification failed: ' + JSON.stringify(loading));
+  }
+  await evaluateByValue(client, [
+    '(() => {',
+    '  if (window.__threadtraceReleaseDelayedFetch) window.__threadtraceReleaseDelayedFetch();',
+    '  return true;',
+    '})()'
+  ].join('\n'));
+  await waitFor(async function () {
+    return evaluateByValue(client, [
+      '(() => {',
+      "  const result = document.querySelector('#automationActionResult');",
+      "  return Boolean(result && result.getAttribute('aria-busy') === 'false');",
+      '})()'
+    ].join('\n'));
+  }, 30000, 'Timed out waiting for delayed Automation Cockpit action to settle.');
+  return loading;
 }
 
 async function verifyAutomationRunbookPreview(client) {
@@ -373,6 +453,7 @@ function assertAudit(label, audit) {
   if (!audit.bodyTextIncludesRunbook) failures.push('missing Operator runbook text');
   if (!audit.bodyTextIncludesActionable) failures.push('missing Actionable runbook summary text');
   if (!audit.bodyTextIncludesFreshness) failures.push('missing Snapshot freshness text');
+  if (audit.bodyTextHasMojibake) failures.push('body text contains mojibake');
   if (audit.runbookCommandCount > 0 && audit.runbookCopyButtonCount < audit.runbookCommandCount) failures.push('runbook commands are missing copy controls');
   if (audit.runbookScheduleCommandCount > 0 && audit.runbookScheduleButtonCount < audit.runbookScheduleCommandCount) failures.push('schedule runbook commands are missing Preview/Apply controls');
   if (audit.heroTop === null || audit.heroTop > audit.clientWidth * 3) failures.push('cockpit appears too late in the page');
