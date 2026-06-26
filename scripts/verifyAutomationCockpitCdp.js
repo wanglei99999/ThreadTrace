@@ -171,6 +171,7 @@ async function verifyViewport(client, options) {
   const runbookPreview = options.runPreview ? await verifyAutomationRunbookPreview(client) : undefined;
   if (options.runPreview || options.runAction) await waitForCockpit(client);
   const actionResult = options.runAction ? await verifyAutomationActionResult(client) : undefined;
+  const attentionFocus = await verifyAutomationAttentionFocus(client);
   const audit = await evaluateByValue(client, viewportAuditExpression());
   const screenshot = await client.send('Page.captureScreenshot', {
     format: 'png',
@@ -181,12 +182,14 @@ async function verifyViewport(client, options) {
   const png = await readPngInfo(options.screenshotPath);
   assertAudit(options.label, audit);
   assertRunbookPreview(options.label, runbookPreview, options);
+  assertAttentionFocus(options.label, attentionFocus, audit);
   assertScreenshot(options.label, png, stats, options, audit);
   return Object.assign({}, audit, {
     refreshLoadingState,
     loadingState,
     runbookPreview,
     actionResult,
+    attentionFocus,
     screenshotPath: options.screenshotPath,
     screenshotBytes: stats.size,
     screenshotWidth: png.width,
@@ -207,6 +210,21 @@ function assertRunbookPreview(label, runbookPreview, options) {
   }
   if (failures.length > 0) {
     throw new Error(label + ' Automation Cockpit runbook preview verification failed: ' + failures.join('; '));
+  }
+}
+
+function assertAttentionFocus(label, attentionFocus, audit) {
+  if (!audit || audit.attentionQueueRowCount <= 0) return;
+  const failures = [];
+  if (!attentionFocus) failures.push('missing attention focus report');
+  else {
+    if (attentionFocus.skipped) failures.push('attention focus skipped: ' + attentionFocus.reason);
+    if (!attentionFocus.clicked) failures.push('attention focus button was not clicked');
+    if (!attentionFocus.targetPanel) failures.push('attention focus target panel is missing');
+    if (!attentionFocus.visible) failures.push('attention focus target panel is not visible');
+  }
+  if (failures.length > 0) {
+    throw new Error(label + ' Automation Cockpit attention focus verification failed: ' + failures.join('; '));
   }
 }
 
@@ -504,6 +522,53 @@ async function verifyAutomationRunbookPreview(client) {
     "    resultTop: rect ? Math.round(rect.top) : null,",
     "    resultBottom: rect ? Math.round(rect.bottom) : null,",
     "    visible: rect ? rect.bottom > 0 && rect.top < window.innerHeight : false",
+    '  };',
+    '})()'
+  ].join('\n'));
+}
+
+async function verifyAutomationAttentionFocus(client) {
+  const clicked = await evaluateByValue(client, [
+    '(() => {',
+    "  const button = document.querySelector('.automation-attention-panel button[data-action=\"focus-automation-panel\"]');",
+    '  if (!button) return { clicked: false, skipped: true, reason: "no attention focus button" };',
+    '  const targetPanel = button.dataset.targetPanel || "";',
+    '  button.click();',
+    '  return { clicked: true, skipped: false, targetPanel };',
+    '})()'
+  ].join('\n'));
+  if (!clicked || clicked.skipped) return clicked;
+  await waitFor(async function () {
+    return evaluateByValue(client, [
+      '(() => {',
+      '  const panelClass = {',
+      "    'automation-gates': '.automation-gates-panel',",
+      "    'automation-freshness': '.automation-freshness-panel',",
+      "    'automation-pressure': '.automation-pressure-panel',",
+      "    'automation-runbook': '.automation-runbook-panel'",
+      '  }[' + JSON.stringify(clicked.targetPanel) + '];',
+      '  const panel = panelClass ? document.querySelector(panelClass) : null;',
+      '  const rect = panel ? panel.getBoundingClientRect() : null;',
+      '  return Boolean(rect && rect.bottom > 0 && rect.top < window.innerHeight);',
+      '})()'
+    ].join('\n'));
+  }, 10000, 'Timed out waiting for Automation Cockpit attention panel focus.');
+  return evaluateByValue(client, [
+    '(() => {',
+    '  const panelClass = {',
+    "    'automation-gates': '.automation-gates-panel',",
+    "    'automation-freshness': '.automation-freshness-panel',",
+    "    'automation-pressure': '.automation-pressure-panel',",
+    "    'automation-runbook': '.automation-runbook-panel'",
+    '  }[' + JSON.stringify(clicked.targetPanel) + '];',
+    '  const panel = panelClass ? document.querySelector(panelClass) : null;',
+    '  const rect = panel ? panel.getBoundingClientRect() : null;',
+    '  return {',
+    '    clicked: true,',
+    '    skipped: false,',
+    '    targetPanel: ' + JSON.stringify(clicked.targetPanel) + ',',
+    '    visible: rect ? rect.bottom > 0 && rect.top < window.innerHeight : false,',
+    "    pulsed: panel ? panel.classList.contains('result-focus-pulse') : false",
     '  };',
     '})()'
   ].join('\n'));

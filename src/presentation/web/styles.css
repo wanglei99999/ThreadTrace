@@ -3464,6 +3464,10 @@ form button[type="submit"]:hover {
   animation: action-result-focus 1.6s ease-out;
 }
 
+.panel.result-focus-pulse {
+  animation: action-result-focus 1.6s ease-out;
+}
+
 @keyframes action-result-focus {
   0% {
     filter: drop-shadow(0 0 0 rgba(20, 114, 95, 0));
@@ -3478,6 +3482,10 @@ form button[type="submit"]:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .automation-action-grid.result-focus-pulse {
+    animation: none;
+  }
+
+  .panel.result-focus-pulse {
     animation: none;
   }
 }
@@ -3557,6 +3565,11 @@ form button[type="submit"]:hover {
 .automation-attention-row small {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.automation-attention-row .inline-button,
+.automation-attention-row .status-badge {
+  flex: 0 0 auto;
 }
 
 .automation-freshness-row {

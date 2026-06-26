@@ -700,6 +700,10 @@ async function handleAutomationReadinessAction(event) {
     const execute = button.dataset.execute === 'true';
     if (execute && !window.confirm('Configure this source schedule?')) return;
     await setSourceScheduleFromButton(button, execute, resolveAutomationActionTarget());
+    return;
+  }
+  if (button.dataset.action === 'focus-automation-panel') {
+    focusAutomationPanel(button.dataset.targetPanel);
   }
 }
 
@@ -5599,10 +5603,37 @@ function renderAutomationAttentionQueue(queue) {
       '<small>' + escapeHtml((item.area || 'cockpit') + ' | ' + (item.summary || 'Review this cockpit signal.')) + '</small>' +
       '<small>' + escapeHtml(item.nextAction || 'Review the related cockpit panel.') + '</small>' +
       '</span>' +
+      renderAutomationAttentionControl(item) +
       statusBadge(item.severity || item.status || 'info', variant) +
       '</div>';
   }).join('') + '</div>');
   return rows.join('');
+}
+
+function renderAutomationAttentionControl(item) {
+  if (!item || !item.targetPanel) return '';
+  return '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="focus-automation-panel" data-target-panel="' + escapeHtml(item.targetPanel) + '">' + escapeHtml(item.actionLabel || 'Open panel') + '</button>';
+}
+
+function focusAutomationPanel(targetPanel) {
+  const panelClass = {
+    'automation-gates': '.automation-gates-panel',
+    'automation-freshness': '.automation-freshness-panel',
+    'automation-pressure': '.automation-pressure-panel',
+    'automation-runbook': '.automation-runbook-panel'
+  }[targetPanel];
+  if (!panelClass) return;
+  const panel = document.querySelector(panelClass);
+  if (!panel) return;
+  panel.classList.remove('result-focus-pulse');
+  const motion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+  panel.scrollIntoView({
+    block: 'start',
+    behavior: motion
+  });
+  window.setTimeout(function () {
+    panel.classList.add('result-focus-pulse');
+  }, 0);
 }
 
 function renderAutomationOperatingPressure(cockpit) {

@@ -89,7 +89,10 @@ function buildAttentionQueue(input) {
   if (normalizeStatus(plan.status) !== 'ok') {
     items.push(attentionItem('readiness', 'readiness', plan.status, 'Automation readiness', plan.readyForUnattendedRun
       ? 'Readiness has warnings even though unattended mode was requested.'
-      : 'Automation is not ready for unattended operation.', firstPlanNextAction(plan)));
+      : 'Automation is not ready for unattended operation.', firstPlanNextAction(plan), {
+        targetPanel: 'automation-gates',
+        actionLabel: 'Open gates'
+      }));
   }
   if (normalizeStatus(outbox.status) !== 'ok') {
     items.push(attentionItem('pressure.outbox', 'notifications', outbox.status, 'Notification outbox', [
@@ -97,7 +100,10 @@ function buildAttentionQueue(input) {
       'due=' + firstNumber(outbox.dueCount, 0),
       'failed=' + firstNumber(outbox.failedCount, 0),
       'retryExhausted=' + firstNumber(outbox.retryExhaustedCount, 0)
-    ].join(' | '), outbox.recommendedNextAction || 'Review open and failed notification events.'));
+    ].join(' | '), outbox.recommendedNextAction || 'Review open and failed notification events.', {
+      targetPanel: 'automation-pressure',
+      actionLabel: 'Open pressure'
+    }));
   }
   if (normalizeStatus(audit.status) !== 'ok') {
     items.push(attentionItem('pressure.audit', 'review-audit', audit.status, 'Review audit ledger', [
@@ -105,21 +111,30 @@ function buildAttentionQueue(input) {
       'tasks=' + firstNumber(audit.taskCount, 0),
       'plannedClosure=' + firstNumber(audit.plannedClosureCount, 0),
       'plannedMerge=' + firstNumber(audit.plannedMergeCandidateCount, 0)
-    ].join(' | '), audit.recommendedNextAction || 'Review audit ledger pressure before executing actions.'));
+    ].join(' | '), audit.recommendedNextAction || 'Review audit ledger pressure before executing actions.', {
+      targetPanel: 'automation-pressure',
+      actionLabel: 'Open pressure'
+    }));
   }
   if (normalizeStatus(executions.status) !== 'ok') {
     items.push(attentionItem('pressure.executions', 'executions', executions.status, 'Action execution ledger', [
       'count=' + firstNumber(executions.count, 0),
       'stale=' + firstNumber(executions.staleRunningCount, 0),
       'failed=' + firstNumber(executions.failedCount, 0)
-    ].join(' | '), 'Inspect stale or failed automation action executions.'));
+    ].join(' | '), 'Inspect stale or failed automation action executions.', {
+      targetPanel: 'automation-pressure',
+      actionLabel: 'Open pressure'
+    }));
   }
   if (normalizeStatus(channel.status) !== 'ok') {
     items.push(attentionItem('pressure.channel', 'notifications', channel.status, 'Notification channel', [
       'channel=' + (channel.channel || 'unknown'),
       'failedChecks=' + firstNumber(channel.failedCheckCount, 0),
       'warnChecks=' + firstNumber(channel.warnCheckCount, 0)
-    ].join(' | '), 'Run notification diagnostics before relying on delivery.'));
+    ].join(' | '), 'Run notification diagnostics before relying on delivery.', {
+      targetPanel: 'automation-pressure',
+      actionLabel: 'Open pressure'
+    }));
   }
   if (normalizeStatus(freshness.status) !== 'ok') {
     items.push(attentionItem('freshness', 'freshness', freshness.status, 'Snapshot freshness', [
@@ -128,14 +143,20 @@ function buildAttentionQueue(input) {
       'spanMs=' + (freshness.spanMs === undefined ? 'unknown' : freshness.spanMs)
     ].join(' | '), (freshness.missingSources || []).length > 0
       ? 'Refresh missing inputs: ' + freshness.missingSources.join(', ')
-      : 'Refresh stale cockpit inputs.'));
+      : 'Refresh stale cockpit inputs.', {
+        targetPanel: 'automation-freshness',
+        actionLabel: 'Open freshness'
+      }));
   }
   if ((runbook.actionableCommandCount || 0) > 0) {
     items.push(attentionItem('runbook.actionable', 'runbook', runbook.status, 'Operator runbook', [
       'actionable=' + firstNumber(runbook.actionableCommandCount, 0),
       'dryRun=' + firstNumber(runbook.dryRunCommandCount, 0),
       'execute=' + firstNumber(runbook.executeCommandCount, 0)
-    ].join(' | '), runbook.nextCommand && runbook.nextCommand.command || 'Review operator runbook commands.'));
+    ].join(' | '), runbook.nextCommand && runbook.nextCommand.command || 'Review operator runbook commands.', {
+      targetPanel: 'automation-runbook',
+      actionLabel: 'Open runbook'
+    }));
   }
 
   const sortedItems = items.sort(function (left, right) {
@@ -159,9 +180,9 @@ function buildAttentionQueue(input) {
   };
 }
 
-function attentionItem(id, area, status, title, summary, nextAction) {
+function attentionItem(id, area, status, title, summary, nextAction, metadata) {
   const normalized = normalizeStatus(status);
-  return {
+  return Object.assign({
     id,
     area,
     status: normalized,
@@ -169,7 +190,7 @@ function attentionItem(id, area, status, title, summary, nextAction) {
     title,
     summary,
     nextAction
-  };
+  }, metadata || {});
 }
 
 function severityRank(severity) {

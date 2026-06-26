@@ -7340,7 +7340,9 @@ function createOpenApiSpec() {
             severity: { type: 'string', enum: ['info', 'warning', 'critical'] },
             title: { type: 'string', example: 'Notification outbox' },
             summary: { type: 'string' },
-            nextAction: { type: 'string' }
+            nextAction: { type: 'string' },
+            targetPanel: { type: 'string', example: 'automation-pressure' },
+            actionLabel: { type: 'string', example: 'Open pressure' }
           },
           additionalProperties: true
         },

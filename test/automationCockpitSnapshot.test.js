@@ -115,14 +115,16 @@ test('automation cockpit snapshot aggregates readiness and operating pressure', 
   assert.equal(snapshot.attentionQueue.highestSeverity, 'warning');
   assert.equal(snapshot.attentionQueue.nextItem.rank, 1);
   assert.equal(snapshot.attentionQueue.items[0].id, 'freshness');
+  assert.equal(snapshot.attentionQueue.items[0].targetPanel, 'automation-freshness');
+  assert.equal(snapshot.attentionQueue.items[0].actionLabel, 'Open freshness');
   assert.ok(snapshot.attentionQueue.items.some(function (item) {
-    return item.id === 'pressure.outbox' && item.area === 'notifications';
+    return item.id === 'pressure.outbox' && item.area === 'notifications' && item.targetPanel === 'automation-pressure';
   }));
   assert.ok(snapshot.attentionQueue.items.some(function (item) {
     return item.id === 'pressure.audit' && item.area === 'review-audit';
   }));
   assert.ok(snapshot.attentionQueue.items.some(function (item) {
-    return item.id === 'runbook.actionable' && /actionable=2/.test(item.summary);
+    return item.id === 'runbook.actionable' && item.targetPanel === 'automation-runbook' && /actionable=2/.test(item.summary);
   }));
   assert.equal(snapshot.operatorRunbook.sections.find(function (section) {
     return section.key === 'workers';

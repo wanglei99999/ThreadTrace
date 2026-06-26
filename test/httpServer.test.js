@@ -1308,7 +1308,9 @@ test('http server exposes source operations drilldown API', async function () {
               severity: 'warning',
               title: 'Notification outbox',
               summary: 'open=2 | due=1 | failed=0 | retryExhausted=0',
-              nextAction: 'Review open and failed notification events.'
+              nextAction: 'Review open and failed notification events.',
+              targetPanel: 'automation-pressure',
+              actionLabel: 'Open pressure'
             },
             items: [
               {
@@ -1319,7 +1321,9 @@ test('http server exposes source operations drilldown API', async function () {
                 severity: 'warning',
                 title: 'Notification outbox',
                 summary: 'open=2 | due=1 | failed=0 | retryExhausted=0',
-                nextAction: 'Review open and failed notification events.'
+                nextAction: 'Review open and failed notification events.',
+                targetPanel: 'automation-pressure',
+                actionLabel: 'Open pressure'
               },
               {
                 rank: 2,
@@ -1329,7 +1333,9 @@ test('http server exposes source operations drilldown API', async function () {
                 severity: 'warning',
                 title: 'Snapshot freshness',
                 summary: 'present=10/12 | missing=2 | spanMs=60000',
-                nextAction: 'Refresh missing inputs: demoCycle, notificationDiagnostics'
+                nextAction: 'Refresh missing inputs: demoCycle, notificationDiagnostics',
+                targetPanel: 'automation-freshness',
+                actionLabel: 'Open freshness'
               }
             ]
           },
@@ -1429,6 +1435,7 @@ test('http server exposes source operations drilldown API', async function () {
     assert.equal(automationCockpit.attentionQueue.status, 'warn');
     assert.equal(automationCockpit.attentionQueue.itemCount, 2);
     assert.equal(automationCockpit.attentionQueue.nextItem.id, 'pressure.outbox');
+    assert.equal(automationCockpit.attentionQueue.nextItem.targetPanel, 'automation-pressure');
     assert.equal(automationCockpit.freshness.status, 'warn');
     assert.equal(automationCockpit.freshness.missingSourceCount, 2);
     assert.equal(automationCockpit.reviewActionAuditOverview.count, 3);
@@ -1444,6 +1451,7 @@ test('http server exposes source operations drilldown API', async function () {
     assert.match(webAppJs, /load-source-collection-health/);
     assert.match(webAppJs, /renderAutomationReadinessPlan/);
     assert.match(webAppJs, /renderAutomationAttentionQueue/);
+    assert.match(webAppJs, /focus-automation-panel/);
     assert.match(webAppJs, /renderAutomationOperatorRunbook/);
     assert.match(webAppJs, /renderAutomationRunbookIntentButton/);
     assert.match(webAppJs, /renderAutomationRemediation/);
@@ -2129,6 +2137,8 @@ test('http server exposes deployment checklist API', async function () {
     assert.ok(openApi.components.schemas.AutomationCockpitOperatingPressure.properties.audit);
     assert.equal(openApi.components.schemas.AutomationCockpitAttentionQueue.properties.items.items.$ref, '#/components/schemas/AutomationCockpitAttentionItem');
     assert.ok(openApi.components.schemas.AutomationCockpitAttentionItem.properties.nextAction);
+    assert.ok(openApi.components.schemas.AutomationCockpitAttentionItem.properties.targetPanel);
+    assert.ok(openApi.components.schemas.AutomationCockpitAttentionItem.properties.actionLabel);
     assert.ok(openApi.components.schemas.AutomationCockpitOperatorRunbook.properties.actionableCommandCount);
     assert.ok(openApi.components.schemas.AutomationCockpitOperatorRunbook.properties.executeCommandCount);
     assert.ok(openApi.components.schemas.AutomationCockpitOperatorRunbook.properties.sections.items.properties.commands.items.properties.intent);
