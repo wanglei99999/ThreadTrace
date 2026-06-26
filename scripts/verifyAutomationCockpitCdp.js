@@ -215,6 +215,8 @@ function viewportAuditExpression() {
     '    hasHero: Boolean(hero),',
     '    hasPressure: Boolean(pressure),',
     '    hasActionResult: Boolean(action),',
+    "    cockpitBusy: document.querySelector('#automationReadinessResult')?.getAttribute('aria-busy') || 'unset',",
+    "    actionBusy: document.querySelector('#automationActionResult')?.getAttribute('aria-busy') || 'unset',",
     "    buttons: Array.from(document.querySelectorAll('.automation-cockpit-hero button')).map((button) => button.textContent.trim()),",
     '    clientWidth: doc.clientWidth,',
     '    scrollWidth: doc.scrollWidth,',
@@ -336,6 +338,8 @@ function assertAudit(label, audit) {
   if (!audit.hasHero) failures.push('missing automation cockpit hero');
   if (!audit.hasPressure) failures.push('missing notification/audit pressure panel');
   if (!audit.hasActionResult) failures.push('missing automation action result container');
+  if (audit.cockpitBusy === 'true') failures.push('automation cockpit result is still busy');
+  if (audit.actionBusy === 'true') failures.push('automation action result is still busy');
   if (audit.overflowX) failures.push('horizontal overflow: scrollWidth=' + audit.scrollWidth + ', clientWidth=' + audit.clientWidth);
   requiredButtons.forEach(function (button) {
     if (!audit.buttons.includes(button)) failures.push('missing button: ' + button);

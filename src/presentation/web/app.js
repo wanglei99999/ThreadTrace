@@ -2680,6 +2680,7 @@ async function renderAsync(targetId, task, renderer, options) {
   const safeOptions = options || {};
   const target = document.getElementById(targetId);
   if (safeOptions.focus) focusResultTarget(targetId);
+  target.setAttribute('aria-busy', 'true');
   target.innerHTML = renderFeedbackState('loading', '分析中...');
   try {
     const result = await task();
@@ -2688,6 +2689,8 @@ async function renderAsync(targetId, task, renderer, options) {
   } catch (error) {
     renderError(targetId, error);
     if (safeOptions.focus) focusResultTarget(targetId);
+  } finally {
+    target.setAttribute('aria-busy', 'false');
   }
 }
 
