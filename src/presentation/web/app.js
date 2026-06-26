@@ -1501,6 +1501,7 @@ function setView(viewName, options) {
   document.getElementById('viewFocus').textContent = view.focus;
   if (safeViewName === 'history') renderHistoryCockpitStandby();
   if (safeViewName === 'system') {
+    renderAutomationActionHistoryStandby();
     loadSystemStatus();
     loadAutomationReadiness();
   }
@@ -3017,6 +3018,15 @@ function renderAutomationActionHistory(history) {
     '</div>' +
     '<div class="automation-action-history-list">' + rows + '</div>';
   return panel('Action history', content, 'wide automation-action-history-panel');
+}
+
+function renderAutomationActionHistoryStandby() {
+  const target = document.getElementById('automationActionResult');
+  if (!target || String(target.innerHTML || '').trim()) return;
+  const history = state.automationActionHistory || [];
+  if (history.length === 0) return;
+  target.setAttribute('aria-busy', 'false');
+  target.innerHTML = renderAutomationActionHistory(history);
 }
 
 function firstNextActionSummary(actions) {

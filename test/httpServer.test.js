@@ -1479,6 +1479,7 @@ test('http server exposes source operations drilldown API', async function () {
     assert.match(webAppJs, /threadtrace\.automationCockpit\.autoRefresh/);
     assert.match(webAppJs, /threadtrace\.automationCockpit\.actionHistory/);
     assert.match(webAppJs, /renderAutomationActionHistory/);
+    assert.match(webAppJs, /renderAutomationActionHistoryStandby/);
     assert.match(webAppJs, /clear-automation-action-history/);
     assert.match(webAppJs, /toggle-automation-auto-refresh/);
     assert.match(webAppJs, /automation-readiness-refresh-in-flight/);

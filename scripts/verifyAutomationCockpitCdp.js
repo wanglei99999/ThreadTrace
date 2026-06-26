@@ -190,6 +190,7 @@ async function verifyViewport(client, options) {
   });
   await client.send('Page.navigate', { url: options.url });
   await waitForCockpit(client);
+  const historyRestore = options.verifyLoading ? await verifyAutomationActionHistoryRestore(client, options.url) : undefined;
   const refreshLoadingState = options.verifyLoading ? await verifyAutomationRefreshLoadingState(client) : undefined;
   if (options.verifyLoading) await waitForCockpit(client);
   const autoRefreshToggle = await verifyAutomationAutoRefreshToggle(client);
@@ -224,6 +225,7 @@ async function verifyViewport(client, options) {
   assertAutomationAutoRefreshToggle(options.label, autoRefreshToggle);
   assertAutomationRefreshDedupe(options.label, refreshDedupe);
   return Object.assign({}, audit, {
+    historyRestore,
     refreshLoadingState,
     autoRefreshToggle,
     refreshDedupe,
@@ -301,6 +303,48 @@ function assertAutomationRefreshDedupe(label, refreshDedupe) {
   if (failures.length > 0) {
     throw new Error(label + ' Automation Cockpit refresh dedupe failed: ' + failures.join('; '));
   }
+}
+
+async function verifyAutomationActionHistoryRestore(client, url) {
+  const recordedAt = new Date().toISOString();
+  await evaluateByValue(client, [
+    '(() => {',
+    '  const item = {',
+    "    action: 'Restored history',",
+    "    status: 'ok',",
+    "    mode: 'restore-check',",
+    "    changed: 'No change',",
+    "    subject: 'Automation cockpit',",
+    "    next: 'Confirm local action history survives page reload.',",
+    "    recordedAt: '" + recordedAt + "'",
+    '  };',
+    "  window.localStorage.setItem('threadtrace.automationCockpit.actionHistory', JSON.stringify([item]));",
+    '  return true;',
+    '})()'
+  ].join('\n'));
+  await client.send('Page.reload', { ignoreCache: true });
+  await waitForCockpit(client);
+  await waitFor(async function () {
+    return evaluateByValue(client, [
+      '(() => {',
+      "  const result = document.querySelector('#automationActionResult');",
+      "  const text = result ? result.innerText : '';",
+      "  return Boolean(result && text.includes('Action history') && text.includes('Restored history'));",
+      '})()'
+    ].join('\n'));
+  }, 30000, 'Timed out waiting for restored Automation Cockpit action history.');
+  return evaluateByValue(client, [
+    '(() => {',
+    "  const result = document.querySelector('#automationActionResult');",
+    "  const text = result ? result.innerText : '';",
+    "  const rows = result ? result.querySelectorAll('.automation-action-history-row') : [];",
+    '  return {',
+    "    hasHistory: text.includes('Action history'),",
+    "    hasSeed: text.includes('Restored history'),",
+    '    rowCount: rows.length',
+    '  };',
+    '})()'
+  ].join('\n'));
 }
 
 function assertRunbookPreview(label, runbookPreview, options) {
