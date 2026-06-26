@@ -156,8 +156,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /runRolloutApplyRequest/);
     assert.match(webAppJs, /preflightRolloutApplyExecution/);
     assert.match(webAppJs, /renderRolloutApplyExecutionGate/);
-    assert.match(webAppJs, /Checking deployment gate before execute/);
-    assert.match(webAppJs, /Apply execution gate/);
+    assert.match(webAppJs, /正在检查应用门禁/);
+    assert.match(webAppJs, /应用执行门禁/);
     assert.match(webAppJs, /renderRolloutApplyOperationButtons/);
     assert.match(webAppJs, /renderRolloutRollbackButtons/);
     assert.match(webAppJs, /回退检查/);
@@ -271,7 +271,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /operations\/readiness/);
     assert.match(webAppJs, /renderOperationsReadiness/);
     assert.match(webAppJs, /appendOptionalQuery\(query, 'sourceKey'/);
-    assert.match(webAppJs, /Worker lease shards/);
+    assert.match(webAppJs, /执行占用/);
     assert.match(webAppJs, /workerLeaseStatusSummary/);
     assert.match(webAppJs, /intelligence\/author-review-queue\/events/);
     assert.match(webAppJs, /创建提醒/);

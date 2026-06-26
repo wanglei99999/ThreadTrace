@@ -468,7 +468,7 @@ function viewportAuditExpression() {
     "    bodyTextIncludesAudit: bodyText.includes('复核审计'),",
     "    bodyTextIncludesRunbook: bodyText.includes('操作清单'),",
     "    bodyTextIncludesAttentionQueue: bodyText.includes('待处理路径'),",
-    "    bodyTextIncludesActionable: bodyText.includes('Actionable'),",
+    "    bodyTextIncludesActionable: bodyText.includes('可处理'),",
     "    bodyTextIncludesFreshness: bodyText.includes('快照新鲜度'),",
     "    bodyTextHasMojibake: mojibakeMarkers.some((marker) => bodyText.includes(marker)),",
     "    runbookCommandCount: document.querySelectorAll('.automation-runbook-command-row').length,",
@@ -1234,7 +1234,7 @@ function assertAudit(label, audit) {
   if (!audit.bodyTextIncludesAudit) failures.push('missing review audit text');
   if (!audit.bodyTextIncludesRunbook) failures.push('missing operator runbook text');
   if (!audit.bodyTextIncludesAttentionQueue) failures.push('missing attention queue text');
-  if (!audit.bodyTextIncludesActionable) failures.push('missing Actionable runbook summary text');
+  if (!audit.bodyTextIncludesActionable) failures.push('missing actionable runbook summary text');
   if (!audit.bodyTextIncludesFreshness) failures.push('missing snapshot freshness text');
   if (!audit.headlineText) failures.push('missing automation cockpit headline text');
   if (audit.headlineHasMojibake) failures.push('automation cockpit headline contains mojibake: ' + audit.headlineText);

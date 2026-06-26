@@ -1090,7 +1090,7 @@ async function runRolloutApplyRequest(request) {
 }
 
 async function preflightRolloutApplyExecution(request) {
-  setLoading('rolloutApplyResult', 'Checking deployment gate before execute...');
+  setLoading('rolloutApplyResult', '正在检查应用门禁...');
   const gate = await requestJson('/api/deployment/gate', request, {
     acceptErrorStatus: true
   });
@@ -1112,7 +1112,7 @@ async function preflightRolloutApplyExecution(request) {
     document.getElementById('deploymentGateResult').innerHTML = renderDeploymentGateReport(gate);
   }
   if (!warning) return true;
-  const confirmed = window.confirm('Deployment gate returned warnings. Continue with execute=true and create a rollout apply audit task?');
+  const confirmed = window.confirm('应用门禁有提醒。仍要继续真实应用，并记录这次应用任务吗？');
   if (!confirmed) {
     document.getElementById('rolloutApplyResult').innerHTML = renderRolloutApplyExecutionGate(gate, {
       decision: 'cancelled'
@@ -4709,19 +4709,19 @@ function renderDeploymentGateLlmSummary(result) {
   const evaluationStatus = evaluation.status || checklistStatusForItem(llmItems, 'llm.semanticEvaluation') || 'not run';
   return panel('助手状态', [
     '<div class="summary-strip">',
-    summaryTile('Config', configStatus, statusVariant(configStatus)),
-    summaryTile('Preflight', preflightStatus, statusVariant(preflight.status)),
-    summaryTile('Evaluation', evaluationStatus, statusVariant(evaluation.status)),
-    summaryTile('Samples', String(evaluation.sampleCount || 0)),
-    summaryTile('Warn', String(summary.warn || 0), (summary.warn || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('配置', workspaceStatusLabel(configStatus), statusVariant(configStatus)),
+    summaryTile('预检', workspaceStatusLabel(preflightStatus), statusVariant(preflight.status)),
+    summaryTile('评估', workspaceStatusLabel(evaluationStatus), statusVariant(evaluation.status)),
+    summaryTile('样本', String(evaluation.sampleCount || 0)),
+    summaryTile('提醒', String(summary.warn || 0), (summary.warn || 0) > 0 ? 'warn' : 'ok'),
     '</div>',
-    metric('Provider', evaluation.provider || preflight.provider || llmProviderFromItems(llmItems) || 'unknown'),
-    metric('Mode', evaluation.status ? 'evaluation' : preflight.status ? 'preflight' : 'configuration'),
+    metric('提供方', evaluation.provider || preflight.provider || llmProviderFromItems(llmItems) || '未知'),
+    metric('模式', evaluation.status ? '语义评估' : preflight.status ? '预检' : '配置检查'),
     evidenceList(llmItems.map(function (item) {
       const evidence = item.evidence || {};
-      const sampleText = evidence.sampleCount ? ' samples=' + evidence.sampleCount : '';
+      const sampleText = evidence.sampleCount ? ' · 样本 ' + evidence.sampleCount : '';
       const traceText = evidence.traceId ? ' 路径 ' + evidence.traceId : '';
-      return item.status + ' | ' + item.key + ' | ' + item.summary + sampleText + traceText;
+      return workspaceStatusLabel(item.status) + ' · ' + item.key + ' · ' + item.summary + sampleText + traceText;
     }))
   ].join(''), 'wide');
 }
@@ -4746,24 +4746,24 @@ function renderRolloutApplyExecutionGate(result, options) {
   const actions = result && result.nextActions || [];
   const decision = safeOptions.decision || 'unknown';
   const panels = [
-    panel('Apply execution gate', [
-      metric('Decision', decision),
-      metric('Gate status', result && result.status || 'unknown'),
-      metric('Mode', 'execute=true'),
-      metric('Gates', result && (result.gateCount || gates.length) || 0),
+    panel('应用执行门禁', [
+      metric('结论', workspaceStatusLabel(decision)),
+      metric('门禁状态', workspaceStatusLabel(result && result.status)),
+      metric('执行方式', '真实应用'),
+      metric('检查项', result && (result.gateCount || gates.length) || 0),
       metric('下一步', actions.length),
-      metric('Audit', decision === 'cleared' || decision === 'awaiting-confirmation' ? 'rollout apply task will be recorded after execute' : 'no apply task was submitted')
+      metric('记录', decision === 'cleared' || decision === 'awaiting-confirmation' ? '执行后会写入应用记录' : '尚未提交应用任务')
     ].join('')),
-    panel('Gate results', evidenceList(gates.map(function (gate) {
-      return gate.status + ' 璺?' + gate.area + ' 璺?' + gate.key + ' 璺?' + gate.summary;
+    panel('门禁结果', evidenceList(gates.map(function (gate) {
+      return workspaceStatusLabel(gate.status) + ' · ' + gate.area + ' · ' + gate.key + ' · ' + gate.summary;
     })), 'wide')
   ];
   if (actions.length > 0) {
-    panels.push(panel('Gate actions before execute', evidenceList(actions.map(function (action) {
+    panels.push(panel('执行前建议', evidenceList(actions.map(function (action) {
       const details = (action.details || []).map(function (detail) {
-        return detail.key + (detail.evidenceSummary ? ' evidence=' + detail.evidenceSummary : '');
-      }).join(' | ');
-      return action.severity + ' 璺?' + action.key + ' 璺?' + action.summary + ' 璺?' + (action.commands || []).join(' | ') + (details ? ' details=' + details : '');
+        return detail.key + (detail.evidenceSummary ? ' 证据 ' + detail.evidenceSummary : '');
+      }).join(' · ');
+      return workspaceStatusLabel(action.severity) + ' · ' + action.key + ' · ' + action.summary + ' · ' + (action.commands || []).join(' · ') + (details ? ' · 明细 ' + details : '');
     })), 'wide'));
   }
   return panels.join('');
@@ -5519,15 +5519,15 @@ function renderOperationsReadiness(readiness) {
     return check.status === 'ok';
   }).length;
   const attention = failing.concat(warning).slice(0, 8);
-  return panel('Operations readiness', [
+  return panel('自动运行准备度', [
     '<div class="summary-strip">',
-    summaryTile('Status', readiness && readiness.status || 'unknown', statusVariant(readiness && readiness.status)),
-    summaryTile('Fail', String(failing.length), failing.length > 0 ? 'fail' : 'ok'),
-    summaryTile('Warn', String(warning.length), warning.length > 0 ? 'warn' : 'ok'),
-    summaryTile('OK', String(okCount), 'ok'),
+    summaryTile('状态', workspaceStatusLabel(readiness && readiness.status), statusVariant(readiness && readiness.status)),
+    summaryTile('失败', String(failing.length), failing.length > 0 ? 'fail' : 'ok'),
+    summaryTile('提醒', String(warning.length), warning.length > 0 ? 'warn' : 'ok'),
+    summaryTile('正常', String(okCount), 'ok'),
     '</div>',
     attention.length === 0
-      ? '<div class="muted">No readiness checks need attention.</div>'
+      ? '<div class="muted">当前没有需要关注的准备度检查。</div>'
       : attention.map(renderReadinessCheckRow).join('')
   ].join(''), 'wide');
 }
@@ -5536,36 +5536,36 @@ function renderReadinessCheckRow(check) {
   const value = check.value || {};
   const details = [
     check.summary,
-    value.sourceKey ? 'source=' + value.sourceKey : undefined,
-    value.sourceId ? 'sourceId=' + value.sourceId : undefined,
-    value.count === undefined ? undefined : 'count=' + value.count,
-    value.failed === undefined ? undefined : 'failed=' + value.failed,
-    value.staleRunning === undefined ? undefined : 'stale=' + value.staleRunning,
-    value.bySourceKey ? 'bySource=' + formatStanceSummary(value.bySourceKey) : undefined
-  ].filter(Boolean).join(' | ');
+    value.sourceKey ? '来源代号 ' + value.sourceKey : undefined,
+    value.sourceId ? '来源 ID ' + value.sourceId : undefined,
+    value.count === undefined ? undefined : '数量 ' + value.count,
+    value.failed === undefined ? undefined : '失败 ' + value.failed,
+    value.staleRunning === undefined ? undefined : '停滞 ' + value.staleRunning,
+    value.bySourceKey ? '来源分布 ' + formatStanceSummary(value.bySourceKey) : undefined
+  ].filter(Boolean).join(' · ');
   return '<div class="action-row ops-row"><span>' +
-    '<strong>' + escapeHtml(check.key || 'unknown-check') + '</strong>' +
+    '<strong>' + escapeHtml(check.summary || check.key || '准备度检查') + '</strong>' +
     '<small>' + escapeHtml(details) + '</small>' +
     '</span>' +
-    statusBadge(check.status || 'warn', statusVariant(check.status)) +
+    statusBadge(workspaceStatusLabel(check.status), statusVariant(check.status)) +
     '</div>';
 }
 
 function renderWorkerLeaseOverview(leases) {
   const safeLeases = leases || {};
   const sampleLeases = uniqueLeases((safeLeases.sourceScopedLeases || []).concat(safeLeases.expiredLeases || []));
-  return panel('Worker lease shards', [
+  return panel('执行占用', [
     '<div class="summary-strip">',
-    summaryTile('Active', String(safeLeases.active || 0), (safeLeases.active || 0) > 0 ? 'ok' : 'muted'),
-    summaryTile('Expired', String(safeLeases.expired || 0), (safeLeases.expired || 0) > 0 ? 'warn' : 'ok'),
-    summaryTile('Scoped', String(safeLeases.sourceScoped || 0), (safeLeases.sourceScoped || 0) > 0 ? 'ok' : 'muted'),
-    summaryTile('Global', String(safeLeases.unscoped || 0), (safeLeases.unscoped || 0) > 0 ? 'muted' : 'ok'),
+    summaryTile('活跃', String(safeLeases.active || 0), (safeLeases.active || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('过期', String(safeLeases.expired || 0), (safeLeases.expired || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('按来源', String(safeLeases.sourceScoped || 0), (safeLeases.sourceScoped || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('全局', String(safeLeases.unscoped || 0), (safeLeases.unscoped || 0) > 0 ? 'muted' : 'ok'),
     '</div>',
-    metric('Worker types', compactCountMap(safeLeases.byWorkerType)),
-    metric('Active source ids', compactCountMap(safeLeases.activeBySourceId)),
-    metric('Expired source ids', compactCountMap(safeLeases.expiredBySourceId)),
-    metric('Active source keys', compactCountMap(safeLeases.activeBySourceKey)),
-    metric('Expired source keys', compactCountMap(safeLeases.expiredBySourceKey)),
+    metric('执行类型', compactCountMap(safeLeases.byWorkerType)),
+    metric('活跃来源 ID', compactCountMap(safeLeases.activeBySourceId)),
+    metric('过期来源 ID', compactCountMap(safeLeases.expiredBySourceId)),
+    metric('活跃来源代号', compactCountMap(safeLeases.activeBySourceKey)),
+    metric('过期来源代号', compactCountMap(safeLeases.expiredBySourceKey)),
     evidenceList(sampleLeases.slice(0, 8).map(formatWorkerLeaseRow))
   ].join(''), 'wide');
 }
@@ -5573,19 +5573,19 @@ function renderWorkerLeaseOverview(leases) {
 function renderWorkerRunOverview(workers) {
   const safeWorkers = workers || {};
   const sampleRuns = uniqueWorkerRuns((safeWorkers.staleRuns || []).concat(safeWorkers.latestRun ? [safeWorkers.latestRun] : []));
-  return panel('Worker run sources', [
+  return panel('执行记录', [
     '<div class="summary-strip">',
-    summaryTile('Running', String(safeWorkers.running || 0), (safeWorkers.running || 0) > 0 ? 'ok' : 'muted'),
-    summaryTile('Stale', String(safeWorkers.stale || 0), (safeWorkers.stale || 0) > 0 ? 'warn' : 'ok'),
-    summaryTile('Scoped', String(safeWorkers.sourceScoped || 0), (safeWorkers.sourceScoped || 0) > 0 ? 'ok' : 'muted'),
-    summaryTile('Global', String(safeWorkers.unscoped || 0), (safeWorkers.unscoped || 0) > 0 ? 'muted' : 'ok'),
+    summaryTile('运行中', String(safeWorkers.running || 0), (safeWorkers.running || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('停滞', String(safeWorkers.stale || 0), (safeWorkers.stale || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('按来源', String(safeWorkers.sourceScoped || 0), (safeWorkers.sourceScoped || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('全局', String(safeWorkers.unscoped || 0), (safeWorkers.unscoped || 0) > 0 ? 'muted' : 'ok'),
     '</div>',
-    metric('Worker types', compactCountMap(safeWorkers.byWorkerType)),
-    metric('Runs by source ids', compactCountMap(safeWorkers.bySourceId)),
-    metric('Runs by source keys', compactCountMap(safeWorkers.bySourceKey)),
-    metric('Running source ids', compactCountMap(safeWorkers.runningBySourceId)),
-    metric('Stale source ids', compactCountMap(safeWorkers.staleBySourceId)),
-    metric('Stale source keys', compactCountMap(safeWorkers.staleBySourceKey)),
+    metric('执行类型', compactCountMap(safeWorkers.byWorkerType)),
+    metric('来源 ID', compactCountMap(safeWorkers.bySourceId)),
+    metric('来源代号', compactCountMap(safeWorkers.bySourceKey)),
+    metric('运行中来源 ID', compactCountMap(safeWorkers.runningBySourceId)),
+    metric('停滞来源 ID', compactCountMap(safeWorkers.staleBySourceId)),
+    metric('停滞来源代号', compactCountMap(safeWorkers.staleBySourceKey)),
     evidenceList(sampleRuns.slice(0, 8).map(formatWorkerRunRow))
   ].join(''), 'wide');
 }
@@ -5593,21 +5593,21 @@ function renderWorkerRunOverview(workers) {
 function workerLeaseStatusSummary(leases) {
   const safeLeases = leases || {};
   return [
-    'active ' + (safeLeases.active || 0),
-    'expired ' + (safeLeases.expired || 0),
-    'scoped ' + (safeLeases.sourceScoped || 0),
-    'global ' + (safeLeases.unscoped || 0)
-  ].join(' 路 ');
+    '活跃 ' + (safeLeases.active || 0),
+    '过期 ' + (safeLeases.expired || 0),
+    '按来源 ' + (safeLeases.sourceScoped || 0),
+    '全局 ' + (safeLeases.unscoped || 0)
+  ].join(' · ');
 }
 
 function workerRunStatusSummary(workers) {
   const safeWorkers = workers || {};
   return [
-    'running ' + (safeWorkers.running || 0),
-    'stale ' + (safeWorkers.stale || 0),
-    'scoped ' + (safeWorkers.sourceScoped || 0),
-    'failed ' + (safeWorkers.failed || 0)
-  ].join(' | ');
+    '运行中 ' + (safeWorkers.running || 0),
+    '停滞 ' + (safeWorkers.stale || 0),
+    '按来源 ' + (safeWorkers.sourceScoped || 0),
+    '失败 ' + (safeWorkers.failed || 0)
+  ].join(' · ');
 }
 
 function uniqueLeases(leases) {
@@ -5633,31 +5633,31 @@ function uniqueWorkerRuns(runs) {
 function formatWorkerRunRow(run) {
   const scope = run.scope || {};
   const scopeLabel = scope.sourceId
-    ? 'sourceId=' + scope.sourceId
-    : (scope.sourceKey ? 'sourceKey=' + scope.sourceKey : 'global');
+    ? '来源 ID ' + scope.sourceId
+    : (scope.sourceKey ? '来源代号 ' + scope.sourceKey : '全局');
   return [
-    run.status || 'unknown-status',
-    run.workerType || 'unknown-worker',
+    workspaceStatusLabel(run.status),
+    '执行器 ' + (run.workerType || '未知执行器'),
     scopeLabel,
-    run.workerId || 'unknown-owner',
-    run.heartbeatAt || run.updatedAt || 'no-heartbeat',
-    run.id || 'unknown-run'
-  ].join(' | ');
+    '持有者 ' + (run.workerId || '未知'),
+    '心跳 ' + (run.heartbeatAt || run.updatedAt || '暂无'),
+    '记录 ' + (run.id || '未知')
+  ].join(' · ');
 }
 
 function formatWorkerLeaseRow(lease) {
   const scope = lease.scope || {};
   const scopeLabel = scope.sourceId
-    ? 'sourceId=' + scope.sourceId
-    : (scope.sourceKey ? 'sourceKey=' + scope.sourceKey : 'global');
+    ? '来源 ID ' + scope.sourceId
+    : (scope.sourceKey ? '来源代号 ' + scope.sourceKey : '全局');
   return [
-    lease.expired ? 'expired' : 'active',
-    lease.workerType || 'unknown-worker',
+    lease.expired ? '已过期' : '活跃',
+    '执行器 ' + (lease.workerType || '未知执行器'),
     scopeLabel,
-    lease.ownerId || 'unknown-owner',
-    lease.leaseKey || 'unknown-lease',
-    lease.expiresAt || 'no-expiry'
-  ].join(' | ');
+    '持有者 ' + (lease.ownerId || '未知'),
+    '占用 ' + (lease.leaseKey || '未知'),
+    '到期 ' + (lease.expiresAt || '暂无')
+  ].join(' · ');
 }
 
 function renderOperationsRunbook(runbook) {
@@ -6261,27 +6261,27 @@ function renderAutomationFreshness(freshness) {
   const sources = safeFreshness.sources || [];
   const missingSources = safeFreshness.missingSources || [];
   const visibleSources = sources.slice(0, 12);
-  const spanLabel = safeFreshness.spanMs === undefined ? 'unknown' : formatDurationMs(safeFreshness.spanMs);
+  const spanLabel = safeFreshness.spanMs === undefined ? '暂无' : formatDurationMs(safeFreshness.spanMs);
   const rows = [
     '<div class="summary-strip">',
-    summaryTile('Status', safeFreshness.status || 'unknown', statusVariant(safeFreshness.status)),
-    summaryTile('Inputs', String(safeFreshness.presentSourceCount || 0) + '/' + String(safeFreshness.sourceCount || 0), (safeFreshness.missingSourceCount || 0) > 0 ? 'warn' : 'ok'),
-    summaryTile('Missing', String(safeFreshness.missingSourceCount || 0), (safeFreshness.missingSourceCount || 0) > 0 ? 'warn' : 'ok'),
-    summaryTile('Span', spanLabel, safeFreshness.spanMs > 60000 ? 'warn' : 'ok'),
+    summaryTile('状态', workspaceStatusLabel(safeFreshness.status), statusVariant(safeFreshness.status)),
+    summaryTile('输入', String(safeFreshness.presentSourceCount || 0) + '/' + String(safeFreshness.sourceCount || 0), (safeFreshness.missingSourceCount || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('缺失', String(safeFreshness.missingSourceCount || 0), (safeFreshness.missingSourceCount || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('跨度', spanLabel, safeFreshness.spanMs > 60000 ? 'warn' : 'ok'),
     '</div>',
     '<div class="action-row ops-row automation-freshness-row"><span>' +
-      '<strong>Snapshot window</strong>' +
-      '<small>' + escapeHtml('oldest=' + (safeFreshness.oldestGeneratedAt || 'unknown') + ' | newest=' + (safeFreshness.newestGeneratedAt || 'unknown')) + '</small>' +
-      '<small>' + escapeHtml(missingSources.length > 0 ? 'missing=' + missingSources.join(', ') : 'all expected inputs reported generatedAt') + '</small>' +
+      '<strong>快照窗口</strong>' +
+      '<small>' + escapeHtml('最早 ' + workspaceValue(safeFreshness.oldestGeneratedAt, '未知') + ' · 最新 ' + workspaceValue(safeFreshness.newestGeneratedAt, '未知')) + '</small>' +
+      '<small>' + escapeHtml(missingSources.length > 0 ? '缺失输入 ' + missingSources.join('、') : '预期输入都已回传快照时间') + '</small>' +
       '</span><span class="button-group automation-freshness-actions">' +
           '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="refresh-automation-readiness">刷新快照</button>' +
-      '</span>' + statusBadge(safeFreshness.status || 'unknown', statusVariant(safeFreshness.status)) + '</div>'
+      '</span>' + statusBadge(workspaceStatusLabel(safeFreshness.status), statusVariant(safeFreshness.status)) + '</div>'
   ];
   if (visibleSources.length > 0) {
     rows.push('<div class="automation-freshness-source-list">' + visibleSources.map(function (source) {
       return '<div class="automation-freshness-source ' + (source.present ? 'status-ok' : 'status-warn') + '">' +
-        '<strong>' + escapeHtml(source.key || 'input') + '</strong>' +
-        '<small>' + escapeHtml(source.generatedAt || 'missing') + '</small>' +
+        '<strong>' + escapeHtml(source.key || '输入') + '</strong>' +
+        '<small>' + escapeHtml(source.generatedAt || '缺失') + '</small>' +
         '</div>';
     }).join('') + '</div>');
   }
@@ -6290,7 +6290,7 @@ function renderAutomationFreshness(freshness) {
 
 function formatDurationMs(value) {
   const ms = Number(value);
-  if (!Number.isFinite(ms)) return 'unknown';
+  if (!Number.isFinite(ms)) return '未知';
   if (ms < 1000) return String(ms) + 'ms';
   if (ms < 60000) return String(Math.round(ms / 1000)) + 's';
   if (ms < 3600000) return String(Math.round(ms / 60000)) + 'm';
@@ -6387,11 +6387,11 @@ function renderAutomationReadinessChecks(checks) {
 }
 
 function renderAutomationWorkerCommands(commands) {
-  if (!commands.length) return '<div class="muted">No worker commands available.</div>';
+  if (!commands.length) return '<div class="muted">暂无执行命令。</div>';
   return commands.map(function (worker) {
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml(worker.workerType || worker.key || 'worker') + '</strong>' +
-      '<small>' + escapeHtml([worker.leaseKey, worker.intervalMs ? 'interval=' + worker.intervalMs + 'ms' : undefined].filter(Boolean).join(' | ')) + '</small>' +
+      '<strong>' + escapeHtml(worker.workerType || worker.key || '执行器') + '</strong>' +
+      '<small>' + escapeHtml([worker.leaseKey ? '占用 ' + worker.leaseKey : undefined, worker.intervalMs ? '间隔 ' + formatDurationMs(worker.intervalMs) : undefined].filter(Boolean).join(' · ')) + '</small>' +
       '<small>' + escapeHtml(worker.command || '') + '</small>' +
       '</span></div>';
   }).join('');
@@ -6402,16 +6402,16 @@ function renderAutomationOperatorRunbook(runbook) {
   const sections = safeRunbook.sections || [];
   const rows = [
     '<div class="summary-strip">',
-    summaryTile('Status', safeRunbook.status || 'unknown', statusVariant(safeRunbook.status)),
-    summaryTile('Commands', String(safeRunbook.commandCount || 0), (safeRunbook.commandCount || 0) > 0 ? 'ok' : 'muted'),
-    summaryTile('Actionable', String(safeRunbook.actionableCommandCount || 0), (safeRunbook.actionableCommandCount || 0) > 0 ? 'warn' : 'muted'),
-    summaryTile('Apply', String(safeRunbook.executeCommandCount || 0), (safeRunbook.executeCommandCount || 0) > 0 ? 'warn' : 'muted'),
-    summaryTile('Sections', String(sections.length), sections.length > 0 ? 'ok' : 'muted'),
-    summaryTile('Next', safeRunbook.nextCommand && safeRunbook.nextCommand.title || 'none', safeRunbook.nextCommand ? 'warn' : 'muted'),
+    summaryTile('状态', workspaceStatusLabel(safeRunbook.status), statusVariant(safeRunbook.status)),
+    summaryTile('命令', String(safeRunbook.commandCount || 0), (safeRunbook.commandCount || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('可处理', String(safeRunbook.actionableCommandCount || 0), (safeRunbook.actionableCommandCount || 0) > 0 ? 'warn' : 'muted'),
+    summaryTile('可应用', String(safeRunbook.executeCommandCount || 0), (safeRunbook.executeCommandCount || 0) > 0 ? 'warn' : 'muted'),
+    summaryTile('分组', String(sections.length), sections.length > 0 ? 'ok' : 'muted'),
+    summaryTile('下一步', safeRunbook.nextCommand && safeRunbook.nextCommand.title || '暂无', safeRunbook.nextCommand ? 'warn' : 'muted'),
     '</div>'
   ];
   if (sections.length === 0) {
-    rows.push('<div class="muted">No operator runbook returned.</div>');
+    rows.push('<div class="muted">暂无操作清单。</div>');
     return rows.join('');
   }
   sections.forEach(function (section) {
@@ -6420,11 +6420,11 @@ function renderAutomationOperatorRunbook(runbook) {
     });
     rows.push('<div class="action-row ops-row automation-runbook-row">' +
       '<span>' +
-      '<strong>' + escapeHtml(section.title || section.key || 'Runbook section') + '</strong>' +
-      '<small>' + escapeHtml('commands=' + (section.commandCount || commands.length || 0)) + '</small>' +
+      '<strong>' + escapeHtml(section.title || section.key || '操作清单分组') + '</strong>' +
+      '<small>' + escapeHtml('命令 ' + (section.commandCount || commands.length || 0)) + '</small>' +
       renderAutomationRunbookCommandRows(commands) +
       '</span>' +
-      statusBadge(section.status || 'unknown', statusVariant(section.status)) +
+      statusBadge(workspaceStatusLabel(section.status), statusVariant(section.status)) +
       '</div>');
   });
   return rows.join('');
@@ -6840,14 +6840,14 @@ function renderSourceTypeOperations(report) {
   const summary = report.summary || {};
   return [
     '<div class="summary-strip">',
-    summaryTile('Types', String(summary.sourceTypeCount || 0), (summary.failSourceTypeCount || 0) > 0 ? 'fail' : ((summary.warnSourceTypeCount || 0) > 0 ? 'warn' : 'ok')),
-    summaryTile('Sources', String(summary.sourceCount || 0), (summary.sourceCount || 0) > 0 ? 'ok' : 'muted'),
-    summaryTile('Due', String(summary.dueSourceCount || 0), (summary.dueSourceCount || 0) > 0 ? 'ok' : 'muted'),
-    summaryTile('Running', String(summary.runningSourceCount || 0), (summary.runningSourceCount || 0) > 0 ? 'ok' : 'muted'),
-    summaryTile('Retry wait', String(summary.failureRetryWaitingSourceCount || 0), (summary.failureRetryWaitingSourceCount || 0) > 0 ? 'warn' : 'ok'),
-    summaryTile('Attention', String(summary.attentionSourceCount || 0), (summary.warningAttentionSourceCount || 0) > 0 ? 'warn' : 'ok'),
-    summaryTile('Actionable', String(summary.actionableSourceCount || 0), (summary.actionableSourceCount || 0) > 0 ? 'warn' : 'ok'),
-    summaryTile('Top priority', String(summary.highestPriorityScore || 0), (summary.highestPriorityScore || 0) >= 100 ? 'warn' : 'ok'),
+    summaryTile('来源类型', String(summary.sourceTypeCount || 0), (summary.failSourceTypeCount || 0) > 0 ? 'fail' : ((summary.warnSourceTypeCount || 0) > 0 ? 'warn' : 'ok')),
+    summaryTile('来源', String(summary.sourceCount || 0), (summary.sourceCount || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('到期', String(summary.dueSourceCount || 0), (summary.dueSourceCount || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('运行中', String(summary.runningSourceCount || 0), (summary.runningSourceCount || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('重试等待', String(summary.failureRetryWaitingSourceCount || 0), (summary.failureRetryWaitingSourceCount || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('关注项', String(summary.attentionSourceCount || 0), (summary.warningAttentionSourceCount || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('可处理', String(summary.actionableSourceCount || 0), (summary.actionableSourceCount || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('最高优先级', String(summary.highestPriorityScore || 0), (summary.highestPriorityScore || 0) >= 100 ? 'warn' : 'ok'),
     '</div>',
     renderSourceTypeOperationsRows(report.sourceTypes || [])
   ].join('');
@@ -6865,25 +6865,25 @@ function renderSourceTypeOperationsRows(sourceTypes) {
     return '<div class="source-work-row source-type-work-row ' + statusClassName(statusVariant(sourceType.status)) + '">' +
       '<section class="source-work-anchor">' +
         '<span class="source-work-scope">来源类型</span>' +
-        '<strong>' + escapeHtml(sourceType.sourceType || 'unknown') + '</strong>' +
-        '<small>' + escapeHtml('准备=' + (readiness.status || 'unknown')) + '</small>' +
+        '<strong>' + escapeHtml(sourceType.sourceType || '未知类型') + '</strong>' +
+        '<small>' + escapeHtml('准备度 ' + workspaceStatusLabel(readiness.status)) + '</small>' +
       '</section>' +
       '<section class="source-work-brief">' +
-        '<p>' + escapeHtml(sourceType.recommendedNextAction || 'Review this source type family and keep connector readiness clear.') + '</p>' +
+        '<p>' + escapeHtml(sourceType.recommendedNextAction || '查看这类来源的运行路径，并保持采集准备度清晰。') + '</p>' +
         '<div class="source-work-chips">' +
-          authorMetaChip('sources', readiness.sourceCount || lifecycle.total || schedule.total || 0, 'info') +
-          authorMetaChip('enabled', readiness.enabledSourceCount || lifecycle.enabled || 0, 'ok') +
-          authorMetaChip('due', schedule.due || 0, (schedule.due || 0) > 0 ? 'warn' : 'muted') +
-          authorMetaChip('running', lifecycle.running || 0, (lifecycle.running || 0) > 0 ? 'ok' : 'muted') +
-          authorMetaChip('retry', lifecycle.failureRetryWaiting || 0, (lifecycle.failureRetryWaiting || 0) > 0 ? 'warn' : 'muted') +
-          authorMetaChip('attention', attention.total || 0, (attention.total || 0) > 0 ? 'warn' : 'muted') +
-          authorMetaChip('priority', attention.highestPriorityScore || 0, (attention.highestPriorityScore || 0) >= 100 ? 'warn' : 'info') +
+          authorMetaChip('来源', readiness.sourceCount || lifecycle.total || schedule.total || 0, 'info') +
+          authorMetaChip('启用', readiness.enabledSourceCount || lifecycle.enabled || 0, 'ok') +
+          authorMetaChip('到期', schedule.due || 0, (schedule.due || 0) > 0 ? 'warn' : 'muted') +
+          authorMetaChip('运行中', lifecycle.running || 0, (lifecycle.running || 0) > 0 ? 'ok' : 'muted') +
+          authorMetaChip('重试', lifecycle.failureRetryWaiting || 0, (lifecycle.failureRetryWaiting || 0) > 0 ? 'warn' : 'muted') +
+          authorMetaChip('关注', attention.total || 0, (attention.total || 0) > 0 ? 'warn' : 'muted') +
+          authorMetaChip('优先级', attention.highestPriorityScore || 0, (attention.highestPriorityScore || 0) >= 100 ? 'warn' : 'info') +
         '</div>' +
         renderSourceCommandChips(commands.slice(0, 3)) +
       '</section>' +
       '<section class="source-work-actions button-group source-op-buttons">' +
         actions +
-        statusBadge(sourceType.status || 'unknown', statusVariant(sourceType.status)) +
+        statusBadge(workspaceStatusLabel(sourceType.status), statusVariant(sourceType.status)) +
       '</section>' +
       '</div>';
   }).join('') + '</div>';
@@ -8199,7 +8199,8 @@ function workspaceStatusLabel(status) {
     expired: '已过期',
     available: '可用',
     'not-evaluated': '未评估',
-    'not-run': '未试跑'
+    'not-run': '未试跑',
+    'not run': '未运行'
   };
   return labels[status] || workspaceValue(status, '未知');
 }
