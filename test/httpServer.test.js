@@ -249,8 +249,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /批量路径/);
     assert.match(webAppJs, /导入任务/);
     assert.match(webAppJs, /renderSourceOperationResultRows/);
-    assert.match(webAppJs, /Due source batch run/);
-    assert.match(webAppJs, /Source attention/);
+    assert.match(webAppJs, /到期来源运行/);
+    assert.match(webAppJs, /来源关注/);
     assert.match(webAppJs, /buildSourceAttention/);
     assert.match(webAppJs, /renderSourceAttentionRows/);
     assert.match(webAppJs, /operations\/source-cockpit/);

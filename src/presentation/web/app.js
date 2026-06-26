@@ -4978,26 +4978,26 @@ function renderSourcePipelineRunResult(result) {
 }
 
 function renderSourceBatchRunResult(result) {
-  return panel('Source batch run', [
-    metric('Sources', result.sourceCount),
-    metric('Completed', result.completedCount),
-    metric('Failed', result.failedCount),
+  return panel('来源批量运行', [
+    metric('来源', result.sourceCount),
+    metric('完成', result.completedCount),
+    metric('失败', result.failedCount),
     renderBatchTaskControls(result.task),
     renderSourceOperationResultRows(result.results || [])
   ].join(''), 'wide');
 }
 
 function renderDueSourceBatchRunResult(result) {
-  return panel('Due source batch run', [
-    metric('Batch task', result.task && result.task.id || 'none'),
-    metric('Task status', result.task && result.task.status || 'unknown'),
-    metric('Sources', result.sourceCount),
-    metric('Due', result.dueCount),
-    metric('Skipped', result.skippedCount),
-    metric('Completed', result.completedCount),
-    metric('Failed', result.failedCount),
-    metric('Checked', result.checkedAt || 'unknown'),
-    metric('Finished', result.finishedAt || 'unknown'),
+  return panel('到期来源运行', [
+    metric('批量任务', result.task && result.task.id || '暂无'),
+    metric('任务状态', result.task && result.task.status || '未知'),
+    metric('来源', result.sourceCount),
+    metric('到期', result.dueCount),
+    metric('跳过', result.skippedCount),
+    metric('完成', result.completedCount),
+    metric('失败', result.failedCount),
+    metric('检查时间', result.checkedAt || '未知'),
+    metric('完成时间', result.finishedAt || '未知'),
     renderBatchTaskControls(result.task),
     renderDueBatchEvidence(result.evidence),
     renderSourceOperationResultRows(result.results || []),
@@ -5006,16 +5006,16 @@ function renderDueSourceBatchRunResult(result) {
 }
 
 function renderDueSourcePipelineBatchRunResult(result) {
-  return panel('Due source insight batch run', [
-    metric('Batch task', result.task && result.task.id || 'none'),
-    metric('Task status', result.task && result.task.status || 'unknown'),
-    metric('Sources', result.sourceCount),
-    metric('Due', result.dueCount),
-    metric('Skipped', result.skippedCount),
-    metric('Completed', result.completedCount),
-    metric('Failed', result.failedCount),
-    metric('Checked', result.checkedAt || 'unknown'),
-    metric('Finished', result.finishedAt || 'unknown'),
+  return panel('到期洞察运行', [
+    metric('批量任务', result.task && result.task.id || '暂无'),
+    metric('任务状态', result.task && result.task.status || '未知'),
+    metric('来源', result.sourceCount),
+    metric('到期', result.dueCount),
+    metric('跳过', result.skippedCount),
+    metric('完成', result.completedCount),
+    metric('失败', result.failedCount),
+    metric('检查时间', result.checkedAt || '未知'),
+    metric('完成时间', result.finishedAt || '未知'),
     renderBatchTaskControls(result.task),
     renderDueBatchEvidence(result.evidence),
     renderSourceOperationResultRows(result.results || []),
@@ -5030,21 +5030,21 @@ function renderDueBatchEvidence(evidence) {
   const timeline = evidence.timeline || [];
   return [
     '<div class="summary-strip">',
-    summaryTile('Evidence', batch.taskId || 'none', batch.taskId ? 'ok' : 'muted'),
-    summaryTile('Replayable', String(summary.replayableCount || 0), (summary.replayableCount || 0) > 0 ? 'ok' : 'muted'),
-    summaryTile('Timeline', String(timeline.length), timeline.length > 0 ? 'ok' : 'muted'),
-    summaryTile('Backoff', String(summary.backoffSkippedCount || 0), (summary.backoffSkippedCount || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('证据包', batch.taskId || '暂无', batch.taskId ? 'ok' : 'muted'),
+    summaryTile('可回放', String(summary.replayableCount || 0), (summary.replayableCount || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('时间线', String(timeline.length), timeline.length > 0 ? 'ok' : 'muted'),
+    summaryTile('等待重试', String(summary.backoffSkippedCount || 0), (summary.backoffSkippedCount || 0) > 0 ? 'warn' : 'ok'),
     '</div>',
     timeline.slice(0, 8).map(function (item) {
       const details = [
-        item.scheduleReason,
-        item.taskId ? 'task=' + item.taskId : undefined,
-        item.changed === undefined ? undefined : 'changed=' + item.changed,
-        item.newPostCount === undefined ? undefined : 'new=' + item.newPostCount,
-        item.semanticStatus ? 'semantic=' + item.semanticStatus : undefined,
-        item.retryAt ? 'retry=' + item.retryAt : undefined
-      ].filter(Boolean).join(' | ');
-      return '<div class="action-row"><span><strong>' + escapeHtml(item.kind || 'evidence') + '</strong><small>' + escapeHtml([item.sourceId, item.sourceKey].filter(Boolean).join(' / ')) + '</small><small>' + escapeHtml(details) + '</small></span>' + statusBadge(item.status || 'unknown', statusVariant(item.status)) + '</div>';
+        item.scheduleReason ? '排期 ' + item.scheduleReason : undefined,
+        item.taskId ? '任务 ' + item.taskId : undefined,
+        item.changed === undefined ? undefined : '变化 ' + (item.changed ? '有' : '无'),
+        item.newPostCount === undefined ? undefined : '新增 ' + item.newPostCount,
+        item.semanticStatus ? '语义 ' + item.semanticStatus : undefined,
+        item.retryAt ? '重试 ' + item.retryAt : undefined
+      ].filter(Boolean).join(' · ');
+      return '<div class="action-row"><span><strong>' + escapeHtml(item.kind || '证据') + '</strong><small>' + escapeHtml([item.sourceId, item.sourceKey].filter(Boolean).join(' · ') || '全部来源') + '</small><small>' + escapeHtml(details) + '</small></span>' + statusBadge(item.status || 'unknown', statusVariant(item.status)) + '</div>';
     }).join('')
   ].join('');
 }
@@ -5180,18 +5180,18 @@ function renderSourceDemoCycleReport(report) {
 }
 
 function renderNextActionRows(actions) {
-  if (!actions || actions.length === 0) return '<div class="muted">No follow-up commands.</div>';
+  if (!actions || actions.length === 0) return '<div class="muted">暂无后续动作。</div>';
   return '<div class="automation-action-command-list">' + actions.map(function (action) {
     const commands = action.commands || (action.command ? [action.command] : []);
     const details = (action.details || []).map(function (detail) {
-      return detail.key + (detail.evidenceSummary ? ' evidence=' + detail.evidenceSummary : '');
-    }).join(' | ');
+      return detail.key + (detail.evidenceSummary ? ' · 证据 ' + detail.evidenceSummary : '');
+    }).join(' · ');
     return '<div class="action-row ops-row automation-action-command-row">' +
       '<span>' +
-      '<strong>' + escapeHtml((action.severity || 'info') + ' | ' + (action.key || 'action')) + '</strong>' +
+      '<strong>' + escapeHtml((action.severity || 'info') + ' · ' + (action.key || 'action')) + '</strong>' +
       '<small>' + escapeHtml(action.summary || action.command || '') + '</small>' +
-      (action.evidenceSummary ? '<small>' + escapeHtml('evidence=' + action.evidenceSummary) + '</small>' : '') +
-      (details ? '<small>' + escapeHtml('details=' + details) + '</small>' : '') +
+      (action.evidenceSummary ? '<small>' + escapeHtml('证据 ' + action.evidenceSummary) + '</small>' : '') +
+      (details ? '<small>' + escapeHtml('详情 ' + details) + '</small>' : '') +
       renderReadinessCommandRows(commands) +
       '</span>' +
       statusBadge(action.severity || 'info', action.severity === 'critical' ? 'fail' : statusVariant(action.severity)) +
@@ -5204,13 +5204,13 @@ function renderDemoCycleClosure(closure) {
   const steps = closure.steps || [];
   return [
     '<div class="summary-strip">',
-    summaryTile('Status', closure.status || 'unknown', statusVariant(closure.status)),
-    summaryTile('Ready', closure.readyForDailyUse ? 'yes' : 'no', closure.readyForDailyUse ? 'ok' : 'warn'),
-    summaryTile('Score', String(summary.readinessScore || 0)),
-    summaryTile('Done', String(summary.completed || 0) + '/' + String(summary.total || 0), summary.completed === summary.total ? 'ok' : 'warn'),
-    summaryTile('Missing', String((summary.missingStepKeys || []).length), (summary.missingStepKeys || []).length > 0 ? 'warn' : 'ok'),
+    summaryTile('状态', closure.status || '未知', statusVariant(closure.status)),
+    summaryTile('就绪', closure.readyForDailyUse ? '是' : '否', closure.readyForDailyUse ? 'ok' : 'warn'),
+    summaryTile('评分', String(summary.readinessScore || 0)),
+    summaryTile('完成', String(summary.completed || 0) + '/' + String(summary.total || 0), summary.completed === summary.total ? 'ok' : 'warn'),
+    summaryTile('缺口', String((summary.missingStepKeys || []).length), (summary.missingStepKeys || []).length > 0 ? 'warn' : 'ok'),
     '</div>',
-    metric('Next', closure.recommendedNextAction || 'none'),
+    metric('下一步', closure.recommendedNextAction || '暂无'),
     '<div class="source-operation-result-list">',
     steps.map(renderDemoCycleClosureStep).join(''),
     '</div>'
@@ -5222,10 +5222,10 @@ function renderDemoCycleClosureStep(step) {
     return item.key + '=' + item.value;
   }).join(' | ');
   return '<div class="action-row ops-row"><span>' +
-    '<strong>' + escapeHtml(step.title || step.key || 'Closure step') + '</strong>' +
+    '<strong>' + escapeHtml(step.title || step.key || '收口步骤') + '</strong>' +
     '<small>' + escapeHtml(step.summary || '') + '</small>' +
     (evidenceText ? '<small>' + escapeHtml(evidenceText) + '</small>' : '') +
-    (step.nextAction ? '<small>' + escapeHtml('next=' + step.nextAction) + '</small>' : '') +
+    (step.nextAction ? '<small>' + escapeHtml('下一步 ' + step.nextAction) + '</small>' : '') +
     '</span>' +
     statusBadge(step.status || 'unknown', statusVariant(step.status)) +
     '</div>';
@@ -5255,14 +5255,14 @@ function renderDemoCycleAcknowledgement(result) {
     summaryTile('跳过', result.skippedCount || 0, result.skippedCount > 0 ? 'warn' : 'muted'),
     '</div>',
     evidenceList((result.results || []).map(function (item) {
-      return (item.status || 'unknown') + ' | ' + (item.eventId || '') + (item.reason ? ' | ' + item.reason : '');
+      return (item.status || 'unknown') + ' · ' + (item.eventId || '') + (item.reason ? ' · 原因 ' + item.reason : '');
     }))
   ].join('');
 }
 
 function formatSourceScope(scope) {
   const safeScope = scope || {};
-  return [safeScope.sourceId, safeScope.sourceKey].filter(Boolean).join(' / ') || 'all sources';
+  return [safeScope.sourceId, safeScope.sourceKey].filter(Boolean).join(' · ') || '全部来源';
 }
 
 function formatLlmUsage(usage) {
@@ -5284,7 +5284,7 @@ function renderBatchTaskControls(task) {
 }
 
 function renderSourceOperationResultRows(results) {
-  if (!results || results.length === 0) return '<div class="muted">No source operation results.</div>';
+  if (!results || results.length === 0) return '<div class="muted">暂无来源运行结果。</div>';
   return '<div class="source-operation-result-list">' + results.map(function (item) {
     const source = item.source || {};
     const task = item.task || {};
@@ -5293,17 +5293,17 @@ function renderSourceOperationResultRows(results) {
     const cursorDiff = item.cursorDiff || {};
     const semantic = item.semantic || {};
     const details = [
-      source.id || source.sourceKey || 'unknown-source',
-      item.scheduleReason ? 'reason=' + item.scheduleReason : undefined,
-      task.id ? 'task=' + task.id : undefined,
-      ingestTask.id ? 'ingestTask=' + ingestTask.id : undefined,
-      cursorDiff.changed === undefined ? undefined : 'changed=' + cursorDiff.changed,
-      cursorDiff.newPostCount === undefined ? undefined : 'newPosts=' + cursorDiff.newPostCount,
-      semantic.status ? 'semantic=' + semantic.status + (semantic.reason ? '/' + semantic.reason : '') : undefined,
-      error.message ? 'error=' + error.message : undefined
-    ].filter(Boolean).join(' | ');
+      source.id || source.sourceKey || '未知来源',
+      item.scheduleReason ? '原因 ' + item.scheduleReason : undefined,
+      task.id ? '任务 ' + task.id : undefined,
+      ingestTask.id ? '导入任务 ' + ingestTask.id : undefined,
+      cursorDiff.changed === undefined ? undefined : '变化 ' + (cursorDiff.changed ? '有' : '无'),
+      cursorDiff.newPostCount === undefined ? undefined : '新增原始页 ' + cursorDiff.newPostCount,
+      semantic.status ? '语义 ' + semantic.status + (semantic.reason ? ' · 原因 ' + semantic.reason : '') : undefined,
+      error.message ? '错误 ' + error.message : undefined
+    ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row source-operation-result-row"><span>' +
-      '<strong>' + escapeHtml(source.displayName || source.id || 'Unknown source') + '</strong>' +
+      '<strong>' + escapeHtml(source.displayName || source.id || '未知来源') + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
       '</span><span class="button-group source-op-buttons">' +
       renderSourceDrilldownButton(source) +
@@ -5330,14 +5330,14 @@ function renderSourceOperationSkippedRows(skipped) {
   return '<div class="source-operation-result-list skipped-source-list">' + skipped.slice(0, 12).map(function (item) {
     const source = item.source || {};
     const details = [
-      source.id || source.sourceKey || 'unknown-source',
-      'reason=' + (item.reason || 'unknown'),
-      item.nextRunAt ? 'next=' + item.nextRunAt : undefined,
-      item.retryAt ? 'retry=' + item.retryAt : undefined,
-      item.backoffMs ? 'backoff=' + formatDurationMs(item.backoffMs) : undefined
-    ].filter(Boolean).join(' | ');
+      source.id || source.sourceKey || '未知来源',
+      '原因 ' + (item.reason || '未知'),
+      item.nextRunAt ? '下次 ' + item.nextRunAt : undefined,
+      item.retryAt ? '重试 ' + item.retryAt : undefined,
+      item.backoffMs ? '等待 ' + formatDurationMs(item.backoffMs) : undefined
+    ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row source-operation-result-row"><span>' +
-      '<strong>' + escapeHtml(source.displayName || source.id || 'Skipped source') + '</strong>' +
+      '<strong>' + escapeHtml(source.displayName || source.id || '已跳过来源') + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
       '</span><span class="button-group source-op-buttons">' +
       renderSourceDrilldownButton(source) +
@@ -6893,12 +6893,12 @@ function renderSourceTypeReadiness(report) {
   const summary = report.summary || {};
   const panels = [
     '<div class="summary-strip">',
-    summaryTile('Types', String(summary.sourceTypeCount || 0), (summary.failSourceTypeCount || 0) > 0 ? 'fail' : 'ok'),
-    summaryTile('Ready', String(summary.readySourceTypeCount || 0), (summary.readySourceTypeCount || 0) > 0 ? 'ok' : 'muted'),
-    summaryTile('Warn', String(summary.warnSourceTypeCount || 0), (summary.warnSourceTypeCount || 0) > 0 ? 'warn' : 'ok'),
-    summaryTile('Fail', String(summary.failSourceTypeCount || 0), (summary.failSourceTypeCount || 0) > 0 ? 'fail' : 'ok'),
-    summaryTile('Unknown', String(summary.unknownSourceTypeCount || 0), (summary.unknownSourceTypeCount || 0) > 0 ? 'warn' : 'ok'),
-    summaryTile('Sources', String(summary.sourceCount || 0), (summary.sourceCount || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('类型', String(summary.sourceTypeCount || 0), (summary.failSourceTypeCount || 0) > 0 ? 'fail' : 'ok'),
+    summaryTile('就绪', String(summary.readySourceTypeCount || 0), (summary.readySourceTypeCount || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('提醒', String(summary.warnSourceTypeCount || 0), (summary.warnSourceTypeCount || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('失败', String(summary.failSourceTypeCount || 0), (summary.failSourceTypeCount || 0) > 0 ? 'fail' : 'ok'),
+    summaryTile('未知', String(summary.unknownSourceTypeCount || 0), (summary.unknownSourceTypeCount || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('来源', String(summary.sourceCount || 0), (summary.sourceCount || 0) > 0 ? 'ok' : 'muted'),
     summaryTile('Enabled', String(summary.enabledSourceCount || 0), (summary.enabledSourceCount || 0) > 0 ? 'ok' : 'muted'),
     '</div>',
     renderSourceTypeReadinessRows(report.sourceTypes || []),
@@ -7131,7 +7131,7 @@ function compareSourceAttention(left, right) {
 }
 
 function renderSourceAttentionRows(items) {
-  if (!items || items.length === 0) return '<div class="muted">No source attention needed.</div>';
+  if (!items || items.length === 0) return '<div class="muted">暂无需要关注的来源。</div>';
   return '<div class="source-work-list">' + items.map(function (item) {
     const source = item.source || {};
     const runState = source.runState || {};
@@ -7151,16 +7151,16 @@ function renderSourceAttentionRows(items) {
     return '<div class="source-work-row source-attention-work-row ' + statusClassName(attentionStatusVariant(item.severity)) + '">' +
       '<section class="source-work-anchor">' +
         '<span class="source-work-scope">' + escapeHtml(source.sourceType || source.sourceKey || 'source') + '</span>' +
-        '<strong>' + escapeHtml(source.displayName || source.id || source.sourceKey || 'Unknown source') + '</strong>' +
-        '<small>' + escapeHtml(source.id || source.sourceKey || item.key || 'unknown scope') + '</small>' +
+        '<strong>' + escapeHtml(source.displayName || source.id || source.sourceKey || '未知来源') + '</strong>' +
+        '<small>' + escapeHtml(source.id || source.sourceKey || item.key || '未知范围') + '</small>' +
       '</section>' +
       '<section class="source-work-brief">' +
-        '<p>' + escapeHtml(item.recommendedNextAction || item.nextAction || 'Review source attention before automation.') + '</p>' +
+        '<p>' + escapeHtml(item.recommendedNextAction || item.nextAction || '先检查来源关注项，再自动运行。') + '</p>' +
         '<div class="source-work-chips">' +
-          authorMetaChip('priority', priorityScore, priorityScore >= 100 ? 'warn' : 'info') +
-          authorMetaChip('run', runState.status || 'unknown', statusVariant(runState.status)) +
-          authorMetaChip('signals', (item.signals || []).length, (item.signals || []).length > 0 ? 'warn' : 'muted') +
-          authorMetaChip('commands', item.commands && item.commands.length || 0, item.commands && item.commands.length ? 'info' : 'muted') +
+          authorMetaChip('优先级', priorityScore, priorityScore >= 100 ? 'warn' : 'info') +
+          authorMetaChip('运行', runState.status || '未知', statusVariant(runState.status)) +
+          authorMetaChip('信号', (item.signals || []).length, (item.signals || []).length > 0 ? 'warn' : 'muted') +
+          authorMetaChip('命令', item.commands && item.commands.length || 0, item.commands && item.commands.length ? 'info' : 'muted') +
         '</div>' +
         renderSourceAttentionSignalRows(item.signals || []) +
         renderSourceCommandChips(item.commands || []) +
@@ -7207,12 +7207,12 @@ function scoreWebSourceAttention(item, commands, recommendedCommand, recommended
 function attentionSignalDetail(signals) {
   const details = [];
   (signals || []).forEach(function (signal) {
-    if (signal.reason) details.push('reason=' + signal.reason);
-    if (signal.action) details.push('action=' + signal.action);
-    if (signal.retryAt) details.push('retry=' + signal.retryAt);
-    if (signal.backoffMs) details.push('backoff=' + formatDurationMs(signal.backoffMs));
+    if (signal.reason) details.push('原因 ' + signal.reason);
+    if (signal.action) details.push('动作 ' + signal.action);
+    if (signal.retryAt) details.push('重试 ' + signal.retryAt);
+    if (signal.backoffMs) details.push('等待 ' + formatDurationMs(signal.backoffMs));
   });
-  return uniqueText(details).slice(0, 4).join(' | ');
+  return uniqueText(details).slice(0, 4).join(' · ');
 }
 
 function renderSourceAttentionSignalRows(signals) {
@@ -7255,26 +7255,26 @@ function renderSourceCollectionHealthProfile(profile) {
   const operations = profile.operations || {};
   const workers = operations.workers || { runs: {}, leases: {} };
   return [
-    panel('Source collection health', [
+    panel('来源采集健康', [
       '<div class="summary-strip">',
-      summaryTile('Status', profile.status || 'unknown', statusVariant(profile.status)),
-      summaryTile('Automation', automation.status || 'unknown', collectionStatusVariant(automation.status)),
-      summaryTile('Due', schedule.due ? 'yes' : 'no', schedule.due ? 'warn' : 'ok'),
-      summaryTile('Cursor', cursor.present ? 'yes' : 'no', cursor.present ? 'ok' : 'warn'),
-      summaryTile('Replay', replay.available ? 'yes' : 'no', replay.available ? 'ok' : 'warn'),
-      summaryTile('Stale runs', String(workers.runs && workers.runs.stale || 0), workers.runs && workers.runs.stale > 0 ? 'fail' : 'ok'),
+      summaryTile('状态', profile.status || '未知', statusVariant(profile.status)),
+      summaryTile('自动运行', automation.status || '未知', collectionStatusVariant(automation.status)),
+      summaryTile('到期', schedule.due ? '是' : '否', schedule.due ? 'warn' : 'ok'),
+      summaryTile('游标', cursor.present ? '有' : '无', cursor.present ? 'ok' : 'warn'),
+      summaryTile('回放', replay.available ? '可用' : '不可用', replay.available ? 'ok' : 'warn'),
+      summaryTile('停滞运行', String(workers.runs && workers.runs.stale || 0), workers.runs && workers.runs.stale > 0 ? 'fail' : 'ok'),
       '</div>',
-      metric('Source', [profile.source && profile.source.displayName, profile.source && profile.source.id, profile.source && profile.source.sourceKey, profile.source && profile.source.sourceType].filter(Boolean).join(' | ') || 'unknown'),
-      metric('Schedule', ['reason=' + (schedule.reason || 'unknown'), schedule.nextRunAt ? 'next=' + schedule.nextRunAt : undefined, schedule.retryAt ? 'retry=' + schedule.retryAt : undefined].filter(Boolean).join(' | ')),
-      metric('Incremental', ['changed=' + String(diff.lastChanged), 'newPosts=' + (diff.newPostCount || 0), 'nextPosts=' + (diff.nextPostCount || 0)].join(' | ')),
-      metric('Replay evidence', [(replay.evidenceKinds || []).join(',') || 'none', 'rawPages=' + (replay.rawPageHashCount || 0), replay.taskId ? 'task=' + replay.taskId : undefined].filter(Boolean).join(' | ')),
-      metric('Operations', ['tasksFailed=' + (operations.tasks && operations.tasks.failed || 0), 'eventsOpen=' + (operations.events && operations.events.unacknowledged || 0), 'eventsFailed=' + (operations.events && operations.events.failed || 0), 'timeline=' + (operations.timelineCount || 0)].join(' | '))
+      metric('来源', [profile.source && profile.source.displayName, profile.source && profile.source.id, profile.source && profile.source.sourceKey, profile.source && profile.source.sourceType].filter(Boolean).join(' · ') || '未知'),
+      metric('排期', ['原因 ' + (schedule.reason || '未知'), schedule.nextRunAt ? '下次 ' + schedule.nextRunAt : undefined, schedule.retryAt ? '重试 ' + schedule.retryAt : undefined].filter(Boolean).join(' · ')),
+      metric('增量', ['变化 ' + (diff.lastChanged ? '有' : '无'), '新增发言 ' + (diff.newPostCount || 0), '后续发言 ' + (diff.nextPostCount || 0)].join(' · ')),
+      metric('回放证据', [(replay.evidenceKinds || []).join(',') || '暂无', '原始页 ' + (replay.rawPageHashCount || 0), replay.taskId ? '任务 ' + replay.taskId : undefined].filter(Boolean).join(' · ')),
+      metric('运行记录', ['任务失败 ' + (operations.tasks && operations.tasks.failed || 0), '未确认提醒 ' + (operations.events && operations.events.unacknowledged || 0), '提醒失败 ' + (operations.events && operations.events.failed || 0), '时间线 ' + (operations.timelineCount || 0)].join(' · '))
     ].join(''), 'wide'),
-    panel('Collection health checks', evidenceList((profile.checks || []).map(function (check) {
-      return check.status + ' | ' + check.area + ' | ' + check.key + ' | ' + check.summary + ' | ' + check.value;
+    panel('采集健康检查', evidenceList((profile.checks || []).map(function (check) {
+      return check.status + ' · ' + check.area + ' · ' + check.key + ' · ' + check.summary + ' · ' + check.value;
     })), 'wide'),
-    panel('Collection health actions', evidenceList((profile.nextActions || []).map(function (action) {
-      return (action.severity || 'info') + ' | ' + (action.key || 'action') + ' | ' + (action.summary || '') + ' | ' + (action.recommendedCommand || (action.commands || []).join(' | '));
+    panel('采集健康建议', evidenceList((profile.nextActions || []).map(function (action) {
+      return (action.severity || 'info') + ' · ' + (action.key || 'action') + ' · ' + (action.summary || '') + ' · ' + (action.recommendedCommand || (action.commands || []).join(' · '));
     })), 'wide')
   ].join('');
 }
@@ -7401,12 +7401,12 @@ function renderSourceHealthBrief(report) {
   const latestLease = firstValue(workerLeases.latest, (recent.workerLeases || [])[0]);
   const schedule = sourceHealth.schedule || collectionPlan.schedule && collectionPlan.schedule.decision || {};
   const briefRows = [
-    renderSourceBriefRow('Why', sourceProblemSummary(report), report.status),
-    renderSourceBriefRow('Next action', topAction ? ((topAction.summary || topAction.key || 'Review source') + (topAction.recommendedCommand ? ' | ' + topAction.recommendedCommand : '')) : 'No source-specific action.', topAction && topAction.severity || 'ok'),
-    renderSourceBriefRow('Schedule', formatSourceScheduleBrief(schedule), schedule.due ? 'ok' : 'muted'),
-    renderSourceBriefRow('Latest task', formatLatestTaskBrief(latestTask), latestTask && latestTask.status),
-    renderSourceBriefRow('Latest event', formatLatestEventBrief(latestEvent), latestEvent && (latestEvent.deliveryStatus || latestEvent.severity)),
-    renderSourceBriefRow('Latest worker', formatLatestWorkerBrief(latestWorkerRun, latestLease), latestWorkerRun && latestWorkerRun.status || latestLease && (latestLease.expired ? 'warning' : 'ok'))
+    renderSourceBriefRow('原因', sourceProblemSummary(report), report.status),
+    renderSourceBriefRow('下一步', topAction ? ((topAction.summary || topAction.key || '检查来源') + (topAction.recommendedCommand ? ' · ' + topAction.recommendedCommand : '')) : '暂无来源专属动作。', topAction && topAction.severity || 'ok'),
+    renderSourceBriefRow('排期', formatSourceScheduleBrief(schedule), schedule.due ? 'ok' : 'muted'),
+    renderSourceBriefRow('最新任务', formatLatestTaskBrief(latestTask), latestTask && latestTask.status),
+    renderSourceBriefRow('最新提醒', formatLatestEventBrief(latestEvent), latestEvent && (latestEvent.deliveryStatus || latestEvent.severity)),
+    renderSourceBriefRow('最新执行', formatLatestWorkerBrief(latestWorkerRun, latestLease), latestWorkerRun && latestWorkerRun.status || latestLease && (latestLease.expired ? 'warning' : 'ok'))
   ];
   return briefRows.join('');
 }
@@ -7415,7 +7415,7 @@ function renderSourceBriefRow(label, value, status) {
   return '<div class="source-brief-row ' + statusClassName(sourceBriefStatusVariant(status)) + '">' +
     '<section>' +
       '<span>' + escapeHtml(label) + '</span>' +
-      '<strong>' + escapeHtml(value || 'none') + '</strong>' +
+      '<strong>' + escapeHtml(value || '暂无') + '</strong>' +
     '</section>' +
     statusBadge(status || 'info', sourceBriefStatusVariant(status)) +
     '</div>';
@@ -7431,63 +7431,63 @@ function sourceProblemSummary(report) {
   const authorQueue = health.authorReviewQueue || {};
   const eventActions = health.notificationEventActions || {};
   const action = (report.nextActions || [])[0];
-  if (!report.sourceFound) return 'Source registration is missing or ambiguous.';
+  if (!report.sourceFound) return '来源注册缺失或范围不明确。';
   if (action && action.summary) return action.summary;
-  if ((workerRuns.stale || 0) > 0) return 'Source-scoped worker runs are stale.';
-  if ((workerLeases.expired || 0) > 0) return 'Source-scoped worker leases are expired.';
-  if ((tasks.failed || 0) > 0) return 'Recent source tasks failed.';
-  if ((events.failed || 0) > 0) return 'Recent notification events failed.';
-  if ((eventActions.failed || 0) > 0 || (eventActions.staleRunning || 0) > 0) return 'Notification event actions need attention.';
-  if ((authorQueue.highPriorityOpenCount || 0) > 0) return 'High-priority author review items are open.';
-  if (report.status === 'ok') return 'Source is healthy in the current window.';
-  return 'Review source health details.';
+  if ((workerRuns.stale || 0) > 0) return '来源执行有停滞记录。';
+  if ((workerLeases.expired || 0) > 0) return '来源执行占用已过期。';
+  if ((tasks.failed || 0) > 0) return '最近的来源任务失败。';
+  if ((events.failed || 0) > 0) return '最近的提醒投递失败。';
+  if ((eventActions.failed || 0) > 0 || (eventActions.staleRunning || 0) > 0) return '提醒动作需要关注。';
+  if ((authorQueue.highPriorityOpenCount || 0) > 0) return '高优先级作者复核仍在等待。';
+  if (report.status === 'ok') return '当前窗口内来源健康。';
+  return '查看来源健康明细。';
 }
 
 function formatSourceScheduleBrief(schedule) {
   const safeSchedule = schedule || {};
   const parts = [
-    safeSchedule.due ? 'due now' : 'not due',
+    safeSchedule.due ? '当前到期' : '未到期',
     safeSchedule.reason || safeSchedule.baseReason,
-    safeSchedule.nextRunAt ? 'next=' + safeSchedule.nextRunAt : undefined,
-    safeSchedule.retryAt ? 'retry=' + safeSchedule.retryAt : undefined,
-    safeSchedule.failureCount ? 'failures=' + safeSchedule.failureCount : undefined,
-    safeSchedule.backoffMs ? 'backoff=' + formatDurationMs(safeSchedule.backoffMs) : undefined
+    safeSchedule.nextRunAt ? '下次 ' + safeSchedule.nextRunAt : undefined,
+    safeSchedule.retryAt ? '重试 ' + safeSchedule.retryAt : undefined,
+    safeSchedule.failureCount ? '失败 ' + safeSchedule.failureCount : undefined,
+    safeSchedule.backoffMs ? '等待 ' + formatDurationMs(safeSchedule.backoffMs) : undefined
   ];
-  return parts.filter(Boolean).join(' | ') || 'unknown schedule';
+  return parts.filter(Boolean).join(' · ') || '未知排期';
 }
 
 function formatLatestTaskBrief(task) {
-  if (!task) return 'No recent source task.';
+  if (!task) return '暂无最近来源任务。';
   return [
-    task.status || 'unknown',
+    task.status || '未知',
     task.type || 'task',
-    task.finishedAt || task.updatedAt || task.createdAt || 'unknown-time',
+    task.finishedAt || task.updatedAt || task.createdAt || '未知时间',
     task.error && task.error.message || task.id
-  ].filter(Boolean).join(' | ');
+  ].filter(Boolean).join(' · ');
 }
 
 function formatLatestEventBrief(event) {
-  if (!event) return 'No recent source event.';
+  if (!event) return '暂无最近来源提醒。';
   return [
-    event.deliveryStatus || event.severity || 'unknown',
+    event.deliveryStatus || event.severity || '未知',
     event.type || 'event',
-    event.nextDeliveryAt || event.createdAt || 'unknown-time',
+    event.nextDeliveryAt || event.createdAt || '未知时间',
     event.title || event.summary || event.id
-  ].filter(Boolean).join(' | ');
+  ].filter(Boolean).join(' · ');
 }
 
 function formatLatestWorkerBrief(run, lease) {
   const runPart = run ? [
-    'run=' + (run.status || 'unknown'),
+    '运行 ' + (run.status || '未知'),
     run.workerType || 'worker',
     run.heartbeatAt || run.finishedAt || run.updatedAt || run.startedAt
-  ].filter(Boolean).join('/') : 'run=none';
+  ].filter(Boolean).join(' / ') : '暂无运行';
   const leasePart = lease ? [
-    'lease=' + (lease.expired ? 'expired' : 'active'),
+    '占用 ' + (lease.expired ? '已过期' : '生效中'),
     lease.workerType || 'worker',
     lease.expiresAt || lease.updatedAt || lease.acquiredAt
-  ].filter(Boolean).join('/') : 'lease=none';
-  return runPart + ' | ' + leasePart;
+  ].filter(Boolean).join(' / ') : '暂无占用';
+  return runPart + ' · ' + leasePart;
 }
 
 function sourceBriefStatusVariant(status) {
@@ -7509,33 +7509,33 @@ function formatSourceTypeDrilldownSourceRow(source) {
   const schedule = source.schedule || {};
   const runState = source.runState || {};
   return [
-    source.id || 'unknown-source',
-    source.sourceKey || 'unknown-key',
-    source.enabled === false ? 'disabled' : 'enabled',
-    'run=' + (runState.status || 'unknown'),
-    'due=' + Boolean(schedule.due),
-    'reason=' + (schedule.reason || 'unknown')
-  ].join(' | ');
+    source.id || '未知来源',
+    source.sourceKey || '未知论坛',
+    source.enabled === false ? '已停用' : '已启用',
+    '运行 ' + (runState.status || '未知'),
+    '到期 ' + (schedule.due ? '是' : '否'),
+    '原因 ' + (schedule.reason || '未知')
+  ].join(' · ');
 }
 
 function renderSourceDrilldownAttention(attention) {
-  if (!attention || !attention.found) return '<div class="muted">No source attention item for this scope.</div>';
+  if (!attention || !attention.found) return '<div class="muted">当前范围暂无来源关注项。</div>';
   const lines = [
-    'rank #' + (attention.attentionRank || '?') + ' | priority=' + (attention.priorityScore || 0) + ' | severity=' + (attention.severity || 'info'),
-    attention.recommendedNextAction ? 'next=' + attention.recommendedNextAction : undefined,
-    attention.recommendedCommand ? 'command=' + attention.recommendedCommand : undefined
+    '排名 #' + (attention.attentionRank || '?') + ' · 优先级 ' + (attention.priorityScore || 0) + ' · 级别 ' + (attention.severity || 'info'),
+    attention.recommendedNextAction ? '下一步 ' + attention.recommendedNextAction : undefined,
+    attention.recommendedCommand ? '命令 ' + attention.recommendedCommand : undefined
   ].filter(Boolean);
   return '<div class="source-work-row source-attention-work-row ' + statusClassName(attentionStatusVariant(attention.severity)) + '">' +
     '<section class="source-work-anchor">' +
       '<span class="source-work-scope">attention</span>' +
-      '<strong>' + escapeHtml((attention.severity || 'info') + ' | source attention') + '</strong>' +
-      '<small>' + escapeHtml('rank #' + (attention.attentionRank || '?')) + '</small>' +
+      '<strong>' + escapeHtml((attention.severity || 'info') + ' · 来源关注') + '</strong>' +
+      '<small>' + escapeHtml('排名 #' + (attention.attentionRank || '?')) + '</small>' +
     '</section>' +
     '<section class="source-work-brief">' +
       '<p>' + escapeHtml(attention.recommendedNextAction || 'Review this source attention item.') + '</p>' +
       '<div class="source-work-chips">' +
-        authorMetaChip('priority', attention.priorityScore || 0, (attention.priorityScore || 0) >= 100 ? 'warn' : 'info') +
-        authorMetaChip('signals', attention.signalCount || (attention.signals || []).length || 0, 'warn') +
+        authorMetaChip('优先级', attention.priorityScore || 0, (attention.priorityScore || 0) >= 100 ? 'warn' : 'info') +
+        authorMetaChip('信号', attention.signalCount || (attention.signals || []).length || 0, 'warn') +
       '</div>' +
       lines.map(function (line) { return '<small class="source-attention-signal">' + escapeHtml(line) + '</small>'; }).join('') +
       renderSourceAttentionSignalRows(attention.signals || []) +
@@ -7547,16 +7547,16 @@ function renderSourceDrilldownAttention(attention) {
 }
 
 function renderSourceDrilldownActions(actions) {
-  if (!actions.length) return '<div class="muted">No source-specific actions.</div>';
+  if (!actions.length) return '<div class="muted">暂无来源专属动作。</div>';
   return '<div class="source-work-list">' + actions.map(function (action) {
     return '<div class="source-work-row source-action-row ' + statusClassName(action.severity === 'critical' ? 'warn' : statusVariant(action.severity)) + '">' +
       '<section class="source-work-anchor">' +
         '<span class="source-work-scope">' + escapeHtml(action.severity || 'info') + '</span>' +
         '<strong>' + escapeHtml(action.key || 'action') + '</strong>' +
-        '<small>' + escapeHtml(action.mode || 'recommended') + '</small>' +
+        '<small>' + escapeHtml(action.mode || '建议') + '</small>' +
       '</section>' +
       '<section class="source-work-brief">' +
-        '<p>' + escapeHtml(action.summary || 'Review source action.') + '</p>' +
+        '<p>' + escapeHtml(action.summary || '检查来源动作。') + '</p>' +
         renderSourceCommandChips([action.recommendedCommand].filter(Boolean).concat(action.commands || [])) +
       '</section>' +
       '<section class="source-work-actions button-group source-op-buttons">' +
@@ -7576,34 +7576,34 @@ function renderSourceCommandChips(commands) {
 
 function formatSourceDrilldownTaskRow(task) {
   return [
-    task.status || 'unknown-status',
+    task.status || '未知状态',
     task.type || 'unknown-task',
-    task.sourceId || task.sourceKey || 'unknown-source',
-    task.updatedAt || task.createdAt || 'unknown-time',
-    task.error && task.error.message ? task.error.message : task.id || 'unknown-task-id'
-  ].join(' | ');
+    task.sourceId || task.sourceKey || '未知来源',
+    task.updatedAt || task.createdAt || '未知时间',
+    task.error && task.error.message ? task.error.message : task.id || '未知任务'
+  ].join(' · ');
 }
 
 function formatSourceDrilldownEventRow(event) {
   return [
-    event.deliveryStatus || 'unknown-delivery',
+    event.deliveryStatus || '未知投递',
     event.type || 'event',
-    event.sourceId || event.sourceKey || 'unknown-source',
-    event.nextDeliveryAt || event.createdAt || 'unknown-time',
-    event.title || event.summary || event.id || 'unknown-event'
-  ].join(' | ');
+    event.sourceId || event.sourceKey || '未知来源',
+    event.nextDeliveryAt || event.createdAt || '未知时间',
+    event.title || event.summary || event.id || '未知提醒'
+  ].join(' · ');
 }
 
 function formatSourceTimelineRow(item) {
   return [
-    item.timestamp || 'unknown-time',
+    item.timestamp || '未知时间',
     item.severity || 'info',
     item.kind || 'item',
-    item.status || 'unknown-status',
-    item.title || item.reference || item.id || 'unknown',
-    item.sourceId || item.sourceKey || 'unknown-source',
+    item.status || '未知状态',
+    item.title || item.reference || item.id || '未知事项',
+    item.sourceId || item.sourceKey || '未知来源',
     item.summary || item.reference || item.id || ''
-  ].filter(Boolean).join(' | ');
+  ].filter(Boolean).join(' · ');
 }
 
 function renderRunbookEventControls(alertableCount) {
@@ -7670,7 +7670,7 @@ function countAlertableSourceTypeOperations(sourceTypes) {
 
 function renderReasonTags(byReason) {
   const reasons = Object.keys(byReason || {}).sort();
-  if (reasons.length === 0) return '<span class="muted">No schedule reasons yet.</span>';
+  if (reasons.length === 0) return '<span class="muted">暂无排期原因。</span>';
   return reasons.map(function (reason) {
     return '<span class="tag">' + escapeHtml(reason + ': ' + byReason[reason]) + '</span>';
   }).join('');
@@ -7686,9 +7686,9 @@ function renderCollectionStatusOverview(schedule) {
     return '<span class="tag">' + escapeHtml(status + ': ' + byStatus[status]) + '</span>';
   }).join('');
   const filtered = schedule && schedule.collectionStatus && schedule.collectionStatus.length
-    ? '<small>' + escapeHtml('filter=' + schedule.collectionStatus.join(',')) + '</small>'
+    ? '<small>' + escapeHtml('筛选 ' + schedule.collectionStatus.join(',')) + '</small>'
     : '';
-  return '<div class="tag-list reason-tags">' + (statusTags || '<span class="tag">no collection statuses</span>') + '</div>' + filtered;
+  return '<div class="tag-list reason-tags">' + (statusTags || '<span class="tag">暂无采集状态</span>') + '</div>' + filtered;
 }
 
 function renderCollectionActionControls(schedule) {
@@ -7739,18 +7739,18 @@ function renderScheduleDecisionRows(sources, emptyText, runnable) {
     const collectionPlan = source.collectionPlan || {};
     return '<div class="source-work-row source-schedule-row ' + statusClassName(runnable ? 'ok' : 'muted') + '">' +
       '<section class="source-work-anchor">' +
-        '<span class="source-work-scope">' + escapeHtml(source.sourceType || source.sourceKey || 'source') + '</span>' +
+        '<span class="source-work-scope">' + escapeHtml(source.sourceType || source.sourceKey || '来源') + '</span>' +
         '<strong>' + escapeHtml(source.displayName || source.id) + '</strong>' +
-        '<small>' + escapeHtml(source.id || source.sourceKey || 'unknown source') + '</small>' +
+        '<small>' + escapeHtml(source.id || source.sourceKey || '未知来源') + '</small>' +
       '</section>' +
       '<section class="source-work-brief">' +
-        '<p>' + escapeHtml('reason=' + (decision.reason || 'unknown')) + '</p>' +
+        '<p>' + escapeHtml('原因 ' + (decision.reason || '未知')) + '</p>' +
         '<div class="source-work-chips">' +
-          authorMetaChip('plan', collectionPlan.status || 'unknown', collectionStatusVariant(collectionPlan.status)) +
-          authorMetaChip('run', runState.status || 'unknown', statusVariant(runState.status)) +
-          authorMetaChip('every', schedule.intervalMinutes ? schedule.intervalMinutes + 'm' : 'none', schedule.intervalMinutes ? 'info' : 'muted') +
-          authorMetaChip('next', decision.nextRunAt || 'none', decision.nextRunAt ? 'info' : 'muted') +
-          authorMetaChip('retry', decision.retryAt || 'none', decision.retryAt ? 'warn' : 'muted') +
+          authorMetaChip('计划', collectionPlan.status || '未知', collectionStatusVariant(collectionPlan.status)) +
+          authorMetaChip('运行', runState.status || '未知', statusVariant(runState.status)) +
+          authorMetaChip('间隔', schedule.intervalMinutes ? schedule.intervalMinutes + 'm' : '暂无', schedule.intervalMinutes ? 'info' : 'muted') +
+          authorMetaChip('下次', decision.nextRunAt || '暂无', decision.nextRunAt ? 'info' : 'muted') +
+          authorMetaChip('重试', decision.retryAt || '暂无', decision.retryAt ? 'warn' : 'muted') +
         '</div>' +
         renderSourceCommandChips(source.recommendedCommands || collectionPlan.recommendedCommands || []) +
       '</section>' +
@@ -7769,25 +7769,25 @@ function renderScheduleSourceControls(source, runnable) {
 }
 
 function renderCollectionPlanDetails(plan) {
-  if (!plan || !plan.status) return '<div class="muted">No collection plan for this source.</div>';
+  if (!plan || !plan.status) return '<div class="muted">暂无采集计划。</div>';
   const schedule = plan.schedule || {};
   const decision = schedule.decision || {};
   const incremental = plan.incremental || {};
   return '<div class="source-work-row source-action-row ' + statusClassName(collectionStatusVariant(plan.status)) + '">' +
     '<section class="source-work-anchor">' +
-      '<span class="source-work-scope">plan</span>' +
-      '<strong>' + escapeHtml(plan.status || 'unknown') + '</strong>' +
-      '<small>' + escapeHtml(plan.strategy && plan.strategy.mode || 'collection') + '</small>' +
+      '<span class="source-work-scope">计划</span>' +
+      '<strong>' + escapeHtml(plan.status || '未知') + '</strong>' +
+      '<small>' + escapeHtml(plan.strategy && plan.strategy.mode || '采集') + '</small>' +
     '</section>' +
     '<section class="source-work-brief">' +
-      '<p>' + escapeHtml('reason=' + (decision.reason || 'unknown')) + '</p>' +
+      '<p>' + escapeHtml('原因 ' + (decision.reason || '未知')) + '</p>' +
       '<div class="source-work-chips">' +
-        authorMetaChip('next', decision.nextRunAt || 'none', decision.nextRunAt ? 'info' : 'muted') +
-        authorMetaChip('retry', decision.retryAt || 'none', decision.retryAt ? 'warn' : 'muted') +
-        authorMetaChip('cursor', formatCollectionCursorSummary(plan.cursor), plan.cursor && plan.cursor.present ? 'ok' : 'warn') +
-        authorMetaChip('changed', String(incremental.lastChanged), incremental.lastChanged ? 'ok' : 'muted') +
-        authorMetaChip('new', incremental.newPostCount || 0, (incremental.newPostCount || 0) > 0 ? 'ok' : 'muted') +
-        authorMetaChip('replay', formatCollectionReplaySummary(plan.replay), plan.replay && plan.replay.available ? 'ok' : 'muted') +
+        authorMetaChip('下次', decision.nextRunAt || '暂无', decision.nextRunAt ? 'info' : 'muted') +
+        authorMetaChip('重试', decision.retryAt || '暂无', decision.retryAt ? 'warn' : 'muted') +
+        authorMetaChip('游标', formatCollectionCursorSummary(plan.cursor), plan.cursor && plan.cursor.present ? 'ok' : 'warn') +
+        authorMetaChip('变化', incremental.lastChanged ? '有' : '无', incremental.lastChanged ? 'ok' : 'muted') +
+        authorMetaChip('新增', incremental.newPostCount || 0, (incremental.newPostCount || 0) > 0 ? 'ok' : 'muted') +
+        authorMetaChip('回放', formatCollectionReplaySummary(plan.replay), plan.replay && plan.replay.available ? 'ok' : 'muted') +
       '</div>' +
       renderSourceCommandChips(plan.recommendedCommands || []) +
     '</section>' +
@@ -7798,38 +7798,38 @@ function renderCollectionPlanDetails(plan) {
 }
 
 function formatCollectionPlanSummary(plan) {
-  if (!plan || !plan.status) return 'unknown';
+  if (!plan || !plan.status) return '未知';
   const schedule = plan.schedule || {};
   const decision = schedule.decision || {};
   return [
     plan.status,
     plan.strategy && plan.strategy.mode,
-    'reason=' + (decision.reason || 'unknown'),
-    decision.nextRunAt ? 'next=' + decision.nextRunAt : undefined,
-    decision.retryAt ? 'retry=' + decision.retryAt : undefined
-  ].filter(Boolean).join(' | ');
+    '原因 ' + (decision.reason || '未知'),
+    decision.nextRunAt ? '下次 ' + decision.nextRunAt : undefined,
+    decision.retryAt ? '重试 ' + decision.retryAt : undefined
+  ].filter(Boolean).join(' · ');
 }
 
 function formatCollectionCursorSummary(cursor) {
   const safeCursor = cursor || {};
-  if (!safeCursor.present) return 'none';
+  if (!safeCursor.present) return '暂无';
   return [
-    'posts=' + (safeCursor.postCount || 0),
-    safeCursor.lastFloor !== undefined ? 'floor=' + safeCursor.lastFloor : undefined,
-    safeCursor.lastPostId ? 'post=' + safeCursor.lastPostId : undefined,
-    safeCursor.capturedAt ? 'captured=' + safeCursor.capturedAt : undefined
-  ].filter(Boolean).join(' | ');
+    '发言 ' + (safeCursor.postCount || 0),
+    safeCursor.lastFloor !== undefined ? '楼层 ' + safeCursor.lastFloor : undefined,
+    safeCursor.lastPostId ? '发言ID ' + safeCursor.lastPostId : undefined,
+    safeCursor.capturedAt ? '采集 ' + safeCursor.capturedAt : undefined
+  ].filter(Boolean).join(' · ');
 }
 
 function formatCollectionReplaySummary(replay) {
   const safeReplay = replay || {};
-  if (!safeReplay.available) return 'none';
+  if (!safeReplay.available) return '暂无';
   return [
-    safeReplay.taskId ? 'task=' + safeReplay.taskId : undefined,
-    (safeReplay.rawPageHashes || []).length ? 'rawPages=' + safeReplay.rawPageHashes.length : undefined,
-    (safeReplay.pageNumbers || []).length ? 'pages=' + safeReplay.pageNumbers.join(',') : undefined,
-    (safeReplay.evidenceKinds || []).length ? 'evidence=' + safeReplay.evidenceKinds.join(',') : undefined
-  ].filter(Boolean).join(' | ') || 'available';
+    safeReplay.taskId ? '任务 ' + safeReplay.taskId : undefined,
+    (safeReplay.rawPageHashes || []).length ? '原始页 ' + safeReplay.rawPageHashes.length : undefined,
+    (safeReplay.pageNumbers || []).length ? '页数 ' + safeReplay.pageNumbers.join(',') : undefined,
+    (safeReplay.evidenceKinds || []).length ? '证据 ' + safeReplay.evidenceKinds.join(',') : undefined
+  ].filter(Boolean).join(' · ') || '可用';
 }
 
 function collectionStatusVariant(status) {
@@ -7870,18 +7870,18 @@ function renderLifecycleSourceRow(source) {
     '</section>';
   return '<div class="source-work-row lifecycle-source-row ' + statusClassName(variant) + '">' +
     '<section class="source-work-anchor">' +
-      '<span class="source-work-scope">' + escapeHtml(source.sourceType || source.sourceKey || 'source') + '</span>' +
+      '<span class="source-work-scope">' + escapeHtml(source.sourceType || source.sourceKey || '来源') + '</span>' +
       '<strong>' + escapeHtml(source.displayName || source.id) + '</strong>' +
-      '<small>' + escapeHtml(source.id || source.sourceKey || 'unknown source') + '</small>' +
+      '<small>' + escapeHtml(source.id || source.sourceKey || '未知来源') + '</small>' +
     '</section>' +
     '<section class="source-work-brief">' +
-      '<p>' + escapeHtml(source.nextAction || 'Source is ready for the next operational step.') + '</p>' +
+      '<p>' + escapeHtml(source.nextAction || '这个来源已准备好下一步。') + '</p>' +
       '<div class="source-work-chips">' +
-        authorMetaChip('run', runState.status || 'unknown', statusVariant(runState.status)) +
-        authorMetaChip('state', label, variant) +
-        authorMetaChip('started', guard.lastStartedAt || 'none', guard.lastStartedAt ? 'info' : 'muted') +
-        authorMetaChip('retry', retry.retryAt || 'none', retry.retryAt ? 'warn' : 'muted') +
-        authorMetaChip('task', source.latestLifecycleTask ? source.latestLifecycleTask.status || 'task' : 'none', source.latestLifecycleTask ? statusVariant(source.latestLifecycleTask.status) : 'muted') +
+        authorMetaChip('运行', runState.status || '未知', statusVariant(runState.status)) +
+        authorMetaChip('状态', label, variant) +
+        authorMetaChip('开始', guard.lastStartedAt || '暂无', guard.lastStartedAt ? 'info' : 'muted') +
+        authorMetaChip('重试', retry.retryAt || '暂无', retry.retryAt ? 'warn' : 'muted') +
+        authorMetaChip('任务', source.latestLifecycleTask ? source.latestLifecycleTask.status || 'task' : '暂无', source.latestLifecycleTask ? statusVariant(source.latestLifecycleTask.status) : 'muted') +
       '</div>' +
       renderSourceCommandChips(source.recommendedCommands || []) +
     '</section>' +
@@ -7967,15 +7967,15 @@ function renderSourceLifecycleUpdateResult(result) {
   const before = update.sourceBefore || {};
   const after = update.sourceAfter || {};
   const guard = update.guard || {};
-  return panel(after.enabled ? 'Source enable' : 'Source disable', [
-    metric('Status', update.status || 'unknown'),
-    metric('Task', task.id || 'none'),
-    metric('Mode', update.dryRun ? 'dry-run' : 'execute'),
-    metric('Changed', update.changed ? 'yes' : 'no'),
-    metric('Source', (before.id || after.id || 'unknown') + ' / ' + (after.displayName || before.displayName || 'unknown')),
-    metric('Enabled before', before.enabled === undefined ? 'unknown' : before.enabled),
-    metric('Enabled after', after.enabled === undefined ? 'unknown' : after.enabled),
-    metric('Guard', guard.running ? 'running=' + guard.running + ' blocked=' + guard.blocked + ' stale=' + guard.stale : 'not-running'),
+  return panel(after.enabled ? '来源已启用' : '来源已停用', [
+    metric('状态', update.status || '未知'),
+    metric('任务', task.id || '暂无'),
+    metric('模式', update.dryRun ? '预演' : '执行'),
+    metric('变化', update.changed ? '是' : '否'),
+    metric('来源', (before.id || after.id || '未知') + ' · ' + (after.displayName || before.displayName || '未知')),
+    metric('此前启用', before.enabled === undefined ? '未知' : before.enabled),
+    metric('当前启用', after.enabled === undefined ? '未知' : after.enabled),
+    metric('守护', guard.running ? '运行 ' + guard.running + ' · 阻塞 ' + guard.blocked + ' · 停滞 ' + guard.stale : '未运行'),
     renderTaskTraceButton(task)
   ].join(''), 'wide');
 }
@@ -7985,14 +7985,14 @@ function renderSourceScheduleUpdateResult(result) {
   const task = result.task || {};
   const before = update.sourceBefore || {};
   const after = update.sourceAfter || {};
-  return panel('Source schedule', [
-    metric('Status', update.status || 'unknown'),
-    metric('Task', task.id || 'none'),
-    metric('Mode', update.dryRun ? 'dry-run' : 'execute'),
-    metric('Changed', update.changed ? 'yes' : 'no'),
-    metric('Source', (before.id || after.id || 'unknown') + ' / ' + (after.displayName || before.displayName || 'unknown')),
-    metric('Before', formatScheduleBrief(before.schedule)),
-    metric('After', formatScheduleBrief(after.schedule)),
+  return panel('来源排期', [
+    metric('状态', update.status || '未知'),
+    metric('任务', task.id || '暂无'),
+    metric('模式', update.dryRun ? '预演' : '执行'),
+    metric('变化', update.changed ? '是' : '否'),
+    metric('来源', (before.id || after.id || '未知') + ' · ' + (after.displayName || before.displayName || '未知')),
+    metric('此前', formatScheduleBrief(before.schedule)),
+    metric('当前', formatScheduleBrief(after.schedule)),
     renderTaskTraceButton(task)
   ].join(''), 'wide');
 }
@@ -8000,10 +8000,10 @@ function renderSourceScheduleUpdateResult(result) {
 function formatScheduleBrief(schedule) {
   const safeSchedule = schedule || {};
   return [
-    'enabled=' + (safeSchedule.enabled === undefined ? 'default' : safeSchedule.enabled),
-    'interval=' + (safeSchedule.intervalMinutes || 'none'),
-    'next=' + (safeSchedule.nextRunAt || 'none')
-  ].join(' | ');
+    '启用 ' + (safeSchedule.enabled === undefined ? '默认' : safeSchedule.enabled),
+    '间隔 ' + (safeSchedule.intervalMinutes || '暂无'),
+    '下次 ' + (safeSchedule.nextRunAt || '暂无')
+  ].join(' · ');
 }
 
 function renderSourceFailureResetResult(result) {
@@ -8012,57 +8012,57 @@ function renderSourceFailureResetResult(result) {
   const sourceAfter = reset.sourceAfter || {};
   const runState = sourceAfter.runState || {};
   const schedule = sourceAfter.schedule || {};
-  return panel('Source failure reset', [
-    metric('Status', reset.status || 'unknown'),
-    metric('Task', task.id || 'none'),
-    metric('Mode', reset.dryRun ? 'dry-run' : 'execute'),
-    metric('Changed', reset.changed ? 'yes' : 'no'),
-    metric('Reason', reset.reason || 'unknown'),
-    metric('Run state', runState.status || 'unknown'),
-    metric('Failure count', runState.failureCount === undefined ? 'unknown' : runState.failureCount),
-    metric('Next run', schedule.nextRunAt || reset.nextRunAt || 'unchanged'),
+  return panel('来源重试重置', [
+    metric('状态', reset.status || '未知'),
+    metric('任务', task.id || '暂无'),
+    metric('模式', reset.dryRun ? '预演' : '执行'),
+    metric('变化', reset.changed ? '是' : '否'),
+    metric('原因', reset.reason || '未知'),
+    metric('运行状态', runState.status || '未知'),
+    metric('失败次数', runState.failureCount === undefined ? '未知' : runState.failureCount),
+    metric('下次运行', schedule.nextRunAt || reset.nextRunAt || '未变化'),
     renderTaskTraceButton(task)
   ].join(''), 'wide');
 }
 
 function renderRunbookNotificationEventResult(result) {
   const items = result.results || [];
-  return panel('Runbook notification events', [
-    metric('Status', result.status || 'unknown'),
-    metric('Mode', result.dryRun ? 'dry-run' : 'execute'),
-    metric('Actions', result.actionCount || 0),
-    metric('Events', result.eventCount || 0),
-    metric('Created', result.createdCount || 0),
-    metric('Updated', result.updatedCount || 0),
-    metric('Resolved', result.resolvedCount || 0),
-    metric('Reopened', result.reopenedCount || 0),
-    metric('Skipped', result.skippedCount || 0),
+  return panel('操作清单提醒', [
+    metric('状态', result.status || '未知'),
+    metric('模式', result.dryRun ? '预演' : '执行'),
+    metric('动作', result.actionCount || 0),
+    metric('提醒', result.eventCount || 0),
+    metric('新建', result.createdCount || 0),
+    metric('更新', result.updatedCount || 0),
+    metric('解决', result.resolvedCount || 0),
+    metric('重开', result.reopenedCount || 0),
+    metric('跳过', result.skippedCount || 0),
     evidenceList(items.map(function (item) {
       const event = item.event || {};
-      const reason = item.reason ? ' / ' + item.reason : '';
-      return item.status + ' | ' + (item.actionKey || 'unknown') + ' | ' + (event.id || 'no-event') + ' | ' + (event.severity || 'unknown') + reason;
+      const reason = item.reason ? ' · 原因 ' + item.reason : '';
+      return item.status + ' · ' + (item.actionKey || '未知动作') + ' · ' + (event.id || '暂无提醒') + ' · ' + (event.severity || '未知') + reason;
     }))
   ].join(''), 'wide');
 }
 
 function renderSourceAttentionNotificationEventResult(result) {
   const items = result.results || [];
-  return panel('Source attention notification events', [
-    metric('Status', result.status || 'unknown'),
-    metric('Mode', result.dryRun ? 'dry-run' : 'execute'),
-    metric('Sources', result.sourceCount || 0),
-    metric('Threshold', result.priorityScoreThreshold || 0),
-    metric('Events', result.eventCount || 0),
-    metric('Created', result.createdCount || 0),
-    metric('Updated', result.updatedCount || 0),
-    metric('Resolved', result.resolvedCount || 0),
-    metric('Reopened', result.reopenedCount || 0),
-    metric('Skipped', result.skippedCount || 0),
+  return panel('来源关注提醒', [
+    metric('状态', result.status || '未知'),
+    metric('模式', result.dryRun ? '预演' : '执行'),
+    metric('来源', result.sourceCount || 0),
+    metric('阈值', result.priorityScoreThreshold || 0),
+    metric('提醒', result.eventCount || 0),
+    metric('新建', result.createdCount || 0),
+    metric('更新', result.updatedCount || 0),
+    metric('解决', result.resolvedCount || 0),
+    metric('重开', result.reopenedCount || 0),
+    metric('跳过', result.skippedCount || 0),
     evidenceList(items.map(function (item) {
       const event = item.event || {};
       const source = event.payload && event.payload.source || {};
-      const reason = item.reason ? ' / ' + item.reason : '';
-      return item.status + ' | ' + (item.attentionKey || source.id || source.sourceKey || 'unknown-source') + ' | ' + (event.id || 'no-event') + ' | ' + (event.severity || 'unknown') + reason;
+      const reason = item.reason ? ' · 原因 ' + item.reason : '';
+      return item.status + ' · ' + (item.attentionKey || source.id || source.sourceKey || '未知来源') + ' · ' + (event.id || '暂无提醒') + ' · ' + (event.severity || '未知') + reason;
     }))
   ].join(''), 'wide');
 }
@@ -8080,12 +8080,12 @@ function renderSourceTypeOperationsNotificationEventResult(result) {
     metric('更新', result.updatedCount || 0),
     metric('解决', result.resolvedCount || 0),
     metric('重开', result.reopenedCount || 0),
-    metric('Skipped', result.skippedCount || 0),
+    metric('跳过', result.skippedCount || 0),
     evidenceList(items.map(function (item) {
       const event = item.event || {};
-      const sourceType = item.sourceType || event.payload && event.payload.sourceType || 'unknown-source-type';
-      const reason = item.reason ? ' / ' + item.reason : '';
-      return item.status + ' | ' + sourceType + ' | ' + (event.id || 'no-event') + ' | ' + (event.severity || 'unknown') + reason;
+      const sourceType = item.sourceType || event.payload && event.payload.sourceType || '未知来源类型';
+      const reason = item.reason ? ' · 原因 ' + item.reason : '';
+      return item.status + ' · ' + sourceType + ' · ' + (event.id || '暂无提醒') + ' · ' + (event.severity || '未知') + reason;
     }))
   ].join(''), 'wide');
 }
@@ -8094,7 +8094,7 @@ function renderRunbookActionRows(actions) {
   return actions.slice(0, 10).map(function (action) {
     const command = action.recommendedCommand ? '<small>' + escapeHtml(action.recommendedCommand) + '</small>' : '';
     const evidence = action.evidenceSummary || action.evidence && action.evidence.evidenceSummary;
-    const evidenceRow = evidence ? '<small>' + escapeHtml('evidence=' + evidence) + '</small>' : '';
+    const evidenceRow = evidence ? '<small>' + escapeHtml('证据 ' + evidence) + '</small>' : '';
     return '<div class="action-row ops-row"><span>' +
       '<strong>' + escapeHtml(action.title || action.key) + '</strong>' +
       '<small>' + escapeHtml(action.summary || '') + '</small>' +
@@ -8141,12 +8141,12 @@ function formatDurationMs(value) {
 }
 
 function renderPipelineRunSummary(run) {
-  const sourceName = run.source && run.source.displayName ? run.source.displayName : run.sourceId || 'unknown-source';
+  const sourceName = run.source && run.source.displayName ? run.source.displayName : run.sourceId || '未知来源';
   const cursorDiff = run.cursorDiff || {};
   const semantic = run.semantic || {};
-  const changed = cursorDiff.changed === undefined ? 'unknown' : (cursorDiff.changed ? 'changed' : 'unchanged');
-  const newPosts = cursorDiff.newPostCount === undefined ? '' : ' · +' + cursorDiff.newPostCount;
-  const semanticLabel = semantic.status ? ' · semantic ' + semantic.status + (semantic.reason ? '/' + semantic.reason : '') : '';
+  const changed = cursorDiff.changed === undefined ? '未知变化' : (cursorDiff.changed ? '有变化' : '无变化');
+  const newPosts = cursorDiff.newPostCount === undefined ? '' : ' · 新增 ' + cursorDiff.newPostCount;
+  const semanticLabel = semantic.status ? ' · 语义 ' + semantic.status + (semantic.reason ? ' / ' + semantic.reason : '') : '';
   const timestamp = run.finishedAt || run.updatedAt || run.createdAt || '';
   return run.status + ' · ' + sourceName + ' · ' + changed + newPosts + semanticLabel + ' · ' + timestamp;
 }
@@ -8790,14 +8790,14 @@ function renderNotificationSourceHotspotsLegacy(hotspots) {
   if (!hotspots.length) return '';
   return '<div class="source-hotspot-list">' + hotspots.slice(0, 5).map(function (hotspot) {
     const details = [
-      'open=' + (hotspot.openCount || 0),
-      'failed=' + (hotspot.failedCount || 0),
-      'due=' + (hotspot.dueForDeliveryCount || 0),
-      'exhausted=' + (hotspot.retryExhaustedCount || 0),
-      hotspot.oldestUnacknowledgedAt ? 'oldest=' + hotspot.oldestUnacknowledgedAt : undefined
-    ].filter(Boolean).join(' | ');
+      '未读 ' + (hotspot.openCount || 0),
+      '失败 ' + (hotspot.failedCount || 0),
+      '到期 ' + (hotspot.dueForDeliveryCount || 0),
+      '耗尽 ' + (hotspot.retryExhaustedCount || 0),
+      hotspot.oldestUnacknowledgedAt ? '最早 ' + hotspot.oldestUnacknowledgedAt : undefined
+    ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml(hotspot.sourceKey || hotspot.sourceId || 'unknown-source') + '</strong>' +
+      '<strong>' + escapeHtml(hotspot.sourceKey || hotspot.sourceId || '未知来源') + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
       '</span><span class="button-group source-op-buttons">' +
       renderEventSourceDrilldownButton(hotspot) +
@@ -8868,10 +8868,10 @@ function renderNotificationDispatchPreview(overview) {
   const candidateCount = dueCount + failedCount;
   const command = 'node src/presentation/cli/threadtrace.js dispatch-events --limit 50';
   const hotspotRows = (safeOverview.sourceHotspots || []).slice(0, 5).map(function (hotspot) {
-    return (hotspot.sourceKey || 'unknown-source') +
-      ' | due=' + (hotspot.dueForDeliveryCount || 0) +
-      ' | failed=' + (hotspot.failedCount || 0) +
-      ' | open=' + (hotspot.openCount || 0);
+    return (hotspot.sourceKey || '未知来源') +
+      ' · 到期 ' + (hotspot.dueForDeliveryCount || 0) +
+      ' · 失败 ' + (hotspot.failedCount || 0) +
+      ' · 未读 ' + (hotspot.openCount || 0);
   });
   return panel('提醒投递预览', [
     '<div class="summary-strip event-summary-strip">' + [
@@ -9026,7 +9026,7 @@ function renderNotificationSourceHotspots(hotspots) {
       hotspot.oldestUnacknowledgedAt ? '最早=' + hotspot.oldestUnacknowledgedAt : undefined
     ].filter(Boolean).join(' · ');
     return '<div class="notification-hotspot-row"><section>' +
-      '<strong>' + escapeHtml(hotspot.sourceKey || hotspot.sourceId || 'unknown-source') + '</strong>' +
+      '<strong>' + escapeHtml(hotspot.sourceKey || hotspot.sourceId || '未知来源') + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
       '</section><span class="button-group source-op-buttons">' +
       renderEventSourceDrilldownButton(hotspot) +

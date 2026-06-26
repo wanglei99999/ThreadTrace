@@ -303,3 +303,42 @@ test('task path and review result surfaces avoid trace-console copy', function (
     'merge='
   ]);
 });
+
+test('source run result surfaces avoid operations-console copy', function () {
+  const app = readProjectFile('src/presentation/web/app.js');
+
+  assertAbsent(app, [
+    "panel('Source batch run'",
+    "panel('Due source batch run'",
+    "panel('Due source insight batch run'",
+    "summaryTile('Evidence'",
+    "summaryTile('Replayable'",
+    "summaryTile('Timeline'",
+    "summaryTile('Backoff'",
+    "item.taskId ? 'task='",
+    "'changed=' + item.changed",
+    "'new=' + item.newPostCount",
+    "'semantic=' + item.semanticStatus",
+    "'retry=' + item.retryAt",
+    'No source operation results.',
+    'unknown-source',
+    'Unknown source',
+    'Skipped source',
+    "item.scheduleReason ? 'reason='",
+    "'reason=' + (item.reason",
+    "item.nextRunAt ? 'next='",
+    "item.retryAt ? 'retry='",
+    "item.backoffMs ? 'backoff='",
+    'No follow-up commands.',
+    "'evidence=' + action.evidenceSummary",
+    "'details=' + details",
+    "summaryTile('Status', closure.status",
+    "summaryTile('Ready', closure.readyForDailyUse",
+    "summaryTile('Score', String(summary.readinessScore",
+    "summaryTile('Done', String(summary.completed",
+    "summaryTile('Missing', String((summary.missingStepKeys",
+    "metric('Next'",
+    "'next=' + step.nextAction",
+    "return [safeScope.sourceId, safeScope.sourceKey].filter(Boolean).join(' / ') || 'all sources'"
+  ]);
+});
