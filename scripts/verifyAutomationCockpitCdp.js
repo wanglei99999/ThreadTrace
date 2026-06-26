@@ -274,19 +274,23 @@ async function verifyAutomationActionResult(client) {
     return evaluateByValue(client, [
       '(() => {',
       "  const result = document.querySelector('#automationActionResult');",
+      "  const text = result ? result.innerText : '';",
       "  const commandRows = result ? result.querySelectorAll('.automation-action-command-row .lifecycle-command-row') : [];",
       "  const copyButtons = result ? result.querySelectorAll('button[data-action=\"copy-lifecycle-command\"],button[data-action=\"copy-command\"]') : [];",
-      '  return Boolean(result && commandRows.length > 0 && copyButtons.length > 0);',
+      "  return Boolean(result && text.includes('Last action') && text.includes('LLM readiness') && commandRows.length > 0 && copyButtons.length > 0);",
       '})()'
     ].join('\n'));
   }, 30000, 'Timed out waiting for Automation Cockpit action commands.');
   return evaluateByValue(client, [
     '(() => {',
     "  const result = document.querySelector('#automationActionResult');",
+    "  const text = result ? result.innerText : '';",
     "  const rows = Array.from(result.querySelectorAll('.automation-action-command-row'));",
     "  const commands = Array.from(result.querySelectorAll('.lifecycle-command-row code')).map((item) => item.textContent.trim());",
     '  return {',
     '    hasResult: Boolean(result),',
+    "    hasSummary: text.includes('Last action'),",
+    "    hasActionLabel: text.includes('LLM readiness'),",
     '    rowCount: rows.length,',
     '    commandCount: commands.length,',
     '    commands: commands.slice(0, 5),',
