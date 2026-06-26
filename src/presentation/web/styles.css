@@ -3489,6 +3489,49 @@ form button[type="submit"]:hover {
     var(--panel);
 }
 
+.automation-action-summary-panel {
+  border-color: rgba(20, 114, 95, 0.22);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.99), rgba(233, 247, 242, 0.9) 48%, rgba(240, 247, 255, 0.78));
+}
+
+.automation-action-summary {
+  display: grid;
+  gap: 12px;
+}
+
+.automation-action-summary-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid rgba(184, 201, 195, 0.72);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.automation-action-summary-line span,
+.automation-action-summary-line strong,
+.automation-action-summary-line small {
+  min-width: 0;
+}
+
+.automation-action-summary-line span {
+  display: grid;
+  gap: 4px;
+}
+
+.automation-action-summary-line small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.automation-action-summary-line strong {
+  overflow-wrap: anywhere;
+}
+
 .automation-freshness-panel {
   border-color: rgba(20, 114, 95, 0.18);
 }

@@ -193,6 +193,7 @@ function assertRunbookPreview(label, runbookPreview, options) {
   if (!runbookPreview) failures.push('missing runbook preview report');
   else {
     if (runbookPreview.skipped) failures.push('schedule preview skipped: ' + runbookPreview.reason);
+    if (!runbookPreview.hasSummary) failures.push('schedule preview is missing last action summary');
     if (!runbookPreview.hasResult) failures.push('schedule preview result did not render');
     if (!runbookPreview.dryRun) failures.push('schedule preview did not stay in dry-run mode');
     if (!runbookPreview.visible) failures.push('schedule preview result is not visible after click');
@@ -315,7 +316,7 @@ async function verifyAutomationRunbookPreview(client) {
       "  const text = result ? result.innerText : '';",
       "  const rect = result ? result.getBoundingClientRect() : null;",
       "  const visible = rect ? rect.bottom > 0 && rect.top < window.innerHeight : false;",
-      "  return text.includes('Source schedule') && text.includes('dry-run') && visible;",
+      "  return text.includes('Last action') && text.includes('Source schedule') && text.includes('dry-run') && visible;",
       '})()'
     ].join('\n'));
   }, 30000, 'Timed out waiting for Automation Cockpit runbook schedule preview.');
@@ -326,6 +327,7 @@ async function verifyAutomationRunbookPreview(client) {
     "  const rect = result ? result.getBoundingClientRect() : null;",
     '  return {',
     '    skipped: false,',
+    "    hasSummary: text.includes('Last action'),",
     "    hasResult: text.includes('Source schedule'),",
     "    dryRun: text.includes('dry-run'),",
     "    changed: text.includes('Changed'),",

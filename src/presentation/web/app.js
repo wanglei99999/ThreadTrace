@@ -2372,7 +2372,15 @@ async function runLlmPreflight(targetId) {
   const resolvedTargetId = targetId || 'sourceOperationActionResult';
   await renderAsync(resolvedTargetId, function () {
     return requestJson('/api/llm/preflight', {});
-  }, renderLlmPreflightReport, automationActionRenderOptions(resolvedTargetId));
+  }, function (result) {
+    return renderAutomationActionResult('LLM preflight', {
+      status: result.status,
+      mode: result.provider || 'provider',
+      subject: result.task || result.traceId || 'schema check',
+      changed: result.validation && result.validation.status,
+      next: firstNextActionSummary(result.nextActions)
+    }, renderLlmPreflightReport(result));
+  }, automationActionRenderOptions(resolvedTargetId));
   await loadSystemStatus();
   await loadAutomationReadiness();
   refocusAutomationActionResult(resolvedTargetId);
@@ -2386,7 +2394,16 @@ async function runLlmReadiness(targetId) {
     }, {
       acceptErrorStatus: true
     });
-  }, renderLlmReadinessProfile, automationActionRenderOptions(resolvedTargetId));
+  }, function (result) {
+    const readiness = result.readiness || {};
+    return renderAutomationActionResult('LLM readiness', {
+      status: result.status,
+      mode: result.mode || 'configuration',
+      subject: result.provider || 'provider',
+      changed: readiness.realProviderCandidate ? 'real provider' : 'mock/default',
+      next: firstNextActionSummary(result.nextActions)
+    }, renderLlmReadinessProfile(result));
+  }, automationActionRenderOptions(resolvedTargetId));
   await loadSystemStatus();
   await loadAutomationReadiness();
   refocusAutomationActionResult(resolvedTargetId);
@@ -2396,7 +2413,16 @@ async function runLlmEvaluation(targetId) {
   const resolvedTargetId = targetId || 'sourceOperationActionResult';
   await renderAsync(resolvedTargetId, function () {
     return requestJson('/api/llm/evaluate', {});
-  }, renderLlmEvaluationReport, automationActionRenderOptions(resolvedTargetId));
+  }, function (result) {
+    const summary = result.summary || {};
+    return renderAutomationActionResult('LLM evaluate', {
+      status: result.status,
+      mode: result.provider || 'provider',
+      subject: String(result.sampleCount || 0) + ' samples',
+      changed: 'warn=' + String(summary.warn || 0) + ' fail=' + String(summary.fail || 0),
+      next: firstNextActionSummary(result.nextActions)
+    }, renderLlmEvaluationReport(result));
+  }, automationActionRenderOptions(resolvedTargetId));
   await loadSystemStatus();
   await loadAutomationReadiness();
   refocusAutomationActionResult(resolvedTargetId);
@@ -2415,7 +2441,16 @@ async function runDemoCycle(targetId) {
     return requestJson('/api/demo/source-cycle', request, {
       acceptErrorStatus: true
     });
-  }, renderSourceDemoCycleReport, automationActionRenderOptions(resolvedTargetId));
+  }, function (result) {
+    const summary = result.summary || {};
+    return renderAutomationActionResult('Demo cycle', {
+      status: result.status,
+      mode: 'mock',
+      subject: formatSourceScope(result.primarySource),
+      changed: 'completed=' + String(summary.completedCount || 0) + ' failed=' + String(summary.failedCount || 0),
+      next: firstNextActionSummary(result.nextActions)
+    }, renderSourceDemoCycleReport(result));
+  }, automationActionRenderOptions(resolvedTargetId));
   await loadSystemStatus();
   await loadTasks();
   await loadSources();
@@ -2525,7 +2560,21 @@ async function setSourceScheduleFromButton(button, execute, targetId) {
       runNow: button.dataset.runNow !== 'false',
       scheduleEnabled: button.dataset.scheduleEnabled === 'false' ? false : true
     });
-  }, renderSourceScheduleUpdateResult, automationActionRenderOptions(resolvedTargetId));
+  }, function (result) {
+    const update = result.result || result;
+    const before = update.sourceBefore || {};
+    const after = update.sourceAfter || {};
+    const schedule = after.schedule || {};
+    const rendered = renderSourceScheduleUpdateResult(result);
+    if (resolvedTargetId !== 'automationActionResult') return rendered;
+    return renderAutomationActionResult('Source schedule', {
+      status: update.status,
+      mode: update.dryRun ? 'Preview only' : 'Apply',
+      subject: (after.displayName || before.displayName || after.id || before.id || sourceId),
+      changed: update.changed ? 'Changed' : 'No change',
+      next: schedule.nextRunAt || 'next run unchanged'
+    }, rendered);
+  }, automationActionRenderOptions(resolvedTargetId));
   await loadSystemStatus();
   await loadTasks();
   await loadSources();
@@ -2708,6 +2757,32 @@ function automationActionRenderOptions(targetId) {
   return {
     focus: targetId === 'automationActionResult'
   };
+}
+
+function renderAutomationActionResult(action, meta, content) {
+  const safeMeta = meta || {};
+  const summary = [
+    '<div class="automation-action-summary">',
+    '<div class="summary-strip">',
+    summaryTile('Action', action || 'Automation', 'info'),
+    summaryTile('Status', safeMeta.status || 'unknown', statusVariant(safeMeta.status)),
+    summaryTile('Mode', safeMeta.mode || 'check'),
+    summaryTile('Changed', safeMeta.changed || 'n/a', statusVariant(safeMeta.changed)),
+    '</div>',
+    '<div class="automation-action-summary-line">',
+    '<span><strong>' + escapeHtml(safeMeta.subject || 'ThreadTrace cockpit') + '</strong>',
+    '<small>' + escapeHtml(safeMeta.next || 'Review the detailed report below.') + '</small></span>',
+    statusBadge(safeMeta.status || 'unknown', statusVariant(safeMeta.status)),
+    '</div>',
+    '</div>'
+  ].join('');
+  return panel('Last action', summary, 'wide automation-action-summary-panel') + content;
+}
+
+function firstNextActionSummary(actions) {
+  const first = (actions || []).find(Boolean);
+  if (!first) return 'No follow-up command required.';
+  return first.summary || first.command || first.key || 'Review generated follow-up commands.';
 }
 
 function refocusAutomationActionResult(targetId) {
