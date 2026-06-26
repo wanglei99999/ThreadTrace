@@ -97,8 +97,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('crawlUrlButton').addEventListener('click', crawlThreadUrl);
   loadAdapters();
   loadConnectorCatalog();
-  loadSystemStatus();
-  loadHistoryCockpit();
+  renderHistoryCockpitStandby();
   bindSourceOnboardingRecipePreview();
 });
 
@@ -1248,13 +1247,8 @@ function setView(viewName) {
   document.getElementById('viewSubtitle').textContent = view.subtitle;
   document.getElementById('viewMode').textContent = view.mode;
   document.getElementById('viewFocus').textContent = view.focus;
-  if (viewName === 'history') loadHistoryCockpit();
+  if (viewName === 'history') renderHistoryCockpitStandby();
   if (viewName === 'system') loadSystemStatus();
-  if (viewName === 'system') loadSources();
-  if (viewName === 'system') loadSourceOperations();
-  if (viewName === 'system') loadEvents();
-  if (viewName === 'system') loadContextReviewResults();
-  if (viewName === 'system') loadRawPages();
 }
 
 async function loadAdapters() {
@@ -1374,32 +1368,32 @@ function mergeConnectorPackageLists(current, incoming) {
 
 async function loadSystemStatus() {
   const target = document.getElementById('systemStatus');
+  target.innerHTML = renderSystemStatusDashboard(createSystemStatusFallbackReport());
   try {
-    const health = await fetchJson('/health');
-    const adapters = await fetchJson('/adapters');
-    const openApi = await fetchJson('/openapi.json');
-    const overview = await fetchJson('/api/operations/overview?limit=100');
-    const adapterDiagnostics = await fetchJson('/api/adapters/diagnostics', {
-      acceptErrorStatus: true
-    });
-    const diagnostics = await fetchJson('/api/runtime/diagnostics', {
-      acceptErrorStatus: true
-    });
-    const sourceDiagnostics = await fetchJson('/api/sources/diagnostics?limit=100', {
-      acceptErrorStatus: true
-    });
-    const deploymentChecklist = await fetchJson('/api/deployment/checklist?limit=100', {
-      acceptErrorStatus: true
-    });
-    const operationsReadiness = await fetchJson('/api/operations/readiness?limit=100', {
-      acceptErrorStatus: true
-    });
-    const operationsRunbook = await fetchJson('/api/operations/runbook?limit=100', {
-      acceptErrorStatus: true
-    });
-    const notificationDiagnostics = await fetchJson('/api/notifications/diagnostics', {
-      acceptErrorStatus: true
-    });
+    const overview = createOperationalOverviewFallback(new Error('Operational overview is deferred from first paint.'));
+    const [
+      health,
+      adapters,
+      openApi,
+      adapterDiagnostics,
+      diagnostics,
+      sourceDiagnostics,
+      deploymentChecklist,
+      operationsReadiness,
+      operationsRunbook,
+      notificationDiagnostics
+    ] = await Promise.all([
+      fetchJson('/health'),
+      fetchJson('/adapters'),
+      fetchJson('/openapi.json'),
+      fetchJson('/api/adapters/diagnostics', { acceptErrorStatus: true }),
+      fetchJson('/api/runtime/diagnostics', { acceptErrorStatus: true }),
+      fetchJson('/api/sources/diagnostics?limit=100', { acceptErrorStatus: true }),
+      fetchJson('/api/deployment/checklist?limit=100', { acceptErrorStatus: true }),
+      fetchJson('/api/operations/readiness?limit=100', { acceptErrorStatus: true }),
+      fetchJson('/api/operations/runbook?limit=100', { acceptErrorStatus: true }),
+      fetchJson('/api/notifications/diagnostics', { acceptErrorStatus: true })
+    ]);
     diagnostics.configuration = diagnostics.configuration || {};
     diagnostics.configuration.workers = diagnostics.configuration.workers || {};
     diagnostics.configuration.llm = diagnostics.configuration.llm || {};
@@ -1423,8 +1417,61 @@ async function loadSystemStatus() {
     });
     document.getElementById('runbookResult').innerHTML = renderOperationsReadiness(operationsReadiness) + renderWorkerRunOverview(overview.workers) + renderWorkerLeaseOverview(overview.workers && overview.workers.leases) + renderOperationsRunbook(operationsRunbook);
   } catch (error) {
-    target.innerHTML = '<div class="error">' + escapeHtml(error.message) + '</div>';
+    if (!target.querySelector('.system-runtime-hero')) {
+      target.innerHTML = '<div class="error">' + escapeHtml(error.message) + '</div>';
+    }
   }
+}
+
+function createSystemStatusFallbackReport() {
+  const diagnostics = {
+    status: 'warn',
+    generatedAt: new Date().toISOString(),
+    configuration: {
+      workers: {
+        sourceTaskMode: 'ingest'
+      },
+      llm: {
+        provider: 'pending'
+      }
+    }
+  };
+  return {
+    health: {
+      ok: true
+    },
+    adapters: {
+      adapters: []
+    },
+    openApi: {},
+    overview: createOperationalOverviewFallback(new Error('Operational overview is deferred from first paint.')),
+    adapterDiagnostics: {
+      status: 'warn',
+      adapterCount: 0
+    },
+    diagnostics,
+    sourceDiagnostics: {
+      status: 'warn',
+      sourceCount: 0
+    },
+    deploymentChecklist: {
+      status: 'warn',
+      items: []
+    },
+    operationsReadiness: {
+      status: 'warn',
+      checks: []
+    },
+    operationsRunbook: {
+      status: 'warn',
+      actionCount: 0,
+      actions: []
+    },
+    notificationDiagnostics: {
+      status: 'warn',
+      channel: 'pending'
+    }
+  };
 }
 
 function renderSystemStatusDashboard(report) {
@@ -1474,6 +1521,7 @@ function renderSystemStatusDashboard(report) {
     '<section class="system-runtime-stack">',
     systemRuntimeMini('Readiness', readinessStatusSummary(operationsReadiness), statusVariant(operationsReadiness.status)),
     systemRuntimeMini('Runbook', (operationsRunbook.status || 'unknown') + ' | actions ' + String(operationsRunbook.actionCount || 0), statusVariant(operationsRunbook.status)),
+    systemRuntimeMini('Overview', overview.warning ? 'partial' : 'live', overview.warning ? 'warn' : 'ok'),
     systemRuntimeMini('Deploy', deploymentChecklist.status || 'unknown', statusVariant(deploymentChecklist.status)),
     systemRuntimeMini('LLM', llmConfig.provider || 'unknown', statusVariant(diagnostics.status)),
     systemRuntimeMini('Adapters', (adapterDiagnostics.status || 'unknown') + ' | ' + String(adapterDiagnostics.adapterCount || (adapters.adapters || []).length || 0), statusVariant(adapterDiagnostics.status)),
@@ -1509,6 +1557,7 @@ function systemStatusVariant(report) {
     report.deploymentChecklist && report.deploymentChecklist.status,
     report.operationsReadiness && report.operationsReadiness.status,
     report.operationsRunbook && report.operationsRunbook.status,
+    overview.status,
     report.adapterDiagnostics && report.adapterDiagnostics.status,
     report.sourceDiagnostics && report.sourceDiagnostics.status
   ];
@@ -1575,14 +1624,27 @@ function systemResourceSignals(config, diagnostics) {
   ];
 }
 
+function renderHistoryCockpitStandby() {
+  const target = document.getElementById('historyCockpit');
+  if (!target) return;
+  target.innerHTML = renderHistoryCockpit({
+    overview: createOperationalOverviewFallback(new Error('Operational overview is deferred from first paint.')),
+    cockpit: {
+      status: 'warn',
+      generatedAt: 'standby'
+    },
+    eventOverview: {},
+    diagnostics: {},
+    deploymentChecklist: {}
+  });
+}
+
 async function loadHistoryCockpit() {
   const target = document.getElementById('historyCockpit');
   if (!target) return;
   await renderAsync('historyCockpit', function () {
     return Promise.all([
-      fetchJson('/api/operations/overview?limit=100', {
-        acceptErrorStatus: true
-      }),
+      Promise.resolve(createOperationalOverviewFallback(new Error('Operational overview is deferred from history first paint.'))),
       fetchJson('/api/operations/source-cockpit?limit=100&cockpitLimit=5', {
         acceptErrorStatus: true
       }),
@@ -8138,9 +8200,46 @@ async function copyTextToClipboard(text) {
 
 async function fetchJson(url, options) {
   const safeOptions = options || {};
-  const response = await fetch(url);
+  const controller = safeOptions.timeoutMs && typeof AbortController !== 'undefined'
+    ? new AbortController()
+    : undefined;
+  const timeoutId = controller
+    ? window.setTimeout(function () {
+      controller.abort();
+    }, safeOptions.timeoutMs)
+    : undefined;
+  let response;
+  try {
+    response = await fetch(url, controller ? { signal: controller.signal } : undefined);
+  } catch (error) {
+    if (error && error.name === 'AbortError') throw new Error('Request timed out: ' + url);
+    throw error;
+  } finally {
+    if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+  }
   if (!response.ok && !safeOptions.acceptErrorStatus) throw new Error(response.statusText);
   return response.json();
+}
+
+function createOperationalOverviewFallback(error) {
+  return {
+    status: 'warn',
+    storageMode: 'partial',
+    generatedAt: new Date().toISOString(),
+    sources: {},
+    tasks: {},
+    events: {},
+    workers: {
+      leases: {}
+    },
+    rawPages: {},
+    authorReviewQueue: {},
+    reviewActions: {
+      executions: {}
+    },
+    notificationEventActions: {},
+    warning: error && error.message ? error.message : 'Operational overview unavailable.'
+  };
 }
 
 function renderError(targetId, error) {
