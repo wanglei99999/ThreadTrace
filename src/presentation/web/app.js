@@ -7135,7 +7135,7 @@ function renderContextReviewActionExecutionRows(executions) {
   }).join('');
 }
 
-function renderEventList(result) {
+function renderEventListLegacy(result) {
   const events = result.events || [];
   const overview = result.overview;
   const policy = result.policy;
@@ -7283,7 +7283,7 @@ function renderNotificationEventActionIntent(result) {
   ].join('');
 }
 
-function renderNotificationEventOverview(overview) {
+function renderNotificationEventOverviewLegacy(overview) {
   const attention = overview.attention || {};
   return panel('Notification outbox overview', [
     '<div class="summary-strip event-summary-strip">' + [
@@ -7311,7 +7311,7 @@ function renderNotificationEventOverview(overview) {
   ].join(''), 'wide');
 }
 
-function renderNotificationSynthesisPolicy(policy) {
+function renderNotificationSynthesisPolicyLegacy(policy) {
   const defaults = policy.defaults || {};
   return panel('Notification synthesis policy', [
     '<div class="summary-strip event-summary-strip">' + [
@@ -7330,7 +7330,7 @@ function renderNotificationSynthesisPolicy(policy) {
   ].join(''), 'wide');
 }
 
-function renderNotificationSynthesisPolicyRows(eventTypes) {
+function renderNotificationSynthesisPolicyRowsLegacy(eventTypes) {
   if (!eventTypes.length) return '<div class="muted">No synthesis policy event types.</div>';
   return '<div class="source-hotspot-list">' + eventTypes.map(function (item) {
     const rules = (item.alertRules || []).map(function (rule) {
@@ -7352,7 +7352,7 @@ function renderNotificationSynthesisPolicyRows(eventTypes) {
   }).join('') + '</div>';
 }
 
-function renderEventListSummary(events) {
+function renderEventListSummaryLegacy(events) {
   const pending = events.filter(function (event) { return (event.deliveryStatus || 'pending') === 'pending'; }).length;
   const failed = events.filter(function (event) { return event.deliveryStatus === 'failed'; }).length;
   const resolved = events.filter(function (event) { return event.deliveryStatus === 'resolved'; }).length;
@@ -7366,7 +7366,7 @@ function renderEventListSummary(events) {
   ].join('') + '</div>';
 }
 
-function renderNotificationEventRow(event) {
+function renderNotificationEventRowLegacy(event) {
   const ackLabel = event.acknowledgedAt ? '已确认' : '确认';
   const disabled = event.acknowledgedAt ? ' disabled' : '';
   const title = event.title || event.summary || event.id || 'untitled-event';
@@ -7379,7 +7379,7 @@ function renderNotificationEventRow(event) {
   return '<div class="action-row event-row"><span><strong>' + escapeHtml(title) + '</strong>' + summary + '<small>' + escapeHtml(meta) + '</small></span>' + controls + '</div>';
 }
 
-function renderNotificationEventRow(event) {
+function renderNotificationEventRowLegacy2(event) {
   const ackLabel = event.acknowledgedAt ? 'Acknowledged' : 'Acknowledge';
   const disabled = event.acknowledgedAt ? ' disabled' : '';
   const title = event.title || event.summary || event.id || 'untitled-event';
@@ -7404,7 +7404,7 @@ function renderEventTaskDetailButton(event) {
   return '<button class="inline-button secondary-inline-button" type="button" data-action="load-task-detail" data-task-id="' + escapeHtml(event.taskId) + '" data-trace-limit="20">Task</button>';
 }
 
-function renderNotificationSourceHotspots(hotspots) {
+function renderNotificationSourceHotspotsLegacy(hotspots) {
   if (!hotspots.length) return '';
   return '<div class="source-hotspot-list">' + hotspots.slice(0, 5).map(function (hotspot) {
     const details = [
@@ -7421,6 +7421,193 @@ function renderNotificationSourceHotspots(hotspots) {
       renderEventSourceDrilldownButton(hotspot) +
       '</span></div>';
   }).join('') + '</div>';
+}
+
+function renderEventList(result) {
+  const events = result.events || [];
+  const overview = result.overview;
+  const policy = result.policy;
+  const summary = renderEventListSummary(events);
+  const title = 'Notification stream | ' + currentEventFilterSummary();
+  const listPanel = events.length === 0
+    ? panel(title, summary + renderNotificationEventEmptyState(overview), 'wide')
+    : panel(title, summary + events.map(renderNotificationEventRow).join(''), 'wide');
+  return (overview ? renderNotificationEventOverview(overview) : '') +
+    (policy ? renderNotificationSynthesisPolicy(policy) : '') +
+    listPanel;
+}
+
+function renderNotificationEventOverview(overview) {
+  const attention = overview.attention || {};
+  const attentionRows = (attention.failedEvents || []).slice(0, 3).map(function (event) {
+    return notificationOutboxAttentionRow(event, 'failed');
+  }).concat((attention.reviewableEvents || []).slice(0, 3).map(function (event) {
+    return notificationOutboxAttentionRow(event, 'reviewable');
+  }));
+  return [
+    '<article class="notification-outbox-hero">',
+      '<section class="notification-outbox-main">',
+        '<div class="notification-outbox-header">',
+          '<span class="notification-outbox-label">Notification outbox</span>',
+          statusBadge(overview.status || 'unknown', statusVariant(overview.status)),
+        '</div>',
+        '<h3>' + escapeHtml(overview.recommendedNextAction || 'Notification outbox is clear in the current window.') + '</h3>',
+        '<p>' + escapeHtml([
+          'delivery=' + formatStanceSummary(overview.byDeliveryStatus),
+          'severity=' + formatStanceSummary(overview.bySeverity),
+          'sources=' + compactCountMap(overview.bySourceKey)
+        ].filter(Boolean).join(' | ')) + '</p>',
+      '</section>',
+      '<aside class="notification-outbox-signals">',
+        notificationOutboxSignal('Window', overview.eventCount || 0, (overview.eventCount || 0) > 0 ? 'info' : 'muted'),
+        notificationOutboxSignal('Open', overview.unacknowledgedCount || 0, (overview.unacknowledgedCount || 0) > 0 ? 'warn' : 'ok'),
+        notificationOutboxSignal('Due', overview.dueForDeliveryCount || 0, (overview.dueForDeliveryCount || 0) > 0 ? 'warn' : 'ok'),
+        notificationOutboxSignal('Failed', overview.failedCount || 0, (overview.failedCount || 0) > 0 ? 'fail' : 'ok'),
+      '</aside>',
+      '<section class="notification-outbox-next">',
+        '<span>Timing</span>',
+        '<strong>' + escapeHtml(overview.nextDeliveryAt || 'no scheduled delivery') + '</strong>',
+        '<small>' + escapeHtml('oldest open=' + (overview.oldestUnacknowledgedAt || 'none') + ' | open sources=' + compactCountMap(overview.byOpenSourceKey)) + '</small>',
+      '</section>',
+      '<section class="notification-outbox-attention">',
+        '<span>Attention queue</span>',
+        (attentionRows.length ? attentionRows.join('') : '<div class="notification-outbox-empty">No failed or reviewable notification signals.</div>'),
+      '</section>',
+      renderNotificationSourceHotspots(overview.sourceHotspots || []),
+    '</article>'
+  ].join('');
+}
+
+function notificationOutboxSignal(label, value, variant) {
+  return '<div class="notification-outbox-signal ' + statusClassName(variant) + '"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(value) + '</strong></div>';
+}
+
+function notificationOutboxAttentionRow(event, label) {
+  return '<div class="notification-outbox-attention-row">' +
+    '<strong>' + escapeHtml(event.type || 'notification') + '</strong>' +
+    '<small>' + escapeHtml([label, event.deliveryStatus || 'unknown', event.id, event.deliveryAttempts === undefined ? undefined : 'attempts=' + event.deliveryAttempts].filter(Boolean).join(' | ')) + '</small>' +
+    '</div>';
+}
+
+function renderNotificationSynthesisPolicy(policy) {
+  const defaults = policy.defaults || {};
+  return panel('Notification synthesis policy', [
+    '<div class="notification-policy-shell">',
+      '<section class="notification-policy-head">',
+        '<span>Policy guard</span>',
+        '<strong>' + escapeHtml(policy.recommendedNextAction || 'Use dry-run synthesis before executing notification alerts.') + '</strong>',
+        '<small>' + escapeHtml('immutable=' + ((defaults.immutableExistingStates || []).join(',') || 'none') + ' | mutation=' + ((defaults.mutationStatuses || []).join(',') || 'none')) + '</small>',
+      '</section>',
+      '<div class="summary-strip event-summary-strip notification-policy-summary">' + [
+        summaryTile('Dry-run', defaults.dryRun ? 'yes' : 'no', defaults.dryRun ? 'ok' : 'warn'),
+        summaryTile('Alert severities', String((defaults.alertSeverities || []).length), 'warn'),
+        summaryTile('Source threshold', String(defaults.sourceAttentionPriorityScoreThreshold || 0), 'warn'),
+        summaryTile('Event types', String((policy.eventTypes || []).length), 'ok')
+      ].join('') + '</div>',
+      renderNotificationSynthesisPolicyRows(policy.eventTypes || []),
+      '<div class="notification-policy-rules">' + (policy.sharedRules || []).map(function (rule) {
+        return '<span>' + escapeHtml(rule.key + ' | ' + rule.summary) + '</span>';
+      }).join('') + '</div>',
+    '</div>'
+  ].join(''), 'wide');
+}
+
+function renderNotificationSynthesisPolicyRows(eventTypes) {
+  if (!eventTypes.length) return '<div class="muted">No synthesis policy event types.</div>';
+  return '<div class="notification-policy-list">' + eventTypes.map(function (item) {
+    const rules = (item.alertRules || []).map(function (rule) {
+      return rule.threshold === undefined ? rule.key : rule.key + '=' + rule.threshold;
+    }).join(', ');
+    const details = [
+      item.staleResolution ? 'stale-resolution' : 'no-stale-resolution',
+      item.reopensAutoResolved ? 'reopen-auto-resolved' : 'no-reopen',
+      item.preservesDeliveryState ? 'preserve-delivery-state' : undefined,
+      rules ? 'rules=' + rules : undefined
+    ].filter(Boolean).join(' | ');
+    return '<div class="notification-policy-row">' +
+      '<section>' +
+        '<span class="notification-policy-type">' + escapeHtml(item.sourceScoped ? 'source-scoped' : 'global') + '</span>' +
+        '<strong>' + escapeHtml(item.type || 'unknown-type') + '</strong>' +
+        '<small>' + escapeHtml(details) + '</small>' +
+      '</section>' +
+      '<div class="notification-policy-state">' +
+        statusBadge(item.staleResolution ? 'managed' : 'direct', item.staleResolution ? 'ok' : 'muted') +
+      '</div>' +
+      '</div>';
+  }).join('') + '</div>';
+}
+
+function renderEventListSummary(events) {
+  const pending = events.filter(function (event) { return (event.deliveryStatus || 'pending') === 'pending'; }).length;
+  const failed = events.filter(function (event) { return event.deliveryStatus === 'failed'; }).length;
+  const resolved = events.filter(function (event) { return event.deliveryStatus === 'resolved'; }).length;
+  const open = events.filter(function (event) { return !event.acknowledgedAt; }).length;
+  return '<div class="summary-strip event-summary-strip">' + [
+    summaryTile('Shown', String(events.length)),
+    summaryTile('Open', String(open), open > 0 ? 'warn' : 'ok'),
+    summaryTile('Pending', String(pending), pending > 0 ? 'warn' : 'ok'),
+    summaryTile('Failed', String(failed), failed > 0 ? 'fail' : 'ok'),
+    summaryTile('Resolved', String(resolved), 'ok')
+  ].join('') + '</div>';
+}
+
+function renderNotificationEventRow(event) {
+  const ackLabel = event.acknowledgedAt ? 'Acknowledged' : 'Acknowledge';
+  const disabled = event.acknowledgedAt ? ' disabled' : '';
+  const title = event.title || event.summary || event.id || 'untitled-event';
+  const summary = event.summary && event.summary !== title ? event.summary : 'Notification event is waiting in the current outbox window.';
+  const source = [event.sourceKey, event.sourceId].filter(Boolean).join(' / ') || 'global';
+  const controls = '<section class="notification-event-actions button-group source-op-buttons">' +
+    renderEventDetailButtonControl(event) +
+    renderEventSourceDrilldownButton(event) +
+    renderEventTaskDetailButton(event) +
+    '<button class="inline-button" type="button" data-action="ack-event" data-event-id="' + escapeHtml(event.id) + '"' + disabled + '>' + ackLabel + '</button>' +
+    '</section>';
+  return '<div class="notification-event-row ' + statusClassName(statusVariant(event.severity || event.deliveryStatus)) + '">' +
+    '<section class="notification-event-anchor">' +
+      '<span class="notification-event-source">' + escapeHtml(source) + '</span>' +
+      '<strong>' + escapeHtml(event.type || 'notification') + '</strong>' +
+      '<small>' + escapeHtml(event.createdAt || 'time unknown') + '</small>' +
+    '</section>' +
+    '<section class="notification-event-brief">' +
+      '<p>' + escapeHtml(title) + '</p>' +
+      '<small>' + escapeHtml(summary) + '</small>' +
+      '<div class="notification-event-chips">' +
+        authorMetaChip('severity', event.severity || 'unknown', statusVariant(event.severity)) +
+        authorMetaChip('delivery', event.deliveryStatus || 'pending', statusVariant(event.deliveryStatus || 'pending')) +
+        authorMetaChip('attempts', event.deliveryAttempts || 0, (event.deliveryAttempts || 0) > 0 ? 'warn' : 'muted') +
+        authorMetaChip('ack', event.acknowledgedAt ? 'yes' : 'no', event.acknowledgedAt ? 'ok' : 'warn') +
+      '</div>' +
+    '</section>' +
+    controls +
+    '</div>';
+}
+
+function renderNotificationEventEmptyState(overview) {
+  return '<div class="notification-empty-state">' +
+    '<span>Standby</span>' +
+    '<strong>No notification events match this filter.</strong>' +
+    '<small>' + escapeHtml(overview && overview.recommendedNextAction || 'Generate alerts from source attention, author review, or runbook checks when something needs operator action.') + '</small>' +
+    '</div>';
+}
+
+function renderNotificationSourceHotspots(hotspots) {
+  if (!hotspots.length) return '';
+  return '<section class="notification-hotspots"><span>Source hotspots</span>' + hotspots.slice(0, 5).map(function (hotspot) {
+    const details = [
+      'open=' + (hotspot.openCount || 0),
+      'failed=' + (hotspot.failedCount || 0),
+      'due=' + (hotspot.dueForDeliveryCount || 0),
+      'exhausted=' + (hotspot.retryExhaustedCount || 0),
+      hotspot.oldestUnacknowledgedAt ? 'oldest=' + hotspot.oldestUnacknowledgedAt : undefined
+    ].filter(Boolean).join(' | ');
+    return '<div class="notification-hotspot-row"><section>' +
+      '<strong>' + escapeHtml(hotspot.sourceKey || hotspot.sourceId || 'unknown-source') + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
+      '</section><span class="button-group source-op-buttons">' +
+      renderEventSourceDrilldownButton(hotspot) +
+      '</span></div>';
+  }).join('') + '</section>';
 }
 
 function renderEventSourceDrilldownButton(source) {
