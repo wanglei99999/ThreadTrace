@@ -461,24 +461,70 @@ async function verifyAutomationActionResult(client) {
       "  const text = result ? result.innerText : '';",
       "  const commandRows = result ? result.querySelectorAll('.automation-action-command-row .lifecycle-command-row') : [];",
       "  const copyButtons = result ? result.querySelectorAll('button[data-action=\"copy-lifecycle-command\"],button[data-action=\"copy-command\"]') : [];",
-      "  return Boolean(result && text.includes('Last action') && text.includes('LLM readiness') && commandRows.length > 0 && copyButtons.length > 0);",
+      "  const historyRows = result ? result.querySelectorAll('.automation-action-history-row') : [];",
+      "  return Boolean(result && text.includes('Last action') && text.includes('Action history') && text.includes('LLM readiness') && commandRows.length > 0 && copyButtons.length > 0 && historyRows.length > 0);",
       '})()'
     ].join('\n'));
   }, 30000, 'Timed out waiting for Automation Cockpit action commands.');
-  return evaluateByValue(client, [
+  const report = await evaluateByValue(client, [
     '(() => {',
     "  const result = document.querySelector('#automationActionResult');",
     "  const text = result ? result.innerText : '';",
     "  const rows = Array.from(result.querySelectorAll('.automation-action-command-row'));",
     "  const commands = Array.from(result.querySelectorAll('.lifecycle-command-row code')).map((item) => item.textContent.trim());",
+    "  const historyRows = Array.from(result.querySelectorAll('.automation-action-history-row'));",
+    '  let storedHistory = [];',
+    "  try { storedHistory = JSON.parse(window.localStorage.getItem('threadtrace.automationCockpit.actionHistory') || '[]'); } catch (error) {}",
     '  return {',
     '    hasResult: Boolean(result),',
     "    hasSummary: text.includes('Last action'),",
+    "    hasHistory: text.includes('Action history'),",
     "    hasActionLabel: text.includes('LLM readiness'),",
     '    rowCount: rows.length,',
     '    commandCount: commands.length,',
     '    commands: commands.slice(0, 5),',
+    '    historyCount: historyRows.length,',
+    '    storedHistoryCount: Array.isArray(storedHistory) ? storedHistory.length : 0,',
+    "    hasClearButton: Boolean(result.querySelector('button[data-action=\"clear-automation-action-history\"]')),",
     "    hasCopyButtons: Boolean(result.querySelector('button[data-action=\"copy-lifecycle-command\"],button[data-action=\"copy-command\"]'))",
+    '  };',
+    '})()'
+  ].join('\n'));
+  report.clearHistory = await verifyAutomationActionHistoryClear(client);
+  if (!report.hasHistory || report.historyCount <= 0 || report.storedHistoryCount <= 0) {
+    throw new Error('Automation Cockpit action history did not record the LLM readiness action.');
+  }
+  if (!report.clearHistory.clicked || !report.clearHistory.removed || report.clearHistory.storedHistoryCount !== 0) {
+    throw new Error('Automation Cockpit action history clear did not reset the local history.');
+  }
+  return report;
+}
+
+async function verifyAutomationActionHistoryClear(client) {
+  const clicked = await evaluateByValue(client, [
+    '(() => {',
+    "  const button = document.querySelector('#automationActionResult button[data-action=\"clear-automation-action-history\"]');",
+    '  if (!button) return false;',
+    '  button.click();',
+    '  return true;',
+    '})()'
+  ].join('\n'));
+  if (!clicked) return { clicked: false, removed: false, storedHistoryCount: null };
+  await waitFor(async function () {
+    return evaluateByValue(client, [
+      '(() => {',
+      "  return !document.querySelector('#automationActionResult .automation-action-history-panel');",
+      '})()'
+    ].join('\n'));
+  }, 10000, 'Timed out waiting for Automation Cockpit action history clear.');
+  return evaluateByValue(client, [
+    '(() => {',
+    '  let storedHistory = [];',
+    "  try { storedHistory = JSON.parse(window.localStorage.getItem('threadtrace.automationCockpit.actionHistory') || '[]'); } catch (error) {}",
+    '  return {',
+    '    clicked: true,',
+    "    removed: !document.querySelector('#automationActionResult .automation-action-history-panel'),",
+    '    storedHistoryCount: Array.isArray(storedHistory) ? storedHistory.length : 0',
     '  };',
     '})()'
   ].join('\n'));

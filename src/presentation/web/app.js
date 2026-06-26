@@ -14,11 +14,14 @@ const state = {
   automationAutoRefreshTimer: undefined,
   automationReadinessInFlight: false,
   automationLastRefreshAt: undefined,
-  automationNextRefreshAt: undefined
+  automationNextRefreshAt: undefined,
+  automationActionHistory: []
 };
 
 const AUTOMATION_AUTO_REFRESH_STORAGE_KEY = 'threadtrace.automationCockpit.autoRefresh';
+const AUTOMATION_ACTION_HISTORY_STORAGE_KEY = 'threadtrace.automationCockpit.actionHistory';
 const AUTOMATION_AUTO_REFRESH_INTERVAL_MS = 60000;
+const AUTOMATION_ACTION_HISTORY_LIMIT = 8;
 
 const views = {
   history: {
@@ -49,6 +52,7 @@ const views = {
 
 document.addEventListener('DOMContentLoaded', function () {
   state.automationAutoRefresh = readAutomationAutoRefreshPreference();
+  state.automationActionHistory = readAutomationActionHistory();
   bindNavigation();
   bindForms();
   document.getElementById('refreshAdaptersButton').addEventListener('click', loadAdapters);
@@ -130,6 +134,62 @@ function writeAutomationAutoRefreshPreference(enabled) {
       window.localStorage.setItem(AUTOMATION_AUTO_REFRESH_STORAGE_KEY, enabled ? 'true' : 'false');
     }
   } catch (error) {}
+}
+
+function readAutomationActionHistory() {
+  try {
+    if (!window.localStorage) return [];
+    const parsed = JSON.parse(window.localStorage.getItem(AUTOMATION_ACTION_HISTORY_STORAGE_KEY) || '[]');
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map(normalizeAutomationActionHistoryItem).filter(Boolean).slice(0, AUTOMATION_ACTION_HISTORY_LIMIT);
+  } catch (error) {
+    return [];
+  }
+}
+
+function writeAutomationActionHistory(history) {
+  try {
+    if (window.localStorage) {
+      window.localStorage.setItem(AUTOMATION_ACTION_HISTORY_STORAGE_KEY, JSON.stringify((history || []).slice(0, AUTOMATION_ACTION_HISTORY_LIMIT)));
+    }
+  } catch (error) {}
+}
+
+function normalizeAutomationActionHistoryItem(item) {
+  if (!item || typeof item !== 'object') return undefined;
+  const action = String(item.action || '').trim();
+  if (!action) return undefined;
+  return {
+    action,
+    status: String(item.status || 'unknown'),
+    mode: String(item.mode || 'check'),
+    changed: String(item.changed || 'n/a'),
+    subject: String(item.subject || 'ThreadTrace cockpit'),
+    next: String(item.next || 'Review the detailed report below.'),
+    recordedAt: String(item.recordedAt || new Date().toISOString())
+  };
+}
+
+function rememberAutomationAction(action, meta) {
+  const safeMeta = meta || {};
+  const item = normalizeAutomationActionHistoryItem({
+    action: action || 'Automation',
+    status: safeMeta.status || 'unknown',
+    mode: safeMeta.mode || 'check',
+    changed: safeMeta.changed || 'n/a',
+    subject: safeMeta.subject || 'ThreadTrace cockpit',
+    next: safeMeta.next || 'Review the detailed report below.',
+    recordedAt: new Date().toISOString()
+  });
+  if (!item) return state.automationActionHistory || [];
+  state.automationActionHistory = [item].concat(state.automationActionHistory || []).slice(0, AUTOMATION_ACTION_HISTORY_LIMIT);
+  writeAutomationActionHistory(state.automationActionHistory);
+  return state.automationActionHistory;
+}
+
+function clearAutomationActionHistory() {
+  state.automationActionHistory = [];
+  writeAutomationActionHistory(state.automationActionHistory);
 }
 
 function setAutomationAutoRefresh(enabled) {
@@ -826,6 +886,12 @@ async function handleAutomationActionResult(event) {
   if (!button) return;
   if (isCopyCommandAction(button)) {
     await copyCommandFromButton(button);
+    return;
+  }
+  if (button.dataset.action === 'clear-automation-action-history') {
+    clearAutomationActionHistory();
+    const panel = button.closest('.automation-action-history-panel');
+    if (panel) panel.remove();
     return;
   }
   if (button.dataset.action === 'load-trace-context') {
@@ -2911,6 +2977,7 @@ function automationActionRenderOptions(targetId, loadingMessage) {
 
 function renderAutomationActionResult(action, meta, content) {
   const safeMeta = meta || {};
+  const history = rememberAutomationAction(action, safeMeta);
   const summary = [
     '<div class="automation-action-summary">',
     '<div class="summary-strip">',
@@ -2926,7 +2993,30 @@ function renderAutomationActionResult(action, meta, content) {
     '</div>',
     '</div>'
   ].join('');
-  return panel('Last action', summary, 'wide automation-action-summary-panel') + content;
+  return panel('Last action', summary, 'wide automation-action-summary-panel') + renderAutomationActionHistory(history) + content;
+}
+
+function renderAutomationActionHistory(history) {
+  const items = (history || []).slice(0, AUTOMATION_ACTION_HISTORY_LIMIT);
+  if (items.length === 0) return '';
+  const rows = items.map(function (item, index) {
+    const variant = statusVariant(item.status);
+    return '<div class="automation-action-history-row ' + statusClassName(variant) + '">' +
+      '<span class="automation-action-history-rank">' + escapeHtml('#' + (index + 1)) + '</span>' +
+      '<span class="automation-action-history-body"><strong>' + escapeHtml(item.action) + '</strong>' +
+      '<small>' + escapeHtml(formatTimeOfDay(item.recordedAt) + ' | ' + item.subject + ' | ' + item.next) + '</small></span>' +
+      '<span class="automation-action-history-meta">' +
+        statusBadge(item.status, variant) +
+        '<small>' + escapeHtml(item.mode + ' | changed=' + item.changed) + '</small>' +
+      '</span>' +
+    '</div>';
+  }).join('');
+  const content = '<div class="automation-action-history-head">' +
+      '<span><strong>Recent cockpit actions</strong><small>' + escapeHtml('Stored locally in this browser for quick operator recall.') + '</small></span>' +
+      '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="clear-automation-action-history">Clear</button>' +
+    '</div>' +
+    '<div class="automation-action-history-list">' + rows + '</div>';
+  return panel('Action history', content, 'wide automation-action-history-panel');
 }
 
 function firstNextActionSummary(actions) {

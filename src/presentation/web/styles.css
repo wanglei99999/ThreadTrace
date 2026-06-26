@@ -3540,6 +3540,96 @@ form button[type="submit"]:hover {
   overflow-wrap: anywhere;
 }
 
+.automation-action-history-panel {
+  border-color: rgba(101, 84, 199, 0.2);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.99), rgba(240, 237, 255, 0.7) 46%, rgba(255, 245, 220, 0.44));
+}
+
+.automation-action-history-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.automation-action-history-head span,
+.automation-action-history-head strong,
+.automation-action-history-head small {
+  min-width: 0;
+}
+
+.automation-action-history-head span {
+  display: grid;
+  gap: 4px;
+}
+
+.automation-action-history-head strong {
+  color: var(--text-strong);
+}
+
+.automation-action-history-head small {
+  color: var(--muted);
+}
+
+.automation-action-history-list {
+  display: grid;
+  gap: 8px;
+}
+
+.automation-action-history-row {
+  display: grid;
+  grid-template-columns: minmax(34px, auto) minmax(0, 1fr) minmax(150px, auto);
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid rgba(189, 201, 222, 0.72);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: var(--inner-light);
+}
+
+.automation-action-history-rank {
+  display: inline-grid;
+  place-items: center;
+  min-width: 30px;
+  min-height: 30px;
+  border-radius: var(--radius-sm);
+  background: var(--violet-soft);
+  color: var(--violet);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.automation-action-history-body,
+.automation-action-history-meta {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.automation-action-history-body strong,
+.automation-action-history-body small,
+.automation-action-history-meta small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.automation-action-history-body strong {
+  color: var(--text-strong);
+}
+
+.automation-action-history-body small,
+.automation-action-history-meta small {
+  color: var(--muted);
+}
+
+.automation-action-history-meta {
+  justify-items: end;
+}
+
 .automation-freshness-panel {
   border-color: rgba(20, 114, 95, 0.18);
 }
@@ -3594,6 +3684,16 @@ form button[type="submit"]:hover {
     justify-content: flex-start;
     min-width: 0;
     width: 100%;
+  }
+
+  .automation-action-history-row {
+    grid-template-columns: minmax(30px, auto) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .automation-action-history-meta {
+    grid-column: 2;
+    justify-items: start;
   }
 }
 
