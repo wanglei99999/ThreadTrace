@@ -11,7 +11,10 @@ const state = {
   loadedConnectorPackageManifestDraft: undefined,
   sourceTypeReadiness: undefined,
   automationAutoRefresh: false,
-  automationAutoRefreshTimer: undefined
+  automationAutoRefreshTimer: undefined,
+  automationReadinessInFlight: false,
+  automationLastRefreshAt: undefined,
+  automationNextRefreshAt: undefined
 };
 
 const AUTOMATION_AUTO_REFRESH_STORAGE_KEY = 'threadtrace.automationCockpit.autoRefresh';
@@ -138,31 +141,70 @@ function setAutomationAutoRefresh(enabled) {
 
 function syncAutomationAutoRefresh() {
   if (state.automationAutoRefresh && !state.automationAutoRefreshTimer) {
-    state.automationAutoRefreshTimer = window.setInterval(function () {
-      if (state.currentView === 'system') loadAutomationReadiness();
-    }, AUTOMATION_AUTO_REFRESH_INTERVAL_MS);
+    scheduleAutomationAutoRefresh(AUTOMATION_AUTO_REFRESH_INTERVAL_MS);
   } else if (!state.automationAutoRefresh) {
     stopAutomationAutoRefresh();
   }
 }
 
+function scheduleAutomationAutoRefresh(delayMs) {
+  stopAutomationAutoRefresh();
+  const safeDelayMs = Math.max(1000, Number(delayMs) || AUTOMATION_AUTO_REFRESH_INTERVAL_MS);
+  state.automationNextRefreshAt = new Date(Date.now() + safeDelayMs).toISOString();
+  state.automationAutoRefreshTimer = window.setTimeout(async function () {
+    state.automationAutoRefreshTimer = undefined;
+    state.automationNextRefreshAt = undefined;
+    updateAutomationAutoRefreshControl();
+    if (!state.automationAutoRefresh) return;
+    if (state.currentView === 'system') {
+      await loadAutomationReadiness({ source: 'auto' });
+    }
+    if (state.automationAutoRefresh) scheduleAutomationAutoRefresh(AUTOMATION_AUTO_REFRESH_INTERVAL_MS);
+  }, safeDelayMs);
+  updateAutomationAutoRefreshControl();
+}
+
 function stopAutomationAutoRefresh() {
   if (!state.automationAutoRefreshTimer) return;
-  window.clearInterval(state.automationAutoRefreshTimer);
+  window.clearTimeout(state.automationAutoRefreshTimer);
   state.automationAutoRefreshTimer = undefined;
+  state.automationNextRefreshAt = undefined;
 }
 
 function updateAutomationAutoRefreshControl() {
   const button = document.querySelector('button[data-action="toggle-automation-auto-refresh"]');
   if (!button) return;
   const enabled = state.automationAutoRefresh;
+  const stateLabel = enabled ? 'On' : 'Off';
+  const statusLabel = automationAutoRefreshStatusLabel();
   button.dataset.enabled = enabled ? 'true' : 'false';
   button.setAttribute('aria-pressed', enabled ? 'true' : 'false');
-  button.setAttribute('aria-label', 'Auto refresh ' + (enabled ? 'On' : 'Off') + ' every 60 seconds');
-  button.setAttribute('title', 'Auto refresh ' + (enabled ? 'On' : 'Off') + ' every 60 seconds');
+  button.setAttribute('aria-label', 'Auto refresh ' + stateLabel + ' every 60 seconds. ' + statusLabel);
+  button.setAttribute('title', 'Auto refresh ' + stateLabel + ' every 60 seconds. ' + statusLabel);
   button.classList.toggle('is-active', enabled);
+  button.classList.toggle('is-refreshing', state.automationReadinessInFlight);
   const value = button.querySelector('strong');
-  if (value) value.textContent = enabled ? 'On' : 'Off';
+  if (value) value.textContent = stateLabel;
+  const status = button.querySelector('small');
+  if (status) status.textContent = statusLabel;
+}
+
+function automationAutoRefreshStatusLabel() {
+  if (state.automationReadinessInFlight) return 'Refreshing';
+  if (state.automationAutoRefresh && state.automationNextRefreshAt) {
+    return 'Next ' + formatTimeOfDay(state.automationNextRefreshAt);
+  }
+  if (state.automationLastRefreshAt) return 'Last ' + formatTimeOfDay(state.automationLastRefreshAt);
+  return '60s';
+}
+
+function formatTimeOfDay(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'unknown';
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  return hours + ':' + minutes + ':' + seconds;
 }
 
 function bindNavigation() {
@@ -2081,26 +2123,52 @@ async function loadSourceOperations() {
   }, renderSourceOperations);
 }
 
-async function loadAutomationReadiness() {
+async function loadAutomationReadiness(options) {
+  const safeOptions = options || {};
+  if (state.automationReadinessInFlight) {
+    updateAutomationAutoRefreshControl();
+    return {
+      skipped: true,
+      reason: 'automation-readiness-refresh-in-flight',
+      source: safeOptions.source || 'manual'
+    };
+  }
   const targetId = document.getElementById('automationReadinessResult')
     ? 'automationReadinessResult'
     : 'sourceOperationsResult';
-  await renderAsync(targetId, function () {
-    const query = new URLSearchParams({
-      limit: '100',
-      cockpitLimit: '12',
-      sourceTaskMode: 'insight-pipeline',
-      llmReadinessMode: 'configuration'
+  state.automationReadinessInFlight = true;
+  updateAutomationAutoRefreshControl();
+  try {
+    await renderAsync(targetId, function () {
+      const query = new URLSearchParams({
+        limit: '100',
+        cockpitLimit: '12',
+        sourceTaskMode: 'insight-pipeline',
+        llmReadinessMode: 'configuration'
+      });
+      query.set('notificationLimit', '100');
+      query.set('auditLimit', '100');
+      query.set('executionLimit', '20');
+      return fetchJson('/api/operations/automation-cockpit?' + query.toString(), {
+        acceptErrorStatus: true
+      });
+    }, renderAutomationReadinessPlan, {
+      loadingMessage: 'Refreshing automation cockpit...'
     });
-    query.set('notificationLimit', '100');
-    query.set('auditLimit', '100');
-    query.set('executionLimit', '20');
-    return fetchJson('/api/operations/automation-cockpit?' + query.toString(), {
-      acceptErrorStatus: true
-    });
-  }, renderAutomationReadinessPlan, {
-    loadingMessage: 'Refreshing automation cockpit...'
-  });
+    state.automationLastRefreshAt = new Date().toISOString();
+    return {
+      skipped: false,
+      source: safeOptions.source || 'manual',
+      refreshedAt: state.automationLastRefreshAt
+    };
+  } finally {
+    state.automationReadinessInFlight = false;
+    if (state.automationAutoRefresh && safeOptions.source !== 'auto') {
+      scheduleAutomationAutoRefresh(AUTOMATION_AUTO_REFRESH_INTERVAL_MS);
+    } else {
+      updateAutomationAutoRefreshControl();
+    }
+  }
 }
 
 async function loadEvents() {
@@ -5600,13 +5668,14 @@ function automationCockpitButton(action, label, className) {
 function automationCockpitAutoRefreshToggle() {
   const enabled = Boolean(state.automationAutoRefresh);
   const stateLabel = enabled ? 'On' : 'Off';
+  const statusLabel = automationAutoRefreshStatusLabel();
   return [
-    '<button class="automation-auto-refresh-toggle' + (enabled ? ' is-active' : '') + '" type="button" data-action="toggle-automation-auto-refresh" data-enabled="' + (enabled ? 'true' : 'false') + '" aria-pressed="' + (enabled ? 'true' : 'false') + '" aria-label="' + escapeHtml('Auto refresh ' + stateLabel + ' every 60 seconds') + '" title="' + escapeHtml('Auto refresh ' + stateLabel + ' every 60 seconds') + '">',
+    '<button class="automation-auto-refresh-toggle' + (enabled ? ' is-active' : '') + (state.automationReadinessInFlight ? ' is-refreshing' : '') + '" type="button" data-action="toggle-automation-auto-refresh" data-enabled="' + (enabled ? 'true' : 'false') + '" aria-pressed="' + (enabled ? 'true' : 'false') + '" aria-label="' + escapeHtml('Auto refresh ' + stateLabel + ' every 60 seconds. ' + statusLabel) + '" title="' + escapeHtml('Auto refresh ' + stateLabel + ' every 60 seconds. ' + statusLabel) + '">',
     '<span>Auto refresh</span>',
     ' ',
     '<strong>' + stateLabel + '</strong>',
     ' ',
-    '<small>60s</small>',
+    '<small>' + escapeHtml(statusLabel) + '</small>',
     '</button>'
   ].join('');
 }

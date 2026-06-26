@@ -193,6 +193,8 @@ async function verifyViewport(client, options) {
   const refreshLoadingState = options.verifyLoading ? await verifyAutomationRefreshLoadingState(client) : undefined;
   if (options.verifyLoading) await waitForCockpit(client);
   const autoRefreshToggle = await verifyAutomationAutoRefreshToggle(client);
+  const refreshDedupe = await verifyAutomationRefreshDedupe(client);
+  await waitForCockpit(client);
   const freshnessRefresh = await verifyAutomationFreshnessRefreshAction(client);
   await waitForCockpit(client);
   const loadingState = options.verifyLoading ? await verifyAutomationLoadingState(client) : undefined;
@@ -220,9 +222,11 @@ async function verifyViewport(client, options) {
   assertAttentionAction(options.label, attentionAction, audit);
   assertScreenshot(options.label, png, stats, options, audit);
   assertAutomationAutoRefreshToggle(options.label, autoRefreshToggle);
+  assertAutomationRefreshDedupe(options.label, refreshDedupe);
   return Object.assign({}, audit, {
     refreshLoadingState,
     autoRefreshToggle,
+    refreshDedupe,
     freshnessRefresh,
     loadingState,
     runbookPreview,
@@ -267,17 +271,33 @@ function assertAutomationAutoRefreshToggle(label, autoRefreshToggle) {
   const restored = autoRefreshToggle.restored || {};
   const failures = [];
   if (enabled.ariaPressed !== 'true') failures.push('aria-pressed did not become true');
-  if (enabled.ariaLabel !== 'Auto refresh On every 60 seconds') failures.push('aria-label did not become On');
+  if (!enabled.ariaLabel || !enabled.ariaLabel.startsWith('Auto refresh On every 60 seconds.')) failures.push('aria-label did not become On');
   if (enabled.dataEnabled !== 'true') failures.push('data-enabled did not become true');
   if (!enabled.activeClass) failures.push('active class was not applied');
   if (enabled.stored !== 'true') failures.push('localStorage was not set true');
   if (restored.ariaPressed !== 'false') failures.push('aria-pressed did not restore false');
-  if (restored.ariaLabel !== 'Auto refresh Off every 60 seconds') failures.push('aria-label did not restore Off');
+  if (!restored.ariaLabel || !restored.ariaLabel.startsWith('Auto refresh Off every 60 seconds.')) failures.push('aria-label did not restore Off');
   if (restored.dataEnabled !== 'false') failures.push('data-enabled did not restore false');
   if (restored.activeClass) failures.push('active class remained after restore');
   if (restored.stored !== 'false') failures.push('localStorage was not restored false');
   if (failures.length > 0) {
     throw new Error(label + ' Automation Cockpit auto-refresh toggle failed: ' + failures.join('; '));
+  }
+}
+
+function assertAutomationRefreshDedupe(label, refreshDedupe) {
+  if (!refreshDedupe || refreshDedupe.skipped) {
+    throw new Error(label + ' Automation Cockpit refresh dedupe verification was skipped.');
+  }
+  const failures = [];
+  if (!refreshDedupe.second || refreshDedupe.second.skipped !== true) failures.push('second refresh did not skip');
+  if (!refreshDedupe.second || refreshDedupe.second.reason !== 'automation-readiness-refresh-in-flight') failures.push('second refresh returned the wrong reason');
+  if (refreshDedupe.fetchCount !== 1) failures.push('expected one cockpit fetch, saw ' + refreshDedupe.fetchCount);
+  if (refreshDedupe.busyAfterStart !== 'true') failures.push('cockpit was not busy during delayed refresh');
+  if (refreshDedupe.busyAfterSettle !== 'false') failures.push('cockpit did not settle after delayed refresh');
+  if (!refreshDedupe.first || refreshDedupe.first.skipped !== false) failures.push('first refresh did not complete');
+  if (failures.length > 0) {
+    throw new Error(label + ' Automation Cockpit refresh dedupe failed: ' + failures.join('; '));
   }
 }
 
@@ -610,6 +630,93 @@ async function verifyAutomationRefreshLoadingState(client) {
     ].join('\n'));
   }, 30000, 'Timed out waiting for delayed Automation Cockpit refresh to settle.');
   return loading;
+}
+
+async function verifyAutomationRefreshDedupe(client) {
+  const setup = await evaluateByValue(client, [
+    '(() => {',
+    "  if (typeof window.loadAutomationReadiness !== 'function') return { ready: false, reason: 'loadAutomationReadiness is not global' };",
+    '  const originalFetch = window.fetch.bind(window);',
+    '  let releaseFetch;',
+    '  const gate = new Promise((resolve) => { releaseFetch = resolve; });',
+    '  window.__threadtraceDedupeFetchCount = 0;',
+    '  window.__threadtraceReleaseDedupeFetch = () => {',
+    '    releaseFetch();',
+    '    window.fetch = originalFetch;',
+    '    delete window.__threadtraceReleaseDedupeFetch;',
+    '  };',
+    '  window.fetch = async function (input, init) {',
+    "    const url = typeof input === 'string' ? input : input && input.url || '';",
+    "    if (url.includes('/api/operations/automation-cockpit')) {",
+    '      window.__threadtraceDedupeFetchCount += 1;',
+    '      if (window.__threadtraceDedupeFetchCount === 1) await gate;',
+    '    }',
+    '    return originalFetch(input, init);',
+    '  };',
+    '  return { ready: true };',
+    '})()'
+  ].join('\n'));
+  if (!setup || !setup.ready) return { skipped: true, reason: setup && setup.reason || 'dedupe setup failed' };
+  await evaluateByValue(client, [
+    '(() => {',
+    "  window.__threadtraceFirstRefreshPromise = window.loadAutomationReadiness({ source: 'manual-dedupe-test' });",
+    '  return true;',
+    '})()'
+  ].join('\n'));
+  await waitFor(async function () {
+    return evaluateByValue(client, [
+      '(() => {',
+      "  const result = document.querySelector('#automationReadinessResult');",
+      "  return Boolean(result && result.getAttribute('aria-busy') === 'true');",
+      '})()'
+    ].join('\n'));
+  }, 10000, 'Timed out waiting for delayed Automation Cockpit refresh to become busy.');
+  const second = await evaluateByValue(client, "window.loadAutomationReadiness({ source: 'auto' })", true);
+  const busyAfterStart = await evaluateByValue(client, [
+    '(() => {',
+    "  const result = document.querySelector('#automationReadinessResult');",
+    "  return result ? result.getAttribute('aria-busy') : 'missing';",
+    '})()'
+  ].join('\n'));
+  await evaluateByValue(client, [
+    '(() => {',
+    '  if (window.__threadtraceReleaseDedupeFetch) window.__threadtraceReleaseDedupeFetch();',
+    '  return true;',
+    '})()'
+  ].join('\n'));
+  const first = await evaluateByValue(client, 'window.__threadtraceFirstRefreshPromise', true);
+  await waitFor(async function () {
+    return evaluateByValue(client, [
+      '(() => {',
+      "  const result = document.querySelector('#automationReadinessResult');",
+      "  return Boolean(result && result.getAttribute('aria-busy') === 'false');",
+      '})()'
+    ].join('\n'));
+  }, 30000, 'Timed out waiting for delayed Automation Cockpit refresh to settle after dedupe test.');
+  const finished = await evaluateByValue(client, [
+    '(() => {',
+    "  const result = document.querySelector('#automationReadinessResult');",
+    '  return {',
+    '    fetchCount: window.__threadtraceDedupeFetchCount || 0,',
+    "    busyAfterSettle: result ? result.getAttribute('aria-busy') : 'missing'",
+    '  };',
+    '})()'
+  ].join('\n'));
+  await evaluateByValue(client, [
+    '(() => {',
+    '  delete window.__threadtraceFirstRefreshPromise;',
+    '  delete window.__threadtraceDedupeFetchCount;',
+    '  return true;',
+    '})()'
+  ].join('\n'));
+  return {
+    skipped: false,
+    first,
+    second,
+    fetchCount: finished.fetchCount,
+    busyAfterStart,
+    busyAfterSettle: finished.busyAfterSettle
+  };
 }
 
 async function verifyAutomationAutoRefreshToggle(client) {
