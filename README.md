@@ -27,6 +27,19 @@ npm run test:unit
 npm run serve
 ```
 
+## Web Cockpit Verification
+
+After the local HTTP API is running, verify the Automation Cockpit in real
+desktop and mobile browser viewports:
+
+```powershell
+npm run verify:web:automation-cockpit
+```
+
+The verifier uses Chrome DevTools Protocol without third-party packages. It
+checks `/#system`, Automation Cockpit controls, notification/audit pressure,
+horizontal overflow, and writes screenshots under `.tmp/`.
+
 运行到期来源 Worker：
 
 ```powershell
