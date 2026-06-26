@@ -3776,6 +3776,69 @@ form button[type="submit"]:hover {
   background: rgba(255, 255, 255, 0.54);
 }
 
+.automation-auto-refresh-toggle {
+  display: inline-grid;
+  grid-template-columns: auto auto auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  max-width: 100%;
+  padding: 7px 9px;
+  border: 1px solid rgba(36, 95, 159, 0.2);
+  border-radius: 999px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(238, 246, 255, 0.84)),
+    var(--panel);
+  color: #245f9f;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86);
+  cursor: pointer;
+}
+
+.automation-auto-refresh-toggle:hover {
+  border-color: rgba(36, 95, 159, 0.34);
+  box-shadow: 0 10px 22px rgba(36, 95, 159, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.automation-auto-refresh-toggle.is-active {
+  border-color: rgba(20, 114, 95, 0.38);
+  background:
+    linear-gradient(135deg, rgba(232, 247, 241, 0.98), rgba(255, 247, 230, 0.72)),
+    var(--panel);
+  color: #14725f;
+}
+
+.automation-auto-refresh-toggle span,
+.automation-auto-refresh-toggle strong,
+.automation-auto-refresh-toggle small {
+  min-width: 0;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.automation-auto-refresh-toggle span {
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.automation-auto-refresh-toggle strong {
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: rgba(36, 95, 159, 0.1);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.automation-auto-refresh-toggle.is-active strong {
+  background: rgba(20, 114, 95, 0.13);
+}
+
+.automation-auto-refresh-toggle small {
+  color: var(--muted);
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 11px;
+  font-weight: 850;
+}
+
 .automation-cockpit-signals {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

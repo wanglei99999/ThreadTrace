@@ -9,8 +9,13 @@ const state = {
   rolloutManifestDraft: undefined,
   onboardingRecipeManifestDraft: undefined,
   loadedConnectorPackageManifestDraft: undefined,
-  sourceTypeReadiness: undefined
+  sourceTypeReadiness: undefined,
+  automationAutoRefresh: false,
+  automationAutoRefreshTimer: undefined
 };
+
+const AUTOMATION_AUTO_REFRESH_STORAGE_KEY = 'threadtrace.automationCockpit.autoRefresh';
+const AUTOMATION_AUTO_REFRESH_INTERVAL_MS = 60000;
 
 const views = {
   history: {
@@ -40,6 +45,7 @@ const views = {
 };
 
 document.addEventListener('DOMContentLoaded', function () {
+  state.automationAutoRefresh = readAutomationAutoRefreshPreference();
   bindNavigation();
   bindForms();
   document.getElementById('refreshAdaptersButton').addEventListener('click', loadAdapters);
@@ -102,8 +108,60 @@ document.addEventListener('DOMContentLoaded', function () {
   renderHistoryCockpitStandby();
   bindSourceOnboardingRecipePreview();
   initializeCurrentViewFromLocation();
+  syncAutomationAutoRefresh();
   window.addEventListener('hashchange', initializeCurrentViewFromLocation);
+  window.addEventListener('beforeunload', stopAutomationAutoRefresh);
 });
+
+function readAutomationAutoRefreshPreference() {
+  try {
+    return window.localStorage && window.localStorage.getItem(AUTOMATION_AUTO_REFRESH_STORAGE_KEY) === 'true';
+  } catch (error) {
+    return false;
+  }
+}
+
+function writeAutomationAutoRefreshPreference(enabled) {
+  try {
+    if (window.localStorage) {
+      window.localStorage.setItem(AUTOMATION_AUTO_REFRESH_STORAGE_KEY, enabled ? 'true' : 'false');
+    }
+  } catch (error) {}
+}
+
+function setAutomationAutoRefresh(enabled) {
+  state.automationAutoRefresh = Boolean(enabled);
+  writeAutomationAutoRefreshPreference(state.automationAutoRefresh);
+  syncAutomationAutoRefresh();
+  updateAutomationAutoRefreshControl();
+}
+
+function syncAutomationAutoRefresh() {
+  if (state.automationAutoRefresh && !state.automationAutoRefreshTimer) {
+    state.automationAutoRefreshTimer = window.setInterval(function () {
+      if (state.currentView === 'system') loadAutomationReadiness();
+    }, AUTOMATION_AUTO_REFRESH_INTERVAL_MS);
+  } else if (!state.automationAutoRefresh) {
+    stopAutomationAutoRefresh();
+  }
+}
+
+function stopAutomationAutoRefresh() {
+  if (!state.automationAutoRefreshTimer) return;
+  window.clearInterval(state.automationAutoRefreshTimer);
+  state.automationAutoRefreshTimer = undefined;
+}
+
+function updateAutomationAutoRefreshControl() {
+  const button = document.querySelector('button[data-action="toggle-automation-auto-refresh"]');
+  if (!button) return;
+  const enabled = state.automationAutoRefresh;
+  button.dataset.enabled = enabled ? 'true' : 'false';
+  button.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+  button.classList.toggle('is-active', enabled);
+  const value = button.querySelector('strong');
+  if (value) value.textContent = enabled ? 'On' : 'Off';
+}
 
 function bindNavigation() {
   document.querySelectorAll('.nav-item').forEach(function (button) {
@@ -678,6 +736,10 @@ async function handleAutomationReadinessAction(event) {
   }
   if (button.dataset.action === 'refresh-automation-readiness') {
     await loadAutomationReadiness();
+    return;
+  }
+  if (button.dataset.action === 'toggle-automation-auto-refresh') {
+    setAutomationAutoRefresh(button.dataset.enabled !== 'true');
     return;
   }
   if (button.dataset.action === 'run-llm-readiness') {
@@ -1332,6 +1394,7 @@ function setView(viewName, options) {
     loadSystemStatus();
     loadAutomationReadiness();
   }
+  syncAutomationAutoRefresh();
 }
 
 async function loadAdapters() {
@@ -5477,6 +5540,7 @@ function renderAutomationCockpitHero(plan, cockpit) {
     ].join(' | ')) + '</p>',
     '<div class="automation-cockpit-actions button-group">' +
       automationCockpitButton('refresh-automation-readiness', 'Refresh', 'secondary-inline-button') +
+      automationCockpitAutoRefreshToggle() +
       automationCockpitButton('run-llm-readiness', 'LLM readiness', 'secondary-inline-button') +
       automationCockpitButton('run-llm-preflight', 'LLM preflight', 'secondary-inline-button') +
       automationCockpitButton('run-llm-evaluation', 'LLM evaluate', 'secondary-inline-button') +
@@ -5529,6 +5593,17 @@ function automationReadinessHeadlineReadable(plan, sources, operations, workers,
 
 function automationCockpitButton(action, label, className) {
   return '<button class="inline-button ' + escapeHtml(className || '') + '" type="button" data-action="' + escapeHtml(action) + '">' + escapeHtml(label) + '</button>';
+}
+
+function automationCockpitAutoRefreshToggle() {
+  const enabled = Boolean(state.automationAutoRefresh);
+  return [
+    '<button class="automation-auto-refresh-toggle' + (enabled ? ' is-active' : '') + '" type="button" data-action="toggle-automation-auto-refresh" data-enabled="' + (enabled ? 'true' : 'false') + '" aria-pressed="' + (enabled ? 'true' : 'false') + '">',
+    '<span>Auto refresh</span>',
+    '<strong>' + (enabled ? 'On' : 'Off') + '</strong>',
+    '<small>60s</small>',
+    '</button>'
+  ].join('');
 }
 
 function automationCockpitSignal(label, value, variant) {

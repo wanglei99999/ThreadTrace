@@ -192,6 +192,7 @@ async function verifyViewport(client, options) {
   await waitForCockpit(client);
   const refreshLoadingState = options.verifyLoading ? await verifyAutomationRefreshLoadingState(client) : undefined;
   if (options.verifyLoading) await waitForCockpit(client);
+  const autoRefreshToggle = await verifyAutomationAutoRefreshToggle(client);
   const freshnessRefresh = await verifyAutomationFreshnessRefreshAction(client);
   await waitForCockpit(client);
   const loadingState = options.verifyLoading ? await verifyAutomationLoadingState(client) : undefined;
@@ -218,8 +219,10 @@ async function verifyViewport(client, options) {
   assertAttentionFocus(options.label, attentionFocus, audit);
   assertAttentionAction(options.label, attentionAction, audit);
   assertScreenshot(options.label, png, stats, options, audit);
+  assertAutomationAutoRefreshToggle(options.label, autoRefreshToggle);
   return Object.assign({}, audit, {
     refreshLoadingState,
+    autoRefreshToggle,
     freshnessRefresh,
     loadingState,
     runbookPreview,
@@ -253,6 +256,26 @@ function assertPressureAction(label, pressureAction, audit) {
   }
   if (failures.length > 0) {
     throw new Error(label + ' Automation Cockpit pressure action verification failed: ' + failures.join('; '));
+  }
+}
+
+function assertAutomationAutoRefreshToggle(label, autoRefreshToggle) {
+  if (!autoRefreshToggle || autoRefreshToggle.skipped) {
+    throw new Error(label + ' Automation Cockpit auto-refresh toggle verification was skipped.');
+  }
+  const enabled = autoRefreshToggle.enabled || {};
+  const restored = autoRefreshToggle.restored || {};
+  const failures = [];
+  if (enabled.ariaPressed !== 'true') failures.push('aria-pressed did not become true');
+  if (enabled.dataEnabled !== 'true') failures.push('data-enabled did not become true');
+  if (!enabled.activeClass) failures.push('active class was not applied');
+  if (enabled.stored !== 'true') failures.push('localStorage was not set true');
+  if (restored.ariaPressed !== 'false') failures.push('aria-pressed did not restore false');
+  if (restored.dataEnabled !== 'false') failures.push('data-enabled did not restore false');
+  if (restored.activeClass) failures.push('active class remained after restore');
+  if (restored.stored !== 'false') failures.push('localStorage was not restored false');
+  if (failures.length > 0) {
+    throw new Error(label + ' Automation Cockpit auto-refresh toggle failed: ' + failures.join('; '));
   }
 }
 
@@ -385,6 +408,7 @@ function viewportAuditExpression() {
     "    attentionActionButtonCount: document.querySelectorAll('.automation-attention-panel button[data-action=\"run-automation-attention-action\"]').length,",
     "    pressureActionButtonCount: document.querySelectorAll('.automation-pressure-panel button[data-action=\"run-automation-pressure-action\"]').length,",
     "    freshnessActionButtonCount: document.querySelectorAll('.automation-freshness-panel button[data-action=\"refresh-automation-readiness\"]').length,",
+    "    autoRefreshToggleCount: document.querySelectorAll('.automation-cockpit-hero button[data-action=\"toggle-automation-auto-refresh\"]').length,",
     "    runbookCopyButtonCount: document.querySelectorAll('.automation-runbook-panel button[data-action=\"copy-lifecycle-command\"]').length,",
     "    runbookScheduleCommandCount: Array.from(document.querySelectorAll('.automation-runbook-command-row code')).filter((code) => code.textContent.includes('configure-source-schedule')).length,",
     "    runbookScheduleButtonCount: document.querySelectorAll('.automation-runbook-panel button[data-action=\"set-source-schedule\"]').length",
@@ -584,6 +608,59 @@ async function verifyAutomationRefreshLoadingState(client) {
     ].join('\n'));
   }, 30000, 'Timed out waiting for delayed Automation Cockpit refresh to settle.');
   return loading;
+}
+
+async function verifyAutomationAutoRefreshToggle(client) {
+  await evaluateByValue(client, [
+    '(() => {',
+    "  try { window.localStorage.setItem('threadtrace.automationCockpit.autoRefresh', 'false'); } catch (error) {}",
+    "  const button = document.querySelector('.automation-cockpit-hero button[data-action=\"toggle-automation-auto-refresh\"]');",
+    "  if (button && button.getAttribute('aria-pressed') === 'true') button.click();",
+    '  return true;',
+    '})()'
+  ].join('\n'));
+  const initial = await readAutomationAutoRefreshToggleState(client);
+  if (!initial.exists) return { skipped: true, reason: 'auto refresh toggle missing' };
+  await evaluateByValue(client, [
+    '(() => {',
+    "  const button = document.querySelector('.automation-cockpit-hero button[data-action=\"toggle-automation-auto-refresh\"]');",
+    '  if (button) button.click();',
+    '  return true;',
+    '})()'
+  ].join('\n'));
+  const enabled = await readAutomationAutoRefreshToggleState(client);
+  await evaluateByValue(client, [
+    '(() => {',
+    "  const button = document.querySelector('.automation-cockpit-hero button[data-action=\"toggle-automation-auto-refresh\"]');",
+    "  if (button && button.getAttribute('aria-pressed') === 'true') button.click();",
+    '  return true;',
+    '})()'
+  ].join('\n'));
+  const restored = await readAutomationAutoRefreshToggleState(client);
+  return {
+    skipped: false,
+    initial,
+    enabled,
+    restored
+  };
+}
+
+async function readAutomationAutoRefreshToggleState(client) {
+  return evaluateByValue(client, [
+    '(() => {',
+    "  const button = document.querySelector('.automation-cockpit-hero button[data-action=\"toggle-automation-auto-refresh\"]');",
+    "  let stored = 'unavailable';",
+    "  try { stored = window.localStorage.getItem('threadtrace.automationCockpit.autoRefresh'); } catch (error) {}",
+    '  return {',
+    '    exists: Boolean(button),',
+    "    ariaPressed: button ? button.getAttribute('aria-pressed') : 'missing',",
+    "    dataEnabled: button ? button.dataset.enabled : 'missing',",
+    "    activeClass: button ? button.classList.contains('is-active') : false,",
+    "    text: button ? button.textContent.trim() : '',",
+    '    stored',
+    '  };',
+    '})()'
+  ].join('\n'));
 }
 
 async function verifyAutomationFreshnessRefreshAction(client) {
@@ -914,6 +991,7 @@ function assertAudit(label, audit) {
   if (audit.bodyTextHasMojibake) failures.push('body text contains mojibake');
   if (audit.attentionQueueRowCount > 0 && audit.attentionActionButtonCount <= 0) failures.push('attention queue is missing safe action controls');
   if (audit.pressureActionButtonCount <= 0) failures.push('pressure panel is missing outbox action controls');
+  if (audit.autoRefreshToggleCount !== 1) failures.push('automation cockpit auto-refresh toggle count is ' + audit.autoRefreshToggleCount);
   if (audit.runbookCommandCount > 0 && audit.runbookCopyButtonCount < audit.runbookCommandCount) failures.push('runbook commands are missing copy controls');
   if (audit.runbookScheduleCommandCount > 0 && audit.runbookScheduleButtonCount < audit.runbookScheduleCommandCount) failures.push('schedule runbook commands are missing Preview/Apply controls');
   if (audit.heroTop === null || audit.heroTop > audit.clientWidth * 3) failures.push('cockpit appears too late in the page');
