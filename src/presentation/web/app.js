@@ -15,19 +15,27 @@ const state = {
 const views = {
   history: {
     title: '历史分析',
-    subtitle: '解析保存页目录，生成作者、实体、观点和证据概览。'
+    subtitle: '解析保存页目录，生成作者、实体、观点和证据概览。',
+    mode: 'Evidence intake',
+    focus: 'Local archive'
   },
   context: {
     title: '新发言解读',
-    subtitle: '输入一条新发言，召回相关历史楼层和匹配理由。'
+    subtitle: '输入一条新发言，召回相关历史楼层和匹配理由。',
+    mode: 'Context restore',
+    focus: 'Author lens'
   },
   search: {
     title: '历史检索',
-    subtitle: '先把保存页写入本地证据索引，再按关键词检索可引用的历史发言。'
+    subtitle: '先把保存页写入本地证据索引，再按关键词检索可引用的历史发言。',
+    mode: 'Evidence recall',
+    focus: 'Floor index'
   },
   system: {
     title: '系统状态',
-    subtitle: '查看 API、适配器和本地服务状态。'
+    subtitle: '查看 API、适配器和本地服务状态。',
+    mode: 'Operations deck',
+    focus: 'Runtime + sources'
   }
 };
 
@@ -1235,8 +1243,11 @@ function setView(viewName) {
     panel.classList.add('hidden');
   });
   document.getElementById(viewName + 'View').classList.remove('hidden');
-  document.getElementById('viewTitle').textContent = views[viewName].title;
-  document.getElementById('viewSubtitle').textContent = views[viewName].subtitle;
+  const view = views[viewName];
+  document.getElementById('viewTitle').textContent = view.title;
+  document.getElementById('viewSubtitle').textContent = view.subtitle;
+  document.getElementById('viewMode').textContent = view.mode;
+  document.getElementById('viewFocus').textContent = view.focus;
   if (viewName === 'history') loadHistoryCockpit();
   if (viewName === 'system') loadSystemStatus();
   if (viewName === 'system') loadSources();

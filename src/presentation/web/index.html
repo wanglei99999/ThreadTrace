@@ -22,15 +22,27 @@
         <button class="nav-item" data-view="search">历史检索</button>
         <button class="nav-item" data-view="system">系统状态</button>
       </nav>
+      <div class="sidebar-status" aria-label="工作台状态">
+        <span>Local cockpit</span>
+        <strong>Evidence first</strong>
+        <small>file store · mock LLM · source-ready</small>
+      </div>
     </aside>
 
     <main class="workspace">
       <section class="toolbar">
-        <div>
+        <div class="toolbar-copy">
+          <div class="toolbar-meta" aria-label="当前工作模式">
+            <span id="viewMode">Evidence intake</span>
+            <span id="viewFocus">Local archive</span>
+          </div>
           <h2 id="viewTitle">历史分析</h2>
           <p id="viewSubtitle">解析保存页目录，生成作者、实体、观点和证据概览。</p>
         </div>
-        <button id="refreshAdaptersButton" class="icon-button" type="button" title="刷新适配器">↻</button>
+        <div class="toolbar-actions">
+          <span class="toolbar-runtime">localhost · 3019</span>
+          <button id="refreshAdaptersButton" class="icon-button" type="button" title="刷新适配器" aria-label="刷新适配器">↻</button>
+        </div>
       </section>
 
       <section class="view-panel" id="historyView">

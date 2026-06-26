@@ -123,6 +123,8 @@ textarea:focus-visible {
   min-height: 100vh;
   max-height: 100vh;
   overflow: auto;
+  display: flex;
+  flex-direction: column;
   background:
     linear-gradient(180deg, rgba(241, 189, 82, 0.12), rgba(241, 189, 82, 0) 150px),
     linear-gradient(140deg, rgba(39, 95, 174, 0.2), rgba(39, 95, 174, 0) 42%),
@@ -239,6 +241,50 @@ textarea:focus-visible {
     0 0 18px rgba(241, 189, 82, 0.22);
 }
 
+.sidebar-status {
+  display: grid;
+  gap: 6px;
+  margin-top: auto;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(145deg, rgba(39, 95, 174, 0.18), rgba(18, 118, 107, 0.12)),
+    rgba(255, 255, 255, 0.045);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 18px 34px rgba(0, 0, 0, 0.18);
+}
+
+.sidebar-status span {
+  width: max-content;
+  max-width: 100%;
+  padding: 4px 7px;
+  border: 1px solid rgba(241, 189, 82, 0.3);
+  border-radius: var(--radius-sm);
+  background: rgba(241, 189, 82, 0.12);
+  color: #ffe4a3;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.sidebar-status strong {
+  color: #ffffff;
+  font-size: 15px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.sidebar-status small {
+  color: #b9c9d8;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
 .workspace {
   min-width: 0;
   width: min(100%, 1540px);
@@ -249,7 +295,8 @@ textarea:focus-visible {
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
@@ -259,6 +306,45 @@ textarea:focus-visible {
   background:
     linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(248, 250, 252, 0.9));
   backdrop-filter: blur(14px);
+}
+
+.toolbar-copy {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.toolbar-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-width: 0;
+}
+
+.toolbar-meta span,
+.toolbar-runtime {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  max-width: 100%;
+  padding: 0 9px;
+  border: 1px solid rgba(185, 200, 216, 0.86);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--muted-strong);
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+  box-shadow: var(--inner-light);
+}
+
+.toolbar-meta span:first-child {
+  border-color: rgba(18, 118, 107, 0.22);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
 }
 
 .toolbar h2 {
@@ -275,6 +361,20 @@ textarea:focus-visible {
   color: var(--muted-strong);
   line-height: 1.55;
   text-wrap: pretty;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+}
+
+.toolbar-runtime {
+  color: #154d88;
+  border-color: rgba(39, 95, 174, 0.2);
+  background: var(--info-soft);
 }
 
 .icon-button {
@@ -5638,16 +5738,33 @@ pre {
     font-size: 14px;
   }
 
+  .sidebar-status {
+    margin-top: 10px;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 6px 10px;
+    padding: 10px;
+  }
+
+  .sidebar-status small {
+    grid-column: 1 / -1;
+  }
+
   .workspace {
     padding: 20px 16px 28px;
   }
 
   .toolbar {
     position: static;
+    grid-template-columns: 1fr;
     margin: 0 0 18px;
     padding: 0 0 16px;
     background: transparent;
     backdrop-filter: none;
+  }
+
+  .toolbar-actions {
+    justify-content: flex-start;
   }
 
   .system-overview {
@@ -6079,8 +6196,28 @@ pre {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .nav-item {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .sidebar-status {
+    grid-template-columns: 1fr;
+  }
+
   .toolbar {
     align-items: flex-start;
+  }
+
+  .toolbar-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 38px;
+    align-items: center;
+    width: 100%;
+  }
+
+  .toolbar-runtime {
+    width: 100%;
   }
 
   .toolbar h2 {
