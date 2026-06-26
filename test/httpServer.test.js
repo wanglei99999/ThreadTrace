@@ -1333,11 +1333,13 @@ test('http server exposes source operations drilldown API', async function () {
                 severity: 'warning',
                 title: 'Snapshot freshness',
                 summary: 'present=10/12 | missing=2 | spanMs=60000',
-                nextAction: 'Refresh missing inputs: demoCycle, notificationDiagnostics',
-                targetPanel: 'automation-freshness',
-                actionLabel: 'Open freshness'
-              }
-            ]
+              nextAction: 'Refresh missing inputs: demoCycle, notificationDiagnostics',
+              targetPanel: 'automation-freshness',
+              actionLabel: 'Open freshness',
+              nextActionKey: 'refresh-automation-readiness',
+              nextActionLabel: 'Refresh now'
+            }
+          ]
           },
           operatingPressure: {
             status: 'warn',
@@ -1452,6 +1454,7 @@ test('http server exposes source operations drilldown API', async function () {
     assert.match(webAppJs, /renderAutomationReadinessPlan/);
     assert.match(webAppJs, /renderAutomationAttentionQueue/);
     assert.match(webAppJs, /focus-automation-panel/);
+    assert.match(webAppJs, /run-automation-attention-action/);
     assert.match(webAppJs, /renderAutomationOperatorRunbook/);
     assert.match(webAppJs, /renderAutomationRunbookIntentButton/);
     assert.match(webAppJs, /renderAutomationRemediation/);
@@ -2139,6 +2142,8 @@ test('http server exposes deployment checklist API', async function () {
     assert.ok(openApi.components.schemas.AutomationCockpitAttentionItem.properties.nextAction);
     assert.ok(openApi.components.schemas.AutomationCockpitAttentionItem.properties.targetPanel);
     assert.ok(openApi.components.schemas.AutomationCockpitAttentionItem.properties.actionLabel);
+    assert.ok(openApi.components.schemas.AutomationCockpitAttentionItem.properties.nextActionKey);
+    assert.ok(openApi.components.schemas.AutomationCockpitAttentionItem.properties.nextActionLabel);
     assert.ok(openApi.components.schemas.AutomationCockpitOperatorRunbook.properties.actionableCommandCount);
     assert.ok(openApi.components.schemas.AutomationCockpitOperatorRunbook.properties.executeCommandCount);
     assert.ok(openApi.components.schemas.AutomationCockpitOperatorRunbook.properties.sections.items.properties.commands.items.properties.intent);

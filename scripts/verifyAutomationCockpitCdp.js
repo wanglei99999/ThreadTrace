@@ -284,6 +284,7 @@ function viewportAuditExpression() {
     "    bodyTextHasMojibake: mojibakeMarkers.some((marker) => bodyText.includes(marker)),",
     "    runbookCommandCount: document.querySelectorAll('.automation-runbook-command-row').length,",
     "    attentionQueueRowCount: document.querySelectorAll('.automation-attention-row').length,",
+    "    attentionActionButtonCount: document.querySelectorAll('.automation-attention-panel button[data-action=\"run-automation-attention-action\"]').length,",
     "    runbookCopyButtonCount: document.querySelectorAll('.automation-runbook-panel button[data-action=\"copy-lifecycle-command\"]').length,",
     "    runbookScheduleCommandCount: Array.from(document.querySelectorAll('.automation-runbook-command-row code')).filter((code) => code.textContent.includes('configure-source-schedule')).length,",
     "    runbookScheduleButtonCount: document.querySelectorAll('.automation-runbook-panel button[data-action=\"set-source-schedule\"]').length",
@@ -609,6 +610,7 @@ function assertAudit(label, audit) {
   if (!audit.headlineText) failures.push('missing automation cockpit headline text');
   if (audit.headlineHasMojibake) failures.push('automation cockpit headline contains mojibake: ' + audit.headlineText);
   if (audit.bodyTextHasMojibake) failures.push('body text contains mojibake');
+  if (audit.attentionQueueRowCount > 0 && audit.attentionActionButtonCount <= 0) failures.push('attention queue is missing safe action controls');
   if (audit.runbookCommandCount > 0 && audit.runbookCopyButtonCount < audit.runbookCommandCount) failures.push('runbook commands are missing copy controls');
   if (audit.runbookScheduleCommandCount > 0 && audit.runbookScheduleButtonCount < audit.runbookScheduleCommandCount) failures.push('schedule runbook commands are missing Preview/Apply controls');
   if (audit.heroTop === null || audit.heroTop > audit.clientWidth * 3) failures.push('cockpit appears too late in the page');

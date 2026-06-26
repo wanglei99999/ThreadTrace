@@ -91,7 +91,9 @@ function buildAttentionQueue(input) {
       ? 'Readiness has warnings even though unattended mode was requested.'
       : 'Automation is not ready for unattended operation.', firstPlanNextAction(plan), {
         targetPanel: 'automation-gates',
-        actionLabel: 'Open gates'
+        actionLabel: 'Open gates',
+        nextActionKey: 'refresh-automation-readiness',
+        nextActionLabel: 'Refresh now'
       }));
   }
   if (normalizeStatus(outbox.status) !== 'ok') {
@@ -145,7 +147,9 @@ function buildAttentionQueue(input) {
       ? 'Refresh missing inputs: ' + freshness.missingSources.join(', ')
       : 'Refresh stale cockpit inputs.', {
         targetPanel: 'automation-freshness',
-        actionLabel: 'Open freshness'
+        actionLabel: 'Open freshness',
+        nextActionKey: 'refresh-automation-readiness',
+        nextActionLabel: 'Refresh now'
       }));
   }
   if ((runbook.actionableCommandCount || 0) > 0) {
@@ -155,7 +159,9 @@ function buildAttentionQueue(input) {
       'execute=' + firstNumber(runbook.executeCommandCount, 0)
     ].join(' | '), runbook.nextCommand && runbook.nextCommand.command || 'Review operator runbook commands.', {
       targetPanel: 'automation-runbook',
-      actionLabel: 'Open runbook'
+      actionLabel: 'Open runbook',
+      nextActionKey: 'preview-runbook-command',
+      nextActionLabel: 'Preview next'
     }));
   }
 
@@ -391,7 +397,7 @@ function buildOperatorRunbook(input) {
     executeCommandCount: intentSummary.execute,
     copyOnlyCommandCount: commandCount - intentSummary.actionable,
     sections,
-    nextCommand: firstCommand(sections)
+    nextCommand: firstActionableCommand(sections) || firstCommand(sections)
   };
 }
 
@@ -458,6 +464,17 @@ function firstCommand(sections) {
   for (let sectionIndex = 0; sectionIndex < sections.length; sectionIndex += 1) {
     const commands = sections[sectionIndex].commands || [];
     if (commands.length > 0) return commands[0];
+  }
+  return undefined;
+}
+
+function firstActionableCommand(sections) {
+  for (let sectionIndex = 0; sectionIndex < sections.length; sectionIndex += 1) {
+    const commands = sections[sectionIndex].commands || [];
+    const command = commands.find(function (item) {
+      return item && item.intent && item.intent.execute !== true;
+    });
+    if (command) return command;
   }
   return undefined;
 }

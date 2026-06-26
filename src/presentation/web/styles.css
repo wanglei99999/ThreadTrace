@@ -3572,6 +3572,19 @@ form button[type="submit"]:hover {
   flex: 0 0 auto;
 }
 
+.automation-attention-actions {
+  justify-content: flex-end;
+  min-width: max-content;
+}
+
+@media (max-width: 720px) {
+  .automation-attention-actions {
+    justify-content: flex-start;
+    min-width: 0;
+    width: 100%;
+  }
+}
+
 .automation-freshness-row {
   align-items: start;
   background:

@@ -704,6 +704,10 @@ async function handleAutomationReadinessAction(event) {
   }
   if (button.dataset.action === 'focus-automation-panel') {
     focusAutomationPanel(button.dataset.targetPanel);
+    return;
+  }
+  if (button.dataset.action === 'run-automation-attention-action') {
+    await runAutomationAttentionAction(button);
   }
 }
 
@@ -5611,8 +5615,45 @@ function renderAutomationAttentionQueue(queue) {
 }
 
 function renderAutomationAttentionControl(item) {
-  if (!item || !item.targetPanel) return '';
-  return '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="focus-automation-panel" data-target-panel="' + escapeHtml(item.targetPanel) + '">' + escapeHtml(item.actionLabel || 'Open panel') + '</button>';
+  if (!item || (!item.targetPanel && !item.nextActionKey)) return '';
+  const buttons = [];
+  if (item.targetPanel) {
+    buttons.push('<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="focus-automation-panel" data-target-panel="' + escapeHtml(item.targetPanel) + '">' + escapeHtml(item.actionLabel || 'Open panel') + '</button>');
+  }
+  if (item.nextActionKey) {
+    buttons.push('<button class="inline-button compact-inline-button" type="button" data-action="run-automation-attention-action" data-attention-action="' + escapeHtml(item.nextActionKey) + '" data-target-panel="' + escapeHtml(item.targetPanel || '') + '">' + escapeHtml(item.nextActionLabel || 'Run check') + '</button>');
+  }
+  return '<span class="button-group automation-attention-actions">' + buttons.join('') + '</span>';
+}
+
+async function runAutomationAttentionAction(button) {
+  const action = button.dataset.attentionAction;
+  const targetPanel = button.dataset.targetPanel;
+  if (action === 'refresh-automation-readiness') {
+    await loadAutomationReadiness();
+    focusAutomationPanel(targetPanel);
+    return;
+  }
+  if (action === 'run-llm-readiness') {
+    await runLlmReadiness(resolveAutomationActionTarget());
+    focusAutomationPanel(targetPanel || 'automation-gates');
+    return;
+  }
+  if (action === 'run-llm-preflight') {
+    await runLlmPreflight(resolveAutomationActionTarget());
+    focusAutomationPanel(targetPanel || 'automation-gates');
+    return;
+  }
+  if (action === 'preview-runbook-command') {
+    focusAutomationPanel(targetPanel || 'automation-runbook');
+    const previewButton = document.querySelector('.automation-runbook-panel button[data-action="set-source-schedule"][data-execute="false"]');
+    if (previewButton) {
+      await setSourceScheduleFromButton(previewButton, false, resolveAutomationActionTarget());
+      return;
+    }
+    const target = document.getElementById(resolveAutomationActionTarget());
+    if (target) target.innerHTML = renderFeedbackState('empty', 'No safe runbook preview is available right now.');
+  }
 }
 
 function focusAutomationPanel(targetPanel) {

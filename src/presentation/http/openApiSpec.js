@@ -7342,7 +7342,9 @@ function createOpenApiSpec() {
             summary: { type: 'string' },
             nextAction: { type: 'string' },
             targetPanel: { type: 'string', example: 'automation-pressure' },
-            actionLabel: { type: 'string', example: 'Open pressure' }
+            actionLabel: { type: 'string', example: 'Open pressure' },
+            nextActionKey: { type: 'string', example: 'refresh-automation-readiness' },
+            nextActionLabel: { type: 'string', example: 'Refresh now' }
           },
           additionalProperties: true
         },

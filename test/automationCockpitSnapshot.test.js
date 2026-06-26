@@ -117,6 +117,8 @@ test('automation cockpit snapshot aggregates readiness and operating pressure', 
   assert.equal(snapshot.attentionQueue.items[0].id, 'freshness');
   assert.equal(snapshot.attentionQueue.items[0].targetPanel, 'automation-freshness');
   assert.equal(snapshot.attentionQueue.items[0].actionLabel, 'Open freshness');
+  assert.equal(snapshot.attentionQueue.items[0].nextActionKey, 'refresh-automation-readiness');
+  assert.equal(snapshot.attentionQueue.items[0].nextActionLabel, 'Refresh now');
   assert.ok(snapshot.attentionQueue.items.some(function (item) {
     return item.id === 'pressure.outbox' && item.area === 'notifications' && item.targetPanel === 'automation-pressure';
   }));
@@ -124,8 +126,9 @@ test('automation cockpit snapshot aggregates readiness and operating pressure', 
     return item.id === 'pressure.audit' && item.area === 'review-audit';
   }));
   assert.ok(snapshot.attentionQueue.items.some(function (item) {
-    return item.id === 'runbook.actionable' && item.targetPanel === 'automation-runbook' && /actionable=2/.test(item.summary);
+    return item.id === 'runbook.actionable' && item.targetPanel === 'automation-runbook' && item.nextActionKey === 'preview-runbook-command' && /actionable=2/.test(item.summary);
   }));
+  assert.equal(snapshot.operatorRunbook.nextCommand.key, 'schedule.preview.schedule.source-1');
   assert.equal(snapshot.operatorRunbook.sections.find(function (section) {
     return section.key === 'workers';
   }).commands[0].command, 'node src/presentation/worker/operationsWorkerMain.js --loop');
