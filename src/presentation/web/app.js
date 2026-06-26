@@ -5238,16 +5238,21 @@ function renderDemoCycleClosureStep(step) {
     (evidenceText ? '<small>' + escapeHtml(evidenceText) + '</small>' : '') +
     (step.nextAction ? '<small>' + escapeHtml('下一步 ' + step.nextAction) + '</small>' : '') +
     '</span>' +
-    statusBadge(step.status || 'unknown', statusVariant(step.status)) +
+    statusBadge(workspaceStatusLabel(step.status || 'unknown'), statusVariant(step.status)) +
     '</div>';
 }
 
 function renderDemoCycleEvents(events) {
   if (!events.length) return '<div class="muted">这次试跑没有生成来源变化提醒。</div>';
   return '<div class="source-operation-result-list">' + events.map(function (event) {
+    const details = [
+      event.id ? '提醒 ' + event.id : undefined,
+      '投递 ' + workspaceStatusLabel(event.deliveryStatus || 'pending'),
+      event.acknowledgedAt ? '确认 ' + event.acknowledgedAt : '未确认'
+    ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml(event.title || event.id || 'source-changed') + '</strong>' +
-      '<small>' + escapeHtml([event.id, event.deliveryStatus || 'pending', event.acknowledgedAt ? 'ack=' + event.acknowledgedAt : 'open'].filter(Boolean).join(' | ')) + '</small>' +
+      '<strong>' + escapeHtml(event.title || event.id || '来源变化提醒') + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small>' +
       '<small>' + escapeHtml(event.summary || '') + '</small>' +
       '</span><span class="button-group source-op-buttons">' +
       renderEventDetailButtonControl(event) +
@@ -8992,12 +8997,12 @@ function renderNotificationSynthesisPolicyLegacy(policy) {
       summaryTile('来源阈值', String(defaults.sourceAttentionPriorityScoreThreshold || 0), 'warn'),
       summaryTile('提醒类型', String((policy.eventTypes || []).length), 'ok')
     ].join('') + '</div>',
-    metric('不改动状态', (defaults.immutableExistingStates || []).join(',') || 'none'),
-    metric('可变更状态', (defaults.mutationStatuses || []).join(',') || 'none'),
-    metric('下一步', policy.recommendedNextAction || 'none'),
+    metric('不改动状态', workspaceListText(defaults.immutableExistingStates)),
+    metric('可变更状态', workspaceListText(defaults.mutationStatuses)),
+    metric('下一步', policy.recommendedNextAction || '暂无'),
     renderNotificationSynthesisPolicyRows(policy.eventTypes || []),
     evidenceList((policy.sharedRules || []).map(function (rule) {
-      return rule.key + ' | ' + rule.summary;
+      return notificationPolicyRuleSummary(rule);
     }))
   ].join(''), 'wide');
 }
@@ -9006,20 +9011,20 @@ function renderNotificationSynthesisPolicyRowsLegacy(eventTypes) {
   if (!eventTypes.length) return '<div class="muted">暂无提醒生成规则。</div>';
   return '<div class="source-hotspot-list">' + eventTypes.map(function (item) {
     const rules = (item.alertRules || []).map(function (rule) {
-      return rule.threshold === undefined ? rule.key : rule.key + '=' + rule.threshold;
-    }).join(', ');
+      return notificationPolicyRuleSummary(rule);
+    }).join('；');
     const details = [
-      item.sourceScoped ? 'source-scoped' : 'global',
-      item.staleResolution ? 'stale-resolution' : 'no-stale-resolution',
-      item.reopensAutoResolved ? 'reopen-auto-resolved' : 'no-reopen',
-      item.preservesDeliveryState ? 'preserve-delivery-state' : undefined,
-      rules ? 'rules=' + rules : undefined
-    ].filter(Boolean).join(' | ');
+      item.sourceScoped ? '按来源' : '全局',
+      item.staleResolution ? '会维护过期提醒' : '不自动维护过期提醒',
+      item.reopensAutoResolved ? '信号回来会重新打开' : '不自动重开',
+      item.preservesDeliveryState ? '保留投递状态' : undefined,
+      rules ? '规则 ' + rules : undefined
+    ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml(item.type || 'unknown-type') + '</strong>' +
+      '<strong>' + escapeHtml(notificationEventTypeLabel(item.type)) + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
       '</span>' +
-      statusBadge(item.staleResolution ? 'managed' : 'direct', item.staleResolution ? 'ok' : 'muted') +
+      statusBadge(item.staleResolution ? '自动维护' : '直接生成', item.staleResolution ? 'ok' : 'muted') +
       '</div>';
   }).join('') + '</div>';
 }
@@ -9041,7 +9046,7 @@ function renderEventListSummaryLegacy(events) {
 function renderNotificationEventRowLegacy(event) {
   const ackLabel = event.acknowledgedAt ? '已确认' : '确认';
   const disabled = event.acknowledgedAt ? ' disabled' : '';
-  const title = event.title || event.summary || event.id || 'untitled-event';
+  const title = event.title || event.summary || event.id || '未命名提醒';
   const summary = event.summary && event.summary !== title ? '<small>' + escapeHtml(event.summary) + '</small>' : '';
   const meta = eventMetadata(event).join(' · ');
   const controls = '<span class="button-group source-op-buttons">' +
@@ -9054,7 +9059,7 @@ function renderNotificationEventRowLegacy(event) {
 function renderNotificationEventRowLegacy2(event) {
   const ackLabel = event.acknowledgedAt ? '已确认' : '确认提醒';
   const disabled = event.acknowledgedAt ? ' disabled' : '';
-  const title = event.title || event.summary || event.id || 'untitled-event';
+  const title = event.title || event.summary || event.id || '未命名提醒';
   const summary = event.summary && event.summary !== title ? '<small>' + escapeHtml(event.summary) + '</small>' : '';
   const meta = eventMetadata(event).join(' | ');
   const controls = '<span class="button-group source-op-buttons">' +
@@ -9121,7 +9126,7 @@ function renderNotificationEventOverview(overview) {
       '<section class="notification-outbox-main">',
         '<div class="notification-outbox-header">',
           '<span class="notification-outbox-label">提醒箱</span>',
-          statusBadge(overview.status || 'unknown', statusVariant(overview.status)),
+          statusBadge(workspaceStatusLabel(overview.status || 'unknown'), statusVariant(overview.status)),
         '</div>',
         '<h3>' + escapeHtml(overview.recommendedNextAction || '当前窗口内没有需要处理的提醒。') + '</h3>',
         '<p>' + escapeHtml([
@@ -9198,8 +9203,8 @@ function notificationOutboxAttentionRow(event, label) {
     reviewable: '待复核'
   }[label] || label;
   return '<div class="notification-outbox-attention-row">' +
-    '<strong>' + escapeHtml(event.type || 'notification') + '</strong>' +
-    '<small>' + escapeHtml([labelText, event.deliveryStatus || 'unknown', event.id, event.deliveryAttempts === undefined ? undefined : '尝试=' + event.deliveryAttempts].filter(Boolean).join(' · ')) + '</small>' +
+    '<strong>' + escapeHtml(notificationEventTypeLabel(event.type)) + '</strong>' +
+    '<small>' + escapeHtml([labelText, workspaceStatusLabel(workspaceValue(event.deliveryStatus, 'unknown')), event.id ? '提醒 ' + event.id : undefined, event.deliveryAttempts === undefined ? undefined : '尝试 ' + event.deliveryAttempts].filter(Boolean).join(' · ')) + '</small>' +
     '</div>';
 }
 
@@ -9220,7 +9225,7 @@ function renderNotificationSynthesisPolicy(policy) {
       ].join('') + '</div>',
       renderNotificationSynthesisPolicyRows(policy.eventTypes || []),
       '<div class="notification-policy-rules">' + (policy.sharedRules || []).map(function (rule) {
-        return '<span>' + escapeHtml(rule.key + ' | ' + rule.summary) + '</span>';
+        return '<span>' + escapeHtml(notificationPolicyRuleSummary(rule)) + '</span>';
       }).join('') + '</div>',
     '</div>'
   ].join(''), 'wide');
@@ -9230,18 +9235,18 @@ function renderNotificationSynthesisPolicyRows(eventTypes) {
   if (!eventTypes.length) return '<div class="muted">暂无提醒生成规则。</div>';
   return '<div class="notification-policy-list">' + eventTypes.map(function (item) {
     const rules = (item.alertRules || []).map(function (rule) {
-      return rule.threshold === undefined ? rule.key : rule.key + '=' + rule.threshold;
-    }).join(', ');
+      return notificationPolicyRuleSummary(rule);
+    }).join('；');
     const details = [
-      item.staleResolution ? 'stale-resolution' : 'no-stale-resolution',
-      item.reopensAutoResolved ? 'reopen-auto-resolved' : 'no-reopen',
-      item.preservesDeliveryState ? 'preserve-delivery-state' : undefined,
-      rules ? 'rules=' + rules : undefined
-    ].filter(Boolean).join(' | ');
+      item.staleResolution ? '会维护过期提醒' : '不自动维护过期提醒',
+      item.reopensAutoResolved ? '信号回来会重新打开' : '不自动重开',
+      item.preservesDeliveryState ? '保留投递状态' : undefined,
+      rules ? '规则 ' + rules : undefined
+    ].filter(Boolean).join(' · ');
     return '<div class="notification-policy-row">' +
       '<section>' +
         '<span class="notification-policy-type">' + escapeHtml(item.sourceScoped ? '按来源' : '全局') + '</span>' +
-        '<strong>' + escapeHtml(item.type || 'unknown-type') + '</strong>' +
+        '<strong>' + escapeHtml(notificationEventTypeLabel(item.type)) + '</strong>' +
         '<small>' + escapeHtml(details) + '</small>' +
       '</section>' +
       '<div class="notification-policy-state">' +
@@ -9249,6 +9254,15 @@ function renderNotificationSynthesisPolicyRows(eventTypes) {
       '</div>' +
       '</div>';
   }).join('') + '</div>';
+}
+
+function notificationPolicyRuleSummary(rule) {
+  const safeRule = rule || {};
+  return [
+    safeRule.summary || safeRule.key || '提醒规则',
+    safeRule.threshold === undefined ? undefined : '阈值 ' + safeRule.threshold,
+    safeRule.key ? '规则 ' + safeRule.key : undefined
+  ].filter(Boolean).join(' · ');
 }
 
 function renderEventListSummary(events) {
@@ -9280,15 +9294,15 @@ function renderNotificationEventRow(event) {
   return '<div class="notification-event-row ' + statusClassName(statusVariant(event.severity || event.deliveryStatus)) + '">' +
     '<section class="notification-event-anchor">' +
       '<span class="notification-event-source">' + escapeHtml(source) + '</span>' +
-      '<strong>' + escapeHtml(event.type || 'notification') + '</strong>' +
+      '<strong>' + escapeHtml(notificationEventTypeLabel(event.type)) + '</strong>' +
       '<small>' + escapeHtml(event.createdAt || '未知时间') + '</small>' +
     '</section>' +
     '<section class="notification-event-brief">' +
       '<p>' + escapeHtml(title) + '</p>' +
       '<small>' + escapeHtml(summary) + '</small>' +
       '<div class="notification-event-chips">' +
-        authorMetaChip('级别', event.severity || 'unknown', statusVariant(event.severity)) +
-        authorMetaChip('投递', event.deliveryStatus || 'pending', statusVariant(event.deliveryStatus || 'pending')) +
+        authorMetaChip('级别', workspaceStatusLabel(event.severity || 'unknown'), statusVariant(event.severity)) +
+        authorMetaChip('投递', workspaceStatusLabel(event.deliveryStatus || 'pending'), statusVariant(event.deliveryStatus || 'pending')) +
         authorMetaChip('尝试', event.deliveryAttempts || 0, (event.deliveryAttempts || 0) > 0 ? 'warn' : 'muted') +
         authorMetaChip('确认', event.acknowledgedAt ? '是' : '否', event.acknowledgedAt ? 'ok' : 'warn') +
       '</div>' +
@@ -9335,9 +9349,9 @@ function eventMetadata(event) {
   const ack = event.acknowledgedAt ? '确认 ' + [event.acknowledgedBy, event.acknowledgedAt].filter(Boolean).join(' ') : '未确认';
   return [
     event.createdAt,
-    event.type,
-    event.severity,
-    event.deliveryStatus || 'pending',
+    notificationEventTypeLabel(event.type),
+    workspaceStatusLabel(event.severity),
+    workspaceStatusLabel(event.deliveryStatus || 'pending'),
     source,
     ack
   ].filter(Boolean);

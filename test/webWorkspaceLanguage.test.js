@@ -647,3 +647,19 @@ test('source type notification result avoids event-console copy', function () {
     "(event.severity || '未知') + reason"
   ]);
 });
+
+test('notification inbox rows avoid event-backend copy', function () {
+  const app = readProjectFile('src/presentation/web/app.js');
+
+  assertAbsent(app, [
+    "event.type || 'notification'",
+    "authorMetaChip('级别', event.severity || 'unknown'",
+    "authorMetaChip('投递', event.deliveryStatus || 'pending'",
+    "event.deliveryStatus || 'unknown'",
+    "item.type || 'unknown-type'",
+    "item.staleResolution ? 'stale-resolution' : 'no-stale-resolution'",
+    "item.reopensAutoResolved ? 'reopen-auto-resolved' : 'no-reopen'",
+    "rules ? 'rules=' + rules : undefined",
+    "rule.key + ' | ' + rule.summary"
+  ]);
+});
