@@ -369,3 +369,48 @@ test('CLI prints automation readiness plan as JSON', async function () {
     return true;
   });
 });
+
+test('CLI prints automation cockpit snapshot as JSON', async function () {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'threadtrace-cli-automation-cockpit-'));
+  const root = path.resolve(__dirname, '..');
+  const scriptPath = path.join(root, 'src', 'presentation', 'cli', 'threadtrace.js');
+
+  await assert.rejects(execFileAsync(process.execPath, [
+    scriptPath,
+    'automation-cockpit',
+    '--store-dir',
+    tempDir,
+    '--source-task-mode',
+    'insight-pipeline',
+    '--notification-limit',
+    '7',
+    '--audit-limit',
+    '8',
+    '--execution-limit',
+    '9',
+    '--json',
+    'true',
+    '--now',
+    '2026-06-26T10:00:00.000Z'
+  ], {
+    cwd: root,
+    timeout: 20000
+  }), function (error) {
+    const snapshot = JSON.parse(error.stdout);
+    assert.equal(error.code, 2);
+    assert.equal(snapshot.schemaVersion, 'automation-cockpit-snapshot.v1');
+    assert.equal(snapshot.generatedAt, '2026-06-26T10:00:00.000Z');
+    assert.equal(snapshot.status, 'fail');
+    assert.equal(snapshot.readyForUnattendedRun, false);
+    assert.equal(snapshot.plan.status, 'fail');
+    assert.equal(snapshot.plan.summary.sources.total, 0);
+    assert.equal(snapshot.plan.summary.workers.sourceTaskMode, 'insight-pipeline');
+    assert.equal(snapshot.notificationOverview.windowLimit, 7);
+    assert.equal(snapshot.reviewActionAuditOverview.query.limit, 8);
+    assert.equal(snapshot.reviewActionExecutions.count, 0);
+    assert.equal(snapshot.summary.readinessStatus, 'fail');
+    assert.equal(snapshot.summary.diagnosticsStatus, 'ok');
+    assert.equal(error.stderr, '');
+    return true;
+  });
+});

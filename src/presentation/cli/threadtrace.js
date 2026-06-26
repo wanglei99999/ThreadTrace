@@ -968,6 +968,66 @@ function main(argv) {
     return;
   }
 
+  if (command === 'automation-cockpit') {
+    const storeDir = options.storeDir || defaultStoreDir;
+    runtime.getAutomationCockpitSnapshot({
+      sourceId: options.sourceId,
+      sourceKey: options.sourceKey || options.forum,
+      sourceType: options.sourceType,
+      enabled: parseOptionalBoolean(options.enabled),
+      topology: options.topology,
+      sourceTaskMode: options.sourceTaskMode,
+      llmReadinessMode: options.llmReadinessMode,
+      provider: options.provider,
+      limit: options.limit ? Number(options.limit) : 100,
+      cockpitLimit: options.cockpitLimit ? Number(options.cockpitLimit) : undefined,
+      healthLimit: options.healthLimit ? Number(options.healthLimit) : undefined,
+      timelineLimit: options.timelineLimit ? Number(options.timelineLimit) : undefined,
+      attentionLimit: options.attentionLimit ? Number(options.attentionLimit) : undefined,
+      sourceTypeLimit: options.sourceTypeLimit ? Number(options.sourceTypeLimit) : undefined,
+      taskLimit: options.taskLimit ? Number(options.taskLimit) : undefined,
+      pipelineLimit: options.pipelineLimit ? Number(options.pipelineLimit) : undefined,
+      eventLimit: options.eventLimit ? Number(options.eventLimit) : undefined,
+      notificationLimit: options.notificationLimit ? Number(options.notificationLimit) : undefined,
+      auditLimit: options.auditLimit ? Number(options.auditLimit) : undefined,
+      executionLimit: options.executionLimit ? Number(options.executionLimit) : undefined,
+      maxAttempts: options.maxAttempts ? Number(options.maxAttempts) : undefined,
+      taskScanLimit: options.taskScanLimit ? Number(options.taskScanLimit) : undefined,
+      leaseScanLimit: options.leaseScanLimit ? Number(options.leaseScanLimit) : undefined,
+      sourceRunStaleAfterMs: options.sourceRunStaleAfterMs ? Number(options.sourceRunStaleAfterMs) : undefined,
+      sourceFailureRetryBackoffMs: options.sourceFailureRetryBackoffMs ? Number(options.sourceFailureRetryBackoffMs) : undefined,
+      sourceFailureMaxRetryBackoffMs: options.sourceFailureMaxRetryBackoffMs ? Number(options.sourceFailureMaxRetryBackoffMs) : undefined,
+      workerStaleAfterMs: options.workerStaleAfterMs ? Number(options.workerStaleAfterMs) : undefined,
+      runningStaleAfterMs: options.runningStaleAfterMs ? Number(options.runningStaleAfterMs) : undefined,
+      includeInputs: isTruthyOption(options.includeInputs),
+      now: options.now,
+      storeDir
+    }).then(function (snapshot) {
+      if (isTruthyOption(options.json)) {
+        console.log(JSON.stringify(snapshot, null, 2));
+        if (snapshot.status === 'fail') process.exitCode = 2;
+        if (snapshot.status === 'warn') process.exitCode = 1;
+        return;
+      }
+      const summary = snapshot.summary || {};
+      const plan = snapshot.plan || {};
+      const planSummary = plan.summary || {};
+      console.log('Automation cockpit: ' + snapshot.status + '\tready=' + Boolean(snapshot.readyForUnattendedRun));
+      console.log('Signals: readiness=' + (summary.readinessStatus || 'unknown') + ', outbox=' + (summary.notificationStatus || 'unknown') + ', audit=' + (summary.auditStatus || 'unknown') + ', executions=' + (summary.executionStatus || 'unknown') + ', diagnostics=' + (summary.diagnosticsStatus || 'unknown'));
+      console.log('Notifications: open=' + (summary.openNotificationCount || 0) + ', pending=' + (summary.pendingNotificationCount || 0));
+      console.log('Review actions: audits=' + (summary.auditCount || 0) + ', executions=' + (summary.executionCount || 0));
+      console.log('Sources: total=' + (planSummary.sources && planSummary.sources.total || 0) + ', due=' + (planSummary.sources && planSummary.sources.due || 0) + ', queue=' + (planSummary.operations && planSummary.operations.queueTotal || 0));
+      printAutomationRemediation(plan.remediation);
+      (plan.nextActions || []).forEach(printActionWithDetails);
+      if (snapshot.status === 'fail') process.exitCode = 2;
+      if (snapshot.status === 'warn') process.exitCode = 1;
+    }).catch(function (error) {
+      console.error(error && error.stack ? error.stack : error);
+      process.exitCode = 1;
+    });
+    return;
+  }
+
   if (command === 'trace-context') {
     const storeDir = options.storeDir || defaultStoreDir;
     runtime.getTaskTraceContext({
@@ -3207,6 +3267,24 @@ function parseArgs(args) {
     } else if (item === '--event-limit') {
       options.eventLimit = args[index + 1];
       index += 1;
+    } else if (item === '--cockpit-limit') {
+      options.cockpitLimit = args[index + 1];
+      index += 1;
+    } else if (item === '--health-limit') {
+      options.healthLimit = args[index + 1];
+      index += 1;
+    } else if (item === '--source-type-limit') {
+      options.sourceTypeLimit = args[index + 1];
+      index += 1;
+    } else if (item === '--notification-limit') {
+      options.notificationLimit = args[index + 1];
+      index += 1;
+    } else if (item === '--audit-limit') {
+      options.auditLimit = args[index + 1];
+      index += 1;
+    } else if (item === '--execution-limit') {
+      options.executionLimit = args[index + 1];
+      index += 1;
     } else if (item === '--source-id') {
       options.sourceId = args[index + 1];
       index += 1;
@@ -3326,6 +3404,9 @@ function parseArgs(args) {
       index += 1;
     } else if (item === '--include-failed') {
       options.includeFailed = args[index + 1];
+      index += 1;
+    } else if (item === '--include-inputs') {
+      options.includeInputs = args[index + 1];
       index += 1;
     } else if (item === '--channel') {
       options.channel = args[index + 1];
@@ -3667,6 +3748,7 @@ function printHelp() {
   console.log('  node src/presentation/cli/threadtrace.js source-drilldown [--source-id id | --source-key key] [--json true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js source-collection-health [--source-id id | --source-key key] [--json true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js automation-readiness [--source-id id | --source-key key] [--source-task-mode ingest|insight-pipeline] [--llm-readiness-mode configuration|preflight|evaluation] [--provider mock|openai-compatible] [--json true] [--store-dir dir]');
+  console.log('  node src/presentation/cli/threadtrace.js automation-cockpit [--source-id id | --source-key key] [--source-task-mode ingest|insight-pipeline] [--notification-limit n] [--audit-limit n] [--execution-limit n] [--json true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js run-demo-cycle [--source-id id] [--source-key key] [--provider mock] [--acknowledge-events true] [--execute-acknowledgement true] [--json true] [--store-dir dir]');
   console.log('  node src/presentation/cli/threadtrace.js source-type-drilldown --source-type type [--forum nga] [--json true] [--store-dir dir] [--limit n]');
   console.log('  node src/presentation/cli/threadtrace.js trace-context [--task-id id | --request-id id | --trace-id id | --idempotency-key key] [--store-dir dir] [--limit n]');
