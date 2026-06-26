@@ -99,6 +99,8 @@ document.addEventListener('DOMContentLoaded', function () {
   loadConnectorCatalog();
   renderHistoryCockpitStandby();
   bindSourceOnboardingRecipePreview();
+  initializeCurrentViewFromLocation();
+  window.addEventListener('hashchange', initializeCurrentViewFromLocation);
 });
 
 function bindNavigation() {
@@ -668,6 +670,26 @@ function buildSourceOnboardingRequest(form) {
 async function handleAutomationReadinessAction(event) {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
+  if (button.dataset.action === 'refresh-automation-readiness') {
+    await loadAutomationReadiness();
+    return;
+  }
+  if (button.dataset.action === 'run-llm-readiness') {
+    await runLlmReadiness();
+    return;
+  }
+  if (button.dataset.action === 'run-llm-preflight') {
+    await runLlmPreflight();
+    return;
+  }
+  if (button.dataset.action === 'run-llm-evaluation') {
+    await runLlmEvaluation();
+    return;
+  }
+  if (button.dataset.action === 'run-demo-cycle') {
+    await runDemoCycle();
+    return;
+  }
   if (button.dataset.action === 'set-source-schedule') {
     const execute = button.dataset.execute === 'true';
     if (execute && !window.confirm('Configure this source schedule?')) return;
@@ -1233,22 +1255,43 @@ function parseContextReviewResultJson(value) {
   return parsed;
 }
 
-function setView(viewName) {
-  state.currentView = viewName;
+function initializeCurrentViewFromLocation() {
+  const viewName = normalizeViewName(window.location.hash ? window.location.hash.slice(1) : '');
+  if (viewName && viewName !== state.currentView) setView(viewName, { syncHash: false });
+}
+
+function normalizeViewName(viewName) {
+  return views[viewName] ? viewName : undefined;
+}
+
+function setView(viewName, options) {
+  const safeViewName = normalizeViewName(viewName);
+  if (!safeViewName) return;
+  const safeOptions = options || {};
+  if (safeOptions.syncHash !== false && window.location && window.history) {
+    const nextHash = '#' + safeViewName;
+    if (window.location.hash !== nextHash) {
+      window.history.replaceState(null, '', nextHash);
+    }
+  }
+  state.currentView = safeViewName;
   document.querySelectorAll('.nav-item').forEach(function (button) {
-    button.classList.toggle('active', button.dataset.view === viewName);
+    button.classList.toggle('active', button.dataset.view === safeViewName);
   });
   document.querySelectorAll('.view-panel').forEach(function (panel) {
     panel.classList.add('hidden');
   });
-  document.getElementById(viewName + 'View').classList.remove('hidden');
-  const view = views[viewName];
+  document.getElementById(safeViewName + 'View').classList.remove('hidden');
+  const view = views[safeViewName];
   document.getElementById('viewTitle').textContent = view.title;
   document.getElementById('viewSubtitle').textContent = view.subtitle;
   document.getElementById('viewMode').textContent = view.mode;
   document.getElementById('viewFocus').textContent = view.focus;
-  if (viewName === 'history') renderHistoryCockpitStandby();
-  if (viewName === 'system') loadSystemStatus();
+  if (safeViewName === 'history') renderHistoryCockpitStandby();
+  if (safeViewName === 'system') {
+    loadSystemStatus();
+    loadAutomationReadiness();
+  }
 }
 
 async function loadAdapters() {
@@ -1934,7 +1977,10 @@ async function loadSourceOperations() {
 }
 
 async function loadAutomationReadiness() {
-  await renderAsync('sourceOperationsResult', function () {
+  const targetId = document.getElementById('automationReadinessResult')
+    ? 'automationReadinessResult'
+    : 'sourceOperationsResult';
+  await renderAsync(targetId, function () {
     const query = new URLSearchParams({
       limit: '100',
       cockpitLimit: '12',
@@ -2260,6 +2306,7 @@ async function runAllSources() {
   await loadTasks();
   await loadSources();
   await loadSourceOperations();
+  await loadAutomationReadiness();
   await loadEvents();
   await loadRawPages();
 }
@@ -2295,6 +2342,7 @@ async function runLlmPreflight() {
     return requestJson('/api/llm/preflight', {});
   }, renderLlmPreflightReport);
   await loadSystemStatus();
+  await loadAutomationReadiness();
 }
 
 async function runLlmReadiness() {
@@ -2306,6 +2354,7 @@ async function runLlmReadiness() {
     });
   }, renderLlmReadinessProfile);
   await loadSystemStatus();
+  await loadAutomationReadiness();
 }
 
 async function runLlmEvaluation() {
@@ -2313,6 +2362,7 @@ async function runLlmEvaluation() {
     return requestJson('/api/llm/evaluate', {});
   }, renderLlmEvaluationReport);
   await loadSystemStatus();
+  await loadAutomationReadiness();
 }
 
 async function runDemoCycle() {
@@ -2332,6 +2382,7 @@ async function runDemoCycle() {
   await loadTasks();
   await loadSources();
   await loadSourceOperations();
+  await loadAutomationReadiness();
   await loadEvents();
   await loadRawPages();
 }
@@ -2406,6 +2457,7 @@ async function setSourceEnabledFromButton(button) {
   await loadTasks();
   await loadSources();
   await loadSourceOperations();
+  await loadAutomationReadiness();
 }
 
 async function resetSourceFailureFromButton(button, execute) {
@@ -2421,6 +2473,7 @@ async function resetSourceFailureFromButton(button, execute) {
   await loadTasks();
   await loadSources();
   await loadSourceOperations();
+  await loadAutomationReadiness();
 }
 
 async function setSourceScheduleFromButton(button, execute) {
@@ -2437,6 +2490,7 @@ async function setSourceScheduleFromButton(button, execute) {
   await loadTasks();
   await loadSources();
   await loadSourceOperations();
+  await loadAutomationReadiness();
 }
 
 async function loadSourceOperationsDrilldownFromButton(button) {
@@ -5177,6 +5231,17 @@ function renderOperationsRunbook(runbook) {
 }
 
 function renderAutomationReadinessPlan(plan) {
+  plan = plan || {};
+  return [
+    renderAutomationCockpitHero(plan),
+    panel('Automation gates', renderAutomationReadinessChecks(plan.checks || []), 'wide automation-gates-panel'),
+    panel('Automation remediation', renderAutomationRemediation(plan.remediation), 'wide automation-remediation-panel'),
+    panel('Worker commands', renderAutomationWorkerCommands(plan.automation && plan.automation.workerCommands || []), 'wide automation-worker-panel'),
+    panel('Next actions', renderAutomationNextActions(plan.nextActions || []), 'wide automation-next-panel')
+  ].join('');
+}
+
+function renderAutomationCockpitHero(plan) {
   const summary = plan.summary || {};
   const sources = summary.sources || {};
   const operations = summary.operations || {};
@@ -5184,29 +5249,122 @@ function renderAutomationReadinessPlan(plan) {
   const llm = summary.llm || {};
   const demo = summary.demo || {};
   const representative = summary.representativeSource || {};
+  const generatedAt = plan.generatedAt || 'unknown';
+  const sourceTaskMode = workers.sourceTaskMode || plan.automation && plan.automation.sourceTaskMode || 'unknown';
+  const representativeSource = representative.source && (representative.source.displayName || representative.source.id || representative.source.sourceKey) || 'none';
+  const replayStatus = representative.replay && representative.replay.available ? 'available' : 'missing';
+  const readyVariant = plan.readyForUnattendedRun ? 'ok' : statusVariant(plan.status);
   return [
-    panel('Automation readiness', [
-      '<div class="summary-strip">',
-      summaryTile('Status', plan.status || 'unknown', statusVariant(plan.status)),
-      summaryTile('Ready', String(Boolean(plan.readyForUnattendedRun)), plan.readyForUnattendedRun ? 'ok' : 'warn'),
-      summaryTile('Sources', String(sources.total || 0), (sources.total || 0) > 0 ? 'ok' : 'fail'),
-      summaryTile('Due', String(sources.due || 0), (sources.due || 0) > 0 ? 'ok' : 'muted'),
-      summaryTile('Queue', String(operations.queueTotal || 0), statusVariant(operations.cockpitStatus)),
-      summaryTile('Runnable', String(operations.runnable || 0), (operations.runnable || 0) > 0 ? 'ok' : 'muted'),
-      summaryTile('Workers', workers.topology || 'unknown', statusVariant(workers.status)),
-      summaryTile('LLM', llm.provider || 'unknown', statusVariant(llm.status)),
-      summaryTile('Demo', demo.closureStatus || 'not-run', demo.readyForDailyUse ? 'ok' : 'warn'),
-      '</div>',
-      metric('Source task mode', workers.sourceTaskMode || plan.automation && plan.automation.sourceTaskMode || 'unknown'),
-      metric('Representative source', representative.source && (representative.source.displayName || representative.source.id || representative.source.sourceKey) || 'none'),
-      metric('Collection health', representative.status || 'not-evaluated'),
-      metric('Replay evidence', representative.replay && representative.replay.available ? 'available' : 'missing')
-    ].join(''), 'wide'),
-    panel('Automation gates', renderAutomationReadinessChecks(plan.checks || []), 'wide'),
-    panel('Automation remediation', renderAutomationRemediation(plan.remediation), 'wide'),
-    panel('Worker commands', renderAutomationWorkerCommands(plan.automation && plan.automation.workerCommands || []), 'wide'),
-    panel('Next actions', renderAutomationNextActions(plan.nextActions || []), 'wide')
+    '<article class="automation-cockpit-hero ' + statusClassName(readyVariant) + '">',
+    '<section class="automation-cockpit-main">',
+    '<div class="automation-cockpit-header">',
+    '<span class="automation-cockpit-label">Automation cockpit</span>',
+    statusBadge(plan.status || 'unknown', readyVariant),
+    statusBadge(plan.readyForUnattendedRun ? 'unattended ready' : 'operator review', plan.readyForUnattendedRun ? 'ok' : 'warn'),
+    '</div>',
+    '<h3>' + escapeHtml(automationReadinessHeadline(plan, sources, operations, workers, llm, demo)) + '</h3>',
+    '<p>' + escapeHtml([
+      'generated=' + generatedAt,
+      'sourceTaskMode=' + sourceTaskMode,
+      'topology=' + (workers.topology || 'unknown'),
+      'llm=' + (llm.provider || 'unknown') + (llm.mockMode ? '/mock' : '')
+    ].join(' | ')) + '</p>',
+    '<div class="automation-cockpit-actions button-group">' +
+      automationCockpitButton('refresh-automation-readiness', 'Refresh', 'secondary-inline-button') +
+      automationCockpitButton('run-llm-readiness', 'LLM readiness', 'secondary-inline-button') +
+      automationCockpitButton('run-llm-preflight', 'LLM preflight', 'secondary-inline-button') +
+      automationCockpitButton('run-llm-evaluation', 'LLM evaluate', 'secondary-inline-button') +
+      automationCockpitButton('run-demo-cycle', 'Demo cycle', '') +
+    '</div>',
+    '</section>',
+    '<aside class="automation-cockpit-signals">',
+    automationCockpitSignal('Ready', plan.readyForUnattendedRun ? 'yes' : 'no', plan.readyForUnattendedRun ? 'ok' : 'warn'),
+    automationCockpitSignal('Sources', sources.total || 0, (sources.total || 0) > 0 ? 'ok' : 'fail'),
+    automationCockpitSignal('Due now', sources.due || 0, (sources.due || 0) > 0 ? 'warn' : 'ok'),
+    automationCockpitSignal('Queue', operations.queueTotal || 0, statusVariant(operations.cockpitStatus)),
+    automationCockpitSignal('Runnable', operations.runnable || 0, (operations.runnable || 0) > 0 ? 'ok' : 'muted'),
+    automationCockpitSignal('LLM', llm.provider || 'unknown', statusVariant(llm.status)),
+    '</aside>',
+    '<section class="automation-cockpit-runpath">',
+    '<span>Run path</span>',
+    renderAutomationRunPath(summary, plan),
+    '</section>',
+    '<section class="automation-cockpit-foot">',
+    '<span>Evidence loop</span>',
+    '<strong>' + escapeHtml([
+      'representative=' + representativeSource,
+      'health=' + (representative.status || 'not-evaluated'),
+      'replay=' + replayStatus
+    ].join(' | ')) + '</strong>',
+    '<small>' + escapeHtml([
+      'skipped=' + (sources.skipped || 0),
+      'priority=' + (operations.highestPriorityScore || 0),
+      'demo=' + (demo.closureStatus || demo.status || 'not-run')
+    ].join(' | ')) + '</small>',
+    '</section>',
+    '</article>'
   ].join('');
+}
+
+function automationReadinessHeadline(plan, sources, operations, workers, llm, demo) {
+  if (plan.readyForUnattendedRun) return '无人值守链路已经具备日常运行条件。';
+  if ((sources.total || 0) === 0) return '先接入一个可信来源，自动化才有可运行对象。';
+  if ((operations.queueTotal || 0) > 0 && (operations.runnable || 0) > 0) return '队列已有可执行工作，适合先跑一轮受控验证。';
+  if (llm.mockMode || llm.provider === 'mock') return '语义链路仍在 mock/provider 预检阶段，需要接入真实模型质量。';
+  if (!workers.topology || workers.status !== 'ok') return 'Worker 拓扑还需要确认，避免长期运行时掉链。';
+  if (!demo.readyForDailyUse) return '端到端 demo closure 还没有形成可日常信任的证据。';
+  return '自动化底座已铺好，剩下的是把缺口逐个清掉。';
+}
+
+function automationCockpitButton(action, label, className) {
+  return '<button class="inline-button ' + escapeHtml(className || '') + '" type="button" data-action="' + escapeHtml(action) + '">' + escapeHtml(label) + '</button>';
+}
+
+function automationCockpitSignal(label, value, variant) {
+  return '<div class="automation-cockpit-signal ' + statusClassName(variant) + '"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(value) + '</strong></div>';
+}
+
+function renderAutomationRunPath(summary, plan) {
+  const sources = summary.sources || {};
+  const operations = summary.operations || {};
+  const workers = summary.workers || {};
+  const llm = summary.llm || {};
+  const demo = summary.demo || {};
+  const automation = plan.automation || {};
+  const workerCommands = automation.workerCommands || [];
+  const rows = [
+    {
+      title: 'Source schedule',
+      detail: 'registered=' + (sources.total || 0) + ' | due=' + (sources.due || 0) + ' | skipped=' + (sources.skipped || 0),
+      status: (sources.total || 0) > 0 ? ((sources.due || 0) > 0 ? 'warn' : 'ok') : 'fail'
+    },
+    {
+      title: 'Worker topology',
+      detail: (workers.topology || 'unknown') + ' | mode=' + (workers.sourceTaskMode || automation.sourceTaskMode || 'unknown') + ' | workers=' + (workers.workerCount || workerCommands.length || 0),
+      status: statusVariant(workers.status)
+    },
+    {
+      title: 'LLM provider',
+      detail: (llm.provider || 'unknown') + ' | mode=' + (llm.mode || 'unknown') + ' | mock=' + String(Boolean(llm.mockMode)),
+      status: llm.mockMode ? 'warn' : statusVariant(llm.status)
+    },
+    {
+      title: 'Demo closure',
+      detail: 'status=' + (demo.closureStatus || demo.status || 'not-run') + ' | daily=' + String(Boolean(demo.readyForDailyUse)),
+      status: demo.readyForDailyUse ? 'ok' : 'warn'
+    },
+    {
+      title: 'Operator pressure',
+      detail: 'queue=' + (operations.queueTotal || 0) + ' | runnable=' + (operations.runnable || 0) + ' | priority=' + (operations.highestPriorityScore || 0),
+      status: statusVariant(operations.cockpitStatus)
+    }
+  ];
+  return rows.map(function (row) {
+    return '<div class="automation-cockpit-runrow ' + statusClassName(row.status) + '">' +
+      '<strong>' + escapeHtml(row.title) + '</strong>' +
+      '<small>' + escapeHtml(row.detail) + '</small>' +
+      '</div>';
+  }).join('');
 }
 
 function renderAutomationReadinessChecks(checks) {

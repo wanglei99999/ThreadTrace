@@ -3446,6 +3446,216 @@ form button[type="submit"]:hover {
   grid-template-columns: minmax(180px, 0.3fr) minmax(0, 1fr) minmax(220px, auto);
 }
 
+.automation-cockpit-grid {
+  margin-top: 14px;
+  margin-bottom: 18px;
+  scroll-margin-top: 112px;
+}
+
+.automation-cockpit-hero {
+  position: relative;
+  grid-column: span 12;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.64fr) minmax(300px, 0.72fr);
+  gap: 16px;
+  overflow: hidden;
+  padding: 20px;
+  border: 1px solid rgba(36, 95, 159, 0.2);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.99), rgba(240, 247, 255, 0.96) 42%, rgba(226, 243, 238, 0.86) 74%, rgba(255, 247, 230, 0.62)),
+    var(--panel);
+  box-shadow: 0 22px 48px rgba(36, 95, 159, 0.1), var(--inner-light);
+}
+
+.automation-cockpit-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(120deg, rgba(241, 189, 82, 0.1), transparent 35%),
+    linear-gradient(90deg, rgba(36, 95, 159, 0.055) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(20, 114, 95, 0.05) 1px, transparent 1px);
+  background-size: auto, 32px 32px, 32px 32px;
+  mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0.78), transparent 92%);
+  pointer-events: none;
+}
+
+.automation-cockpit-main,
+.automation-cockpit-signals,
+.automation-cockpit-runpath,
+.automation-cockpit-foot {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.automation-cockpit-main {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(36, 95, 159, 0.2);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(238, 246, 255, 0.88) 52%, rgba(232, 247, 241, 0.78)),
+    var(--panel);
+  box-shadow: 0 18px 38px rgba(36, 95, 159, 0.1), var(--inner-light);
+}
+
+.automation-cockpit-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.automation-cockpit-label {
+  width: max-content;
+  max-width: 100%;
+  padding: 5px 8px;
+  border: 1px solid rgba(36, 95, 159, 0.22);
+  border-radius: var(--radius-sm);
+  background: rgba(238, 246, 255, 0.88);
+  color: #154d88;
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.automation-cockpit-main h3 {
+  max-width: 56ch;
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 24px;
+  line-height: 1.24;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.automation-cockpit-main p {
+  max-width: 74ch;
+  margin: 0;
+  color: #405a64;
+  line-height: 1.58;
+  overflow-wrap: anywhere;
+}
+
+.automation-cockpit-actions {
+  justify-content: flex-start;
+  gap: 8px;
+  margin-top: 2px;
+  background: rgba(255, 255, 255, 0.54);
+}
+
+.automation-cockpit-signals {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.automation-cockpit-signal,
+.automation-cockpit-runpath,
+.automation-cockpit-foot {
+  border: 1px solid rgba(184, 201, 195, 0.74);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.84);
+}
+
+.automation-cockpit-signal {
+  display: grid;
+  align-content: space-between;
+  gap: 8px;
+  min-height: 82px;
+  padding: 12px;
+}
+
+.automation-cockpit-signal span,
+.automation-cockpit-runpath > span,
+.automation-cockpit-foot > span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.automation-cockpit-signal strong {
+  color: var(--text-strong);
+  font-size: 20px;
+  line-height: 1.22;
+  overflow-wrap: anywhere;
+}
+
+.automation-cockpit-signal.status-ok,
+.automation-cockpit-runrow.status-ok {
+  border-color: rgba(19, 116, 95, 0.24);
+  background: rgba(232, 247, 241, 0.76);
+}
+
+.automation-cockpit-signal.status-warn,
+.automation-cockpit-runrow.status-warn {
+  border-color: rgba(138, 87, 18, 0.28);
+  background: rgba(255, 246, 228, 0.86);
+}
+
+.automation-cockpit-signal.status-fail,
+.automation-cockpit-runrow.status-fail {
+  border-color: rgba(162, 60, 60, 0.26);
+  background: rgba(255, 240, 240, 0.84);
+}
+
+.automation-cockpit-runpath {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 14px;
+}
+
+.automation-cockpit-runrow {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid rgba(232, 237, 244, 0.98);
+  border-radius: var(--radius-sm);
+  background: rgba(247, 249, 250, 0.82);
+}
+
+.automation-cockpit-runrow strong {
+  color: var(--text-strong);
+  line-height: 1.32;
+  overflow-wrap: anywhere;
+}
+
+.automation-cockpit-runrow small {
+  color: var(--muted);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.automation-cockpit-foot {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 0.18fr) minmax(0, 0.58fr) minmax(0, 0.62fr);
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  background:
+    linear-gradient(180deg, rgba(250, 252, 253, 0.96), rgba(241, 247, 246, 0.94));
+}
+
+.automation-cockpit-foot strong {
+  color: var(--text-strong);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.automation-cockpit-foot small {
+  color: var(--muted);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
 .source-ops-hero {
   position: relative;
   grid-column: span 12;
@@ -5862,6 +6072,14 @@ pre {
     grid-column: 1 / -1;
   }
 
+  .automation-cockpit-hero {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 0.72fr);
+  }
+
+  .automation-cockpit-runpath {
+    grid-column: 1 / -1;
+  }
+
   .system-runtime-hero {
     grid-template-columns: minmax(0, 1fr) minmax(280px, 0.72fr);
   }
@@ -6338,6 +6556,24 @@ pre {
   .source-ops-hero {
     grid-template-columns: 1fr;
     padding: 18px;
+  }
+
+  .automation-cockpit-hero {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+
+  .automation-cockpit-main {
+    padding: 14px;
+  }
+
+  .automation-cockpit-signals {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .automation-cockpit-foot {
+    grid-template-columns: 1fr;
+    align-items: start;
   }
 
   .source-ops-main {
