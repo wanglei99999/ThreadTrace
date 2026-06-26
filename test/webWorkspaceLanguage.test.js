@@ -580,3 +580,25 @@ test('source schedule and attention panels avoid operations-console copy', funct
     "statusBadge(runnable ? 'due' : 'skip'"
   ]);
 });
+
+test('source type readiness panels avoid connector-console copy', function () {
+  const app = readProjectFile('src/presentation/web/app.js');
+
+  assertAbsent(app, [
+    "summaryTile('Enabled'",
+    'No registered source types.',
+    '<span class="source-work-scope">connector</span>',
+    "sourceType.sourceType || 'unknown'",
+    "'no compatible sources'",
+    "'compatible=' + compatible",
+    "sourceType.description || 'Connector readiness profile.'",
+    "authorMetaChip('sources'",
+    "authorMetaChip('enabled'",
+    "authorMetaChip('checks'",
+    "(check.status || 'unknown') + ' | ' + (check.key || 'check')",
+    "statusBadge(sourceType.status || 'unknown'",
+    "action.severity + ' | ' + action.summary",
+    "return 'unknown | ' + sourceType.sourceType + ' | sources='",
+    "' | enabled=' + sourceType.enabledSourceCount"
+  ]);
+});

@@ -6925,43 +6925,44 @@ function renderSourceTypeReadiness(report) {
     summaryTile('失败', String(summary.failSourceTypeCount || 0), (summary.failSourceTypeCount || 0) > 0 ? 'fail' : 'ok'),
     summaryTile('未知', String(summary.unknownSourceTypeCount || 0), (summary.unknownSourceTypeCount || 0) > 0 ? 'warn' : 'ok'),
     summaryTile('来源', String(summary.sourceCount || 0), (summary.sourceCount || 0) > 0 ? 'ok' : 'muted'),
-    summaryTile('Enabled', String(summary.enabledSourceCount || 0), (summary.enabledSourceCount || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('已启用', String(summary.enabledSourceCount || 0), (summary.enabledSourceCount || 0) > 0 ? 'ok' : 'muted'),
     '</div>',
     renderSourceTypeReadinessRows(report.sourceTypes || []),
     renderSourceTypeReadinessUnknownRows(report.unknownSourceTypes || [])
   ];
   if ((report.nextActions || []).length > 0) {
     panels.push('<div class="tag-list reason-tags">' + evidenceList(report.nextActions.slice(0, 10).map(function (action) {
-      return action.severity + ' | ' + action.summary;
+      return [workspaceStatusLabel(action.severity), action.summary || action.key].filter(Boolean).join(' · ');
     })) + '</div>');
   }
   return panels.join('');
 }
 
 function renderSourceTypeReadinessRows(sourceTypes) {
-  if (!sourceTypes.length) return '<div class="muted">No registered source types.</div>';
+  if (!sourceTypes.length) return '<div class="muted">当前还没有已登记的来源类型。</div>';
   return '<div class="source-work-list">' + sourceTypes.map(function (sourceType) {
-    const compatible = sourceType.compatibleSourceKeys && sourceType.compatibleSourceKeys.length ? sourceType.compatibleSourceKeys.join(', ') : 'none';
+    const compatibleSources = sourceType.compatibleSourceKeys || [];
+    const compatible = compatibleSources.length ? '适配来源 ' + compatibleSources.join('、') : '暂无可用来源';
     const checks = (sourceType.checks || []).slice(0, 4);
     return '<div class="source-work-row source-readiness-row ' + statusClassName(statusVariant(sourceType.status)) + '">' +
       '<section class="source-work-anchor">' +
-        '<span class="source-work-scope">connector</span>' +
-        '<strong>' + escapeHtml(sourceType.sourceType || 'unknown') + '</strong>' +
-        '<small>' + escapeHtml(compatible === 'none' ? 'no compatible sources' : 'compatible=' + compatible) + '</small>' +
+        '<span class="source-work-scope">接入方式</span>' +
+        '<strong>' + escapeHtml(workspaceValue(sourceType.sourceType, '未知类型')) + '</strong>' +
+        '<small>' + escapeHtml(compatible) + '</small>' +
       '</section>' +
       '<section class="source-work-brief">' +
-        '<p>' + escapeHtml(sourceType.description || 'Connector readiness profile.') + '</p>' +
+        '<p>' + escapeHtml(sourceType.description || '这个来源类型还在准备中，先确认可用来源和检查结果。') + '</p>' +
         '<div class="source-work-chips">' +
-          authorMetaChip('sources', sourceType.sourceCount || 0, (sourceType.sourceCount || 0) > 0 ? 'info' : 'muted') +
-          authorMetaChip('enabled', sourceType.enabledSourceCount || 0, (sourceType.enabledSourceCount || 0) > 0 ? 'ok' : 'muted') +
-          authorMetaChip('checks', (sourceType.checks || []).length, 'info') +
+          authorMetaChip('来源', sourceType.sourceCount || 0, (sourceType.sourceCount || 0) > 0 ? 'info' : 'muted') +
+          authorMetaChip('已启用', sourceType.enabledSourceCount || 0, (sourceType.enabledSourceCount || 0) > 0 ? 'ok' : 'muted') +
+          authorMetaChip('检查', (sourceType.checks || []).length, 'info') +
         '</div>' +
         '<div class="source-work-checks">' + checks.map(function (check) {
-          return '<span class="' + statusClassName(statusVariant(check.status)) + '">' + escapeHtml((check.status || 'unknown') + ' | ' + (check.key || 'check') + ' | ' + (check.summary || '')) + '</span>';
+          return '<span class="' + statusClassName(statusVariant(check.status)) + '">' + escapeHtml([workspaceStatusLabel(check.status), check.summary || check.key || '检查项'].filter(Boolean).join(' · ')) + '</span>';
         }).join('') + '</div>' +
       '</section>' +
       '<section class="source-work-actions button-group source-op-buttons">' +
-        statusBadge(sourceType.status || 'unknown', statusVariant(sourceType.status)) +
+        statusBadge(workspaceStatusLabel(sourceType.status), statusVariant(sourceType.status)) +
       '</section>' +
       '</div>';
   }).join('') + '</div>';
@@ -6970,7 +6971,7 @@ function renderSourceTypeReadinessRows(sourceTypes) {
 function renderSourceTypeReadinessUnknownRows(sourceTypes) {
   if (!sourceTypes.length) return '';
   return '<div class="tag-list reason-tags">' + evidenceList(sourceTypes.map(function (sourceType) {
-    return 'unknown | ' + sourceType.sourceType + ' | sources=' + sourceType.sourceCount + ' | enabled=' + sourceType.enabledSourceCount;
+    return ['未识别', sourceType.sourceType, '来源 ' + sourceType.sourceCount, '已启用 ' + sourceType.enabledSourceCount].filter(Boolean).join(' · ');
   })) + '</div>';
 }
 
