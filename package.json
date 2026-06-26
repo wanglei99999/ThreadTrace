@@ -45,6 +45,7 @@
     "operations:archive-events": "node src/presentation/cli/threadtrace.js archive-events",
     "operations:resource-provisioning-plan": "node src/presentation/cli/threadtrace.js resource-provisioning-plan",
     "operations:rollout-manifest-apply": "node src/presentation/cli/threadtrace.js rollout-manifest-apply --manifest-file docs/examples/rollout-manifest.sample.json",
+    "verify:web:automation-cockpit": "node scripts/verifyAutomationCockpitCdp.js",
     "test:unit": "node --test test"
   }
 }
