@@ -164,6 +164,8 @@ async function verifyViewport(client, options) {
   });
   await client.send('Page.navigate', { url: options.url });
   await waitForCockpit(client);
+  const refreshLoadingState = options.verifyLoading ? await verifyAutomationRefreshLoadingState(client) : undefined;
+  if (options.verifyLoading) await waitForCockpit(client);
   const loadingState = options.verifyLoading ? await verifyAutomationLoadingState(client) : undefined;
   if (options.verifyLoading) await waitForCockpit(client);
   const runbookPreview = options.runPreview ? await verifyAutomationRunbookPreview(client) : undefined;
@@ -181,6 +183,7 @@ async function verifyViewport(client, options) {
   assertRunbookPreview(options.label, runbookPreview, options);
   assertScreenshot(options.label, png, stats, options, audit);
   return Object.assign({}, audit, {
+    refreshLoadingState,
     loadingState,
     runbookPreview,
     actionResult,
@@ -377,6 +380,80 @@ async function verifyAutomationLoadingState(client) {
       '})()'
     ].join('\n'));
   }, 30000, 'Timed out waiting for delayed Automation Cockpit action to settle.');
+  return loading;
+}
+
+async function verifyAutomationRefreshLoadingState(client) {
+  await evaluateByValue(client, [
+    '(() => {',
+    '  const originalFetch = window.fetch.bind(window);',
+    '  let releaseFetch;',
+    '  const gate = new Promise((resolve) => { releaseFetch = resolve; });',
+    '  window.__threadtraceReleaseDelayedCockpitFetch = () => {',
+    '    releaseFetch();',
+    '    window.fetch = originalFetch;',
+    '    delete window.__threadtraceReleaseDelayedCockpitFetch;',
+    '  };',
+    '  window.fetch = async function (input, init) {',
+    "    const url = typeof input === 'string' ? input : input && input.url || '';",
+    "    if (!window.__threadtraceDelayedCockpitFetchUsed && url.includes('/api/operations/automation-cockpit')) {",
+    '      window.__threadtraceDelayedCockpitFetchUsed = true;',
+    '      await gate;',
+    '    }',
+    '    return originalFetch(input, init);',
+    '  };',
+    '  return true;',
+    '})()'
+  ].join('\n'));
+  const clicked = await evaluateByValue(client, [
+    '(() => {',
+    "  const button = document.querySelector('.automation-cockpit-hero button[data-action=\"refresh-automation-readiness\"]');",
+    '  if (!button) return false;',
+    '  button.click();',
+    '  return true;',
+    '})()'
+  ].join('\n'));
+  if (!clicked) {
+    throw new Error('Could not click Automation Cockpit Refresh button.');
+  }
+  await waitFor(async function () {
+    return evaluateByValue(client, [
+      '(() => {',
+      "  const result = document.querySelector('#automationReadinessResult');",
+      "  const text = result ? result.innerText : '';",
+      "  return Boolean(result && result.getAttribute('aria-busy') === 'true' && text.includes('Refreshing automation cockpit...'));",
+      '})()'
+    ].join('\n'));
+  }, 10000, 'Timed out waiting for Automation Cockpit refresh loading state.');
+  const loading = await evaluateByValue(client, [
+    '(() => {',
+    "  const result = document.querySelector('#automationReadinessResult');",
+    "  const text = result ? result.innerText : '';",
+    '  return {',
+    "    busy: result ? result.getAttribute('aria-busy') : 'missing',",
+    "    hasLoadingMessage: text.includes('Refreshing automation cockpit...'),",
+    "    hasMojibake: text.includes('\\u9352') || text.includes('\\u55d8'),",
+    "    preview: text.slice(0, 120)",
+    '  };',
+    '})()'
+  ].join('\n'));
+  if (!loading.hasLoadingMessage || loading.hasMojibake || loading.busy !== 'true') {
+    throw new Error('Automation Cockpit refresh loading verification failed: ' + JSON.stringify(loading));
+  }
+  await evaluateByValue(client, [
+    '(() => {',
+    '  if (window.__threadtraceReleaseDelayedCockpitFetch) window.__threadtraceReleaseDelayedCockpitFetch();',
+    '  return true;',
+    '})()'
+  ].join('\n'));
+  await waitFor(async function () {
+    return evaluateByValue(client, [
+      '(() => {',
+      "  const result = document.querySelector('#automationReadinessResult');",
+      "  return Boolean(result && result.getAttribute('aria-busy') === 'false');",
+      '})()'
+    ].join('\n'));
+  }, 30000, 'Timed out waiting for delayed Automation Cockpit refresh to settle.');
   return loading;
 }
 

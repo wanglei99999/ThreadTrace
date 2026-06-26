@@ -2021,7 +2021,9 @@ async function loadAutomationReadiness() {
     return fetchJson('/api/operations/automation-cockpit?' + query.toString(), {
       acceptErrorStatus: true
     });
-  }, renderAutomationReadinessPlan);
+  }, renderAutomationReadinessPlan, {
+    loadingMessage: 'Refreshing automation cockpit...'
+  });
 }
 
 async function loadEvents() {
