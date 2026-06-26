@@ -1018,6 +1018,7 @@ function main(argv) {
       console.log('Review actions: audits=' + (summary.auditCount || 0) + ', executions=' + (summary.executionCount || 0));
       console.log('Sources: total=' + (planSummary.sources && planSummary.sources.total || 0) + ', due=' + (planSummary.sources && planSummary.sources.due || 0) + ', queue=' + (planSummary.operations && planSummary.operations.queueTotal || 0));
       printAutomationOperatingPressure(snapshot.operatingPressure);
+      printAutomationFreshness(snapshot.freshness);
       printAutomationOperatorRunbook(snapshot.operatorRunbook);
       printAutomationRemediation(plan.remediation);
       (plan.nextActions || []).forEach(printActionWithDetails);
@@ -3676,6 +3677,14 @@ function printAutomationOperatingPressure(pressure) {
   console.log('pressure\toutbox\topen=' + (outbox.openCount || 0) + '\tdue=' + (outbox.dueCount || 0) + '\tfailed=' + (outbox.failedCount || 0) + '\tretryExhausted=' + (outbox.retryExhaustedCount || 0));
   console.log('pressure\taudit\taudits=' + (audit.auditCount || 0) + '\ttasks=' + (audit.taskCount || 0) + '\tclosures=' + (audit.plannedClosureCount || 0) + '\tmerges=' + (audit.plannedMergeCandidateCount || 0));
   console.log('pressure\texecutions\tcount=' + (executions.count || 0) + '\tstale=' + (executions.staleRunningCount || 0) + '\tfailed=' + (executions.failedCount || 0));
+}
+
+function printAutomationFreshness(freshness) {
+  if (!freshness) return;
+  console.log('Freshness: ' + (freshness.status || 'unknown') + ', inputs=' + (freshness.presentSourceCount || 0) + '/' + (freshness.sourceCount || 0) + ', missing=' + (freshness.missingSourceCount || 0) + ', spanMs=' + (freshness.spanMs === undefined ? 'unknown' : freshness.spanMs));
+  (freshness.missingSources || []).slice(0, 8).forEach(function (source) {
+    console.log('freshness\tmissing\t' + source);
+  });
 }
 
 function printDueBatchEvidence(evidence) {

@@ -7309,8 +7309,39 @@ function createOpenApiSpec() {
             reviewActionExecutions: { $ref: '#/components/schemas/ContextReviewActionExecutionListResult' },
             notificationDiagnostics: { type: 'object', additionalProperties: true },
             operatingPressure: { $ref: '#/components/schemas/AutomationCockpitOperatingPressure' },
+            freshness: { $ref: '#/components/schemas/AutomationCockpitFreshness' },
             operatorRunbook: { $ref: '#/components/schemas/AutomationCockpitOperatorRunbook' }
           }
+        },
+        AutomationCockpitFreshness: {
+          type: 'object',
+          properties: {
+            status: { type: 'string', enum: ['ok', 'warn'] },
+            sourceCount: { type: 'number', example: 12 },
+            presentSourceCount: { type: 'number', example: 10 },
+            missingSourceCount: { type: 'number', example: 2 },
+            missingSources: {
+              type: 'array',
+              items: { type: 'string' }
+            },
+            oldestGeneratedAt: { type: 'string' },
+            newestGeneratedAt: { type: 'string' },
+            spanMs: { type: 'number' },
+            sources: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  key: { type: 'string' },
+                  generatedAt: { type: 'string' },
+                  present: { type: 'boolean' },
+                  epochMs: { type: 'number' }
+                },
+                additionalProperties: true
+              }
+            }
+          },
+          additionalProperties: true
         },
         AutomationCockpitOperatingPressure: {
           type: 'object',

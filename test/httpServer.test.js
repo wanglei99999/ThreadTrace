@@ -1317,6 +1317,20 @@ test('http server exposes source operations drilldown API', async function () {
               status: 'ok',
               channel: 'file'
             }
+          },
+          freshness: {
+            status: 'warn',
+            sourceCount: 12,
+            presentSourceCount: 10,
+            missingSourceCount: 2,
+            missingSources: ['demoCycle', 'notificationDiagnostics'],
+            oldestGeneratedAt: '2026-06-18T09:59:00.000Z',
+            newestGeneratedAt: request.now || '2026-06-18T10:00:00.000Z',
+            spanMs: 60000,
+            sources: [
+              { key: 'snapshot', generatedAt: request.now || '2026-06-18T10:00:00.000Z', present: true },
+              { key: 'demoCycle', present: false }
+            ]
           }
         };
       }
@@ -1373,6 +1387,8 @@ test('http server exposes source operations drilldown API', async function () {
     assert.equal(automationCockpit.operatingPressure.status, 'warn');
     assert.equal(automationCockpit.operatingPressure.outbox.openCount, 2);
     assert.equal(automationCockpit.operatingPressure.audit.auditCount, 3);
+    assert.equal(automationCockpit.freshness.status, 'warn');
+    assert.equal(automationCockpit.freshness.missingSourceCount, 2);
     assert.equal(automationCockpit.reviewActionAuditOverview.count, 3);
     assert.equal(calls[3].automationCockpit, true);
     assert.equal(calls[3].sourceKey, 'nga');
@@ -2062,6 +2078,9 @@ test('http server exposes deployment checklist API', async function () {
     assert.equal(openApi.components.schemas.AutomationCockpitSnapshot.properties.plan.$ref, '#/components/schemas/AutomationReadinessPlan');
     assert.equal(openApi.components.schemas.AutomationCockpitSnapshot.properties.operatorRunbook.$ref, '#/components/schemas/AutomationCockpitOperatorRunbook');
     assert.equal(openApi.components.schemas.AutomationCockpitSnapshot.properties.operatingPressure.$ref, '#/components/schemas/AutomationCockpitOperatingPressure');
+    assert.equal(openApi.components.schemas.AutomationCockpitSnapshot.properties.freshness.$ref, '#/components/schemas/AutomationCockpitFreshness');
+    assert.ok(openApi.components.schemas.AutomationCockpitFreshness.properties.sources);
+    assert.ok(openApi.components.schemas.AutomationCockpitFreshness.properties.missingSources);
     assert.ok(openApi.components.schemas.AutomationCockpitOperatingPressure.properties.outbox);
     assert.ok(openApi.components.schemas.AutomationCockpitOperatingPressure.properties.audit);
     assert.ok(openApi.components.schemas.AutomationCockpitOperatorRunbook.properties.actionableCommandCount);

@@ -8,8 +8,16 @@ test('automation cockpit snapshot aggregates readiness and operating pressure', 
   const snapshot = getAutomationCockpitSnapshot({
     now: '2026-06-26T12:00:00.000Z',
     plan: {
+      generatedAt: '2026-06-26T11:59:00.000Z',
       status: 'ok',
       readyForUnattendedRun: true,
+      inputs: {
+        scheduleGeneratedAt: '2026-06-26T11:59:05.000Z',
+        cockpitGeneratedAt: '2026-06-26T11:59:10.000Z',
+        collectionHealthGeneratedAt: '2026-06-26T11:59:15.000Z',
+        workerTopologyGeneratedAt: '2026-06-26T11:59:20.000Z',
+        llmReadinessGeneratedAt: '2026-06-26T11:59:25.000Z'
+      },
       summary: {
         workers: { status: 'ok' }
       },
@@ -44,19 +52,23 @@ test('automation cockpit snapshot aggregates readiness and operating pressure', 
       }
     },
     notificationOverview: {
+      generatedAt: '2026-06-26T11:59:30.000Z',
       status: 'ok',
       openCount: 2,
       pendingDeliveryCount: 1
     },
     reviewActionAuditOverview: {
+      generatedAt: '2026-06-26T11:59:35.000Z',
       status: 'warn',
       count: 3
     },
     reviewActionExecutions: {
+      generatedAt: '2026-06-26T11:59:40.000Z',
       status: 'ok',
       count: 4
     },
     notificationDiagnostics: {
+      generatedAt: '2026-06-26T11:59:45.000Z',
       checks: [
         { key: 'notifications.channel', status: 'ok' }
       ]
@@ -83,6 +95,14 @@ test('automation cockpit snapshot aggregates readiness and operating pressure', 
   assert.equal(snapshot.operatingPressure.executions.status, 'ok');
   assert.equal(snapshot.operatingPressure.executions.count, 4);
   assert.equal(snapshot.operatingPressure.channel.status, 'ok');
+  assert.equal(snapshot.freshness.status, 'warn');
+  assert.equal(snapshot.freshness.sourceCount, 12);
+  assert.equal(snapshot.freshness.presentSourceCount, 11);
+  assert.equal(snapshot.freshness.missingSourceCount, 1);
+  assert.deepEqual(snapshot.freshness.missingSources, ['demoCycle']);
+  assert.equal(snapshot.freshness.oldestGeneratedAt, '2026-06-26T11:59:00.000Z');
+  assert.equal(snapshot.freshness.newestGeneratedAt, '2026-06-26T12:00:00.000Z');
+  assert.equal(snapshot.freshness.spanMs, 60000);
   assert.equal(snapshot.operatorRunbook.commandCount, 6);
   assert.equal(snapshot.operatorRunbook.actionableCommandCount, 2);
   assert.equal(snapshot.operatorRunbook.dryRunCommandCount, 1);

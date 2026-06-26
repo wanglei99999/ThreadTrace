@@ -5312,6 +5312,7 @@ function renderAutomationReadinessPlan(input) {
   const plan = cockpit.plan;
   return [
     renderAutomationCockpitHero(plan, cockpit),
+    panel('Snapshot freshness', renderAutomationFreshness(cockpit.freshness), 'wide automation-freshness-panel'),
     panel('Notification and audit pressure', renderAutomationOperatingPressure(cockpit), 'wide automation-pressure-panel'),
     panel('Automation gates', renderAutomationReadinessChecks(plan.checks || []), 'wide automation-gates-panel'),
     panel('Operator runbook', renderAutomationOperatorRunbook(cockpit.operatorRunbook), 'wide automation-runbook-panel'),
@@ -5330,6 +5331,7 @@ function normalizeAutomationCockpitInput(input) {
       reviewActionAuditOverview: safeInput.reviewActionAuditOverview || {},
       reviewActionExecutions: safeInput.reviewActionExecutions || {},
       notificationDiagnostics: safeInput.notificationDiagnostics || {},
+      freshness: safeInput.freshness || {},
       operatorRunbook: safeInput.operatorRunbook || {}
     };
   }
@@ -5339,6 +5341,7 @@ function normalizeAutomationCockpitInput(input) {
     reviewActionAuditOverview: {},
     reviewActionExecutions: {},
     notificationDiagnostics: {},
+    freshness: {},
     operatorRunbook: {}
   };
 }
@@ -5523,6 +5526,45 @@ function renderAutomationOperatingPressure(cockpit) {
         '</span>' + statusBadge(pressure.channelStatus, statusVariant(pressure.channelStatus)) + '</div>'
       : ''
   ].join('');
+}
+
+function renderAutomationFreshness(freshness) {
+  const safeFreshness = freshness || {};
+  const sources = safeFreshness.sources || [];
+  const missingSources = safeFreshness.missingSources || [];
+  const visibleSources = sources.slice(0, 12);
+  const spanLabel = safeFreshness.spanMs === undefined ? 'unknown' : formatDurationMs(safeFreshness.spanMs);
+  const rows = [
+    '<div class="summary-strip">',
+    summaryTile('Status', safeFreshness.status || 'unknown', statusVariant(safeFreshness.status)),
+    summaryTile('Inputs', String(safeFreshness.presentSourceCount || 0) + '/' + String(safeFreshness.sourceCount || 0), (safeFreshness.missingSourceCount || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('Missing', String(safeFreshness.missingSourceCount || 0), (safeFreshness.missingSourceCount || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('Span', spanLabel, safeFreshness.spanMs > 60000 ? 'warn' : 'ok'),
+    '</div>',
+    '<div class="action-row ops-row automation-freshness-row"><span>' +
+      '<strong>Snapshot window</strong>' +
+      '<small>' + escapeHtml('oldest=' + (safeFreshness.oldestGeneratedAt || 'unknown') + ' | newest=' + (safeFreshness.newestGeneratedAt || 'unknown')) + '</small>' +
+      '<small>' + escapeHtml(missingSources.length > 0 ? 'missing=' + missingSources.join(', ') : 'all expected inputs reported generatedAt') + '</small>' +
+      '</span>' + statusBadge(safeFreshness.status || 'unknown', statusVariant(safeFreshness.status)) + '</div>'
+  ];
+  if (visibleSources.length > 0) {
+    rows.push('<div class="automation-freshness-source-list">' + visibleSources.map(function (source) {
+      return '<div class="automation-freshness-source ' + (source.present ? 'status-ok' : 'status-warn') + '">' +
+        '<strong>' + escapeHtml(source.key || 'input') + '</strong>' +
+        '<small>' + escapeHtml(source.generatedAt || 'missing') + '</small>' +
+        '</div>';
+    }).join('') + '</div>');
+  }
+  return rows.join('');
+}
+
+function formatDurationMs(value) {
+  const ms = Number(value);
+  if (!Number.isFinite(ms)) return 'unknown';
+  if (ms < 1000) return String(ms) + 'ms';
+  if (ms < 60000) return String(Math.round(ms / 1000)) + 's';
+  if (ms < 3600000) return String(Math.round(ms / 60000)) + 'm';
+  return String(Math.round(ms / 3600000)) + 'h';
 }
 
 function automationOperatingPressureSummary(cockpit) {

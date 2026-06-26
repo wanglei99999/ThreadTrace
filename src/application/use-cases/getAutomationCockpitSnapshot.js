@@ -7,6 +7,7 @@ function getAutomationCockpitSnapshot(input) {
   const reviewActionAuditOverview = safeInput.reviewActionAuditOverview || {};
   const reviewActionExecutions = safeInput.reviewActionExecutions || {};
   const notificationDiagnostics = safeInput.notificationDiagnostics || {};
+  const generatedAt = safeInput.now || plan.generatedAt || new Date().toISOString();
   const diagnosticsStatus = notificationDiagnostics.status || statusFromChecks(notificationDiagnostics.checks || []);
   const componentStatuses = [
     plan.status,
@@ -31,9 +32,17 @@ function getAutomationCockpitSnapshot(input) {
     diagnosticsStatus,
     status
   });
+  const freshness = buildFreshnessSummary({
+    generatedAt,
+    plan,
+    notificationOverview,
+    reviewActionAuditOverview,
+    reviewActionExecutions,
+    notificationDiagnostics
+  });
   return {
     schemaVersion: 'automation-cockpit-snapshot.v1',
-    generatedAt: safeInput.now || plan.generatedAt || new Date().toISOString(),
+    generatedAt,
     status,
     readyForUnattendedRun: Boolean(plan.readyForUnattendedRun && status === 'ok'),
     plan,
@@ -42,6 +51,7 @@ function getAutomationCockpitSnapshot(input) {
     reviewActionExecutions,
     notificationDiagnostics,
     operatingPressure,
+    freshness,
     operatorRunbook,
     summary: {
       readinessStatus: plan.status || 'unknown',
@@ -122,6 +132,64 @@ function buildOperatingPressure(input) {
       warnCheckCount
     }
   };
+}
+
+function buildFreshnessSummary(input) {
+  const plan = input.plan || {};
+  const planInputs = plan.inputs || {};
+  const sources = [
+    freshnessSource('snapshot', input.generatedAt),
+    freshnessSource('readiness', plan.generatedAt),
+    freshnessSource('schedule', planInputs.scheduleGeneratedAt),
+    freshnessSource('sourceOperationsCockpit', planInputs.cockpitGeneratedAt),
+    freshnessSource('collectionHealth', planInputs.collectionHealthGeneratedAt),
+    freshnessSource('workerTopology', planInputs.workerTopologyGeneratedAt),
+    freshnessSource('llmReadiness', planInputs.llmReadinessGeneratedAt),
+    freshnessSource('demoCycle', planInputs.demoCycleGeneratedAt),
+    freshnessSource('notificationOverview', input.notificationOverview && input.notificationOverview.generatedAt),
+    freshnessSource('reviewActionAuditOverview', input.reviewActionAuditOverview && input.reviewActionAuditOverview.generatedAt),
+    freshnessSource('reviewActionExecutions', input.reviewActionExecutions && input.reviewActionExecutions.generatedAt),
+    freshnessSource('notificationDiagnostics', input.notificationDiagnostics && input.notificationDiagnostics.generatedAt)
+  ];
+  const presentSources = sources.filter(function (source) {
+    return source.present;
+  });
+  const timestamps = presentSources.map(function (source) {
+    return source.epochMs;
+  }).filter(Number.isFinite);
+  const oldestEpochMs = timestamps.length > 0 ? Math.min.apply(Math, timestamps) : undefined;
+  const newestEpochMs = timestamps.length > 0 ? Math.max.apply(Math, timestamps) : undefined;
+  const missingSources = sources.filter(function (source) {
+    return !source.present;
+  }).map(function (source) {
+    return source.key;
+  });
+  return {
+    status: missingSources.length > 0 ? 'warn' : 'ok',
+    sourceCount: sources.length,
+    presentSourceCount: presentSources.length,
+    missingSourceCount: missingSources.length,
+    missingSources,
+    oldestGeneratedAt: formatIsoFromEpoch(oldestEpochMs),
+    newestGeneratedAt: formatIsoFromEpoch(newestEpochMs),
+    spanMs: Number.isFinite(oldestEpochMs) && Number.isFinite(newestEpochMs) ? newestEpochMs - oldestEpochMs : undefined,
+    sources
+  };
+}
+
+function freshnessSource(key, generatedAt) {
+  const epochMs = Date.parse(generatedAt || '');
+  return {
+    key,
+    generatedAt,
+    present: Boolean(generatedAt),
+    epochMs: Number.isFinite(epochMs) ? epochMs : undefined
+  };
+}
+
+function formatIsoFromEpoch(epochMs) {
+  if (!Number.isFinite(epochMs)) return undefined;
+  return new Date(epochMs).toISOString();
 }
 
 function buildOperatorRunbook(input) {
