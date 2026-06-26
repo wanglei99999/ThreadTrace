@@ -3360,7 +3360,7 @@ function renderAuthorReviewQueueHero(result) {
   const sourceCount = Object.keys(sourceCounts || {}).length;
   const hotspots = summary.sourceHotspots || [];
   const alertDisabled = openCount > 0 ? '' : ' disabled';
-  const sync = result.createdCount === undefined ? undefined : 'created=' + (result.createdCount || 0) + ' / updated=' + (result.updatedCount || 0);
+  const sync = result.createdCount === undefined ? undefined : '新建 ' + (result.createdCount || 0) + ' / 更新 ' + (result.updatedCount || 0);
   const status = result.status || (openCount > 0 ? 'review' : 'ok');
   return [
     '<article class="review-queue-hero">',
@@ -4720,7 +4720,7 @@ function renderDeploymentGateLlmSummary(result) {
     evidenceList(llmItems.map(function (item) {
       const evidence = item.evidence || {};
       const sampleText = evidence.sampleCount ? ' samples=' + evidence.sampleCount : '';
-      const traceText = evidence.traceId ? ' trace=' + evidence.traceId : '';
+      const traceText = evidence.traceId ? ' 路径 ' + evidence.traceId : '';
       return item.status + ' | ' + item.key + ' | ' + item.summary + sampleText + traceText;
     }))
   ].join(''), 'wide');
@@ -4938,7 +4938,7 @@ function renderTaskTraceButtonControl(task, label) {
     ' data-request-id="' + escapeHtml(trace.requestId || '') + '"' +
     ' data-trace-id="' + escapeHtml(trace.traceId || '') + '"' +
     ' data-idempotency-key="' + escapeHtml(trace.idempotencyKey || '') + '"' +
-    ' data-limit="20">' + escapeHtml(label || 'Trace') + '</button>';
+    ' data-limit="20">' + escapeHtml(label || '路径') + '</button>';
 }
 
 function renderTaskDetailButton(task) {
@@ -4949,7 +4949,7 @@ function renderTaskDetailButton(task) {
 function renderTaskDetailButtonControl(task, label) {
   if (!task || !task.id) return '';
   return '<button class="inline-button secondary-inline-button" type="button" data-action="load-task-detail" data-task-id="' +
-    escapeHtml(task.id) + '" data-trace-limit="20">' + escapeHtml(label || 'Detail') + '</button>';
+    escapeHtml(task.id) + '" data-trace-limit="20">' + escapeHtml(label || '详情') + '</button>';
 }
 
 function taskTraceMetadata(task) {
@@ -5278,8 +5278,8 @@ function formatLlmUsage(usage) {
 function renderBatchTaskControls(task) {
   if (!task) return '';
   return '<div class="button-group source-op-buttons batch-task-controls">' +
-    renderTaskDetailButtonControl(task, 'Batch task') +
-    renderTaskTraceButtonControl(task, 'Batch trace') +
+    renderTaskDetailButtonControl(task, '批量任务') +
+    renderTaskTraceButtonControl(task, '批量路径') +
     '</div>';
 }
 
@@ -5318,10 +5318,10 @@ function renderSourceOperationTaskControls(item) {
   const task = item && item.task || {};
   const ingestTask = item && item.ingestTask || {};
   return [
-    renderTaskDetailButtonControl(task, 'Task'),
-    renderTaskTraceButtonControl(task, 'Trace'),
-    ingestTask.id && ingestTask.id !== task.id ? renderTaskDetailButtonControl(ingestTask, 'Ingest task') : '',
-    ingestTask.id && ingestTask.id !== task.id ? renderTaskTraceButtonControl(ingestTask, 'Ingest trace') : ''
+    renderTaskDetailButtonControl(task, '任务详情'),
+    renderTaskTraceButtonControl(task, '任务路径'),
+    ingestTask.id && ingestTask.id !== task.id ? renderTaskDetailButtonControl(ingestTask, '导入任务') : '',
+    ingestTask.id && ingestTask.id !== task.id ? renderTaskTraceButtonControl(ingestTask, '导入路径') : ''
   ].join('');
 }
 
@@ -5377,10 +5377,10 @@ function renderTaskRows(tasks) {
       task.id,
       output.title,
       task.updatedAt || task.createdAt,
-      trace.requestId ? 'request=' + trace.requestId : undefined,
-      trace.traceId ? 'trace=' + trace.traceId : undefined,
-      trace.idempotencyKey ? 'idempotency=' + trace.idempotencyKey : undefined
-    ].filter(Boolean).join(' | ');
+      trace.requestId ? '请求 ' + trace.requestId : undefined,
+      trace.traceId ? '路径 ' + trace.traceId : undefined,
+      trace.idempotencyKey ? '去重 ' + trace.idempotencyKey : undefined
+    ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row source-operation-result-row"><span>' +
       '<strong>' + escapeHtml((task.status || 'unknown') + ' | ' + (task.type || 'task')) + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
@@ -5396,30 +5396,30 @@ function renderTaskDetail(result) {
   const sourceScope = result.sourceScope || {};
   const traceContext = result.traceContext || {};
   return [
-    panel('Task detail', [
+    panel('任务详情', [
       '<div class="summary-strip">' + [
-        summaryTile('Status', task.status || 'unknown', statusVariant(task.status)),
-        summaryTile('Type', task.type || 'unknown'),
-        summaryTile('Trace tasks', String(traceContext.taskCount || 0)),
-        summaryTile('Source', sourceScope.sourceId || sourceScope.sourceKey || 'none', sourceScope.sourceId || sourceScope.sourceKey ? 'ok' : 'muted')
+        summaryTile('状态', task.status || 'unknown', statusVariant(task.status)),
+        summaryTile('类型', task.type || 'unknown'),
+        summaryTile('关联任务', String(traceContext.taskCount || 0)),
+        summaryTile('来源', sourceScope.sourceId || sourceScope.sourceKey || '暂无', sourceScope.sourceId || sourceScope.sourceKey ? 'ok' : 'muted')
       ].join('') + '</div>',
-      metric('Task ID', task.id || 'none'),
-      metric('Created', task.createdAt || 'unknown'),
-      metric('Updated', task.updatedAt || 'unknown'),
-      metric('Finished', task.finishedAt || 'not finished'),
-      metric('Source scope', formatTaskSourceScope(sourceScope)),
-      metric('Trace request', traceContext.query && traceContext.query.requestId || 'none'),
-      metric('Trace id', traceContext.query && traceContext.query.traceId || 'none'),
-      metric('Idempotency', traceContext.query && traceContext.query.idempotencyKey || 'none'),
+      metric('任务 ID', task.id || '暂无'),
+      metric('创建时间', task.createdAt || '未知'),
+      metric('更新时间', task.updatedAt || '未知'),
+      metric('完成时间', task.finishedAt || '未完成'),
+      metric('来源范围', formatTaskSourceScope(sourceScope)),
+      metric('请求', traceContext.query && traceContext.query.requestId || '暂无'),
+      metric('路径 ID', traceContext.query && traceContext.query.traceId || '暂无'),
+      metric('去重键', traceContext.query && traceContext.query.idempotencyKey || '暂无'),
       renderTaskDetailButtons(result)
     ].join(''), 'wide'),
-    panel('Task actions', renderTaskDetailActions(result.nextActions || []), 'wide'),
-    panel('Task payload', '<pre>' + escapeHtml(JSON.stringify({
+    panel('建议动作', renderTaskDetailActions(result.nextActions || []), 'wide'),
+    panel('任务证据包', '<pre>' + escapeHtml(JSON.stringify({
       input: task.input,
       output: task.output,
       error: task.error
     }, null, 2)) + '</pre>', 'wide'),
-    panel('Correlated tasks', renderTraceContextTaskRows(traceContext.tasks || []), 'wide')
+    panel('关联任务', renderTraceContextTaskRows(traceContext.tasks || []), 'wide')
   ].join('');
 }
 
@@ -5433,10 +5433,10 @@ function renderTaskDetailButtons(result) {
 }
 
 function renderTaskDetailActions(actions) {
-  if (!actions.length) return '<div class="muted">No recommended task actions.</div>';
+  if (!actions.length) return '<div class="muted">暂无建议动作。</div>';
   return actions.map(function (action) {
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml((action.severity || 'info') + ' | ' + (action.key || 'task.action')) + '</strong>' +
+      '<strong>' + escapeHtml((action.severity || 'info') + ' · ' + (action.key || 'task.action')) + '</strong>' +
       '<small>' + escapeHtml(action.summary || '') + '</small>' +
       (action.command ? '<small>' + escapeHtml(action.command) + '</small>' : '') +
       '</span>' +
@@ -5448,11 +5448,11 @@ function renderTaskDetailActions(actions) {
 function formatTaskSourceScope(sourceScope) {
   const scope = sourceScope || {};
   return [
-    scope.sourceKey ? 'source=' + scope.sourceKey : undefined,
-    scope.sourceId ? 'sourceId=' + scope.sourceId : undefined,
-    scope.sourceType ? 'type=' + scope.sourceType : undefined,
-    scope.sourceThreadId ? 'thread=' + scope.sourceThreadId : undefined
-  ].filter(Boolean).join(' | ') || 'none';
+    scope.sourceKey ? '来源 ' + scope.sourceKey : undefined,
+    scope.sourceId ? '来源 ID ' + scope.sourceId : undefined,
+    scope.sourceType ? '类型 ' + scope.sourceType : undefined,
+    scope.sourceThreadId ? '主题 ' + scope.sourceThreadId : undefined
+  ].filter(Boolean).join(' · ') || '全部来源';
 }
 
 function renderTaskTraceContext(result) {
@@ -5460,28 +5460,28 @@ function renderTaskTraceContext(result) {
   const latest = summary.latestTask || {};
   const idempotency = summary.idempotency || {};
   const panels = [
-    panel('Task trace context', [
+    panel('任务路径上下文', [
       '<div class="summary-strip">' + [
-        summaryTile('Tasks', String(result.taskCount || 0)),
-        summaryTile('Latest', latest.status || 'none', statusVariant(latest.status)),
-        summaryTile('Duplicate risk', idempotency.duplicateExecutionRisk ? 'yes' : 'no', idempotency.duplicateExecutionRisk ? 'fail' : 'ok'),
-        summaryTile('Reusable', idempotency.reusableTaskId || 'none', idempotency.reusableTaskId ? 'ok' : 'muted')
+        summaryTile('任务', String(result.taskCount || 0)),
+        summaryTile('最新', latest.status || '暂无', statusVariant(latest.status)),
+        summaryTile('重复风险', idempotency.duplicateExecutionRisk ? '有' : '无', idempotency.duplicateExecutionRisk ? 'fail' : 'ok'),
+        summaryTile('可复用', idempotency.reusableTaskId || '暂无', idempotency.reusableTaskId ? 'ok' : 'muted')
       ].join('') + '</div>',
-      metric('Request', result.query && result.query.requestId || 'none'),
-      metric('Task', result.query && result.query.taskId || 'none'),
-      metric('Trace', result.query && result.query.traceId || 'none'),
-      metric('Idempotency', result.query && result.query.idempotencyKey || 'none'),
-      metric('By status', compactCountMap(summary.byStatus || {})),
-      metric('By type', compactCountMap(summary.byType || {}))
+      metric('请求', result.query && result.query.requestId || '暂无'),
+      metric('任务', result.query && result.query.taskId || '暂无'),
+      metric('路径', result.query && result.query.traceId || '暂无'),
+      metric('去重键', result.query && result.query.idempotencyKey || '暂无'),
+      metric('状态分布', compactCountMap(summary.byStatus || {})),
+      metric('类型分布', compactCountMap(summary.byType || {}))
     ].join(''), 'wide'),
-    panel('Correlated tasks', renderTraceContextTaskRows(result.tasks || []), 'wide')
+    panel('关联任务', renderTraceContextTaskRows(result.tasks || []), 'wide')
   ];
   if (idempotency.idempotencyKey) {
-    panels.push(panel('Idempotency', [
-      metric('Key', idempotency.idempotencyKey),
-      metric('Task count', idempotency.taskCount || 0),
-      metric('Completed', idempotency.completedCount || 0),
-      metric('Reusable task', idempotency.reusableTaskId || 'none'),
+    panels.push(panel('去重线索', [
+      metric('键', idempotency.idempotencyKey),
+      metric('任务数', idempotency.taskCount || 0),
+      metric('已完成', idempotency.completedCount || 0),
+      metric('可复用任务', idempotency.reusableTaskId || '暂无'),
       evidenceList(idempotency.taskIds || [])
     ].join(''), 'wide'));
   }
@@ -5489,19 +5489,19 @@ function renderTaskTraceContext(result) {
 }
 
 function renderTraceContextTaskRows(tasks) {
-  if (!tasks || tasks.length === 0) return '<div class="muted">No correlated tasks.</div>';
+  if (!tasks || tasks.length === 0) return '<div class="muted">暂无关联任务。</div>';
   return '<div class="source-operation-result-list">' + tasks.map(function (task) {
     const trace = task.trace || taskTraceMetadata(task);
     const details = [
       task.id,
-      task.createdAt ? 'created=' + task.createdAt : undefined,
-      task.updatedAt ? 'updated=' + task.updatedAt : undefined,
-      trace.requestId ? 'request=' + trace.requestId : undefined,
-      trace.traceId ? 'trace=' + trace.traceId : undefined,
-      trace.idempotencyKey ? 'idempotency=' + trace.idempotencyKey : undefined
-    ].filter(Boolean).join(' | ');
+      task.createdAt ? '创建 ' + task.createdAt : undefined,
+      task.updatedAt ? '更新 ' + task.updatedAt : undefined,
+      trace.requestId ? '请求 ' + trace.requestId : undefined,
+      trace.traceId ? '路径 ' + trace.traceId : undefined,
+      trace.idempotencyKey ? '去重 ' + trace.idempotencyKey : undefined
+    ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row source-operation-result-row"><span>' +
-      '<strong>' + escapeHtml((task.status || 'unknown') + ' | ' + (task.type || 'task')) + '</strong>' +
+      '<strong>' + escapeHtml((task.status || 'unknown') + ' · ' + (task.type || 'task')) + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
       '</span>' + statusBadge(task.status || 'unknown', statusVariant(task.status)) + '</div>';
   }).join('') + '</div>';
@@ -6682,13 +6682,13 @@ function renderSourceOperationsCockpit(cockpit) {
   const queue = cockpit.queue || [];
   return [
     '<div class="summary-strip">',
-    summaryTile('Queue', String(summary.total || 0), statusVariant(cockpit.status)),
-    summaryTile('Critical', String(summary.fail || 0), (summary.fail || 0) > 0 ? 'fail' : 'ok'),
-    summaryTile('Warning', String(summary.warning || 0), (summary.warning || 0) > 0 ? 'warn' : 'ok'),
-    summaryTile('Runnable', String(summary.runnable || 0), (summary.runnable || 0) > 0 ? 'ok' : 'muted'),
-    summaryTile('Sources', String(summary.sourceScoped || 0), (summary.sourceScoped || 0) > 0 ? 'warn' : 'ok'),
-    summaryTile('Types', String(summary.sourceTypeScoped || 0), (summary.sourceTypeScoped || 0) > 0 ? 'warn' : 'ok'),
-    summaryTile('Top priority', String(summary.highestPriorityScore || 0), (summary.highestPriorityScore || 0) >= 100 ? 'warn' : 'ok'),
+    summaryTile('队列', String(summary.total || 0), statusVariant(cockpit.status)),
+    summaryTile('严重', String(summary.fail || 0), (summary.fail || 0) > 0 ? 'fail' : 'ok'),
+    summaryTile('提醒', String(summary.warning || 0), (summary.warning || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('可执行', String(summary.runnable || 0), (summary.runnable || 0) > 0 ? 'ok' : 'muted'),
+    summaryTile('来源', String(summary.sourceScoped || 0), (summary.sourceScoped || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('类型', String(summary.sourceTypeScoped || 0), (summary.sourceTypeScoped || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('最高优先', String(summary.highestPriorityScore || 0), (summary.highestPriorityScore || 0) >= 100 ? 'warn' : 'ok'),
     '</div>',
     renderSourceOperationsCockpitRows(queue),
     renderSourceOperationsCockpitNextActions(cockpit.nextActions || [])
@@ -6762,7 +6762,7 @@ function renderSourceCockpitActionPlan(plan) {
       metric('队列项', '#' + (item.rank || '?') + ' ' + (item.title || item.id || 'unknown')),
       metric('类型', item.kind || 'unknown'),
       metric('优先级', item.priorityScore || 0),
-      metric('下一步', plan.recommendedNextAction || 'none')
+      metric('下一步', plan.recommendedNextAction || '暂无')
     ].join(''), 'wide'),
     panel('计划动作', renderSourceCockpitActionRows(plan.actions || [], item), 'wide')
   ].join('');
@@ -8154,25 +8154,25 @@ function renderPipelineRunSummary(run) {
 function renderContextReviewResultSubmission(result) {
   if (result.valid === false) {
     const checks = result.validation && result.validation.checks ? result.validation.checks : [];
-    return panel('Review result rejected', [
-      metric('Status', result.status || 'invalid'),
-      metric('Validation', result.validation ? result.validation.status : 'fail'),
+    return panel('复核结果未保存', [
+      metric('状态', result.status || 'invalid'),
+      metric('校验', result.validation ? result.validation.status : 'fail'),
       evidenceList(checks.filter(function (check) {
         return check.status === 'fail';
       }).slice(0, 8).map(function (check) {
-        return check.key + ' | ' + check.summary;
+        return check.key + ' · ' + check.summary;
       }))
     ].join(''), 'wide');
   }
   const record = result.record || {};
   const summary = record.summary || {};
-  return panel('Review result stored', [
-    metric('Record', record.id || 'unknown'),
-    metric('Status', record.status || 'unknown'),
-    metric('Handoff', record.handoffId || 'none'),
-    metric('Severity', summary.notification ? summary.notification.severity : 'unknown'),
-    metric('Remaining tasks', summary.remainingCount || 0),
-    metric('Next action', summary.recommendedNextAction || 'none')
+  return panel('复核结果已保存', [
+    metric('记录', record.id || '未知'),
+    metric('状态', record.status || 'unknown'),
+    metric('交接', record.handoffId || '暂无'),
+    metric('级别', summary.notification ? summary.notification.severity : 'unknown'),
+    metric('剩余事项', summary.remainingCount || 0),
+    metric('下一步', summary.recommendedNextAction || '暂无')
   ].join(''), 'wide');
 }
 
@@ -8185,17 +8185,17 @@ function renderContextReviewResultOverview(result) {
   const actionAuditOverview = result.actionAuditOverview || {};
   const actionAudits = result.actionAudits || {};
   const tiles = '<div class="summary-strip event-summary-strip">' + [
-    summaryTile('Reviews', String(overview.count || 0)),
-    summaryTile('Warnings', String(attention.warningCount || 0), (attention.warningCount || 0) > 0 ? 'warn' : 'ok'),
-    summaryTile('Critical', String(attention.criticalCount || 0), (attention.criticalCount || 0) > 0 ? 'fail' : 'ok'),
-    summaryTile('Remaining tasks', String(overview.remainingTaskCount || 0), (overview.remainingTaskCount || 0) > 0 ? 'warn' : 'ok'),
-    summaryTile('Merge candidates', String(overview.mergeCandidateCount || 0), (overview.mergeCandidateCount || 0) > 0 ? 'ok' : 'muted')
+    summaryTile('复核', String(overview.count || 0)),
+    summaryTile('提醒', String(attention.warningCount || 0), (attention.warningCount || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('严重', String(attention.criticalCount || 0), (attention.criticalCount || 0) > 0 ? 'fail' : 'ok'),
+    summaryTile('剩余事项', String(overview.remainingTaskCount || 0), (overview.remainingTaskCount || 0) > 0 ? 'warn' : 'ok'),
+    summaryTile('合并候选', String(overview.mergeCandidateCount || 0), (overview.mergeCandidateCount || 0) > 0 ? 'ok' : 'muted')
   ].join('') + '</div>';
   return [
-    panel('Review result overview', [
+    panel('复核结果概览', [
       tiles,
-      metric('Generated', overview.generatedAt || 'unknown'),
-      metric('Next action', overview.recommendedNextAction || 'none')
+      metric('生成时间', overview.generatedAt || '未知'),
+      metric('下一步', overview.recommendedNextAction || '暂无')
     ].join(''), 'wide'),
     renderContextReviewResultActionPlan(actionPlan),
     renderContextReviewResultActionGate(actionGate),
@@ -8220,9 +8220,9 @@ function renderContextReviewResultActionPlan(plan) {
   ].join('') + '</div>';
   return panel('复核动作计划', [
     tiles,
-    metric('生成时间', plan.generatedAt || 'unknown'),
-    metric('风险', risk.level || 'unknown'),
-    metric('下一步', plan.recommendedNextAction || 'none'),
+    metric('生成时间', plan.generatedAt || '未知'),
+    metric('风险', risk.level || '未知'),
+    metric('下一步', plan.recommendedNextAction || '暂无'),
     '<h4>合并候选</h4>',
     renderReviewMergeCandidateRows(plan.mergeCandidates || []),
     '<h4>受阻任务</h4>',
@@ -8234,16 +8234,16 @@ function renderContextReviewResultActionGate(gateReport) {
   const executable = gateReport.executable || {};
   const gates = gateReport.gates || [];
   const tiles = '<div class="summary-strip event-summary-strip">' + [
-    summaryTile('门禁状态', gateReport.status || 'unknown', statusVariant(gateReport.status)),
-    summaryTile('可关闭', executable.canCloseTasks ? 'yes' : 'no', executable.canCloseTasks ? 'ok' : 'muted'),
-    summaryTile('可合并', executable.canMergeContext ? 'yes' : 'no', executable.canMergeContext ? 'ok' : 'muted'),
-    summaryTile('人工复核', executable.requiresHumanReview ? 'yes' : 'no', executable.requiresHumanReview ? 'warn' : 'ok'),
+    summaryTile('门禁状态', gateReport.status || '未知', statusVariant(gateReport.status)),
+    summaryTile('可关闭', executable.canCloseTasks ? '是' : '否', executable.canCloseTasks ? 'ok' : 'muted'),
+    summaryTile('可合并', executable.canMergeContext ? '是' : '否', executable.canMergeContext ? 'ok' : 'muted'),
+    summaryTile('人工复核', executable.requiresHumanReview ? '是' : '否', executable.requiresHumanReview ? 'warn' : 'ok'),
     summaryTile('下一步', String((gateReport.nextActions || []).length), (gateReport.nextActions || []).length > 0 ? 'warn' : 'ok')
   ].join('') + '</div>';
   return panel('复核动作门禁', [
     tiles,
-    metric('生成时间', gateReport.generatedAt || 'unknown'),
-    metric('下一步', gateReport.recommendedNextAction || 'none'),
+    metric('生成时间', gateReport.generatedAt || '未知'),
+    metric('下一步', gateReport.recommendedNextAction || '暂无'),
     renderReviewActionGateRows(gates)
   ].join(''), 'wide');
 }
@@ -8267,6 +8267,7 @@ function renderContextReviewActionApplyResult(result) {
 function renderContextReviewActionAuditPanel(result) {
   const overview = result.overview || {};
   const audits = result.audits || overview.recentAudits || [];
+  const sourceSummary = compactCountMap(overview.bySourceKey);
   const tiles = '<div class="summary-strip event-summary-strip">' + [
     summaryTile('审计', String(overview.count || audits.length || 0), (overview.count || audits.length || 0) > 0 ? 'ok' : 'muted'),
     summaryTile('任务', String(overview.taskCount || 0), (overview.taskCount || 0) > 0 ? 'ok' : 'muted'),
@@ -8275,10 +8276,10 @@ function renderContextReviewActionAuditPanel(result) {
   ].join('') + '</div>';
   return panel('复核审计', [
     tiles,
-    metric('生成时间', overview.generatedAt || 'unknown'),
-    metric('最新审计', overview.latestGeneratedAt || 'none'),
-    metric('来源', compactCountMap(overview.bySourceKey)),
-    metric('下一步', overview.recommendedNextAction || 'none'),
+    metric('生成时间', overview.generatedAt || '未知'),
+    metric('最新审计', overview.latestGeneratedAt || '暂无'),
+    metric('来源', sourceSummary === 'none' ? '暂无' : sourceSummary),
+    metric('下一步', overview.recommendedNextAction || '暂无'),
     renderContextReviewActionAuditRows(audits)
   ].join(''), 'wide');
 }
@@ -8338,26 +8339,26 @@ function renderContextReviewActionExecutorDiagnostics(result) {
 
 function renderContextReviewResultEventSynthesis(result) {
   const rows = result.results || [];
-  return panel('Review alert synthesis', [
-    metric('Mode', result.dryRun ? 'dry-run' : 'execute'),
-    metric('Review results', result.reviewResultCount || 0),
-    metric('Actions', result.actionCount || 0),
-    metric('Created', result.createdCount || 0),
-    metric('Updated', result.updatedCount || 0),
-    metric('Skipped', result.skippedCount || 0),
+  return panel('复核提醒整理', [
+    metric('模式', result.dryRun ? '预演' : '执行'),
+    metric('复核结果', result.reviewResultCount || 0),
+    metric('动作', result.actionCount || 0),
+    metric('新建', result.createdCount || 0),
+    metric('更新', result.updatedCount || 0),
+    metric('跳过', result.skippedCount || 0),
     evidenceList(rows.map(function (item) {
       const event = item.event || {};
-      const reason = item.reason ? ' | ' + item.reason : '';
-      return item.status + ' | ' + (item.recordId || 'unknown-record') + ' | ' + (event.id || 'no-event') + ' | ' + (event.severity || 'unknown') + reason;
+      const reason = item.reason ? ' · ' + item.reason : '';
+      return item.status + ' · ' + (item.recordId || '未知记录') + ' · ' + (event.id || '暂无提醒') + ' · ' + (event.severity || 'unknown') + reason;
     }))
   ].join(''), 'wide');
 }
 
 function renderContextReviewAttentionRows(records) {
-  if (records.length === 0) return '<div class="muted">No review attention needed.</div>';
+  if (records.length === 0) return '<div class="muted">暂无需要关注的复核结果。</div>';
   return records.map(function (record) {
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml(record.status || 'unknown') + ' | ' + escapeHtml(record.handoffId || record.id || 'unknown') + '</strong>' +
+      '<strong>' + escapeHtml(record.status || 'unknown') + ' · ' + escapeHtml(record.handoffId || record.id || '未知记录') + '</strong>' +
       '<small>' + escapeHtml(record.reason || 'attention') + '</small>' +
       '<small>' + escapeHtml(record.recommendedNextAction || '') + '</small>' +
       '</span>' +
@@ -8367,7 +8368,7 @@ function renderContextReviewAttentionRows(records) {
 }
 
 function renderContextReviewResultRows(records) {
-  if (records.length === 0) return '<div class="muted">No submitted review results.</div>';
+  if (records.length === 0) return '<div class="muted">暂无已提交的复核结果。</div>';
   return records.map(function (record) {
     const summary = record.summary || {};
     const notification = summary.notification || {};
@@ -8375,12 +8376,12 @@ function renderContextReviewResultRows(records) {
     const details = [
       record.id,
       record.submittedAt,
-      reviewer.id ? 'reviewer=' + reviewer.id : undefined,
-      'remaining=' + (summary.remainingCount || 0),
-      'merge=' + (Array.isArray(summary.mergeCandidates) ? summary.mergeCandidates.length : 0)
-    ].filter(Boolean).join(' | ');
+      reviewer.id ? '复核人 ' + reviewer.id : undefined,
+      '剩余 ' + (summary.remainingCount || 0),
+      '合并候选 ' + (Array.isArray(summary.mergeCandidates) ? summary.mergeCandidates.length : 0)
+    ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml((record.status || 'unknown') + ' | ' + (record.handoffId || 'no-handoff')) + '</strong>' +
+      '<strong>' + escapeHtml((record.status || 'unknown') + ' · ' + (record.handoffId || '无交接')) + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
       '<small>' + escapeHtml(summary.recommendedNextAction || '') + '</small>' +
       '</span>' +
@@ -8390,7 +8391,7 @@ function renderContextReviewResultRows(records) {
 }
 
 function renderReviewMergeCandidateRows(candidates) {
-  if (candidates.length === 0) return '<div class="muted">No merge candidates.</div>';
+  if (candidates.length === 0) return '<div class="muted">暂无合并候选。</div>';
   return candidates.slice(0, 10).map(function (candidate) {
     const details = [
       candidate.recordId,
@@ -8409,7 +8410,7 @@ function renderReviewMergeCandidateRows(candidates) {
 }
 
 function renderReviewBlockedTaskRows(tasks) {
-  if (tasks.length === 0) return '<div class="muted">No blocked tasks.</div>';
+  if (tasks.length === 0) return '<div class="muted">暂无受阻事项。</div>';
   return tasks.slice(0, 10).map(function (task) {
     const details = [
       task.recordId,
@@ -8428,7 +8429,7 @@ function renderReviewBlockedTaskRows(tasks) {
 }
 
 function renderReviewActionGateRows(gates) {
-  if (gates.length === 0) return '<div class="muted">No review gates.</div>';
+  if (gates.length === 0) return '<div class="muted">暂无复核门禁。</div>';
   return gates.map(function (gate) {
     const evidence = gate.evidence || {};
     const details = Object.keys(evidence).slice(0, 4).map(function (key) {
@@ -8446,7 +8447,7 @@ function renderReviewActionGateRows(gates) {
 }
 
 function renderReviewActionApplyStepRows(steps) {
-  if (steps.length === 0) return '<div class="muted">No apply steps.</div>';
+  if (steps.length === 0) return '<div class="muted">暂无应用步骤。</div>';
   return steps.map(function (step) {
     return '<div class="action-row ops-row"><span>' +
       '<strong>' + escapeHtml(step.key || 'unknown-step') + '</strong>' +
@@ -8458,7 +8459,7 @@ function renderReviewActionApplyStepRows(steps) {
 }
 
 function renderDiagnosticCheckRows(checks) {
-  if (checks.length === 0) return '<div class="muted">No diagnostic checks.</div>';
+  if (checks.length === 0) return '<div class="muted">暂无诊断检查。</div>';
   return checks.map(function (check) {
     return '<div class="action-row ops-row"><span>' +
       '<strong>' + escapeHtml(check.key || 'unknown-check') + '</strong>' +
@@ -8471,7 +8472,7 @@ function renderDiagnosticCheckRows(checks) {
 }
 
 function renderContextReviewActionAuditRows(audits) {
-  if (audits.length === 0) return '<div class="muted">No review action audits.</div>';
+  if (audits.length === 0) return '<div class="muted">暂无复核动作审计。</div>';
   return audits.map(function (audit) {
     const request = audit.request || {};
     const details = [
@@ -8480,8 +8481,8 @@ function renderContextReviewActionAuditRows(audits) {
       audit.sourceId ? 'sourceId=' + audit.sourceId : undefined,
       request.taskId ? 'task=' + request.taskId : undefined,
       request.closeTaskIds ? 'close=' + request.closeTaskIds.length : undefined,
-      request.mergeCandidates ? 'merge=' + request.mergeCandidates.length : undefined
-    ].filter(Boolean).join(' | ');
+      request.mergeCandidates ? '合并候选 ' + request.mergeCandidates.length : undefined
+    ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row"><span>' +
       '<strong>' + escapeHtml(audit.action || 'unknown-action') + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
@@ -8493,7 +8494,7 @@ function renderContextReviewActionAuditRows(audits) {
 }
 
 function renderContextReviewActionExecutionRows(executions) {
-  if (executions.length === 0) return '<div class="muted">No review action executions.</div>';
+  if (executions.length === 0) return '<div class="muted">暂无复核动作执行记录。</div>';
   return executions.map(function (execution) {
     const details = [
       execution.updatedAt || execution.createdAt,
@@ -8665,23 +8666,24 @@ function renderNotificationEventActionIntent(result) {
 
 function renderNotificationEventOverviewLegacy(overview) {
   const attention = overview.attention || {};
+  const sourceSummary = compactCountMap(overview.bySourceKey);
   return panel('提醒箱概览', [
     '<div class="summary-strip event-summary-strip">' + [
-      summaryTile('Status', overview.status || 'unknown', statusVariant(overview.status)),
-      summaryTile('Window', String(overview.eventCount || 0)),
-      summaryTile('Open', String(overview.unacknowledgedCount || 0), overview.unacknowledgedCount > 0 ? 'warn' : 'ok'),
-      summaryTile('Due', String(overview.dueForDeliveryCount || 0), overview.dueForDeliveryCount > 0 ? 'warn' : 'ok'),
-      summaryTile('Failed', String(overview.failedCount || 0), overview.failedCount > 0 ? 'fail' : 'ok')
+      summaryTile('状态', overview.status || 'unknown', statusVariant(overview.status)),
+      summaryTile('窗口', String(overview.eventCount || 0)),
+      summaryTile('未确认', String(overview.unacknowledgedCount || 0), overview.unacknowledgedCount > 0 ? 'warn' : 'ok'),
+      summaryTile('到期', String(overview.dueForDeliveryCount || 0), overview.dueForDeliveryCount > 0 ? 'warn' : 'ok'),
+      summaryTile('失败', String(overview.failedCount || 0), overview.failedCount > 0 ? 'fail' : 'ok')
     ].join('') + '</div>',
-    metric('Delivery status', formatStanceSummary(overview.byDeliveryStatus)),
-    metric('Open delivery status', formatStanceSummary(overview.byOpenDeliveryStatus)),
-    metric('Event types', formatStanceSummary(overview.byType)),
-    metric('Severity', formatStanceSummary(overview.bySeverity)),
-    metric('Sources', compactCountMap(overview.bySourceKey)),
-    metric('Open sources', compactCountMap(overview.byOpenSourceKey)),
-    metric('Next delivery', overview.nextDeliveryAt || 'none'),
-    metric('Oldest open', overview.oldestUnacknowledgedAt || 'none'),
-    metric('Next', overview.recommendedNextAction || 'none'),
+    metric('投递状态', formatStanceSummary(overview.byDeliveryStatus)),
+    metric('未确认状态', formatStanceSummary(overview.byOpenDeliveryStatus)),
+    metric('提醒类型', formatStanceSummary(overview.byType)),
+    metric('级别', formatStanceSummary(overview.bySeverity)),
+    metric('来源', sourceSummary === 'none' ? '暂无' : sourceSummary),
+    metric('未确认来源', compactCountMap(overview.byOpenSourceKey)),
+    metric('下次投递', overview.nextDeliveryAt || '暂无'),
+    metric('最早未确认', overview.oldestUnacknowledgedAt || '暂无'),
+    metric('下一步', overview.recommendedNextAction || '暂无'),
     renderNotificationSourceHotspots(overview.sourceHotspots || []),
     evidenceList((attention.failedEvents || []).slice(0, 5).map(function (event) {
       return (event.deliveryStatus || 'failed') + ' | ' + event.type + ' | ' + event.id + ' | attempts=' + (event.deliveryAttempts || 0);

@@ -185,7 +185,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /load-trace-context/);
     assert.match(webAppJs, /data-task-id/);
     assert.match(webAppJs, /query\.get\('taskId'\)/);
-    assert.match(webAppJs, /Task trace context/);
+    assert.match(webAppJs, /任务路径上下文/);
     assert.match(webAppJs, /run-rollout-apply-dry-run/);
     assert.match(webAppJs, /预演应用/);
     assert.match(webAppJs, /copy-lifecycle-command/);
@@ -246,8 +246,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /runDueCollectionFromButton/);
     assert.match(webAppJs, /run-due-pipelines/);
     assert.match(webAppJs, /renderBatchTaskControls/);
-    assert.match(webAppJs, /Batch trace/);
-    assert.match(webAppJs, /Ingest task/);
+    assert.match(webAppJs, /批量路径/);
+    assert.match(webAppJs, /导入任务/);
     assert.match(webAppJs, /renderSourceOperationResultRows/);
     assert.match(webAppJs, /Due source batch run/);
     assert.match(webAppJs, /Source attention/);
