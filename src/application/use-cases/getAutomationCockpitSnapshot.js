@@ -16,6 +16,13 @@ function getAutomationCockpitSnapshot(input) {
     diagnosticsStatus
   ].filter(Boolean);
   const status = aggregateStatus(componentStatuses);
+  const operatingPressure = buildOperatingPressure({
+    notificationOverview,
+    reviewActionAuditOverview,
+    reviewActionExecutions,
+    notificationDiagnostics,
+    diagnosticsStatus
+  });
   const operatorRunbook = buildOperatorRunbook({
     plan,
     notificationOverview,
@@ -34,6 +41,7 @@ function getAutomationCockpitSnapshot(input) {
     reviewActionAuditOverview,
     reviewActionExecutions,
     notificationDiagnostics,
+    operatingPressure,
     operatorRunbook,
     summary: {
       readinessStatus: plan.status || 'unknown',
@@ -45,6 +53,73 @@ function getAutomationCockpitSnapshot(input) {
       pendingNotificationCount: firstNumber(notificationOverview.pendingDeliveryCount, notificationOverview.pendingCount, notificationOverview.dueForDeliveryCount, 0),
       auditCount: reviewActionAuditOverview.count,
       executionCount: reviewActionExecutions.count
+    }
+  };
+}
+
+function buildOperatingPressure(input) {
+  const notificationOverview = input.notificationOverview || {};
+  const auditOverview = input.reviewActionAuditOverview || {};
+  const executions = input.reviewActionExecutions || {};
+  const diagnostics = input.notificationDiagnostics || {};
+  const checks = diagnostics.checks || [];
+  const failedCount = firstNumber(notificationOverview.failedCount, 0);
+  const retryExhaustedCount = firstNumber(notificationOverview.retryExhaustedCount, 0);
+  const dueCount = firstNumber(notificationOverview.dueForDeliveryCount, notificationOverview.pendingDeliveryCount, 0);
+  const openCount = firstNumber(notificationOverview.openCount, notificationOverview.unacknowledgedCount, 0);
+  const pendingCount = firstNumber(notificationOverview.pendingCount, notificationOverview.pendingDeliveryCount, notificationOverview.dueForDeliveryCount, 0);
+  const outboxStatus = failedCount > 0 || retryExhaustedCount > 0
+    ? 'fail'
+    : dueCount > 0 || openCount > 0 || pendingCount > 0
+      ? 'warn'
+      : normalizeStatus(notificationOverview.status || 'ok');
+  const staleRunningCount = firstNumber(executions.summary && executions.summary.staleRunning, executions.staleRunningCount, executions.staleRunning, 0);
+  const failedExecutionCount = firstNumber(executions.summary && executions.summary.failed, executions.failedCount, executions.failed, 0);
+  const executionCount = firstNumber(executions.count, executions.summary && executions.summary.count, (executions.executions || []).length, 0);
+  const executionStatus = failedExecutionCount > 0 || staleRunningCount > 0
+    ? 'fail'
+    : normalizeStatus(executions.status || executions.healthStatus || 'ok');
+  const auditCount = firstNumber(auditOverview.count, 0);
+  const auditStatus = normalizeStatus(auditOverview.status || (auditCount > 0 ? 'ok' : 'warn'));
+  const failedCheckCount = checks.filter(function (check) { return check.status === 'fail'; }).length;
+  const warnCheckCount = checks.filter(function (check) { return check.status === 'warn'; }).length;
+  const channelStatus = failedCheckCount > 0
+    ? 'fail'
+    : warnCheckCount > 0
+      ? 'warn'
+      : normalizeStatus(input.diagnosticsStatus || diagnostics.status || 'ok');
+  return {
+    status: aggregateStatus([outboxStatus, auditStatus, executionStatus, channelStatus]),
+    outbox: {
+      status: outboxStatus,
+      eventCount: firstNumber(notificationOverview.eventCount, 0),
+      openCount,
+      pendingCount,
+      dueCount,
+      failedCount,
+      retryExhaustedCount,
+      recommendedNextAction: notificationOverview.recommendedNextAction
+    },
+    audit: {
+      status: auditStatus,
+      auditCount,
+      taskCount: firstNumber(auditOverview.taskCount, 0),
+      plannedClosureCount: firstNumber(auditOverview.plannedClosureCount, 0),
+      plannedMergeCandidateCount: firstNumber(auditOverview.plannedMergeCandidateCount, 0),
+      recommendedNextAction: auditOverview.recommendedNextAction
+    },
+    executions: {
+      status: executionStatus,
+      count: executionCount,
+      staleRunningCount,
+      failedCount: failedExecutionCount
+    },
+    channel: {
+      status: channelStatus,
+      channel: diagnostics.channel || 'unknown',
+      checkCount: checks.length,
+      failedCheckCount,
+      warnCheckCount
     }
   };
 }

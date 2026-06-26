@@ -1293,6 +1293,30 @@ test('http server exposes source operations drilldown API', async function () {
           },
           notificationDiagnostics: {
             status: 'ok'
+          },
+          operatingPressure: {
+            status: 'warn',
+            outbox: {
+              status: 'warn',
+              openCount: 2,
+              dueCount: 1,
+              failedCount: 0,
+              retryExhaustedCount: 0
+            },
+            audit: {
+              status: 'warn',
+              auditCount: 3
+            },
+            executions: {
+              status: 'ok',
+              count: 4,
+              staleRunningCount: 0,
+              failedCount: 0
+            },
+            channel: {
+              status: 'ok',
+              channel: 'file'
+            }
           }
         };
       }
@@ -1346,6 +1370,9 @@ test('http server exposes source operations drilldown API', async function () {
     assert.equal(automationCockpit.schemaVersion, 'automation-cockpit-snapshot.v1');
     assert.equal(automationCockpit.status, 'warn');
     assert.equal(automationCockpit.summary.openNotificationCount, 2);
+    assert.equal(automationCockpit.operatingPressure.status, 'warn');
+    assert.equal(automationCockpit.operatingPressure.outbox.openCount, 2);
+    assert.equal(automationCockpit.operatingPressure.audit.auditCount, 3);
     assert.equal(automationCockpit.reviewActionAuditOverview.count, 3);
     assert.equal(calls[3].automationCockpit, true);
     assert.equal(calls[3].sourceKey, 'nga');
@@ -2034,6 +2061,9 @@ test('http server exposes deployment checklist API', async function () {
     assert.ok(openApi.components.schemas.AutomationReadinessPlan.properties.automation);
     assert.equal(openApi.components.schemas.AutomationCockpitSnapshot.properties.plan.$ref, '#/components/schemas/AutomationReadinessPlan');
     assert.equal(openApi.components.schemas.AutomationCockpitSnapshot.properties.operatorRunbook.$ref, '#/components/schemas/AutomationCockpitOperatorRunbook');
+    assert.equal(openApi.components.schemas.AutomationCockpitSnapshot.properties.operatingPressure.$ref, '#/components/schemas/AutomationCockpitOperatingPressure');
+    assert.ok(openApi.components.schemas.AutomationCockpitOperatingPressure.properties.outbox);
+    assert.ok(openApi.components.schemas.AutomationCockpitOperatingPressure.properties.audit);
     assert.ok(openApi.components.schemas.AutomationCockpitOperatorRunbook.properties.actionableCommandCount);
     assert.ok(openApi.components.schemas.AutomationCockpitOperatorRunbook.properties.executeCommandCount);
     assert.ok(openApi.components.schemas.AutomationCockpitOperatorRunbook.properties.sections.items.properties.commands.items.properties.intent);

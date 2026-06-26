@@ -5526,6 +5526,9 @@ function renderAutomationOperatingPressure(cockpit) {
 }
 
 function automationOperatingPressureSummary(cockpit) {
+  if (cockpit && cockpit.operatingPressure) {
+    return normalizeAutomationOperatingPressure(cockpit.operatingPressure);
+  }
   const notificationOverview = cockpit.notificationOverview || {};
   const auditOverview = cockpit.reviewActionAuditOverview || {};
   const actionExecutions = cockpit.reviewActionExecutions || {};
@@ -5572,6 +5575,31 @@ function automationOperatingPressureSummary(cockpit) {
     executionVariant: staleExecutions > 0 || failedExecutions > 0 ? 'fail' : statusVariant(actionExecutions.status || 'ok'),
     channel: notificationDiagnostics.channel || 'unknown',
     channelStatus
+  };
+}
+
+function normalizeAutomationOperatingPressure(pressure) {
+  const safePressure = pressure || {};
+  const outbox = safePressure.outbox || {};
+  const audit = safePressure.audit || {};
+  const executions = safePressure.executions || {};
+  const channel = safePressure.channel || {};
+  return {
+    eventCount: outbox.eventCount || 0,
+    openEvents: outbox.openCount || 0,
+    dueEvents: outbox.dueCount || 0,
+    failedEvents: outbox.failedCount || 0,
+    retryExhaustedEvents: outbox.retryExhaustedCount || 0,
+    outboxStatus: outbox.status || 'unknown',
+    outboxVariant: statusVariant(outbox.status || safePressure.status || 'ok'),
+    auditCount: audit.auditCount || 0,
+    executionCount: executions.count || 0,
+    staleExecutions: executions.staleRunningCount || 0,
+    failedExecutions: executions.failedCount || 0,
+    auditVariant: statusVariant(audit.status || safePressure.status || 'ok'),
+    executionVariant: statusVariant(executions.status || safePressure.status || 'ok'),
+    channel: channel.channel || 'unknown',
+    channelStatus: channel.status || 'unknown'
   };
 }
 

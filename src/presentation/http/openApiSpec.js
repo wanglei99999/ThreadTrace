@@ -7308,8 +7308,63 @@ function createOpenApiSpec() {
             reviewActionAuditOverview: { $ref: '#/components/schemas/ContextReviewActionAuditOverview' },
             reviewActionExecutions: { $ref: '#/components/schemas/ContextReviewActionExecutionListResult' },
             notificationDiagnostics: { type: 'object', additionalProperties: true },
+            operatingPressure: { $ref: '#/components/schemas/AutomationCockpitOperatingPressure' },
             operatorRunbook: { $ref: '#/components/schemas/AutomationCockpitOperatorRunbook' }
           }
+        },
+        AutomationCockpitOperatingPressure: {
+          type: 'object',
+          properties: {
+            status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+            outbox: {
+              type: 'object',
+              properties: {
+                status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+                eventCount: { type: 'number' },
+                openCount: { type: 'number' },
+                pendingCount: { type: 'number' },
+                dueCount: { type: 'number' },
+                failedCount: { type: 'number' },
+                retryExhaustedCount: { type: 'number' },
+                recommendedNextAction: { type: 'string' }
+              },
+              additionalProperties: true
+            },
+            audit: {
+              type: 'object',
+              properties: {
+                status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+                auditCount: { type: 'number' },
+                taskCount: { type: 'number' },
+                plannedClosureCount: { type: 'number' },
+                plannedMergeCandidateCount: { type: 'number' },
+                recommendedNextAction: { type: 'string' }
+              },
+              additionalProperties: true
+            },
+            executions: {
+              type: 'object',
+              properties: {
+                status: { type: 'string', enum: ['ok', 'warn', 'fail'] },
+                count: { type: 'number' },
+                staleRunningCount: { type: 'number' },
+                failedCount: { type: 'number' }
+              },
+              additionalProperties: true
+            },
+            channel: {
+              type: 'object',
+              properties: {
+                status: { type: 'string', enum: ['ok', 'warn', 'fail', 'unknown'] },
+                channel: { type: 'string', example: 'file' },
+                checkCount: { type: 'number' },
+                failedCheckCount: { type: 'number' },
+                warnCheckCount: { type: 'number' }
+              },
+              additionalProperties: true
+            }
+          },
+          additionalProperties: true
         },
         AutomationCockpitOperatorRunbook: {
           type: 'object',

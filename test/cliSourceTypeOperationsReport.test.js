@@ -410,6 +410,11 @@ test('CLI prints automation cockpit snapshot as JSON', async function () {
     assert.equal(snapshot.reviewActionExecutions.count, 0);
     assert.equal(snapshot.summary.readinessStatus, 'fail');
     assert.equal(snapshot.summary.diagnosticsStatus, 'ok');
+    assert.ok(snapshot.operatingPressure);
+    assert.ok(snapshot.operatingPressure.outbox);
+    assert.ok(snapshot.operatingPressure.audit);
+    assert.ok(snapshot.operatingPressure.executions);
+    assert.ok(snapshot.operatingPressure.channel);
     assert.ok(snapshot.operatorRunbook.commandCount >= 3);
     assert.ok(snapshot.operatorRunbook.actionableCommandCount >= 0);
     assert.equal(snapshot.operatorRunbook.commandCount, snapshot.operatorRunbook.actionableCommandCount + snapshot.operatorRunbook.copyOnlyCommandCount);

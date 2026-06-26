@@ -74,6 +74,15 @@ test('automation cockpit snapshot aggregates readiness and operating pressure', 
   assert.equal(snapshot.summary.pendingNotificationCount, 1);
   assert.equal(snapshot.summary.auditCount, 3);
   assert.equal(snapshot.summary.executionCount, 4);
+  assert.equal(snapshot.operatingPressure.status, 'warn');
+  assert.equal(snapshot.operatingPressure.outbox.status, 'warn');
+  assert.equal(snapshot.operatingPressure.outbox.openCount, 2);
+  assert.equal(snapshot.operatingPressure.outbox.pendingCount, 1);
+  assert.equal(snapshot.operatingPressure.audit.status, 'warn');
+  assert.equal(snapshot.operatingPressure.audit.auditCount, 3);
+  assert.equal(snapshot.operatingPressure.executions.status, 'ok');
+  assert.equal(snapshot.operatingPressure.executions.count, 4);
+  assert.equal(snapshot.operatingPressure.channel.status, 'ok');
   assert.equal(snapshot.operatorRunbook.commandCount, 6);
   assert.equal(snapshot.operatorRunbook.actionableCommandCount, 2);
   assert.equal(snapshot.operatorRunbook.dryRunCommandCount, 1);
@@ -123,4 +132,6 @@ test('automation cockpit snapshot fails when any component fails', function () {
 
   assert.equal(snapshot.status, 'fail');
   assert.equal(snapshot.readyForUnattendedRun, false);
+  assert.equal(snapshot.operatingPressure.status, 'fail');
+  assert.equal(snapshot.operatingPressure.outbox.status, 'fail');
 });
