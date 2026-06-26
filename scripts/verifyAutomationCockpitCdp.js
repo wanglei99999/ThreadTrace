@@ -246,7 +246,7 @@ function assertPressureAction(label, pressureAction, audit) {
   const failures = [];
   if (!pressureAction) failures.push('missing pressure action report');
   else {
-    ['outbox', 'dispatch', 'audits', 'executions'].forEach(function (key) {
+    ['outbox', 'ack', 'dispatch', 'audits', 'executions'].forEach(function (key) {
       const item = pressureAction[key];
       if (!item) failures.push('missing pressure action: ' + key);
       else {
@@ -255,6 +255,8 @@ function assertPressureAction(label, pressureAction, audit) {
         if (!item.hasResult) failures.push(key + ' pressure action did not render an action result');
         if (!item.hasPanel) failures.push(key + ' pressure action did not render its detail panel');
         if (!item.visible) failures.push(key + ' pressure action result is not visible after click');
+        if (key === 'dispatch' && item.dispatchPostCount !== 0) failures.push('dispatch preview issued ' + item.dispatchPostCount + ' dispatch POST request(s)');
+        if (key === 'dispatch' && item.overviewGetCount <= 0) failures.push('dispatch preview did not read notification overview');
       }
     });
   }
@@ -932,6 +934,7 @@ async function automationActionDiagnostic(client) {
 async function verifyAutomationPressureAction(client) {
   return {
     outbox: await verifyAutomationPressureActionButton(client, 'outbox-overview', 'Outbox overview', 'Notification outbox'),
+    ack: await verifyAutomationPressureActionButton(client, 'ack-preview', 'Acknowledgement preview', 'Notification acknowledgement preview'),
     dispatch: await verifyAutomationPressureActionButton(client, 'dispatch-preview', 'Dispatch preview', 'Notification dispatch preview'),
     audits: await verifyAutomationPressureActionButton(client, 'audit-overview', 'Review audits', 'Review action audits'),
     executions: await verifyAutomationPressureActionButton(client, 'execution-overview', 'Review executions', 'Review action executions')
@@ -939,6 +942,9 @@ async function verifyAutomationPressureAction(client) {
 }
 
 async function verifyAutomationPressureActionButton(client, actionKey, actionLabel, panelText) {
+  if (actionKey === 'dispatch-preview') {
+    await installDispatchPreviewFetchMonitor(client);
+  }
   const clicked = await evaluateByValue(client, [
     '(() => {',
     '  const button = document.querySelector(\'.automation-pressure-panel button[data-pressure-action="' + actionKey + '"]\');',
@@ -948,7 +954,10 @@ async function verifyAutomationPressureActionButton(client, actionKey, actionLab
     '  return { clicked: true, skipped: false, action: button.dataset.pressureAction || "", label };',
     '})()'
   ].join('\n'));
-  if (!clicked || clicked.skipped) return clicked;
+  if (!clicked || clicked.skipped) {
+    if (actionKey === 'dispatch-preview') await uninstallDispatchPreviewFetchMonitor(client);
+    return clicked;
+  }
   await waitFor(async function () {
     return evaluateByValue(client, [
       '(() => {',
@@ -960,7 +969,7 @@ async function verifyAutomationPressureActionButton(client, actionKey, actionLab
       '})()'
     ].join('\n'));
   }, 30000, 'Timed out waiting for Automation Cockpit pressure action result: ' + actionKey + '.');
-  return evaluateByValue(client, [
+  const result = await evaluateByValue(client, [
     '(() => {',
     "  const result = document.querySelector('#automationActionResult');",
     "  const text = result ? result.innerText : '';",
@@ -974,6 +983,44 @@ async function verifyAutomationPressureActionButton(client, actionKey, actionLab
     "    hasPanel: text.includes(" + JSON.stringify(panelText) + "),",
     "    visible: rect ? rect.bottom > 0 && rect.top < window.innerHeight : false",
     '  };',
+    '})()'
+  ].join('\n'));
+  if (actionKey === 'dispatch-preview') {
+    const monitor = await uninstallDispatchPreviewFetchMonitor(client);
+    return Object.assign({}, result, monitor);
+  }
+  return result;
+}
+
+async function installDispatchPreviewFetchMonitor(client) {
+  return evaluateByValue(client, [
+    '(() => {',
+    '  const originalFetch = window.fetch.bind(window);',
+    '  window.__threadtraceDispatchPreviewFetchMonitor = { dispatchPostCount: 0, overviewGetCount: 0 };',
+    '  window.fetch = async function (input, init) {',
+    "    const url = typeof input === 'string' ? input : input && input.url || '';",
+    "    const method = (init && init.method || (input && input.method) || 'GET').toUpperCase();",
+    "    if (url.includes('/api/events/dispatch') && method === 'POST') window.__threadtraceDispatchPreviewFetchMonitor.dispatchPostCount += 1;",
+    "    if (url.includes('/api/events/overview') && method === 'GET') window.__threadtraceDispatchPreviewFetchMonitor.overviewGetCount += 1;",
+    '    return originalFetch(input, init);',
+    '  };',
+    '  window.__threadtraceRestoreDispatchPreviewFetch = () => {',
+    '    window.fetch = originalFetch;',
+    '    const report = window.__threadtraceDispatchPreviewFetchMonitor || { dispatchPostCount: 0, overviewGetCount: 0 };',
+    '    delete window.__threadtraceDispatchPreviewFetchMonitor;',
+    '    delete window.__threadtraceRestoreDispatchPreviewFetch;',
+    '    return report;',
+    '  };',
+    '  return true;',
+    '})()'
+  ].join('\n'));
+}
+
+async function uninstallDispatchPreviewFetchMonitor(client) {
+  return evaluateByValue(client, [
+    '(() => {',
+    '  if (window.__threadtraceRestoreDispatchPreviewFetch) return window.__threadtraceRestoreDispatchPreviewFetch();',
+    '  return { dispatchPostCount: -1, overviewGetCount: -1 };',
     '})()'
   ].join('\n'));
 }
