@@ -162,6 +162,7 @@ async function verifyViewport(client, options) {
   await client.send('Page.navigate', { url: options.url });
   await waitForCockpit(client);
   const runbookPreview = options.runAction ? await verifyAutomationRunbookPreview(client) : undefined;
+  if (options.runAction) await waitForCockpit(client);
   const actionResult = options.runAction ? await verifyAutomationActionResult(client) : undefined;
   const audit = await evaluateByValue(client, viewportAuditExpression());
   const screenshot = await client.send('Page.captureScreenshot', {
@@ -170,12 +171,16 @@ async function verifyViewport(client, options) {
   });
   await fs.writeFile(options.screenshotPath, Buffer.from(screenshot.data, 'base64'));
   const stats = await fs.stat(options.screenshotPath);
+  const png = await readPngInfo(options.screenshotPath);
   assertAudit(options.label, audit);
+  assertScreenshot(options.label, png, stats, options, audit);
   return Object.assign({}, audit, {
     runbookPreview,
     actionResult,
     screenshotPath: options.screenshotPath,
-    screenshotBytes: stats.size
+    screenshotBytes: stats.size,
+    screenshotWidth: png.width,
+    screenshotHeight: png.height
   });
 }
 
@@ -345,6 +350,35 @@ function assertAudit(label, audit) {
   if (audit.heroTop === null || audit.heroTop > audit.clientWidth * 3) failures.push('cockpit appears too late in the page');
   if (failures.length > 0) {
     throw new Error(label + ' Automation Cockpit verification failed: ' + failures.join('; '));
+  }
+}
+
+async function readPngInfo(filePath) {
+  const handle = await fs.open(filePath, 'r');
+  try {
+    const buffer = Buffer.alloc(24);
+    await handle.read(buffer, 0, buffer.length, 0);
+    const signature = buffer.subarray(0, 8).toString('hex');
+    if (signature !== '89504e470d0a1a0a') {
+      throw new Error('Screenshot is not a PNG file: ' + filePath);
+    }
+    return {
+      width: buffer.readUInt32BE(16),
+      height: buffer.readUInt32BE(20)
+    };
+  } finally {
+    await handle.close();
+  }
+}
+
+function assertScreenshot(label, png, stats, options, audit) {
+  const failures = [];
+  const expectedWidth = audit && audit.clientWidth || options.width;
+  if (!png || png.width < expectedWidth) failures.push('width=' + (png && png.width) + ', expected at least ' + expectedWidth);
+  if (!png || png.height < options.height) failures.push('height=' + (png && png.height) + ', expected at least ' + options.height);
+  if (!stats || stats.size < 10000) failures.push('screenshot too small: ' + (stats && stats.size));
+  if (failures.length > 0) {
+    throw new Error(label + ' screenshot verification failed: ' + failures.join('; '));
   }
 }
 
