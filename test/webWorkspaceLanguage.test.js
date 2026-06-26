@@ -206,3 +206,28 @@ test('source onboarding and rollout controls avoid deployment-console copy', fun
     'uncategorized'
   ]);
 });
+
+test('history and context reports avoid evidence-console copy', function () {
+  const app = readProjectFile('src/presentation/web/app.js');
+
+  assertAbsent(app, [
+    '<span class="history-report-kicker">Evidence report</span>',
+    "historyFact('Posts'",
+    "historyFact('Authors'",
+    "historyFact('Pages'",
+    "historyFact('Reliability'",
+    '<span>Primary author</span>',
+    '<span class="context-verdict-label">Context verdict</span>',
+    "contextVerdictSignal('Matches'",
+    "contextVerdictSignal('Review'",
+    "contextVerdictSignal('Tasks'",
+    "contextVerdictSignal('Floors'",
+    '<span>Next action</span>',
+    'Inspect matched evidence and decide whether to create review work.',
+    'No high priority review tasks',
+    'high priority review tasks',
+    'No matching evidence yet.',
+    'unknown author',
+    '<small>score '
+  ]);
+});

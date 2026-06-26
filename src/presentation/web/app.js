@@ -3081,29 +3081,29 @@ function renderHistoryReportHero(report) {
   const primary = report.primaryAuthorProfile || {};
   const author = primary.author || {};
   const signals = [
-    report.entityCandidates ? report.entityCandidates.length + ' entities' : undefined,
-    report.opinionCandidates ? report.opinionCandidates.length + ' opinions' : undefined,
-    report.opinionChains ? report.opinionChains.length + ' chains' : undefined,
-    report.implicitReferenceCandidates ? report.implicitReferenceCandidates.length + ' implicit refs' : undefined
+    report.entityCandidates ? '实体 ' + report.entityCandidates.length : undefined,
+    report.opinionCandidates ? '观点 ' + report.opinionCandidates.length : undefined,
+    report.opinionChains ? '观点链 ' + report.opinionChains.length : undefined,
+    report.implicitReferenceCandidates ? '隐含指代 ' + report.implicitReferenceCandidates.length : undefined
   ].filter(Boolean);
   return [
     '<article class="history-report-hero">',
     '<div class="history-report-main">',
-    '<span class="history-report-kicker">Evidence report</span>',
-    '<h3>' + escapeHtml(thread.title || 'Untitled thread') + '</h3>',
+    '<span class="history-report-kicker">证据路径</span>',
+    '<h3>' + escapeHtml(thread.title || '未命名主题') + '</h3>',
     '<p>' + escapeHtml(reliability.summary || '已完成保存页解析，下面可以继续查看作者、实体、观点链和原文证据。') + '</p>',
     '<div class="history-report-tags">' + tagList(signals) + '</div>',
     '</div>',
     '<div class="history-report-facts">',
-    historyFact('Posts', thread.parsedPostCount || 0),
-    historyFact('Authors', (report.authorStats || []).length),
-    historyFact('Pages', thread.totalPages || 'unknown'),
-    historyFact('Reliability', reliability.status || 'unknown'),
+    historyFact('发言', thread.parsedPostCount || 0),
+    historyFact('作者', (report.authorStats || []).length),
+    historyFact('页数', thread.totalPages || '未知'),
+    historyFact('可信度', reliability.status || '未知'),
     '</div>',
     '<div class="history-report-author">',
-    '<span>Primary author</span>',
-    '<strong>' + escapeHtml(author.displayName || author.sourceAuthorId || 'unknown') + '</strong>',
-    '<small>' + escapeHtml([primary.postCount ? primary.postCount + ' posts' : undefined, primary.opinionCount ? primary.opinionCount + ' opinions' : undefined, formatStanceSummary(primary.stanceSummary)].filter(Boolean).join(' | ')) + '</small>',
+    '<span>主要作者</span>',
+    '<strong>' + escapeHtml(author.displayName || author.sourceAuthorId || '未知作者') + '</strong>',
+    '<small>' + escapeHtml([primary.postCount ? '发言 ' + primary.postCount : undefined, primary.opinionCount ? '观点 ' + primary.opinionCount : undefined, formatStanceSummary(primary.stanceSummary)].filter(Boolean).join(' · ')) + '</small>',
     '</div>',
     '</article>'
   ].join('');
@@ -3892,22 +3892,22 @@ function renderContextVerdictHero(report) {
   const handoff = report.contextReviewHandoff || {};
   const post = report.newPost || {};
   const evidencePackage = handoff.evidencePackage || {};
-  const floors = (evidencePackage.floors || []).length > 0 ? '#' + evidencePackage.floors.slice(0, 6).join(' / #') : 'none';
+  const floors = (evidencePackage.floors || []).length > 0 ? '#' + evidencePackage.floors.slice(0, 6).join(' / #') : '暂无';
   const reviewCount = match.reviewRequiredCount || 0;
   const taskCount = handoff.taskCount || (report.contextReviewTasks || []).length || 0;
   const highPriorityCount = handoff.highPriorityTaskCount || 0;
   const tags = [
-    summary.evidenceLevel ? 'evidence ' + summary.evidenceLevel : undefined,
-    summary.confidence !== undefined ? 'confidence ' + summary.confidence : undefined,
-    match.topEntity ? 'entity ' + match.topEntity : undefined,
-    match.topRelationType ? 'relation ' + match.topRelationType : undefined
+    summary.evidenceLevel ? '证据 ' + summary.evidenceLevel : undefined,
+    summary.confidence !== undefined ? '可信度 ' + summary.confidence : undefined,
+    match.topEntity ? '对象 ' + match.topEntity : undefined,
+    match.topRelationType ? '关系 ' + match.topRelationType : undefined
   ].filter(Boolean);
   const reviewTone = highPriorityCount > 0 || reviewCount > 0 ? 'warn' : statusVariant(summary.status || match.status || handoff.status);
   return [
     '<article class="context-verdict-hero">',
     '<section class="context-verdict-main">',
     '<div class="context-verdict-header">',
-    '<span class="context-verdict-label">Context verdict</span>',
+    '<span class="context-verdict-label">上下文判断</span>',
     statusBadge(summary.status || match.status || 'interpreted', reviewTone),
     '</div>',
     '<h3>' + escapeHtml(summary.summary || '已完成语境召回，等待进一步核验。') + '</h3>',
@@ -3915,15 +3915,15 @@ function renderContextVerdictHero(report) {
     '<div class="context-verdict-tags">' + tagList(tags) + '</div>',
     '</section>',
     '<aside class="context-verdict-rail">',
-    contextVerdictSignal('Matches', match.total || (report.contextChainMatches || []).length || 0, statusVariant(match.status)),
-    contextVerdictSignal('Review', reviewCount, reviewCount > 0 ? 'warn' : 'ok'),
-    contextVerdictSignal('Tasks', taskCount, taskCount > 0 ? 'warn' : 'muted'),
-    contextVerdictSignal('Floors', floors, floors === 'none' ? 'muted' : 'ok'),
+    contextVerdictSignal('匹配', match.total || (report.contextChainMatches || []).length || 0, statusVariant(match.status)),
+    contextVerdictSignal('复核', reviewCount, reviewCount > 0 ? 'warn' : 'ok'),
+    contextVerdictSignal('事项', taskCount, taskCount > 0 ? 'warn' : 'muted'),
+    contextVerdictSignal('楼层', floors, floors === '暂无' ? 'muted' : 'ok'),
     '</aside>',
     '<section class="context-verdict-next">',
-    '<span>Next action</span>',
-    '<strong>' + escapeHtml(handoff.recommendedNextAction || 'Inspect matched evidence and decide whether to create review work.') + '</strong>',
-    '<small>' + escapeHtml(highPriorityCount > 0 ? highPriorityCount + ' high priority review tasks' : 'No high priority review tasks') + '</small>',
+    '<span>下一步</span>',
+    '<strong>' + escapeHtml(handoff.recommendedNextAction || '查看匹配证据，并决定是否需要创建复核事项。') + '</strong>',
+    '<small>' + escapeHtml(highPriorityCount > 0 ? '高优先复核事项 ' + highPriorityCount : '暂无高优先复核事项') + '</small>',
     '</section>',
     '</article>'
   ].join('');
@@ -4019,17 +4019,17 @@ function renderSearchResults(result) {
 }
 
 function renderSearchHitRows(results) {
-  if (!results.length) return emptySignal('No matching evidence yet.', 'Search');
+  if (!results.length) return emptySignal('暂未找到匹配证据。', '检索');
   return results.map(function (item) {
     const metadata = item.metadata || {};
     const floor = metadata.floor !== undefined && metadata.floor !== null ? '#' + metadata.floor : '#?';
-    const author = metadata.author || metadata.authorId || 'unknown author';
-    const score = item.score !== undefined && item.score !== null ? item.score : 'n/a';
+    const author = metadata.author || metadata.authorId || '未知作者';
+    const score = item.score !== undefined && item.score !== null ? item.score : '暂无';
     return '<div class="search-hit-row">' +
       '<div class="search-hit-meta">' +
       '<span>' + escapeHtml(floor) + '</span>' +
       '<strong>' + escapeHtml(author) + '</strong>' +
-      '<small>score ' + escapeHtml(score) + '</small>' +
+      '<small>匹配度 ' + escapeHtml(score) + '</small>' +
       '</div>' +
       '<p>' + escapeHtml(item.text || '') + '</p>' +
       '</div>';
