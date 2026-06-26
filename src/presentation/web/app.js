@@ -3062,7 +3062,7 @@ function authorMetaChip(label, value, variant) {
   return '<span class="author-meta-chip ' + statusClassName(variant || 'muted') + '"><b>' + escapeHtml(label) + '</b>' + escapeHtml(value) + '</span>';
 }
 
-function renderAuthorEntityRows(entities) {
+function renderAuthorEntityRowsLegacy(entities) {
   if (entities.length === 0) return '<div class="muted">暂无聚焦实体</div>';
   return entities.slice(0, 12).map(function (item) {
     const entity = item.entity || {};
@@ -3083,7 +3083,7 @@ function renderAuthorEntityRows(entities) {
   }).join('');
 }
 
-function renderOpinionTimelineRows(items) {
+function renderOpinionTimelineRowsLegacy(items) {
   if (items.length === 0) return '<div class="muted">暂无观点时间线</div>';
   return items.slice(0, 16).map(function (item) {
     const thread = item.thread || {};
@@ -3105,7 +3105,7 @@ function renderOpinionTimelineRows(items) {
   }).join('');
 }
 
-function renderAuthorEvidenceGapRows(gaps) {
+function renderAuthorEvidenceGapRowsLegacy(gaps) {
   if (gaps.length === 0) return '<div class="muted">暂无证据缺口</div>';
   return gaps.slice(0, 12).map(function (gap) {
     const entity = gap.entity || {};
@@ -3125,7 +3125,7 @@ function renderAuthorEvidenceGapRows(gaps) {
   }).join('');
 }
 
-function renderAuthorEvidenceRows(items) {
+function renderAuthorEvidenceRowsLegacy(items) {
   if (items.length === 0) return '<div class="muted">暂无高信号证据</div>';
   return items.slice(0, 12).map(function (item) {
     const thread = item.thread || {};
@@ -3141,6 +3141,114 @@ function renderAuthorEvidenceRows(items) {
       '<small>' + escapeHtml(item.excerpt || '') + '</small>' +
       '</span>' +
       statusBadge('evidence', 'ok') +
+      '</div>';
+  }).join('');
+}
+
+function renderAuthorEntityRows(entities) {
+  if (entities.length === 0) return '<div class="muted">No focus entities yet.</div>';
+  return entities.slice(0, 12).map(function (item) {
+    const entity = item.entity || {};
+    const levels = item.evidenceLevels || {};
+    return '<div class="author-evidence-row entity-signal-row">' +
+      '<section class="author-evidence-anchor">' +
+        '<span class="author-review-source">entity</span>' +
+        '<strong>' + escapeHtml(entity.displayName || item.key || 'unknown entity') + '</strong>' +
+        '<small>' + escapeHtml(item.latestAttitude || 'unknown stance') + '</small>' +
+      '</section>' +
+      '<section class="author-evidence-brief">' +
+        '<p>' + escapeHtml(formatStanceSummary(item.attitudeCounts) || 'Entity is present in the current author window.') + '</p>' +
+        '<div class="author-evidence-chips">' +
+          authorMetaChip('mentions', item.mentionCount || 0, 'info') +
+          authorMetaChip('author opinions', item.primaryAuthorOpinionCount || 0, 'ok') +
+          authorMetaChip('threads', item.threadCount || 0, 'muted') +
+          authorMetaChip('explicit', levels.explicit || 0, (levels.explicit || 0) > 0 ? 'ok' : 'muted') +
+          authorMetaChip('inferred', levels.inferred || 0, (levels.inferred || 0) > 0 ? 'warn' : 'muted') +
+        '</div>' +
+      '</section>' +
+      '<section class="author-evidence-status">' +
+        statusBadge(item.latestAttitude || 'unknown', statusVariant(item.latestAttitude)) +
+      '</section>' +
+      '</div>';
+  }).join('');
+}
+
+function renderOpinionTimelineRows(items) {
+  if (items.length === 0) return '<div class="muted">No opinion timeline yet.</div>';
+  return items.slice(0, 16).map(function (item) {
+    const thread = item.thread || {};
+    const author = item.author || {};
+    return '<div class="author-evidence-row opinion-timeline-row">' +
+      '<section class="author-evidence-anchor">' +
+        '<span class="author-review-source">' + escapeHtml(thread.sourceKey || 'timeline') + '</span>' +
+        '<strong>' + escapeHtml('#' + item.floor + ' / ' + (author.displayName || author.sourceAuthorId || 'unknown')) + '</strong>' +
+        '<small>' + escapeHtml(item.publishedAt || 'time unknown') + '</small>' +
+      '</section>' +
+      '<section class="author-evidence-brief">' +
+        '<p>' + escapeHtml(item.evidenceText || 'No evidence text captured for this opinion.') + '</p>' +
+        '<div class="author-evidence-chips">' +
+          authorMetaChip('thread', thread.sourceThreadId ? 'thread ' + thread.sourceThreadId : undefined, 'info') +
+          authorMetaChip('scope', item.scope, 'muted') +
+          authorMetaChip('horizon', item.horizon, 'muted') +
+          authorMetaChip('confidence', item.confidence, item.confidence >= 0.8 ? 'ok' : 'muted') +
+        '</div>' +
+      '</section>' +
+      '<section class="author-evidence-status">' +
+        statusBadge(item.attitude || 'unknown', statusVariant(item.attitude)) +
+      '</section>' +
+      '</div>';
+  }).join('');
+}
+
+function renderAuthorEvidenceGapRows(gaps) {
+  if (gaps.length === 0) return '<div class="muted">No evidence gaps.</div>';
+  return gaps.slice(0, 12).map(function (gap) {
+    const entity = gap.entity || {};
+    const thread = gap.thread || {};
+    return '<div class="author-evidence-row evidence-gap-row">' +
+      '<section class="author-evidence-anchor">' +
+        '<span class="author-review-source">' + escapeHtml(thread.sourceKey || 'gap') + '</span>' +
+        '<strong>' + escapeHtml(entity.displayName || gap.key || 'unknown entity') + '</strong>' +
+        '<small>' + escapeHtml('#' + gap.firstFloor + '-#' + gap.lastFloor) + '</small>' +
+      '</section>' +
+      '<section class="author-evidence-brief">' +
+        '<p>' + escapeHtml(gap.summary || gap.reason || 'This entity needs stronger evidence before automation.') + '</p>' +
+        '<div class="author-evidence-chips">' +
+          authorMetaChip('thread', thread.sourceThreadId ? 'thread ' + thread.sourceThreadId : undefined, 'info') +
+          authorMetaChip('reason', gap.reason, 'warn') +
+          authorMetaChip('first', gap.firstFloor === undefined ? undefined : '#' + gap.firstFloor, 'muted') +
+          authorMetaChip('last', gap.lastFloor === undefined ? undefined : '#' + gap.lastFloor, 'muted') +
+        '</div>' +
+      '</section>' +
+      '<section class="author-evidence-status">' +
+        statusBadge('gap', 'warn') +
+      '</section>' +
+      '</div>';
+  }).join('');
+}
+
+function renderAuthorEvidenceRows(items) {
+  if (items.length === 0) return '<div class="muted">No high-signal evidence yet.</div>';
+  return items.slice(0, 12).map(function (item) {
+    const thread = item.thread || {};
+    const author = item.author || {};
+    return '<div class="author-evidence-row high-signal-row">' +
+      '<section class="author-evidence-anchor">' +
+        '<span class="author-review-source">' + escapeHtml(thread.sourceKey || 'evidence') + '</span>' +
+        '<strong>' + escapeHtml('#' + item.floor + ' / ' + (author.displayName || author.sourceAuthorId || 'unknown')) + '</strong>' +
+        '<small>' + escapeHtml(item.publishedAt || 'time unknown') + '</small>' +
+      '</section>' +
+      '<section class="author-evidence-brief">' +
+        '<p>' + escapeHtml(item.excerpt || 'Evidence excerpt is not available.') + '</p>' +
+        '<div class="author-evidence-chips">' +
+          authorMetaChip('thread', thread.sourceThreadId ? 'thread ' + thread.sourceThreadId : undefined, 'info') +
+          authorMetaChip('score', item.score, item.score >= 0.8 ? 'ok' : 'muted') +
+          authorMetaChip('floor', item.floor === undefined ? undefined : '#' + item.floor, 'muted') +
+        '</div>' +
+      '</section>' +
+      '<section class="author-evidence-status">' +
+        statusBadge('evidence', 'ok') +
+      '</section>' +
       '</div>';
   }).join('');
 }

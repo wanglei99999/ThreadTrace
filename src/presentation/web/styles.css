@@ -2925,7 +2925,8 @@ form button[type="submit"]:hover {
 }
 
 .author-review-row,
-.author-signal-row {
+.author-signal-row,
+.author-evidence-row {
   display: grid;
   grid-template-columns: minmax(170px, 0.28fr) minmax(0, 1fr) minmax(150px, auto);
   gap: 14px;
@@ -2940,7 +2941,8 @@ form button[type="submit"]:hover {
 }
 
 .author-review-row:hover,
-.author-signal-row:hover {
+.author-signal-row:hover,
+.author-evidence-row:hover {
   border-color: rgba(159, 192, 183, 0.96);
   box-shadow: 0 14px 30px rgba(10, 27, 24, 0.08), var(--inner-light);
 }
@@ -2951,10 +2953,24 @@ form button[type="submit"]:hover {
     linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 248, 232, 0.88) 58%, rgba(238, 246, 255, 0.84));
 }
 
+.evidence-gap-row {
+  border-color: rgba(138, 87, 18, 0.25);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 248, 232, 0.84) 62%, rgba(246, 250, 248, 0.96));
+}
+
+.high-signal-row {
+  border-color: rgba(19, 116, 95, 0.22);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(232, 247, 241, 0.78) 62%, rgba(238, 246, 255, 0.82));
+}
+
 .author-review-identity,
 .author-signal-identity,
 .author-review-brief,
-.author-signal-brief {
+.author-signal-brief,
+.author-evidence-anchor,
+.author-evidence-brief {
   display: grid;
   align-content: start;
   gap: 7px;
@@ -2983,7 +2999,8 @@ form button[type="submit"]:hover {
 }
 
 .author-review-identity strong,
-.author-signal-identity strong {
+.author-signal-identity strong,
+.author-evidence-anchor strong {
   color: var(--text-strong);
   font-size: 15px;
   line-height: 1.35;
@@ -2992,7 +3009,8 @@ form button[type="submit"]:hover {
 
 .author-review-identity small,
 .author-signal-identity small,
-.author-review-brief small {
+.author-review-brief small,
+.author-evidence-anchor small {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.45;
@@ -3000,7 +3018,8 @@ form button[type="submit"]:hover {
 }
 
 .author-review-brief p,
-.author-signal-brief p {
+.author-signal-brief p,
+.author-evidence-brief p {
   max-width: 78ch;
   margin: 0;
   color: var(--text);
@@ -3011,7 +3030,8 @@ form button[type="submit"]:hover {
 
 .author-review-chips,
 .author-signal-metrics,
-.author-signal-focus {
+.author-signal-focus,
+.author-evidence-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
@@ -3063,7 +3083,8 @@ form button[type="submit"]:hover {
 }
 
 .author-review-actions,
-.author-signal-actions {
+.author-signal-actions,
+.author-evidence-status {
   align-self: stretch;
   align-content: start;
   justify-content: flex-end;
@@ -3072,8 +3093,17 @@ form button[type="submit"]:hover {
 }
 
 .author-review-actions .status-badge,
-.author-signal-actions .status-badge {
+.author-signal-actions .status-badge,
+.author-evidence-status .status-badge {
   min-height: 32px;
+}
+
+.author-evidence-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 2px;
+  border-radius: var(--radius-sm);
 }
 
 .durable-review-row {
@@ -5559,13 +5589,15 @@ pre {
 
   .author-review-row,
   .author-signal-row,
+  .author-evidence-row,
   .durable-review-row {
     grid-template-columns: 1fr;
     gap: 10px;
   }
 
   .author-review-actions,
-  .author-signal-actions {
+  .author-signal-actions,
+  .author-evidence-status {
     justify-content: flex-start;
   }
 
