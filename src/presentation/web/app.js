@@ -1987,8 +1987,30 @@ async function loadAutomationReadiness() {
       sourceTaskMode: 'insight-pipeline',
       llmReadinessMode: 'configuration'
     });
-    return fetchJson('/api/operations/automation-readiness?' + query.toString(), {
-      acceptErrorStatus: true
+    return Promise.all([
+      fetchJson('/api/operations/automation-readiness?' + query.toString(), {
+        acceptErrorStatus: true
+      }),
+      fetchJson('/api/events/overview?limit=100', {
+        acceptErrorStatus: true
+      }),
+      fetchJson('/api/context-review-results/action-audits/overview?limit=100', {
+        acceptErrorStatus: true
+      }),
+      fetchJson('/api/context-review-results/action-executions?limit=20', {
+        acceptErrorStatus: true
+      }),
+      fetchJson('/api/notifications/diagnostics', {
+        acceptErrorStatus: true
+      })
+    ]).then(function (results) {
+      return {
+        plan: results[0],
+        notificationOverview: results[1],
+        reviewActionAuditOverview: results[2],
+        reviewActionExecutions: results[3],
+        notificationDiagnostics: results[4]
+      };
     });
   }, renderAutomationReadinessPlan);
 }
@@ -5230,10 +5252,12 @@ function renderOperationsRunbook(runbook) {
   }).join(''), 'wide');
 }
 
-function renderAutomationReadinessPlan(plan) {
-  plan = plan || {};
+function renderAutomationReadinessPlan(input) {
+  const cockpit = normalizeAutomationCockpitInput(input);
+  const plan = cockpit.plan;
   return [
-    renderAutomationCockpitHero(plan),
+    renderAutomationCockpitHero(plan, cockpit),
+    panel('Notification and audit pressure', renderAutomationOperatingPressure(cockpit), 'wide automation-pressure-panel'),
     panel('Automation gates', renderAutomationReadinessChecks(plan.checks || []), 'wide automation-gates-panel'),
     panel('Automation remediation', renderAutomationRemediation(plan.remediation), 'wide automation-remediation-panel'),
     panel('Worker commands', renderAutomationWorkerCommands(plan.automation && plan.automation.workerCommands || []), 'wide automation-worker-panel'),
@@ -5241,13 +5265,34 @@ function renderAutomationReadinessPlan(plan) {
   ].join('');
 }
 
-function renderAutomationCockpitHero(plan) {
+function normalizeAutomationCockpitInput(input) {
+  const safeInput = input || {};
+  if (safeInput.plan) {
+    return {
+      plan: safeInput.plan || {},
+      notificationOverview: safeInput.notificationOverview || {},
+      reviewActionAuditOverview: safeInput.reviewActionAuditOverview || {},
+      reviewActionExecutions: safeInput.reviewActionExecutions || {},
+      notificationDiagnostics: safeInput.notificationDiagnostics || {}
+    };
+  }
+  return {
+    plan: safeInput,
+    notificationOverview: {},
+    reviewActionAuditOverview: {},
+    reviewActionExecutions: {},
+    notificationDiagnostics: {}
+  };
+}
+
+function renderAutomationCockpitHero(plan, cockpit) {
   const summary = plan.summary || {};
   const sources = summary.sources || {};
   const operations = summary.operations || {};
   const workers = summary.workers || {};
   const llm = summary.llm || {};
   const demo = summary.demo || {};
+  const pressure = automationOperatingPressureSummary(cockpit || {});
   const representative = summary.representativeSource || {};
   const generatedAt = plan.generatedAt || 'unknown';
   const sourceTaskMode = workers.sourceTaskMode || plan.automation && plan.automation.sourceTaskMode || 'unknown';
@@ -5287,19 +5332,22 @@ function renderAutomationCockpitHero(plan) {
     '</aside>',
     '<section class="automation-cockpit-runpath">',
     '<span>Run path</span>',
-    renderAutomationRunPath(summary, plan),
+    renderAutomationRunPath(summary, plan, cockpit || {}),
     '</section>',
     '<section class="automation-cockpit-foot">',
     '<span>Evidence loop</span>',
     '<strong>' + escapeHtml([
       'representative=' + representativeSource,
       'health=' + (representative.status || 'not-evaluated'),
-      'replay=' + replayStatus
+      'replay=' + replayStatus,
+      'outbox=' + pressure.outboxStatus
     ].join(' | ')) + '</strong>',
     '<small>' + escapeHtml([
       'skipped=' + (sources.skipped || 0),
       'priority=' + (operations.highestPriorityScore || 0),
-      'demo=' + (demo.closureStatus || demo.status || 'not-run')
+      'demo=' + (demo.closureStatus || demo.status || 'not-run'),
+      'audits=' + pressure.auditCount,
+      'executions=' + pressure.executionCount
     ].join(' | ')) + '</small>',
     '</section>',
     '</article>'
@@ -5324,7 +5372,7 @@ function automationCockpitSignal(label, value, variant) {
   return '<div class="automation-cockpit-signal ' + statusClassName(variant) + '"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(value) + '</strong></div>';
 }
 
-function renderAutomationRunPath(summary, plan) {
+function renderAutomationRunPath(summary, plan, cockpit) {
   const sources = summary.sources || {};
   const operations = summary.operations || {};
   const workers = summary.workers || {};
@@ -5332,6 +5380,7 @@ function renderAutomationRunPath(summary, plan) {
   const demo = summary.demo || {};
   const automation = plan.automation || {};
   const workerCommands = automation.workerCommands || [];
+  const pressure = automationOperatingPressureSummary(cockpit || {});
   const rows = [
     {
       title: 'Source schedule',
@@ -5357,6 +5406,16 @@ function renderAutomationRunPath(summary, plan) {
       title: 'Operator pressure',
       detail: 'queue=' + (operations.queueTotal || 0) + ' | runnable=' + (operations.runnable || 0) + ' | priority=' + (operations.highestPriorityScore || 0),
       status: statusVariant(operations.cockpitStatus)
+    },
+    {
+      title: 'Notification outbox',
+      detail: 'open=' + pressure.openEvents + ' | due=' + pressure.dueEvents + ' | failed=' + pressure.failedEvents,
+      status: pressure.outboxVariant
+    },
+    {
+      title: 'Review audit ledger',
+      detail: 'audits=' + pressure.auditCount + ' | executions=' + pressure.executionCount + ' | stale=' + pressure.staleExecutions,
+      status: pressure.auditVariant
     }
   ];
   return rows.map(function (row) {
@@ -5365,6 +5424,97 @@ function renderAutomationRunPath(summary, plan) {
       '<small>' + escapeHtml(row.detail) + '</small>' +
       '</div>';
   }).join('');
+}
+
+function renderAutomationOperatingPressure(cockpit) {
+  const pressure = automationOperatingPressureSummary(cockpit || {});
+  const notificationOverview = cockpit.notificationOverview || {};
+  const auditOverview = cockpit.reviewActionAuditOverview || {};
+  const actionExecutions = cockpit.reviewActionExecutions || {};
+  const notificationDiagnostics = cockpit.notificationDiagnostics || {};
+  const checks = notificationDiagnostics.checks || [];
+  return [
+    '<div class="summary-strip">',
+    summaryTile('Outbox', pressure.outboxStatus, pressure.outboxVariant),
+    summaryTile('Open', String(pressure.openEvents), pressure.openEvents > 0 ? 'warn' : 'ok'),
+    summaryTile('Due', String(pressure.dueEvents), pressure.dueEvents > 0 ? 'warn' : 'ok'),
+    summaryTile('Failed', String(pressure.failedEvents), pressure.failedEvents > 0 ? 'fail' : 'ok'),
+    summaryTile('Audits', String(pressure.auditCount), pressure.auditCount > 0 ? 'ok' : 'warn'),
+    summaryTile('Executions', String(pressure.executionCount), pressure.staleExecutions > 0 ? 'fail' : pressure.executionCount > 0 ? 'ok' : 'muted'),
+    summaryTile('Channel', pressure.channel, statusVariant(pressure.channelStatus)),
+    '</div>',
+    '<div class="action-row ops-row"><span>' +
+      '<strong>Notification outbox</strong>' +
+      '<small>' + escapeHtml(notificationOverview.recommendedNextAction || 'No notification overview action returned.') + '</small>' +
+      '<small>' + escapeHtml('retryExhausted=' + pressure.retryExhaustedEvents + ' | events=' + pressure.eventCount) + '</small>' +
+      '</span>' + statusBadge(pressure.outboxStatus, pressure.outboxVariant) + '</div>',
+    '<div class="action-row ops-row"><span>' +
+      '<strong>Review audit ledger</strong>' +
+      '<small>' + escapeHtml(auditOverview.recommendedNextAction || 'No review audit recommendation returned.') + '</small>' +
+      '<small>' + escapeHtml('tasks=' + (auditOverview.taskCount || 0) + ' | plannedClosure=' + (auditOverview.plannedClosureCount || 0) + ' | plannedMerge=' + (auditOverview.plannedMergeCandidateCount || 0)) + '</small>' +
+      '</span>' + statusBadge(auditOverview.status || 'unknown', pressure.auditVariant) + '</div>',
+    '<div class="action-row ops-row"><span>' +
+      '<strong>Action executions</strong>' +
+      '<small>' + escapeHtml('status=' + (actionExecutions.status || 'unknown') + ' | count=' + pressure.executionCount + ' | stale=' + pressure.staleExecutions + ' | failed=' + pressure.failedExecutions) + '</small>' +
+      '<small>' + escapeHtml('Notification delivery and review actions stay observable before real executors are enabled.') + '</small>' +
+      '</span>' + statusBadge(actionExecutions.status || 'unknown', pressure.executionVariant) + '</div>',
+    checks.length > 0
+      ? '<div class="action-row ops-row"><span>' +
+        '<strong>Notification channel</strong>' +
+        '<small>' + escapeHtml(checks.map(function (check) { return check.key + '=' + check.status; }).join(' | ')) + '</small>' +
+        '</span>' + statusBadge(pressure.channelStatus, statusVariant(pressure.channelStatus)) + '</div>'
+      : ''
+  ].join('');
+}
+
+function automationOperatingPressureSummary(cockpit) {
+  const notificationOverview = cockpit.notificationOverview || {};
+  const auditOverview = cockpit.reviewActionAuditOverview || {};
+  const actionExecutions = cockpit.reviewActionExecutions || {};
+  const notificationDiagnostics = cockpit.notificationDiagnostics || {};
+  const checks = notificationDiagnostics.checks || [];
+  const failedEvents = notificationOverview.failedCount || 0;
+  const retryExhaustedEvents = notificationOverview.retryExhaustedCount || 0;
+  const dueEvents = notificationOverview.dueForDeliveryCount || 0;
+  const openEvents = notificationOverview.unacknowledgedCount || 0;
+  const outboxVariant = failedEvents > 0 || retryExhaustedEvents > 0
+    ? 'fail'
+    : dueEvents > 0 || openEvents > 0
+      ? 'warn'
+      : statusVariant(notificationOverview.status || 'ok');
+  const staleExecutions = actionExecutions.summary && actionExecutions.summary.staleRunning || actionExecutions.staleRunning || 0;
+  const failedExecutions = actionExecutions.summary && actionExecutions.summary.failed || actionExecutions.failed || 0;
+  const executionCount = actionExecutions.count || (actionExecutions.executions || []).length || 0;
+  const auditCount = auditOverview.count || 0;
+  const auditVariant = staleExecutions > 0 || failedExecutions > 0
+    ? 'fail'
+    : auditOverview.status === 'warn' || auditCount === 0
+      ? 'warn'
+      : statusVariant(auditOverview.status || 'ok');
+  const channelFailed = checks.some(function (check) {
+    return check.status === 'fail';
+  });
+  const channelWarn = checks.some(function (check) {
+    return check.status === 'warn';
+  });
+  const channelStatus = channelFailed ? 'fail' : channelWarn ? 'warn' : checks.length > 0 ? 'ok' : 'unknown';
+  return {
+    eventCount: notificationOverview.eventCount || 0,
+    openEvents,
+    dueEvents,
+    failedEvents,
+    retryExhaustedEvents,
+    outboxStatus: notificationOverview.status || 'ok',
+    outboxVariant,
+    auditCount,
+    executionCount,
+    staleExecutions,
+    failedExecutions,
+    auditVariant,
+    executionVariant: staleExecutions > 0 || failedExecutions > 0 ? 'fail' : statusVariant(actionExecutions.status || 'ok'),
+    channel: notificationDiagnostics.channel || 'unknown',
+    channelStatus
+  };
 }
 
 function renderAutomationReadinessChecks(checks) {
