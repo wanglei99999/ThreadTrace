@@ -1015,7 +1015,7 @@ async function runVisibleRolloutReadinessChecks() {
 
 async function runRolloutReadinessChecks(manifest) {
   if (!manifest) {
-    renderError('rolloutReadinessResult', new Error('Rollout manifest JSON is required.'));
+    renderError('rolloutReadinessResult', new Error('请先提供发布清单 JSON。'));
     return;
   }
   fillRolloutManifestForms(manifest);
@@ -1054,7 +1054,7 @@ async function runRolloutReadinessChecks(manifest) {
 
 async function runRolloutApplyDryRun(manifest) {
   if (!manifest) {
-    renderError('rolloutApplyResult', new Error('Rollout manifest JSON is required for apply dry-run.'));
+    renderError('rolloutApplyResult', new Error('请先提供发布清单 JSON，再做应用预演。'));
     return;
   }
   const request = clonePlainObject(manifest);
@@ -1267,20 +1267,20 @@ async function loadConnectorPackageRecommendedManifest(selection) {
   const result = await fetchJson('/api/connectors/packages/recommended-manifest?' + query.toString(), {
     acceptErrorStatus: true
   });
-  if (result.error) throw new Error(result.error.message || 'Recommended manifest could not be loaded.');
+  if (result.error) throw new Error(result.error.message || '无法载入推荐清单。');
   fillSourceOnboardingFromManifest(result.manifest, modulePath);
   renderSourceOnboardingRecipeFromForm();
   state.onboardingRecipeManifestDraft = result.manifest;
   state.loadedConnectorPackageManifestDraft = result.manifest;
   fillRolloutManifestForms(result.manifest);
   const target = document.getElementById('onboardingResult');
-  target.innerHTML = panel('Recommended manifest loaded', [
-    metric('Package', result.packageName || 'unknown'),
+  target.innerHTML = panel('推荐清单已载入', [
+    metric('来源包', result.packageName || 'unknown'),
     metric('来源类型', result.sourceType || 'unknown'),
-    metric('Manifest path', result.manifestPath || result.recommendedManifest || 'unknown'),
+    metric('清单路径', result.manifestPath || result.recommendedManifest || 'unknown'),
     '<div class="button-group source-op-buttons">' +
-      '<button class="inline-button secondary-inline-button" type="button" data-action="preflight-loaded-connector-package-manifest">Preflight manifest</button>' +
-      '<button class="inline-button secondary-inline-button" type="button" data-action="run-rollout-readiness-checks">Run rollout checks</button>' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="preflight-loaded-connector-package-manifest">检查清单</button>' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="run-rollout-readiness-checks">检查发布</button>' +
     '</div>'
   ].join(''), 'wide');
   const preflightButton = target.querySelector('button[data-action="preflight-loaded-connector-package-manifest"]');
@@ -1411,7 +1411,7 @@ function renderSourceOnboardingRecipeFromForm() {
   const sourceTypeSpec = findSourceTypeSpec(sourceType);
   if (!sourceTypeSpec || !sourceTypeSpec.onboardingRecipe) {
     state.onboardingRecipeManifestDraft = undefined;
-    target.innerHTML = panel('Source onboarding recipe', '<div class="muted">Select a registered source type.</div>', 'wide');
+    target.innerHTML = panel('来源接入方案', '<div class="muted">先选择一个已登记的来源类型。</div>', 'wide');
     return;
   }
   target.innerHTML = renderSourceOnboardingRecipe(sourceTypeSpec, sourceKey);
@@ -1420,11 +1420,11 @@ function renderSourceOnboardingRecipeFromForm() {
 function parseManifestJson(value) {
   const text = String(value || '').trim();
   if (!text) {
-    throw new Error('Rollout manifest JSON is required.');
+    throw new Error('请先提供发布清单 JSON。');
   }
   const parsed = JSON.parse(text);
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('Rollout manifest JSON must be an object.');
+    throw new Error('发布清单 JSON 需要是一个对象。');
   }
   return parsed;
 }
@@ -4068,31 +4068,31 @@ function renderSourceOnboardingRecipe(sourceTypeSpec, selectedSourceKey) {
   state.onboardingRecipeManifestDraft = manifest;
   const requiredFields = recipe.requiredLocationFields || [];
   const optionalFields = recipe.optionalLocationFields || [];
-  const adapterSummary = recipe.adapterGuidance && recipe.adapterGuidance.summary || (recipe.requiresAdapter ? 'Adapter required.' : 'Adapter not required.');
+  const adapterSummary = recipe.adapterGuidance && recipe.adapterGuidance.summary || (recipe.requiresAdapter ? '需要适配器。' : '不需要适配器。');
   const compatibleLabel = compatibleSourceKeys.length > 0 ? compatibleSourceKeys.join(', ') : 'none';
   return renderConnectorCatalogPanels(sourceTypeSpec).concat([
-    panel('Source onboarding recipe', [
+    panel('来源接入方案', [
       metric('来源类型', sourceTypeSpec.sourceType),
-      metric('Adapter', recipe.requiresAdapter ? 'required' : 'not required'),
-      metric('Location fields', requiredFields.length + ' required / ' + optionalFields.length + ' optional'),
-      metric('Compatible keys', compatibleLabel)
+      metric('适配方式', recipe.requiresAdapter ? '需要适配器' : '直接接入'),
+      metric('位置字段', requiredFields.length + ' 必填 / ' + optionalFields.length + ' 选填'),
+      metric('兼容来源', compatibleLabel)
     ].join('')),
-    panel('Adapter guidance', [
+    panel('接入提示', [
       '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml(recipe.requiresAdapter ? 'Forum adapter' : 'Canonical source') + '</strong>' +
+      '<strong>' + escapeHtml(recipe.requiresAdapter ? '论坛适配器' : '标准来源') + '</strong>' +
       '<small>' + escapeHtml(adapterSummary) + '</small>' +
       '</span>' + statusBadge(recipe.requiresAdapter ? 'adapter' : 'direct', recipe.requiresAdapter && compatibleSourceKeys.length === 0 ? 'warning' : 'ok') + '</div>'
     ].join('')),
-    panel('Location fields', renderRecipeLocationRows(sourceTypeSpec, requiredFields, optionalFields), 'wide'),
-    panel('Recommended flow', renderRecipeFlowRows(recipe.recommendedFlow || []), 'wide'),
-    panel('Rollout manifest template', [
+    panel('位置字段', renderRecipeLocationRows(sourceTypeSpec, requiredFields, optionalFields), 'wide'),
+    panel('建议流程', renderRecipeFlowRows(recipe.recommendedFlow || []), 'wide'),
+    panel('发布清单模板', [
       '<div class="action-row ops-row"><span>' +
       '<strong>' + escapeHtml(manifest.name || 'manifest') + '</strong>' +
       '<small>' + escapeHtml((manifest.source && manifest.source.sourceKey || 'unknown') + ' | ' + (manifest.source && manifest.source.sourceType || 'unknown')) + '</small>' +
       '</span><span class="button-group source-op-buttons">' +
-      '<button class="inline-button secondary-inline-button" type="button" data-action="load-onboarding-recipe-manifest">Use template</button>' +
-      '<button class="inline-button secondary-inline-button" type="button" data-action="preflight-onboarding-recipe-manifest">Preflight template</button>' +
-      '<button class="inline-button secondary-inline-button" type="button" data-action="run-rollout-readiness-checks">Run rollout checks</button>' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="load-onboarding-recipe-manifest">使用模板</button>' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="preflight-onboarding-recipe-manifest">检查模板</button>' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="run-rollout-readiness-checks">检查发布</button>' +
       '</span></div>',
       '<pre>' + escapeHtml(JSON.stringify(manifest, null, 2)) + '</pre>'
     ].join(''), 'wide')
@@ -4102,17 +4102,17 @@ function renderSourceOnboardingRecipe(sourceTypeSpec, selectedSourceKey) {
 function renderConnectorCatalogPanels(sourceTypeSpec) {
   const panels = [];
   if (sourceTypeSpec.package) {
-    panels.push(panel('Connector package', [
+    panels.push(panel('来源包', [
       renderConnectorPackageSummary(sourceTypeSpec.package),
       renderConnectorPackageCategories(sourceTypeSpec.package.categories),
-      metric('Recommended manifest', sourceTypeSpec.package.rollout && sourceTypeSpec.package.rollout.recommendedManifest || 'none'),
+      metric('推荐清单', sourceTypeSpec.package.rollout && sourceTypeSpec.package.rollout.recommendedManifest || 'none'),
       renderConnectorPackageUseButtons(sourceTypeSpec.package, sourceTypeSpec.sourceType)
     ].join(''), 'wide'));
   } else if ((state.connectorPackages || []).length > 0) {
-    panels.push(panel('Connector packages', renderConnectorPackageCatalogRows(state.connectorPackages), 'wide'));
+    panels.push(panel('来源包', renderConnectorPackageCatalogRows(state.connectorPackages), 'wide'));
   }
   if ((state.connectorModuleErrors || []).length > 0) {
-    panels.push(panel('Connector module errors', evidenceList(state.connectorModuleErrors.map(function (error) {
+    panels.push(panel('来源模块错误', evidenceList(state.connectorModuleErrors.map(function (error) {
       return (error.modulePath || 'unknown-module') + ' | ' + (error.message || 'load failed');
     })), 'wide'));
   }
@@ -4123,7 +4123,7 @@ function renderConnectorPackageSummary(connectorPackage) {
   const packageSourceType = connectorPackage.sourceType || {};
   return [
     '<div class="action-row ops-row"><span>',
-    '<strong>' + escapeHtml(connectorPackage.displayName || connectorPackage.packageName || 'Connector package') + '</strong>',
+    '<strong>' + escapeHtml(connectorPackage.displayName || connectorPackage.packageName || '来源包') + '</strong>',
     '<small>' + escapeHtml([
       connectorPackage.packageName,
       connectorPackage.packageVersion ? 'version=' + connectorPackage.packageVersion : undefined,
@@ -4136,17 +4136,17 @@ function renderConnectorPackageSummary(connectorPackage) {
 }
 
 function renderConnectorPackageCategories(categories) {
-  if (!categories || categories.length === 0) return tagList(['uncategorized']);
+  if (!categories || categories.length === 0) return tagList(['未分类']);
   return tagList(categories.map(function (category) {
     return 'category:' + category;
   }));
 }
 
 function renderConnectorPackageCatalogRows(packages) {
-  if (!packages.length) return '<div class="muted">No connector package metadata loaded.</div>';
+  if (!packages.length) return '<div class="muted">暂无来源包信息。</div>';
   return packages.map(function (connectorPackage) {
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml(connectorPackage.displayName || connectorPackage.packageName || 'Connector package') + '</strong>' +
+      '<strong>' + escapeHtml(connectorPackage.displayName || connectorPackage.packageName || '来源包') + '</strong>' +
       '<small>' + escapeHtml([
         connectorPackage.packageName,
         connectorPackage.packageType,
@@ -4170,7 +4170,7 @@ function renderConnectorPackageUseButtons(connectorPackage, selectedSourceType) 
     return '<button class="inline-button secondary-inline-button" type="button" data-action="use-connector-package"' +
       ' data-package-name="' + escapeHtml(connectorPackage.packageName || '') + '"' +
       ' data-module-path="' + escapeHtml(connectorPackage.modulePath || '') + '"' +
-      ' data-source-type="' + escapeHtml(item.sourceType || '') + '">Use package</button>' +
+      ' data-source-type="' + escapeHtml(item.sourceType || '') + '">使用来源包</button>' +
       renderConnectorPackageManifestButton(connectorPackage, item.sourceType);
   }).join('');
 }
@@ -4180,7 +4180,7 @@ function renderConnectorPackageManifestButton(connectorPackage, sourceType) {
   return '<button class="inline-button secondary-inline-button" type="button" data-action="load-connector-package-manifest"' +
     ' data-package-name="' + escapeHtml(connectorPackage.packageName || '') + '"' +
     ' data-module-path="' + escapeHtml(connectorPackage.modulePath || '') + '"' +
-    ' data-source-type="' + escapeHtml(sourceType || '') + '">Load manifest</button>';
+    ' data-source-type="' + escapeHtml(sourceType || '') + '">载入清单</button>';
 }
 
 function buildOnboardingRecipeManifest(template, sourceKey, options) {
@@ -4215,7 +4215,7 @@ function clonePlainObject(value) {
 function renderRecipeLocationRows(sourceTypeSpec, requiredFields, optionalFields) {
   const fields = requiredFields.concat(optionalFields);
   const properties = sourceTypeSpec.locationSchema && sourceTypeSpec.locationSchema.properties || {};
-  if (fields.length === 0) return '<div class="muted">No location fields</div>';
+  if (fields.length === 0) return '<div class="muted">暂无位置字段。</div>';
   return fields.map(function (field) {
     const property = properties[field] || {};
     const required = requiredFields.includes(field);
@@ -4232,7 +4232,7 @@ function renderRecipeLocationRows(sourceTypeSpec, requiredFields, optionalFields
 }
 
 function renderRecipeFlowRows(flow) {
-  if (!flow.length) return '<div class="muted">No recommended flow</div>';
+  if (!flow.length) return '<div class="muted">暂无建议流程。</div>';
   return flow.map(function (step) {
     return '<div class="action-row ops-row"><span>' +
       '<strong>' + escapeHtml((step.phase || 'step') + ' | ' + (step.key || 'unknown')) + '</strong>' +
@@ -4282,9 +4282,9 @@ function renderSourceOnboardingPreflight(result) {
       '<strong>' + escapeHtml(result.rolloutManifestDraft.name || 'manifest') + '</strong>' +
       '<small>' + escapeHtml((result.rolloutManifestDraft.source && result.rolloutManifestDraft.source.sourceKey || 'unknown') + ' | ' + (result.rolloutManifestDraft.source && result.rolloutManifestDraft.source.sourceType || 'unknown')) + '</small>' +
       '</span><span class="button-group source-op-buttons">' +
-      '<button class="inline-button secondary-inline-button" type="button" data-action="load-rollout-manifest-draft">Use draft</button>' +
-      '<button class="inline-button secondary-inline-button" type="button" data-action="preflight-rollout-manifest-draft">Preflight draft</button>' +
-      '<button class="inline-button secondary-inline-button" type="button" data-action="run-rollout-readiness-checks">Run rollout checks</button>' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="load-rollout-manifest-draft">使用草稿</button>' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="preflight-rollout-manifest-draft">检查草稿</button>' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="run-rollout-readiness-checks">检查发布</button>' +
       '</span></div>',
       '<pre>' + escapeHtml(JSON.stringify(result.rolloutManifestDraft, null, 2)) + '</pre>'
     ].join(''), 'wide'));
@@ -4303,7 +4303,7 @@ function renderSourceOnboardingPreflight(result) {
       panels.push(panel('Connector contract summary', renderConnectorContractSummary(result.connectorModuleValidation.contractSummary), 'wide'));
     }
     if ((result.connectorModuleValidation.packageManifests || []).length > 0) {
-      panels.push(panel('Connector packages', renderConnectorPackageManifestRows(result.connectorModuleValidation.packageManifests), 'wide'));
+      panels.push(panel('来源包', renderConnectorPackageManifestRows(result.connectorModuleValidation.packageManifests), 'wide'));
     }
     const failureRows = connectorContractFailureRows(result.connectorModuleValidation.checks || []);
     if (failureRows.length > 0) {
@@ -4344,7 +4344,7 @@ function renderConnectorModuleValidation(result) {
     panels.push(panel('Contract summary', renderConnectorContractSummary(result.contractSummary), 'wide'));
   }
   if ((result.packageManifests || []).length > 0) {
-    panels.push(panel('Connector packages', renderConnectorPackageManifestRows(result.packageManifests), 'wide'));
+    panels.push(panel('来源包', renderConnectorPackageManifestRows(result.packageManifests), 'wide'));
   }
   const failureRows = connectorContractFailureRows(result.checks || []);
   if (failureRows.length > 0) {
@@ -4443,7 +4443,7 @@ function rememberConnectorPackageManifests(packageManifests) {
 }
 
 function renderConnectorPackageManifestRows(packageManifests) {
-  if (!packageManifests || packageManifests.length === 0) return '<div class="muted">No connector package manifests.</div>';
+  if (!packageManifests || packageManifests.length === 0) return '<div class="muted">暂无来源包清单。</div>';
   return packageManifests.map(function (item) {
     const details = [
       item.packageName,
@@ -4453,7 +4453,7 @@ function renderConnectorPackageManifestRows(packageManifests) {
       (item.declaredSourceTypes || []).length ? 'sourceTypes=' + item.declaredSourceTypes.join(',') : undefined
     ].filter(Boolean).join(' | ');
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml(item.displayName || item.packageName || 'Connector package') + '</strong>' +
+      '<strong>' + escapeHtml(item.displayName || item.packageName || '来源包') + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
       '<small>' + escapeHtml(item.rollout && item.rollout.recommendedManifest ? 'recommendedManifest=' + item.rollout.recommendedManifest : 'recommendedManifest=none') + '</small>' +
       '</span>' + statusBadge(item.status || 'unknown', statusVariant(item.status)) + '</div>';
@@ -4564,7 +4564,7 @@ function renderConnectorRolloutPlan(result) {
     panels.push(panel('Connector contract summary', renderConnectorContractSummary(moduleValidation.contractSummary), 'wide'));
   }
   if (moduleValidation && (moduleValidation.packageManifests || []).length > 0) {
-    panels.push(panel('Connector packages', renderConnectorPackageManifestRows(moduleValidation.packageManifests), 'wide'));
+    panels.push(panel('来源包', renderConnectorPackageManifestRows(moduleValidation.packageManifests), 'wide'));
   }
   if (moduleValidation) {
     const failureRows = connectorContractFailureRows(moduleValidation.checks || []);
@@ -4779,19 +4779,19 @@ function renderRolloutReadinessChecks(result) {
     return count + ((check.result && check.result.nextActions || []).length);
   }, 0);
   const panels = [
-    panel('Rollout readiness', [
+    panel('发布准备', [
       '<div class="summary-strip event-summary-strip">' + [
-        summaryTile('Status', status, statusVariant(status)),
-        summaryTile('Checks', String(checks.length)),
-        summaryTile('Actions', String(nextActionCount), nextActionCount > 0 ? 'warn' : 'ok'),
-        summaryTile('Source', source.sourceType || 'unknown', statusVariant(status))
+        summaryTile('状态', status, statusVariant(status)),
+        summaryTile('检查', String(checks.length)),
+        summaryTile('动作', String(nextActionCount), nextActionCount > 0 ? 'warn' : 'ok'),
+        summaryTile('来源', source.sourceType || 'unknown', statusVariant(status))
       ].join('') + '</div>',
-      metric('Manifest', manifest.name || 'unnamed'),
-      metric('Source', (source.sourceKey || source.forum || 'unknown') + ' / ' + (source.sourceType || 'unknown')),
-      metric('Module', connector.modulePath || source.modulePath || 'not provided'),
+      metric('清单', manifest.name || 'unnamed'),
+      metric('来源', (source.sourceKey || source.forum || 'unknown') + ' / ' + (source.sourceType || 'unknown')),
+      metric('模块', connector.modulePath || source.modulePath || 'not provided'),
       renderRolloutReadinessOpsButtons(source)
     ].join(''), 'wide'),
-    panel('Readiness checks', evidenceList(checks.map(function (check) {
+    panel('准备检查', evidenceList(checks.map(function (check) {
       const actionCount = check.result && check.result.nextActions ? check.result.nextActions.length : 0;
       const detail = check.error ? check.error.message : ('actions=' + actionCount);
       return check.status + ' | ' + check.key + ' | ' + check.title + ' | ' + detail;
@@ -4799,7 +4799,7 @@ function renderRolloutReadinessChecks(result) {
   ];
   const actionRows = renderRolloutReadinessActionRows(checks);
   if (actionRows) {
-    panels.push(panel('Readiness next actions', actionRows, 'wide'));
+    panels.push(panel('准备动作', actionRows, 'wide'));
   }
   return panels.join('');
 }
@@ -4811,7 +4811,7 @@ function renderRolloutReadinessOpsButtons(source) {
   return '<div class="button-group source-op-buttons">' +
     renderSourceDrilldownButtonForScope({ sourceKey }) +
     renderSourceTypeDrilldownButton({ sourceKey, sourceType }) +
-    '<button class="inline-button secondary-inline-button" type="button" data-action="run-rollout-apply-dry-run">Apply dry-run</button>' +
+    '<button class="inline-button secondary-inline-button" type="button" data-action="run-rollout-apply-dry-run">预演应用</button>' +
     '</div>';
 }
 
@@ -4821,7 +4821,7 @@ function renderSourceTypeDrilldownButton(scope) {
   return '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-type-drilldown"' +
     ' data-source-type="' + escapeHtml(safeScope.sourceType || '') + '"' +
     ' data-source-key="' + escapeHtml(safeScope.sourceKey || '') + '"' +
-    ' data-limit="50" data-scan-limit="250">Type ops</button>';
+    ' data-limit="50" data-scan-limit="250">来源类型</button>';
 }
 
 function renderRolloutReadinessActionRows(checks) {
@@ -4844,7 +4844,7 @@ function renderReadinessCommandRows(commands) {
   return '<div class="lifecycle-command-list">' + commands.map(function (command) {
     return '<div class="lifecycle-command-row">' +
       '<code>' + escapeHtml(command) + '</code>' +
-      '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="copy-lifecycle-command">Copy</button>' +
+      '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="copy-lifecycle-command">复制</button>' +
       '</div>';
   }).join('') + '</div>';
 }
@@ -4861,38 +4861,38 @@ function renderRolloutManifestApply(result) {
   const steps = report.steps || [];
   const actions = report.nextActions || [];
   const panels = [
-    panel('Rollout manifest apply', [
-      metric('Status', report.status),
-      metric('Task', result.task ? result.task.id : 'none'),
-      metric('Mode', report.dryRun ? 'dry-run' : 'execute'),
-      metric('Applied', report.applied ? 'yes' : 'no'),
-      metric('Source', report.sourceDraft ? (report.sourceDraft.sourceKey || 'unknown') + ' / ' + (report.sourceDraft.sourceType || 'unknown') : 'missing'),
+    panel('发布清单应用', [
+      metric('状态', report.status),
+      metric('任务', result.task ? result.task.id : 'none'),
+      metric('模式', report.dryRun ? '预演' : '执行'),
+      metric('已应用', report.applied ? '是' : '否'),
+      metric('来源', report.sourceDraft ? (report.sourceDraft.sourceKey || 'unknown') + ' / ' + (report.sourceDraft.sourceType || 'unknown') : 'missing'),
       renderTaskTraceButton(result.task)
     ].join('')),
-    panel('Apply steps', evidenceList(steps.map(function (step) {
+    panel('应用步骤', evidenceList(steps.map(function (step) {
       return step.status + ' 路 ' + step.key + ' 路 ' + step.summary;
     })), 'wide')
   ];
   if (report.registration && report.registration.source) {
-    panels.push(panel('Registered source', [
+    panels.push(panel('已登记来源', [
       metric('来源 ID', report.registration.source.id),
-      metric('Created', report.registration.created ? 'yes' : 'no'),
-      metric('Name', report.registration.source.displayName),
+      metric('已创建', report.registration.created ? '是' : '否'),
+      metric('名称', report.registration.source.displayName),
       renderRolloutApplyOperationButtons(report)
     ].join('')));
   }
   if (report.rollbackPlan) {
-    panels.push(panel('Rollback plan', [
-      metric('Available', report.rollbackPlan.available ? 'yes' : 'no'),
-      metric('Mode', report.rollbackPlan.mode || 'unknown'),
+    panels.push(panel('回退方案', [
+      metric('可用', report.rollbackPlan.available ? '是' : '否'),
+      metric('模式', report.rollbackPlan.mode || 'unknown'),
       metric('来源 ID', report.rollbackPlan.sourceId || 'after execute'),
-      metric('Summary', report.rollbackPlan.summary || ''),
+      metric('摘要', report.rollbackPlan.summary || ''),
       renderRolloutRollbackButtons(report),
       evidenceList(report.rollbackPlan.commands || [])
     ].join(''), 'wide'));
   }
   if (actions.length > 0) {
-    panels.push(panel('Apply actions', evidenceList(actions.map(function (action) {
+    panels.push(panel('应用动作', evidenceList(actions.map(function (action) {
       const details = (action.details || []).map(function (detail) {
         return detail.key + (detail.evidenceSummary ? ' evidence=' + detail.evidenceSummary : '');
       }).join(' | ');
@@ -4920,8 +4920,8 @@ function renderRolloutRollbackButtons(report) {
   const sourceId = rollbackPlan.sourceId || report && report.registration && report.registration.source && report.registration.source.id;
   if (!rollbackPlan.available || !sourceId) return '';
   const safeSourceId = escapeHtml(sourceId);
-  return '<button class="inline-button secondary-inline-button" type="button" data-action="set-source-enabled" data-source-id="' + safeSourceId + '" data-enabled="false" data-execute="false">Rollback check</button>' +
-    '<button class="inline-button warning-inline-button" type="button" data-action="set-source-enabled" data-source-id="' + safeSourceId + '" data-enabled="false" data-execute="true">Rollback disable</button>';
+  return '<button class="inline-button secondary-inline-button" type="button" data-action="set-source-enabled" data-source-id="' + safeSourceId + '" data-enabled="false" data-execute="false">回退检查</button>' +
+    '<button class="inline-button warning-inline-button" type="button" data-action="set-source-enabled" data-source-id="' + safeSourceId + '" data-enabled="false" data-execute="true">回退停用</button>';
 }
 
 function renderTaskTraceButton(task) {
@@ -6436,7 +6436,7 @@ function renderAutomationRunbookCommandRows(commands) {
     return '<div class="lifecycle-command-row automation-runbook-command-row">' +
       '<code>' + escapeHtml(command.command || '') + '</code>' +
       '<span class="button-group">' +
-      '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="copy-lifecycle-command">Copy</button>' +
+      '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="copy-lifecycle-command">复制</button>' +
       renderAutomationRunbookIntentButton(command.intent) +
       '</span>' +
       '</div>';
@@ -6475,10 +6475,10 @@ function renderAutomationRemediation(remediation) {
   actions.slice(0, 8).forEach(function (action) {
     const sourceId = action.scope && action.scope.sourceId;
     const dryRunButton = sourceId
-      ? '<button class="inline-button secondary-inline-button" type="button" data-action="set-source-schedule" data-source-id="' + escapeHtml(sourceId) + '" data-interval-minutes="60" data-run-now="true" data-execute="false">Schedule check</button>'
+      ? '<button class="inline-button secondary-inline-button" type="button" data-action="set-source-schedule" data-source-id="' + escapeHtml(sourceId) + '" data-interval-minutes="60" data-run-now="true" data-execute="false">排期检查</button>'
       : '';
     const executeButton = sourceId
-      ? '<button class="inline-button" type="button" data-action="set-source-schedule" data-source-id="' + escapeHtml(sourceId) + '" data-interval-minutes="60" data-run-now="true" data-execute="true">Schedule now</button>'
+      ? '<button class="inline-button" type="button" data-action="set-source-schedule" data-source-id="' + escapeHtml(sourceId) + '" data-interval-minutes="60" data-run-now="true" data-execute="true">立即排期</button>'
       : '';
     rows.push('<div class="action-row ops-row"><span>' +
       '<strong>' + escapeHtml(action.type || action.key || 'remediation') + '</strong>' +
@@ -7701,23 +7701,23 @@ function renderCollectionActionControls(schedule) {
   const disabled = dueCount > 0 ? '' : ' disabled';
   return '<div class="source-work-row source-action-row collection-action-row ' + statusClassName(dueCount > 0 ? 'warn' : 'ok') + '">' +
     '<section class="source-work-anchor">' +
-      '<span class="source-work-scope">collection</span>' +
-      '<strong>Due collection</strong>' +
-      '<small>' + escapeHtml(dueCount > 0 ? 'ready to run' : 'queue clear') + '</small>' +
+      '<span class="source-work-scope">采集</span>' +
+      '<strong>到期采集</strong>' +
+      '<small>' + escapeHtml(dueCount > 0 ? '可立即处理' : '队列清爽') + '</small>' +
     '</section>' +
     '<section class="source-work-brief">' +
-      '<p>Run due collectors first, then trigger insight pipelines for fresh source evidence.</p>' +
+      '<p>先采集到期来源，再为新证据生成洞察。</p>' +
       '<div class="source-work-chips">' +
-        authorMetaChip('due', dueCount, dueCount > 0 ? 'warn' : 'muted') +
-        authorMetaChip('scheduled', scheduled, scheduled > 0 ? 'info' : 'muted') +
-        authorMetaChip('retry', retryWaiting, retryWaiting > 0 ? 'warn' : 'muted') +
-        authorMetaChip('blocked', blocked, blocked > 0 ? 'warn' : 'muted') +
-        authorMetaChip('skipped', summary.skipped || 0, (summary.skipped || 0) > 0 ? 'muted' : 'ok') +
+        authorMetaChip('到期', dueCount, dueCount > 0 ? 'warn' : 'muted') +
+        authorMetaChip('已排期', scheduled, scheduled > 0 ? 'info' : 'muted') +
+        authorMetaChip('待重试', retryWaiting, retryWaiting > 0 ? 'warn' : 'muted') +
+        authorMetaChip('受阻', blocked, blocked > 0 ? 'warn' : 'muted') +
+        authorMetaChip('已跳过', summary.skipped || 0, (summary.skipped || 0) > 0 ? 'muted' : 'ok') +
       '</div>' +
     '</section>' +
     '<section class="source-work-actions button-group source-op-buttons">' +
-      '<button class="inline-button secondary-inline-button" type="button" data-action="run-due-sources" data-limit="25"' + disabled + '>Run due</button>' +
-      '<button class="inline-button" type="button" data-action="run-due-pipelines" data-provider="mock" data-limit="25"' + disabled + '>Run insights</button>' +
+      '<button class="inline-button secondary-inline-button" type="button" data-action="run-due-sources" data-limit="25"' + disabled + '>采集到期</button>' +
+      '<button class="inline-button" type="button" data-action="run-due-pipelines" data-provider="mock" data-limit="25"' + disabled + '>生成洞察</button>' +
     '</section>' +
     '</div>';
 }
@@ -7931,8 +7931,8 @@ function renderSourceScheduleButtons(source) {
   const sourceId = escapeHtml(source.id);
   if (!sourceId) return '';
   return [
-    '<button class="inline-button secondary-inline-button" type="button" data-action="set-source-schedule" data-source-id="' + sourceId + '" data-interval-minutes="60" data-run-now="true" data-execute="false">Schedule check</button>',
-    '<button class="inline-button" type="button" data-action="set-source-schedule" data-source-id="' + sourceId + '" data-interval-minutes="60" data-run-now="true" data-execute="true">Schedule now</button>'
+    '<button class="inline-button secondary-inline-button" type="button" data-action="set-source-schedule" data-source-id="' + sourceId + '" data-interval-minutes="60" data-run-now="true" data-execute="false">排期检查</button>',
+    '<button class="inline-button" type="button" data-action="set-source-schedule" data-source-id="' + sourceId + '" data-interval-minutes="60" data-run-now="true" data-execute="true">立即排期</button>'
   ].join('');
 }
 
@@ -7940,13 +7940,13 @@ function renderSourceEnablementButtons(source) {
   const sourceId = escapeHtml(source.id);
   if (source.enabled === false) {
     return [
-      '<button class="inline-button secondary-inline-button" type="button" data-action="set-source-enabled" data-source-id="' + sourceId + '" data-enabled="true" data-execute="false">Enable check</button>',
-      '<button class="inline-button" type="button" data-action="set-source-enabled" data-source-id="' + sourceId + '" data-enabled="true" data-execute="true">Enable</button>'
+      '<button class="inline-button secondary-inline-button" type="button" data-action="set-source-enabled" data-source-id="' + sourceId + '" data-enabled="true" data-execute="false">启用检查</button>',
+      '<button class="inline-button" type="button" data-action="set-source-enabled" data-source-id="' + sourceId + '" data-enabled="true" data-execute="true">启用来源</button>'
     ].join('');
   }
   return [
-    '<button class="inline-button secondary-inline-button" type="button" data-action="set-source-enabled" data-source-id="' + sourceId + '" data-enabled="false" data-execute="false">Disable check</button>',
-    '<button class="inline-button warning-inline-button" type="button" data-action="set-source-enabled" data-source-id="' + sourceId + '" data-enabled="false" data-execute="true">Disable</button>'
+    '<button class="inline-button secondary-inline-button" type="button" data-action="set-source-enabled" data-source-id="' + sourceId + '" data-enabled="false" data-execute="false">停用检查</button>',
+    '<button class="inline-button warning-inline-button" type="button" data-action="set-source-enabled" data-source-id="' + sourceId + '" data-enabled="false" data-execute="true">停用来源</button>'
   ].join('');
 }
 
@@ -7956,8 +7956,8 @@ function renderSourceFailureResetButtons(source) {
   if (runState.status !== 'failed' && !retry.active) return '';
   const sourceId = escapeHtml(source.id);
   return [
-    '<button class="inline-button secondary-inline-button" type="button" data-action="reset-source-failure" data-source-id="' + sourceId + '" data-execute="false" data-retry-now="true">Reset check</button>',
-    '<button class="inline-button warning-inline-button" type="button" data-action="reset-source-failure" data-source-id="' + sourceId + '" data-execute="true" data-retry-now="true">Retry now</button>'
+    '<button class="inline-button secondary-inline-button" type="button" data-action="reset-source-failure" data-source-id="' + sourceId + '" data-execute="false" data-retry-now="true">重试检查</button>',
+    '<button class="inline-button warning-inline-button" type="button" data-action="reset-source-failure" data-source-id="' + sourceId + '" data-execute="true" data-retry-now="true">立即重试</button>'
   ].join('');
 }
 

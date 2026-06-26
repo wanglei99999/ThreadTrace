@@ -154,3 +154,55 @@ test('author intelligence surfaces avoid review-console copy', function () {
     '>Run check again</button>'
   ]);
 });
+
+test('source onboarding and rollout controls avoid deployment-console copy', function () {
+  const app = readProjectFile('src/presentation/web/app.js');
+
+  assertAbsent(app, [
+    '>Preflight manifest</button>',
+    '>Run rollout checks</button>',
+    '>Use template</button>',
+    '>Preflight template</button>',
+    '>Use package</button>',
+    '>Load manifest</button>',
+    '>Apply dry-run</button>',
+    '>Rollback check</button>',
+    '>Rollback disable</button>',
+    '>Copy</button>',
+    '>Schedule check</button>',
+    '>Schedule now</button>',
+    '>Enable check</button>',
+    '>Disable check</button>',
+    '>Reset check</button>',
+    '>Retry now</button>',
+    '>Run due</button>',
+    '>Run insights</button>',
+    '>Enable</button>',
+    '>Disable</button>',
+    "panel('Recommended manifest loaded'",
+    "panel('Source onboarding recipe'",
+    "panel('Adapter guidance'",
+    "panel('Location fields'",
+    "panel('Recommended flow'",
+    "panel('Rollout manifest template'",
+    "panel('Connector package'",
+    "panel('Connector packages'",
+    "panel('Connector module errors'",
+    "panel('Rollout readiness'",
+    "panel('Readiness checks'",
+    "panel('Readiness next actions'",
+    "panel('Rollout manifest apply'",
+    "panel('Apply steps'",
+    "panel('Rollback plan'",
+    "panel('Apply actions'",
+    'Select a registered source type.',
+    '<span class="source-work-scope">collection</span>',
+    '<strong>Due collection</strong>',
+    'ready to run',
+    'queue clear',
+    'No connector package metadata loaded.',
+    'No location fields',
+    'No recommended flow',
+    'uncategorized'
+  ]);
+});

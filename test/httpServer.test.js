@@ -160,8 +160,8 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /Apply execution gate/);
     assert.match(webAppJs, /renderRolloutApplyOperationButtons/);
     assert.match(webAppJs, /renderRolloutRollbackButtons/);
-    assert.match(webAppJs, /Rollback check/);
-    assert.match(webAppJs, /Rollback disable/);
+    assert.match(webAppJs, /回退检查/);
+    assert.match(webAppJs, /回退停用/);
     assert.match(webAppJs, /loadTaskTraceContextFromButton/);
     assert.match(webAppJs, /loadTaskDetailFromButton/);
     assert.match(webAppJs, /renderTaskDetail/);
@@ -187,9 +187,9 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(webAppJs, /query\.get\('taskId'\)/);
     assert.match(webAppJs, /Task trace context/);
     assert.match(webAppJs, /run-rollout-apply-dry-run/);
-    assert.match(webAppJs, /Apply dry-run/);
+    assert.match(webAppJs, /预演应用/);
     assert.match(webAppJs, /copy-lifecycle-command/);
-    assert.match(webAppJs, /Type ops/);
+    assert.match(webAppJs, /来源类型/);
     assert.match(homeHtml, /modulePath/);
     assert.match(homeHtml, /locationJson/);
     assert.match(homeHtml, /connectorModuleValidationForm/);
@@ -233,12 +233,12 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.match(homeHtml, /author-review-queue/);
     assert.match(homeHtml, /source-attention/);
     assert.match(webAppJs, /set-source-enabled/);
-    assert.match(webAppJs, /Disable check/);
+    assert.match(webAppJs, /停用检查/);
     assert.match(webAppJs, /run-source-pipeline/);
     assert.match(webAppJs, /reset-source-failure/);
     assert.match(webAppJs, /failure\/reset/);
     assert.match(webAppJs, /set-source-schedule/);
-    assert.match(webAppJs, /Schedule now/);
+    assert.match(webAppJs, /立即排期/);
     assert.match(webAppJs, /renderSourceScheduleUpdateResult/);
     assert.match(webAppJs, /renderScheduleSourceControls/);
     assert.match(webAppJs, /renderCollectionActionControls/);
