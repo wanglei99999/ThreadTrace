@@ -635,3 +635,15 @@ test('notification event detail avoids action-gate console copy', function () {
     "statusBadge(action.severity || 'info'"
   ]);
 });
+
+test('source type notification result avoids event-console copy', function () {
+  const app = readProjectFile('src/presentation/web/app.js');
+
+  assertAbsent(app, [
+    "metric('状态', result.status || 'unknown')",
+    "metric('模式', result.dryRun ? 'dry-run' : 'execute')",
+    "metric('准备度提醒', result.includeReadinessWarnings ? 'included' : 'ignored')",
+    "return item.status + ' · ' + sourceType",
+    "(event.severity || '未知') + reason"
+  ]);
+});

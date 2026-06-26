@@ -8180,12 +8180,20 @@ function renderRunbookNotificationEventResult(result) {
     metric('解决', result.resolvedCount || 0),
     metric('重开', result.reopenedCount || 0),
     metric('跳过', result.skippedCount || 0),
-    evidenceList(items.map(function (item) {
-      const event = item.event || {};
-      const reason = item.reason ? ' · 原因 ' + item.reason : '';
-      return item.status + ' · ' + (item.actionKey || '未知动作') + ' · ' + (event.id || '暂无提醒') + ' · ' + (event.severity || '未知') + reason;
-    }))
+    evidenceList(items.map(formatRunbookNotificationEventRow))
   ].join(''), 'wide');
+}
+
+function formatRunbookNotificationEventRow(item) {
+  const safeItem = item || {};
+  const event = safeItem.event || {};
+  return [
+    workspaceStatusLabel(safeItem.status || 'unknown'),
+    safeItem.actionKey ? '操作 ' + safeItem.actionKey : '未知操作',
+    event.id ? '提醒 ' + event.id : '暂无提醒',
+    '级别 ' + workspaceStatusLabel(event.severity || 'unknown'),
+    safeItem.reason ? '原因 ' + safeItem.reason : undefined
+  ].filter(Boolean).join(' · ');
 }
 
 function renderSourceAttentionNotificationEventResult(result) {
@@ -8201,36 +8209,53 @@ function renderSourceAttentionNotificationEventResult(result) {
     metric('解决', result.resolvedCount || 0),
     metric('重开', result.reopenedCount || 0),
     metric('跳过', result.skippedCount || 0),
-    evidenceList(items.map(function (item) {
-      const event = item.event || {};
-      const source = event.payload && event.payload.source || {};
-      const reason = item.reason ? ' · 原因 ' + item.reason : '';
-      return item.status + ' · ' + (item.attentionKey || source.id || source.sourceKey || '未知来源') + ' · ' + (event.id || '暂无提醒') + ' · ' + (event.severity || '未知') + reason;
-    }))
+    evidenceList(items.map(formatSourceAttentionNotificationEventRow))
   ].join(''), 'wide');
+}
+
+function formatSourceAttentionNotificationEventRow(item) {
+  const safeItem = item || {};
+  const event = safeItem.event || {};
+  const source = event.payload && event.payload.source || {};
+  const sourceLabel = safeItem.attentionKey || source.displayName || source.id || source.sourceKey || '未知来源';
+  return [
+    workspaceStatusLabel(safeItem.status || 'unknown'),
+    '来源 ' + sourceLabel,
+    event.id ? '提醒 ' + event.id : '暂无提醒',
+    '级别 ' + workspaceStatusLabel(event.severity || 'unknown'),
+    safeItem.reason ? '原因 ' + safeItem.reason : undefined
+  ].filter(Boolean).join(' · ');
 }
 
 function renderSourceTypeOperationsNotificationEventResult(result) {
   const items = result.results || [];
   return panel('来源类型运行提醒', [
-    metric('状态', result.status || 'unknown'),
-    metric('模式', result.dryRun ? 'dry-run' : 'execute'),
+    metric('状态', workspaceStatusLabel(result.status || 'unknown')),
+    metric('模式', result.dryRun ? '预演' : '执行'),
     metric('来源类型', result.sourceTypeCount || 0),
     metric('阈值', result.priorityScoreThreshold || 0),
-    metric('准备度提醒', result.includeReadinessWarnings ? 'included' : 'ignored'),
+    metric('准备度提醒', result.includeReadinessWarnings ? '一并关注' : '暂不加入'),
     metric('提醒', result.eventCount || 0),
-    metric('创建', result.createdCount || 0),
+    metric('新建', result.createdCount || 0),
     metric('更新', result.updatedCount || 0),
     metric('解决', result.resolvedCount || 0),
     metric('重开', result.reopenedCount || 0),
     metric('跳过', result.skippedCount || 0),
-    evidenceList(items.map(function (item) {
-      const event = item.event || {};
-      const sourceType = item.sourceType || event.payload && event.payload.sourceType || '未知来源类型';
-      const reason = item.reason ? ' · 原因 ' + item.reason : '';
-      return item.status + ' · ' + sourceType + ' · ' + (event.id || '暂无提醒') + ' · ' + (event.severity || '未知') + reason;
-    }))
+    evidenceList(items.map(formatSourceTypeNotificationEventRow))
   ].join(''), 'wide');
+}
+
+function formatSourceTypeNotificationEventRow(item) {
+  const safeItem = item || {};
+  const event = safeItem.event || {};
+  const sourceType = safeItem.sourceType || event.payload && event.payload.sourceType || '未知来源类型';
+  return [
+    workspaceStatusLabel(safeItem.status || 'unknown'),
+    '来源类型 ' + sourceType,
+    event.id ? '提醒 ' + event.id : '暂无提醒',
+    '级别 ' + workspaceStatusLabel(event.severity || 'unknown'),
+    safeItem.reason ? '原因 ' + safeItem.reason : undefined
+  ].filter(Boolean).join(' · ');
 }
 
 function renderRunbookActionRows(actions) {
