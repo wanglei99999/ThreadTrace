@@ -7953,7 +7953,7 @@ function renderScheduleDecisionRows(sources, emptyText, runnable) {
     return '<div class="source-work-row source-schedule-row ' + statusClassName(runnable ? 'ok' : 'muted') + '">' +
       '<section class="source-work-anchor">' +
         '<span class="source-work-scope">' + escapeHtml(source.sourceType || source.sourceKey || '来源') + '</span>' +
-        '<strong>' + escapeHtml(source.displayName || source.id) + '</strong>' +
+        '<strong>' + escapeHtml(source.displayName || source.sourceKey || source.id || '未命名来源') + '</strong>' +
         '<small>' + escapeHtml(source.id || source.sourceKey || '未知来源') + '</small>' +
       '</section>' +
       '<section class="source-work-brief">' +
@@ -8403,6 +8403,7 @@ function workspaceStatusLabel(status) {
     'unknown-status': '未知状态',
     'not-evaluated': '未评估',
     'not-run': '未试跑',
+    'never-run': '未运行',
     'not run': '未运行'
   };
   return labels[status] || workspaceValue(status, '未知');
@@ -9638,20 +9639,26 @@ function renderSourceList(result) {
   const sourceDiagnostics = result.diagnostics || {};
   const diagnosticsBySourceId = sourceDiagnosticMap(sourceDiagnostics);
   const diagnosticsPanel = renderSourceDiagnostics(sourceDiagnostics);
-  if (sources.length === 0) return diagnosticsPanel + panel('跟踪来源', '<div class="muted">暂无</div>', 'wide');
+  if (sources.length === 0) return diagnosticsPanel + panel('跟踪来源', '<div class="muted">还没有添加跟踪来源。</div>', 'wide');
   return diagnosticsPanel + panel('跟踪来源', sources.map(function (source) {
     const runState = source.runState || {};
     const schedule = source.schedule || {};
     const cursor = source.cursor || {};
     const cursorDiff = runState.lastCursorDiff || {};
     const diagnostics = diagnosticsBySourceId[source.id];
-    const runLabel = runState.status || 'never-run';
-    const scheduleLabel = schedule.intervalMinutes ? ' · every ' + schedule.intervalMinutes + 'm' : '';
-    const cursorLabel = cursor.postCount !== undefined ? ' · posts ' + cursor.postCount + ' / #' + cursor.lastFloor : '';
-    const diffLabel = cursorDiff.newPostCount !== undefined ? ' · +' + cursorDiff.newPostCount : '';
-    const lastTask = runState.lastTaskId ? ' · ' + runState.lastTaskId : '';
-    const diagnosticLabel = diagnostics ? ' · config ' + diagnostics.status : '';
-    return '<div class="action-row"><span>' + escapeHtml(source.displayName) + '<small>' + escapeHtml(source.id + ' · ' + source.sourceType + ' · ' + runLabel + diagnosticLabel + scheduleLabel + cursorLabel + diffLabel + lastTask) + '</small></span><span class="button-group"><button class="inline-button" type="button" data-action="run-source" data-source-id="' + escapeHtml(source.id) + '">运行</button><button class="inline-button secondary-inline-button" type="button" data-action="run-source-pipeline" data-source-id="' + escapeHtml(source.id) + '">洞察</button></span></div>';
+    const details = [
+      '类型 ' + workspaceValue(source.sourceType, '未设置'),
+      '代号 ' + workspaceValue(source.sourceKey || source.id, '未命名'),
+      '运行 ' + formatSourceRunLabel(runState.status),
+      diagnostics ? '配置 ' + workspaceStatusLabel(diagnostics.status) : '配置 未检查',
+      formatSourceScheduleLabel(schedule),
+      formatSourceCursorLabel(cursor),
+      formatSourceNewPostLabel(cursorDiff),
+      formatSourceTaskLabel(runState.lastTaskId)
+    ].filter(Boolean).join(' · ');
+    return '<div class="action-row"><span>' +
+      '<strong>' + escapeHtml(source.displayName || source.sourceKey || source.id || '未命名来源') + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small></span><span class="button-group"><button class="inline-button" type="button" data-action="run-source" data-source-id="' + escapeHtml(source.id) + '">运行</button><button class="inline-button secondary-inline-button" type="button" data-action="run-source-pipeline" data-source-id="' + escapeHtml(source.id) + '">洞察</button></span></div>';
   }).join(''), 'wide');
 }
 
@@ -9667,7 +9674,7 @@ function renderSourceOpsList(result) {
     const cursor = source.cursor || {};
     const cursorDiff = runState.lastCursorDiff || {};
     const diagnostics = diagnosticsBySourceId[source.id];
-    const runLabel = runState.status || 'never-run';
+    const runLabel = formatSourceRunLabel(runState.status);
     const controls = '<section class="source-work-actions button-group source-op-buttons">' +
       renderSourceDrilldownButton(source) +
       '<button class="inline-button" type="button" data-action="run-source" data-source-id="' + escapeHtml(source.id) + '">运行</button>' +
@@ -9675,19 +9682,19 @@ function renderSourceOpsList(result) {
       '</section>';
     return '<div class="source-work-row tracked-source-row ' + statusClassName(statusVariant(runState.status || diagnostics && diagnostics.status || 'ok')) + '">' +
       '<section class="source-work-anchor">' +
-        '<span class="source-work-scope">' + escapeHtml(source.sourceType || source.sourceKey || 'source') + '</span>' +
-        '<strong>' + escapeHtml(source.displayName || source.id) + '</strong>' +
-        '<small>' + escapeHtml(source.id || '未知来源') + '</small>' +
+        '<span class="source-work-scope">' + escapeHtml(source.sourceType || '来源') + '</span>' +
+        '<strong>' + escapeHtml(source.displayName || source.sourceKey || source.id || '未命名来源') + '</strong>' +
+        '<small>' + escapeHtml('代号 ' + workspaceValue(source.sourceKey || source.id, '未命名')) + '</small>' +
       '</section>' +
       '<section class="source-work-brief">' +
-        '<p>' + escapeHtml([formatSourceLocationSummary(source.location || {}), runState.lastTaskId].filter(Boolean).join(' · ') || '这个来源已准备好运行。') + '</p>' +
+        '<p>' + escapeHtml([formatSourceLocationSummary(source.location || {}), formatSourceTaskLabel(runState.lastTaskId)].filter(Boolean).join(' · ') || '这个来源已准备好运行。') + '</p>' +
         '<div class="source-work-chips">' +
-          authorMetaChip('代号', source.sourceKey || 'none', source.sourceKey ? 'info' : 'muted') +
-          authorMetaChip('运行', runLabel, statusVariant(runLabel)) +
-          authorMetaChip('配置', diagnostics ? diagnostics.status : 'unknown', diagnostics ? statusVariant(diagnostics.status) : 'muted') +
-          authorMetaChip('间隔', schedule.intervalMinutes ? schedule.intervalMinutes + 'm' : 'none', schedule.intervalMinutes ? 'info' : 'muted') +
-          authorMetaChip('楼层', cursor.postCount !== undefined ? cursor.postCount + ' / #' + cursor.lastFloor : 'none', cursor.postCount !== undefined ? 'ok' : 'muted') +
-          authorMetaChip('新增', cursorDiff.newPostCount !== undefined ? '+' + cursorDiff.newPostCount : 'none', cursorDiff.newPostCount > 0 ? 'ok' : 'muted') +
+          authorMetaChip('代号', workspaceValue(source.sourceKey || source.id, '未命名'), source.sourceKey ? 'info' : 'muted') +
+          authorMetaChip('运行', runLabel, statusVariant(runState.status)) +
+          authorMetaChip('配置', diagnostics ? workspaceStatusLabel(diagnostics.status) : '未检查', diagnostics ? statusVariant(diagnostics.status) : 'muted') +
+          authorMetaChip('排期', formatSourceScheduleLabel(schedule), schedule.intervalMinutes ? 'info' : 'muted') +
+          authorMetaChip('楼层', formatSourceCursorLabel(cursor), cursor.postCount !== undefined ? 'ok' : 'muted') +
+          authorMetaChip('新增', formatSourceNewPostLabel(cursorDiff), cursorDiff.newPostCount > 0 ? 'ok' : 'muted') +
         '</div>' +
       '</section>' +
       controls +
@@ -9707,6 +9714,33 @@ function formatSourceLocationSummary(location) {
   if (location.inputDir) parts.push('本地目录');
   if (location.inputFile) parts.push('本地文件');
   return parts.length ? parts.join(' · ') : undefined;
+}
+
+function formatSourceRunLabel(status) {
+  return workspaceStatusLabel(status || 'not-run');
+}
+
+function formatSourceScheduleLabel(schedule) {
+  const safeSchedule = schedule || {};
+  return safeSchedule.intervalMinutes ? '每 ' + safeSchedule.intervalMinutes + ' 分钟' : '未排期';
+}
+
+function formatSourceCursorLabel(cursor) {
+  const safeCursor = cursor || {};
+  if (safeCursor.postCount === undefined) return '暂无楼层记录';
+  const parts = ['已收录 ' + safeCursor.postCount + ' 层'];
+  if (safeCursor.lastFloor !== undefined) parts.push('最近楼层 ' + safeCursor.lastFloor);
+  return parts.join(' · ');
+}
+
+function formatSourceNewPostLabel(cursorDiff) {
+  const safeDiff = cursorDiff || {};
+  if (safeDiff.newPostCount === undefined) return '暂无新增记录';
+  return safeDiff.newPostCount > 0 ? '新增 ' + safeDiff.newPostCount + ' 层' : '暂无新增';
+}
+
+function formatSourceTaskLabel(taskId) {
+  return taskId ? '最近任务 ' + taskId : undefined;
 }
 
 function renderSourceDiagnostics(diagnostics) {
