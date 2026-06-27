@@ -57,7 +57,7 @@ function createThreadTraceServer(options) {
 async function routeRequest(request, response, context) {
   const url = new URL(request.url, 'http://localhost');
 
-  if (request.method === 'GET' && (url.pathname === '/' || url.pathname === '/app.js' || url.pathname === '/styles.css')) {
+  if (request.method === 'GET' && isStaticAssetPath(url.pathname)) {
     await serveStaticAsset(response, context.webDir, url.pathname);
     return;
   }
@@ -1896,10 +1896,29 @@ async function routeRequest(request, response, context) {
   writeError(response, 404, 'route_not_found', 'Not found.');
 }
 
+function isStaticAssetPath(pathname) {
+  if (pathname === '/') return true;
+  if (pathname.includes('..') || pathname.includes('\0')) return false;
+  return /^\/[A-Za-z0-9_\-./]+\.(js|css|html|map|svg|ico|png|jpe?g|gif|woff2?)$/.test(pathname);
+}
+
 async function serveStaticAsset(response, webDir, pathname) {
   const assetName = pathname === '/' ? 'index.html' : pathname.slice(1);
-  const filePath = path.join(webDir, assetName);
-  const content = await fs.readFile(filePath);
+  const baseDir = path.resolve(webDir);
+  const filePath = path.resolve(baseDir, assetName);
+  if (filePath !== baseDir && !filePath.startsWith(baseDir + path.sep)) {
+    response.writeHead(403, { 'content-type': 'text/plain; charset=utf-8' });
+    response.end('Forbidden');
+    return;
+  }
+  let content;
+  try {
+    content = await fs.readFile(filePath);
+  } catch (error) {
+    response.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+    response.end('Not found');
+    return;
+  }
   response.writeHead(200, {
     'content-type': contentTypeFor(assetName),
     'content-length': content.length,

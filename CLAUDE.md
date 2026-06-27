@@ -22,20 +22,20 @@ DDD 分层（`src/`）：
 ## 前端（`src/presentation/web/`）
 
 纯 vanilla 三件套，**无构建步骤**：
-- `index.html` — 应用外壳 + 8 个视图面板（`.view-panel`）
-- `app.js`（~1 万行）— 全局 `state`、`views` 配置、视图切换、112 个 API 调用、234 个渲染函数
-- `styles.css` — 设计系统（单文件）
+- `index.html` — 应用外壳 + 8 个视图面板（`.view-panel`），底部按顺序加载 `js/app.part1..8.js`
+- `js/app.part1..8.js`（共 ~1 万行）— 原单文件 `app.js` 按行段**物理拆分**为 8 个普通 `<script>`，**共享同一全局作用域**（无 import/export，无构建步骤），行为与单文件完全一致。全局 `state`、`views` 配置、视图切换、112 个 API 调用、234 个渲染函数散布其中。改动须知:① 仍是全局作用域,函数跨片自由互调;② 顶层 `state`/常量/`views`/`DOMContentLoaded` 注册都在 `part1`,必须最先加载;③ `index.html` 的脚本顺序 = 原文件顺序,不可乱序;④ 用 `grep` 按函数名跨片定位
+- `styles.css` — 设计系统（单文件，色值全部走 `:root` token）
 
 ### 关键约束（改动前必读，不可破坏）
 
-`app.js` 全部用 `innerHTML` 字符串拼接渲染，并通过**写死的元素 id** 绑定事件与结果容器。修改 `index.html` 时：
+应用脚本（`js/app.part*.js`）全部用 `innerHTML` 字符串拼接渲染，并通过**写死的元素 id** 绑定事件与结果容器。修改 `index.html` 时：
 - **保留所有 `<form>` 的 `id` 与字段 `name`**（提交走 FormData / `form.get(name)`）
 - **保留所有按钮 / 结果容器 `id`**（`getElementById` 硬依赖，缺一即报错）
 - **保留结构性 class 名**（渲染函数 `innerHTML` 依赖）：`*-hero` / `*-card` / `*-row` / `*-signal` / `panel` / `panel-head` / `panel-body` / `status-ok|warn|fail|muted` / `status-badge` / `cockpit-*` / `tag` / `tag-list` / `inline-button` / `secondary-inline-button` / `feedback-state` / `empty-signal` / `muted` / `error` / `hidden` / `is-active` / `is-refreshing` / `result-focus-pulse`
 - 渲染工厂函数签名不动：`escapeHtml` / `panel` / `statusBadge` / `statusClassName` / `statusVariant` / `cockpitClassName` / `tagList` / `emptySignal` / `metric` / `evidenceList` / `renderFeedbackState`
 - API 经 `requestJson`(POST) / `fetchJson`(GET) 封装；不直接散写 fetch
 
-视图机制：`.nav-item[data-view]` → `bindNavigation` → `setView(name)`；`setView` 切换 `.view-panel` 的 `.hidden`、显示 `{name}View`、写 `viewTitle/viewSubtitle/viewMode/viewFocus`，并按视图触发加载（`overview→loadOverview`、`operations→loadSystemStatus/loadAutomationReadiness`、`history→renderHistoryCockpitStandby`）。新增视图需同步：`index.html` 的 `.view-panel` + 侧边栏 `data-view` 按钮、`app.js` 的 `views` 对象与 `setView` 分支。
+视图机制：`.nav-item[data-view]` → `bindNavigation` → `setView(name)`；`setView` 切换 `.view-panel` 的 `.hidden`、显示 `{name}View`、写 `viewTitle/viewSubtitle/viewMode/viewFocus`，并按视图触发加载（`overview→loadOverview`、`operations→loadSystemStatus/loadAutomationReadiness`、`history→renderHistoryCockpitStandby`）。新增视图需同步：`index.html` 的 `.view-panel` + 侧边栏 `data-view` 按钮、`part1` 的 `views` 对象与 `setView` 分支。
 
 ### 信息架构（8 视图，2 分组）
 

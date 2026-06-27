@@ -25,7 +25,6 @@ test('http server exposes health, adapters, and context APIs', async function ()
     const health = await getJson(baseUrl + '/health');
     const apiHealth = await getJson(baseUrl + '/api/health');
     const home = await fetch(baseUrl + '/');
-    const webApp = await fetch(baseUrl + '/app.js');
     const adapters = await getJson(baseUrl + '/adapters');
     const adapterDiagnostics = await getJson(baseUrl + '/api/adapters/diagnostics?now=2026-06-19T10:00:00.000Z');
     const handlers = await getJson(baseUrl + '/api/source-ingest-handlers');
@@ -128,7 +127,7 @@ test('http server exposes health, adapters, and context APIs', async function ()
     assert.deepEqual(apiHealth, health);
     assert.equal(home.status, 200);
     const homeHtml = await home.text();
-    const webAppJs = await webApp.text();
+    const webAppJs = await getWebAppSource(baseUrl);
     assert.match(homeHtml, /ThreadTrace/);
     assert.match(homeHtml, /sourceOnboardingForm/);
     assert.match(homeHtml, /sourceOnboardingRecipe/);
@@ -866,7 +865,7 @@ test('http server exposes semantic enrichment API', async function () {
     });
     const openApi = await getJson(baseUrl + '/openapi.json');
     const homeHtml = await getText(baseUrl + '/', 'text/html');
-    const webAppJs = await getText(baseUrl + '/app.js', 'text/javascript');
+    const webAppJs = await getWebAppSource(baseUrl);
 
     assert.equal(enriched.reportType, 'basic-history');
     assert.equal(enriched.semanticInsights.provider, 'mock');
@@ -1395,7 +1394,7 @@ test('http server exposes source operations drilldown API', async function () {
     const health = await getJson(baseUrl + '/api/operations/source-collection-health?sourceKey=nga&sourceId=source-1&limit=10&timelineLimit=7&attentionLimit=5&taskScanLimit=20&leaseScanLimit=30&sourceFailureRetryBackoffMs=60000');
     const automation = await getJson(baseUrl + '/api/operations/automation-readiness?sourceKey=nga&sourceId=source-1&sourceTaskMode=insight-pipeline&llmReadinessMode=configuration&provider=mock&limit=10&includeInputs=true');
     const automationCockpit = await getJson(baseUrl + '/api/operations/automation-cockpit?sourceKey=nga&sourceId=source-1&sourceTaskMode=insight-pipeline&llmReadinessMode=configuration&provider=mock&limit=10&notificationLimit=11&auditLimit=12&executionLimit=13&includeInputs=true');
-    const webAppJs = await getText(baseUrl + '/app.js', 'text/javascript');
+    const webAppJs = await getWebAppSource(baseUrl);
 
     assert.equal(report.status, 'warn');
     assert.equal(report.scope.sourceId, 'source-1');
@@ -3259,7 +3258,7 @@ test('http server runs source demo cycle and exposes web controls', async functi
     });
     const openApi = await getJson(baseUrl + '/openapi.json');
     const homeHtml = await getText(baseUrl + '/', 'text/html');
-    const webAppJs = await getText(baseUrl + '/app.js', 'text/javascript');
+    const webAppJs = await getWebAppSource(baseUrl);
 
     assert.equal(result.status, 'ok');
     assert.equal(result.task.status, 'completed');
@@ -3339,7 +3338,7 @@ test('http server exposes raw page crawl, list, and replay APIs', async function
 
   try {
     const homeHtml = await getText(baseUrl + '/', 'text/html');
-    const webAppJs = await getText(baseUrl + '/app.js', 'text/javascript');
+    const webAppJs = await getWebAppSource(baseUrl);
     const crawlResult = await postJson(baseUrl + '/api/crawl-page', {
       forum: 'nga',
       sourceThreadId: '45974302',
@@ -3631,6 +3630,21 @@ async function getText(url, contentTypePrefix) {
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('content-type').startsWith(contentTypePrefix), true);
   return response.text();
+}
+
+// app.js 已物理拆分为 /js/app.part{N}.js 顺序脚本；按序取回并拼接为完整源码。
+async function getWebAppSource(baseUrl) {
+  const parts = [];
+  for (let i = 1; ; i++) {
+    const response = await fetch(baseUrl + '/js/app.part' + i + '.js');
+    if (response.status !== 200) {
+      break;
+    }
+    assert.equal(response.headers.get('content-type').startsWith('text/javascript'), true);
+    parts.push(await response.text());
+  }
+  assert.equal(parts.length > 0, true, 'expected at least one /js/app.part*.js');
+  return parts.join('');
 }
 
 async function postJson(url, body) {

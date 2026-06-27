@@ -9,6 +9,16 @@ function readProjectFile(relativePath) {
   return fs.readFileSync(path.join(repoRoot, relativePath), 'utf8');
 }
 
+// app.js 已物理拆分为 src/presentation/web/js/app.part{N}.js；按序拼接为完整源码。
+function readWebApp() {
+  const dir = path.join(repoRoot, 'src/presentation/web/js');
+  return fs.readdirSync(dir)
+    .filter((name) => /^app\.part\d+\.js$/.test(name))
+    .sort((a, b) => Number(a.match(/\d+/)[0]) - Number(b.match(/\d+/)[0]))
+    .map((name) => fs.readFileSync(path.join(dir, name), 'utf8'))
+    .join('');
+}
+
 function assertAbsent(content, snippets) {
   for (const snippet of snippets) {
     assert.equal(content.includes(snippet), false, `Expected workspace copy to avoid: ${snippet}`);
@@ -17,7 +27,7 @@ function assertAbsent(content, snippets) {
 
 test('system workspace chrome uses approachable labels instead of developer console copy', function () {
   const html = readProjectFile('src/presentation/web/index.html');
-  const app = readProjectFile('src/presentation/web/app.js');
+  const app = readWebApp();
 
   assertAbsent(html, [
     'data-title="Tracked source"',
@@ -80,7 +90,7 @@ test('system workspace chrome uses approachable labels instead of developer cons
 });
 
 test('event and source result surfaces avoid console-style action copy', function () {
-  const app = readProjectFile('src/presentation/web/app.js');
+  const app = readWebApp();
 
   assertAbsent(app, [
     "panel('Event detail'",
@@ -126,7 +136,7 @@ test('event and source result surfaces avoid console-style action copy', functio
 });
 
 test('author intelligence surfaces avoid review-console copy', function () {
-  const app = readProjectFile('src/presentation/web/app.js');
+  const app = readWebApp();
 
   assertAbsent(app, [
     "panel('Source review pressure'",
@@ -166,7 +176,7 @@ test('author intelligence surfaces avoid review-console copy', function () {
 });
 
 test('source onboarding and rollout controls avoid deployment-console copy', function () {
-  const app = readProjectFile('src/presentation/web/app.js');
+  const app = readWebApp();
 
   assertAbsent(app, [
     '>Preflight manifest</button>',
@@ -235,7 +245,7 @@ test('source onboarding and rollout controls avoid deployment-console copy', fun
 });
 
 test('history and context reports avoid evidence-console copy', function () {
-  const app = readProjectFile('src/presentation/web/app.js');
+  const app = readWebApp();
 
   assertAbsent(app, [
     '<span class="history-report-kicker">Evidence report</span>',
@@ -260,7 +270,7 @@ test('history and context reports avoid evidence-console copy', function () {
 });
 
 test('task path and review result surfaces avoid trace-console copy', function () {
-  const app = readProjectFile('src/presentation/web/app.js');
+  const app = readWebApp();
 
   assertAbsent(app, [
     "label || 'Trace'",
@@ -349,7 +359,7 @@ test('task path and review result surfaces avoid trace-console copy', function (
 });
 
 test('source run result surfaces avoid operations-console copy', function () {
-  const app = readProjectFile('src/presentation/web/app.js');
+  const app = readWebApp();
 
   assertAbsent(app, [
     "panel('Source batch run'",
@@ -399,7 +409,7 @@ test('source run result surfaces avoid operations-console copy', function () {
 });
 
 test('runtime and action summaries avoid backend shorthand', function () {
-  const app = readProjectFile('src/presentation/web/app.js');
+  const app = readWebApp();
 
   assertAbsent(app, [
     "'服务=' +",
@@ -451,7 +461,7 @@ test('runtime and action summaries avoid backend shorthand', function () {
 });
 
 test('automation runbook schedule preview avoids deployment-console copy', function () {
-  const app = readProjectFile('src/presentation/web/app.js');
+  const app = readWebApp();
   const cdpProbe = readProjectFile('scripts/verifyAutomationCockpitCdp.js');
 
   assertAbsent(app, [
@@ -478,7 +488,7 @@ test('automation runbook schedule preview avoids deployment-console copy', funct
 });
 
 test('automation readiness and freshness panels avoid worker-console copy', function () {
-  const app = readProjectFile('src/presentation/web/app.js');
+  const app = readWebApp();
 
   assertAbsent(app, [
     "panel('Operations readiness'",
@@ -571,7 +581,7 @@ test('automation readiness and freshness panels avoid worker-console copy', func
 });
 
 test('deployment and resource panels avoid rollout-console copy', function () {
-  const app = readProjectFile('src/presentation/web/app.js');
+  const app = readWebApp();
 
   assertAbsent(app, [
     "panel('Source ingest dry-run'",
@@ -622,7 +632,7 @@ test('deployment and resource panels avoid rollout-console copy', function () {
 });
 
 test('source schedule and attention panels avoid operations-console copy', function () {
-  const app = readProjectFile('src/presentation/web/app.js');
+  const app = readWebApp();
 
   assertAbsent(app, [
     'No due sources.',
@@ -654,7 +664,7 @@ test('source schedule and attention panels avoid operations-console copy', funct
 });
 
 test('source type readiness panels avoid connector-console copy', function () {
-  const app = readProjectFile('src/presentation/web/app.js');
+  const app = readWebApp();
 
   assertAbsent(app, [
     "summaryTile('Enabled'",
@@ -676,7 +686,7 @@ test('source type readiness panels avoid connector-console copy', function () {
 });
 
 test('source cockpit action plan avoids executor-console copy', function () {
-  const app = readProjectFile('src/presentation/web/app.js');
+  const app = readWebApp();
 
   assertAbsent(app, [
     'No cockpit actions are available.',
@@ -691,7 +701,7 @@ test('source cockpit action plan avoids executor-console copy', function () {
 });
 
 test('notification event detail avoids action-gate console copy', function () {
-  const app = readProjectFile('src/presentation/web/app.js');
+  const app = readWebApp();
 
   assertAbsent(app, [
     "summaryTile('状态', event.deliveryStatus || 'pending'",
@@ -714,7 +724,7 @@ test('notification event detail avoids action-gate console copy', function () {
 });
 
 test('source type notification result avoids event-console copy', function () {
-  const app = readProjectFile('src/presentation/web/app.js');
+  const app = readWebApp();
 
   assertAbsent(app, [
     "metric('状态', result.status || 'unknown')",
@@ -726,7 +736,7 @@ test('source type notification result avoids event-console copy', function () {
 });
 
 test('notification inbox rows avoid event-backend copy', function () {
-  const app = readProjectFile('src/presentation/web/app.js');
+  const app = readWebApp();
 
   assertAbsent(app, [
     "overview.status || 'unknown'",
@@ -756,7 +766,7 @@ test('notification inbox rows avoid event-backend copy', function () {
 });
 
 test('notification batch results avoid archive-console copy', function () {
-  const app = readProjectFile('src/presentation/web/app.js');
+  const app = readWebApp();
 
   assertAbsent(app, [
     "return item.status + ' | ' + item.eventId",
@@ -770,7 +780,7 @@ test('notification batch results avoid archive-console copy', function () {
 });
 
 test('raw page evidence avoids storage-console copy', function () {
-  const app = readProjectFile('src/presentation/web/app.js');
+  const app = readWebApp();
 
   assertAbsent(app, [
     "metric('SHA1', result.rawPage.contentSha1)",
@@ -787,7 +797,7 @@ test('raw page evidence avoids storage-console copy', function () {
 });
 
 test('source diagnostics avoid status-pipe copy', function () {
-  const app = readProjectFile('src/presentation/web/app.js');
+  const app = readWebApp();
 
   assertAbsent(app, [
     "return check.key + '=' + check.status;",
@@ -799,7 +809,7 @@ test('source diagnostics avoid status-pipe copy', function () {
 });
 
 test('llm evaluation samples avoid metric-console copy', function () {
-  const app = readProjectFile('src/presentation/web/app.js');
+  const app = readWebApp();
 
   assertAbsent(app, [
     "result.status || 'unknown'",
@@ -818,7 +828,7 @@ test('llm evaluation samples avoid metric-console copy', function () {
 });
 
 test('llm readiness and preflight panels avoid provider-console copy', function () {
-  const app = readProjectFile('src/presentation/web/app.js');
+  const app = readWebApp();
 
   assertAbsent(app, [
     "summaryTile('状态', profile.status || 'unknown'",
