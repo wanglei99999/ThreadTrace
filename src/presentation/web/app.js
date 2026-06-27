@@ -5071,20 +5071,20 @@ function renderLlmReadinessProfile(profile) {
   return [
     panel('助手状态概况', [
       '<div class="summary-strip">',
-      summaryTile('状态', profile.status || 'unknown', statusVariant(profile.status)),
-      summaryTile('模式', profile.mode || 'configuration'),
-      summaryTile('提供方', profile.provider || 'unknown', readiness.mockMode ? 'warn' : 'ok'),
-      summaryTile('真实服务', readiness.realProviderCandidate ? 'yes' : 'no', readiness.realProviderCandidate ? 'ok' : 'warn'),
-      summaryTile('预检', readiness.preflightPassed ? 'ok' : 'not run', readiness.preflightPassed ? 'ok' : 'muted'),
-      summaryTile('评估', readiness.evaluationPassed ? 'ok' : 'not run', readiness.evaluationPassed ? 'ok' : 'muted'),
+      summaryTile('状态', workspaceStatusLabel(workspaceValue(profile.status, 'unknown')), statusVariant(profile.status)),
+      summaryTile('模式', llmModeLabel(profile.mode)),
+      summaryTile('提供方', workspaceValue(profile.provider, '未配置'), readiness.mockMode ? 'warn' : 'ok'),
+      summaryTile('真实服务', readiness.realProviderCandidate ? '已连接' : '使用模拟', readiness.realProviderCandidate ? 'ok' : 'warn'),
+      summaryTile('预检', readiness.preflightPassed ? '通过' : '未运行', readiness.preflightPassed ? 'ok' : 'muted'),
+      summaryTile('评估', readiness.evaluationPassed ? '通过' : '未运行', readiness.evaluationPassed ? 'ok' : 'muted'),
       '</div>',
-      metric('API key', configuration.apiKeyConfigured ? 'configured' : 'not configured'),
-      metric('模型', configuration.modelConfigured ? 'configured' : 'not configured'),
-      metric('Base URL', configuration.baseUrlConfigured ? 'configured' : 'default'),
-      metric('超时', configuration.timeoutMs || 'default')
+      metric('密钥', configuration.apiKeyConfigured ? '已配置' : '未配置'),
+      metric('模型', configuration.modelConfigured ? '已配置' : '未配置'),
+      metric('服务地址', configuration.baseUrlConfigured ? '已配置' : '默认地址'),
+      metric('超时', configuration.timeoutMs ? configuration.timeoutMs + ' ms' : '默认')
     ].join(''), 'wide'),
     panel('助手状态检查', evidenceList((profile.checks || []).map(function (check) {
-      return check.status + ' | ' + check.area + ' | ' + check.key + ' | ' + check.summary;
+      return llmCheckSummary(check);
     })), 'wide'),
     panel('助手状态建议', renderNextActionRows(profile.nextActions || []), 'wide automation-action-command-panel')
   ].join('');
@@ -5097,19 +5097,19 @@ function renderLlmPreflightReport(report) {
   return [
     panel('助手预检', [
       '<div class="summary-strip">',
-      summaryTile('状态', report.status || 'unknown', statusVariant(report.status)),
-      summaryTile('提供方', report.provider || 'unknown', report.provider === 'mock' ? 'muted' : 'ok'),
-      summaryTile('验证', validation.status || 'not-run', statusVariant(validation.status)),
-      summaryTile('Schema', report.schemaVersion || 'unknown', validation.status === 'ok' ? 'ok' : 'muted'),
+      summaryTile('状态', workspaceStatusLabel(workspaceValue(report.status, 'unknown')), statusVariant(report.status)),
+      summaryTile('提供方', workspaceValue(report.provider, '未配置'), report.provider === 'mock' ? 'muted' : 'ok'),
+      summaryTile('验证', workspaceStatusLabel(workspaceValue(validation.status, 'not-run')), statusVariant(validation.status)),
+      summaryTile('协议', workspaceValue(report.schemaVersion, '未注明'), validation.status === 'ok' ? 'ok' : 'muted'),
       '</div>',
-      metric('Trace', report.traceId || 'none'),
-      metric('任务', report.task || 'unknown'),
+      metric('路径编号', workspaceValue(report.traceId, '暂无')),
+      metric('任务', workspaceValue(report.task, '未指定')),
       metric('用量', formatLlmUsage(usage)),
-      metric('输出', preview.summary || 'none'),
-      report.error ? metric('错误', report.error.message || 'unknown') : ''
+      metric('输出', workspaceValue(preview.summary, '暂无输出')),
+      report.error ? metric('错误', workspaceValue(report.error.message, '未知错误')) : ''
     ].join(''), 'wide'),
     panel('助手预检检查', evidenceList((report.checks || []).map(function (check) {
-      return check.status + ' | ' + check.key + ' | ' + check.summary;
+      return llmCheckSummary(check);
     })), 'wide'),
     panel('助手预检建议', renderNextActionRows(report.nextActions || []), 'wide automation-action-command-panel')
   ].join('');
@@ -5120,19 +5120,39 @@ function renderLlmEvaluationReport(report) {
   return [
     panel('助手质量评估', [
       '<div class="summary-strip">',
-      summaryTile('状态', report.status || 'unknown', statusVariant(report.status)),
-      summaryTile('提供方', report.provider || 'unknown', report.provider === 'mock' ? 'muted' : 'ok'),
+      summaryTile('状态', workspaceStatusLabel(workspaceValue(report.status, 'unknown')), statusVariant(report.status)),
+      summaryTile('提供方', workspaceValue(report.provider, '未配置'), report.provider === 'mock' ? 'muted' : 'ok'),
       summaryTile('样本', String(report.sampleCount || 0)),
       summaryTile('提醒', String(summary.warn || 0), (summary.warn || 0) > 0 ? 'warn' : 'ok'),
       summaryTile('失败', String(summary.fail || 0), (summary.fail || 0) > 0 ? 'fail' : 'ok'),
       '</div>',
-      metric('Trace', report.traceId || 'none'),
-      metric('任务', report.task || 'unknown'),
-      metric('Schema', report.schemaVersion || 'unknown')
+      metric('路径编号', workspaceValue(report.traceId, '暂无')),
+      metric('任务', workspaceValue(report.task, '未指定')),
+      metric('协议', workspaceValue(report.schemaVersion, '未注明'))
     ].join(''), 'wide'),
     panel('助手评估样本', evidenceList((report.results || []).map(formatLlmEvaluationSampleRow)), 'wide'),
     panel('助手评估建议', renderNextActionRows(report.nextActions || []), 'wide automation-action-command-panel')
   ].join('');
+}
+
+function llmModeLabel(mode) {
+  const labels = {
+    configuration: '配置检查',
+    preflight: '预检',
+    evaluation: '质量评估',
+    mock: '模拟服务'
+  };
+  return labels[mode] || workspaceValue(mode, '配置检查');
+}
+
+function llmCheckSummary(check) {
+  const safeCheck = check || {};
+  return [
+    safeCheck.summary || safeCheck.title || safeCheck.key || '检查项',
+    workspaceStatusLabel(safeCheck.status || 'unknown'),
+    safeCheck.area ? '范围 ' + safeCheck.area : undefined,
+    safeCheck.key ? '检查项 ' + safeCheck.key : undefined
+  ].filter(Boolean).join(' · ');
 }
 
 function formatLlmEvaluationSampleRow(result) {
@@ -5163,16 +5183,16 @@ function renderSourceDemoCycleReport(report) {
   return [
     panel('试跑闭环', [
       '<div class="summary-strip">',
-      summaryTile('状态', report.status || 'unknown', statusVariant(report.status)),
+      summaryTile('状态', workspaceStatusLabel(workspaceValue(report.status, 'unknown')), statusVariant(report.status)),
       summaryTile('到期', summary.dueCount || 0, summary.dueCount > 0 ? 'ok' : 'muted'),
       summaryTile('完成', summary.completedCount || 0, summary.failedCount > 0 ? 'warn' : 'ok'),
       summaryTile('提醒', summary.sourceChangedEventCount || 0, summary.sourceChangedEventCount > 0 ? 'ok' : 'muted'),
       '</div>',
-      metric('任务', report.task && report.task.id || 'none'),
-      metric('Trace', report.traceId || 'none'),
+      metric('任务', report.task && report.task.id || '暂无'),
+      metric('路径编号', workspaceValue(report.traceId, '暂无')),
       metric('主要来源', formatSourceScope(report.primarySource)),
-      metric('打开提醒', summary.openEventCount === undefined ? 'unknown' : summary.openEventCount),
-      metric('确认', acknowledgement.status || 'not-run'),
+      metric('打开提醒', summary.openEventCount === undefined ? '未记录' : summary.openEventCount),
+      metric('确认', workspaceStatusLabel(workspaceValue(acknowledgement.status, 'not-run'))),
       renderBatchTaskControls(pipeline.task)
     ].join(''), 'wide'),
     panel('试跑处理路径', [

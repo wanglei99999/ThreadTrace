@@ -706,3 +706,25 @@ test('llm evaluation samples avoid metric-console copy', function () {
     "return parts.length ? parts.join(' | ') : 'none'"
   ]);
 });
+
+test('llm readiness and preflight panels avoid provider-console copy', function () {
+  const app = readProjectFile('src/presentation/web/app.js');
+
+  assertAbsent(app, [
+    "summaryTile('状态', profile.status || 'unknown'",
+    "summaryTile('模式', profile.mode || 'configuration')",
+    "summaryTile('提供方', profile.provider || 'unknown'",
+    "readiness.realProviderCandidate ? 'yes' : 'no'",
+    "readiness.preflightPassed ? 'ok' : 'not run'",
+    "readiness.evaluationPassed ? 'ok' : 'not run'",
+    "metric('API key', configuration.apiKeyConfigured ? 'configured' : 'not configured')",
+    "metric('Base URL', configuration.baseUrlConfigured ? 'configured' : 'default')",
+    "return check.status + ' | ' + check.area + ' | ' + check.key + ' | ' + check.summary;",
+    "summaryTile('状态', report.status || 'unknown'",
+    "summaryTile('验证', validation.status || 'not-run'",
+    "summaryTile('Schema', report.schemaVersion || 'unknown'",
+    "metric('Trace', report.traceId || 'none')",
+    "metric('输出', preview.summary || 'none')",
+    "return check.status + ' | ' + check.key + ' | ' + check.summary;"
+  ]);
+});
