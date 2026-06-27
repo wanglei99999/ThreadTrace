@@ -1,0 +1,692 @@
+@media (max-width: 520px) {
+  .brand {
+    grid-template-columns: 42px minmax(0, 1fr);
+    min-height: 62px;
+    padding: 10px;
+  }
+
+  .brand-mark {
+    width: 42px;
+    height: 42px;
+  }
+
+  .nav-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .nav-item {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .sidebar-status {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar {
+    align-items: flex-start;
+  }
+
+  .toolbar-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 38px;
+    align-items: center;
+    width: 100%;
+  }
+
+  .toolbar-runtime {
+    width: 100%;
+  }
+
+  .toolbar h2 {
+    font-size: 22px;
+  }
+
+  .icon-button {
+    width: 38px;
+    height: 38px;
+  }
+
+  .system-overview {
+    padding-top: 4px;
+  }
+
+  .system-overview-copy h3 {
+    font-size: 23px;
+  }
+
+  .system-rail {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .system-rail a {
+    width: 100%;
+  }
+
+  .system-status-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .system-runtime-main h3 {
+    font-size: 22px;
+  }
+
+  .system-runtime-signal {
+    min-height: 94px;
+    padding: 10px;
+  }
+
+  .system-runtime-signal strong {
+    font-size: 18px;
+  }
+
+  .system-runtime-stack {
+    grid-template-columns: 1fr;
+  }
+
+  .system-runtime-mini:nth-of-type(n+6) {
+    display: none;
+  }
+
+  .feedback-head {
+    max-width: 100%;
+  }
+
+  .feedback-state::after {
+    opacity: 0.82;
+  }
+
+  .context-source-strip,
+  .context-author-strip,
+  .context-command-shelf {
+    padding-inline: 10px;
+  }
+
+  .stacked-form .control-strip.context-source-strip,
+  .stacked-form .control-strip.context-author-strip {
+    padding-inline: 10px;
+  }
+
+  .context-entry-card textarea {
+    min-height: 188px;
+    font-size: 16px;
+  }
+
+  .history-source-strip,
+  .history-directory-field,
+  .history-command-shelf {
+    padding-inline: 10px;
+  }
+
+  .history-command-shelf {
+    grid-template-columns: 1fr;
+  }
+
+  .search-card-kicker {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .search-card-kicker strong {
+    text-align: left;
+  }
+
+  .search-command-shelf {
+    grid-template-columns: 1fr;
+  }
+
+  .search-command-shelf span {
+    text-align: left;
+  }
+
+  .search-query-card {
+    grid-template-columns: 1fr;
+  }
+
+  .control-strip.search-query-card {
+    grid-template-columns: 1fr;
+  }
+
+  #searchView:has(#searchResult .search-results-panel) .search-query-card {
+    grid-template-columns: 1fr;
+  }
+
+  .search-query-input,
+  .search-query-side {
+    grid-column: 1;
+  }
+
+  #searchView:has(#searchResult .search-results-panel) .search-query-input,
+  #searchView:has(#searchResult .search-results-panel) .search-query-side {
+    grid-column: 1;
+  }
+
+  #searchView:has(#searchResult .search-results-panel) .search-query-side {
+    grid-template-columns: minmax(72px, 0.42fr) minmax(118px, 0.58fr);
+    align-items: end;
+  }
+
+  #searchView:has(#searchResult .search-results-panel) .search-query-side button[type="submit"] {
+    min-height: 42px;
+  }
+
+  .search-query-input input {
+    min-height: 72px;
+    font-size: 18px;
+  }
+
+  .search-query-side {
+    grid-template-columns: 1fr;
+  }
+
+  .search-hit-schema span {
+    justify-content: center;
+  }
+
+  .search-hit-schema {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .search-hit-row {
+    grid-template-columns: 1fr;
+  }
+
+  .search-hit-meta {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .search-hit-meta small {
+    grid-column: 1 / -1;
+  }
+
+  .collection-card .secondary-button,
+  .collection-card button[type="submit"] {
+    width: 100%;
+  }
+
+  .event-card .secondary-button,
+  .event-card button[type="submit"] {
+    width: 100%;
+  }
+
+  .rollout-card .secondary-button,
+  .rollout-card button[type="submit"] {
+    width: 100%;
+  }
+
+  .system-zone-title {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .history-report-hero h3 {
+    font-size: 23px;
+  }
+
+  .history-report-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .history-fact {
+    min-height: 76px;
+    padding: 10px;
+  }
+
+  .history-fact strong {
+    font-size: 18px;
+  }
+
+  .context-verdict-hero h3 {
+    font-size: 22px;
+  }
+
+  .context-verdict-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .context-verdict-signal {
+    min-height: 70px;
+    padding: 10px;
+  }
+
+  .author-intel-hero h3 {
+    font-size: 22px;
+  }
+
+  .author-intel-signals {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .author-intel-signal {
+    min-height: 68px;
+    padding: 9px;
+  }
+
+  .author-intel-actions .inline-button {
+    flex: 1 1 92px;
+    width: auto;
+  }
+
+  .author-intel-focus-row:nth-of-type(n+3) {
+    display: none;
+  }
+
+  .author-intel-review {
+    gap: 8px;
+  }
+
+  .author-review-row,
+  .author-signal-row,
+  .author-evidence-row,
+  .durable-review-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .author-review-actions,
+  .author-signal-actions,
+  .author-evidence-status {
+    justify-content: flex-start;
+  }
+
+  .review-queue-hero h3 {
+    font-size: 22px;
+  }
+
+  .review-queue-signals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .review-queue-signal {
+    min-height: 68px;
+    padding: 9px;
+  }
+
+  .review-queue-actions .inline-button {
+    flex: 1 1 128px;
+    width: auto;
+  }
+
+  .review-queue-hotspot-row:nth-of-type(n+3) {
+    display: none;
+  }
+
+  .review-queue-foot {
+    gap: 8px;
+  }
+
+  .source-ops-main h3 {
+    font-size: 22px;
+  }
+
+  .source-ops-signals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .source-ops-signal {
+    min-height: 68px;
+    padding: 9px;
+  }
+
+  .source-ops-actions .inline-button,
+  .source-ops-alert-control {
+    flex: 1 1 150px;
+    width: auto;
+  }
+
+  .source-ops-queue-row {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .source-ops-queue-row:nth-of-type(n+2) {
+    display: none;
+  }
+
+  .source-ops-foot {
+    gap: 8px;
+  }
+
+  .cockpit-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cockpit-hero,
+  .cockpit-card:not(.cockpit-queue-card),
+  .cockpit-queue-card {
+    grid-column: 1;
+  }
+
+  .cockpit-card {
+    min-height: 104px;
+  }
+
+  .cockpit-command-row .inline-button {
+    width: 100%;
+  }
+
+  form button[type="submit"],
+  .secondary-button,
+  .inline-button {
+    width: 100%;
+  }
+
+  .source-ops-actions .source-ops-alert-control {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .source-ops-actions .inline-button {
+    width: auto;
+    min-width: 0;
+    padding: 0 8px;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.15;
+  }
+
+  .control-strip.entry-card button[type="submit"],
+  .control-strip.entry-card .secondary-button,
+  .stacked-form.entry-card button[type="submit"] {
+    flex: 1 1 136px;
+    width: auto;
+    min-width: 0;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.15;
+  }
+
+  .history-entry-card button[type="submit"],
+  .search-query-card button[type="submit"],
+  .context-entry-card button[type="submit"] {
+    flex-basis: 100%;
+  }
+
+  .history-command-shelf button[type="submit"],
+  .history-command-shelf .secondary-button {
+    width: 100%;
+  }
+
+  .collection-card button[type="submit"],
+  .collection-card .secondary-button {
+    flex: 1 1 136px;
+    width: auto;
+    min-width: 0;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.15;
+  }
+
+  #sourceForm.collection-card-source > label,
+  #sourceForm.collection-card-source > label:nth-of-type(1),
+  #sourceForm.collection-card-source > label:nth-of-type(2),
+  #sourceForm.collection-card-source > label:nth-of-type(3),
+  #sourceForm.collection-card-source > label:nth-of-type(4),
+  #sourceForm.collection-card-source > button[type="submit"] {
+    grid-column: 1 / -1;
+  }
+
+  .source-command-shelf {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .collection-card-archive button,
+  .collection-card-url button {
+    flex-basis: 150px;
+  }
+
+  .event-card button[type="submit"],
+  .event-card .secondary-button {
+    flex: 1 1 142px;
+    width: auto;
+    min-width: 0;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.15;
+  }
+
+  #eventFilterForm.event-card-filter > label,
+  #eventFilterForm.event-card-filter > label:nth-of-type(3) {
+    grid-column: 1 / -1;
+  }
+
+  .event-triage-command-shelf {
+    padding: 10px;
+  }
+
+  .review-command-shelf {
+    padding: 10px;
+  }
+
+  .review-command-group {
+    grid-template-columns: 1fr;
+  }
+
+  .review-command-primary button[type="submit"] {
+    grid-column: 1;
+  }
+
+  .event-card-filter button[type="submit"] {
+    flex-basis: 100%;
+  }
+
+  .rollout-card button[type="submit"],
+  .rollout-card .secondary-button {
+    flex: 1 1 142px;
+    width: auto;
+    min-width: 0;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.15;
+  }
+
+  .rollout-card-module button[type="submit"] {
+    flex-basis: 142px;
+  }
+}
+
+@media (max-width: 360px) {
+  .context-verdict-rail,
+  .author-intel-signals,
+  .review-queue-signals,
+  .source-ops-signals,
+  .system-runtime-pressure {
+    grid-template-columns: 1fr;
+  }
+
+  #contextView:has(#contextResult .context-verdict-hero) .context-entry-card {
+    grid-template-columns: 1fr;
+  }
+
+  #contextView:has(#contextResult .context-verdict-hero) .context-source-strip,
+  #contextView:has(#contextResult .context-verdict-hero) .context-author-strip,
+  #contextView:has(#contextResult .context-verdict-hero) .context-entry-card > label.full.context-text-field,
+  #contextView:has(#contextResult .context-verdict-hero) .context-command-shelf {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .history-report-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .event-triage-command-group {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1080px) {
+  .rollout-stage .rollout-card-dryrun,
+  .rollout-stage .rollout-card-plan,
+  .rollout-stage .rollout-card-manifest,
+  .rollout-stage .rollout-card-resource,
+  .rollout-stage .rollout-card-gate {
+    grid-column: 1 / -1;
+  }
+
+  .rollout-stage .rollout-card-worker {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rollout-stage .rollout-card-worker > label {
+    grid-column: span 1;
+  }
+
+  .rollout-stage .rollout-card-apply {
+    grid-template-columns: 1fr;
+  }
+
+  .rollout-card-apply .rollout-gate-controls {
+    grid-template-columns: minmax(0, 240px);
+  }
+}
+
+@media (max-width: 860px) {
+  .rollout-stage {
+    grid-template-columns: 1fr;
+    padding: 14px;
+  }
+
+  .rollout-stage-head {
+    align-items: flex-start;
+    flex-direction: column;
+    padding-right: 42px;
+  }
+
+  .rollout-stage-head strong {
+    text-align: left;
+  }
+
+  #systemView .rollout-stage .rollout-card {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    padding: 44px 12px 12px;
+  }
+
+  #systemView .rollout-stage .rollout-card > label,
+  #systemView .rollout-stage .rollout-card > label.compact,
+  #systemView .rollout-stage .rollout-card > label.full,
+  #systemView .rollout-stage .rollout-card-dryrun > label,
+  #systemView .rollout-stage .rollout-card-plan > label,
+  #systemView .rollout-stage .rollout-card-worker > label {
+    grid-column: 1 / -1;
+    flex: none;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .rollout-gate-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .rollout-card-apply .rollout-gate-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .rollout-stage .rollout-card textarea,
+  .rollout-stage .rollout-card-manifest textarea,
+  .rollout-stage .rollout-card-resource textarea,
+  .rollout-stage .rollout-card-gate textarea,
+  .rollout-stage .rollout-card-apply textarea {
+    min-height: 204px;
+  }
+}
+
+@media (max-width: 520px) {
+  .rollout-stage {
+    padding: 12px;
+  }
+
+  .rollout-stage::before {
+    top: 12px;
+    right: 12px;
+  }
+
+  .rollout-stage-head {
+    padding-right: 38px;
+  }
+
+  .rollout-command-shelf {
+    padding-inline: 9px;
+  }
+
+  .rollout-stage .rollout-card textarea,
+  .rollout-stage .rollout-card-manifest textarea,
+  .rollout-stage .rollout-card-resource textarea,
+  .rollout-stage .rollout-card-gate textarea,
+  .rollout-stage .rollout-card-apply textarea {
+    min-height: 176px;
+    font-size: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  .feedback-skeleton span {
+    animation: none;
+    background-position: 0 0;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   设计禁令清理(impeccable absolute bans)
+   把残留的 mono + 彩底 eyebrow kicker 降为安静纯文字 label,并移除装饰性
+   渐变角标。沿用 .entry-card::before 已采用的干净处理。等特异性,后置胜。
+   ────────────────────────────────────────────────────────────────────────── */
+.collection-card::before,
+.rollout-card::before,
+.source-command-group::before,
+.review-command-group::before,
+.event-triage-command-group::before {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+/* 抵消各 nth-child / 变体的彩底·彩边覆盖(同特异性,后置胜) */
+.source-command-group:nth-child(2)::before,
+.source-command-group:nth-child(3)::before,
+.source-command-group:nth-child(4)::before,
+.review-command-primary::before,
+.review-command-group:nth-child(2)::before,
+.review-command-group:nth-child(3)::before,
+.review-command-group:nth-child(4)::before,
+.event-triage-query::before,
+.event-triage-command-group:nth-child(3)::before,
+.collection-card-archive::before,
+.rollout-card-module::before,
+.rollout-card-apply::before,
+.rollout-card-gate::before {
+  border: 0;
+  background: transparent;
+  color: var(--text-tertiary);
+}
+
+/* 移除装饰性渐变角标(banned:装饰性多色色条) */
+.collection-card::after,
+.rollout-card::after {
+  display: none;
+}
