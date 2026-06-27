@@ -4097,8 +4097,11 @@ function renderSourceOnboardingRecipe(sourceTypeSpec, selectedSourceKey) {
     panel('建议流程', renderRecipeFlowRows(recipe.recommendedFlow || []), 'wide'),
     panel('发布清单模板', [
       '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml(manifest.name || 'manifest') + '</strong>' +
-      '<small>' + escapeHtml((manifest.source && manifest.source.sourceKey || 'unknown') + ' | ' + (manifest.source && manifest.source.sourceType || 'unknown')) + '</small>' +
+      '<strong>' + escapeHtml(manifest.name || '发布清单') + '</strong>' +
+      '<small>' + escapeHtml([
+        '来源 ' + workspaceValue(manifest.source && manifest.source.sourceKey, '未命名'),
+        '类型 ' + workspaceValue(manifest.source && manifest.source.sourceType, '未设置')
+      ].join(' · ')) + '</small>' +
       '</span><span class="button-group source-op-buttons">' +
       '<button class="inline-button secondary-inline-button" type="button" data-action="load-onboarding-recipe-manifest">使用模板</button>' +
       '<button class="inline-button secondary-inline-button" type="button" data-action="preflight-onboarding-recipe-manifest">检查模板</button>' +
@@ -4123,7 +4126,10 @@ function renderConnectorCatalogPanels(sourceTypeSpec) {
   }
   if ((state.connectorModuleErrors || []).length > 0) {
     panels.push(panel('来源模块错误', evidenceList(state.connectorModuleErrors.map(function (error) {
-      return (error.modulePath || 'unknown-module') + ' | ' + (error.message || 'load failed');
+      return [
+        '模块 ' + workspaceValue(error.modulePath, '未识别模块'),
+        '原因 ' + workspaceValue(error.message, '加载失败')
+      ].join(' · ');
     })), 'wide'));
   }
   return panels;
@@ -4135,20 +4141,20 @@ function renderConnectorPackageSummary(connectorPackage) {
     '<div class="action-row ops-row"><span>',
     '<strong>' + escapeHtml(connectorPackage.displayName || connectorPackage.packageName || '来源包') + '</strong>',
     '<small>' + escapeHtml([
-      connectorPackage.packageName,
-      connectorPackage.packageVersion ? 'version=' + connectorPackage.packageVersion : undefined,
-      connectorPackage.packageType ? 'type=' + connectorPackage.packageType : undefined,
-      packageSourceType.kind ? 'kind=' + packageSourceType.kind : undefined
-    ].filter(Boolean).join(' | ')) + '</small>',
+      connectorPackage.packageName ? '包 ' + connectorPackage.packageName : undefined,
+      connectorPackage.packageVersion ? '版本 ' + connectorPackage.packageVersion : undefined,
+      connectorPackage.packageType ? '类型 ' + connectorPackage.packageType : undefined,
+      packageSourceType.kind ? '来源形态 ' + packageSourceType.kind : undefined
+    ].filter(Boolean).join(' · ')) + '</small>',
     '<small>' + escapeHtml(packageSourceType.description || packageSourceType.displayName || '') + '</small>',
-    '</span>' + statusBadge('package', 'ok') + '</div>'
+    '</span>' + statusBadge('来源包', 'ok') + '</div>'
   ].join('');
 }
 
 function renderConnectorPackageCategories(categories) {
   if (!categories || categories.length === 0) return tagList(['未分类']);
   return tagList(categories.map(function (category) {
-    return 'category:' + category;
+    return '分类 ' + category;
   }));
 }
 
@@ -4158,13 +4164,13 @@ function renderConnectorPackageCatalogRows(packages) {
     return '<div class="action-row ops-row"><span>' +
       '<strong>' + escapeHtml(connectorPackage.displayName || connectorPackage.packageName || '来源包') + '</strong>' +
       '<small>' + escapeHtml([
-        connectorPackage.packageName,
-        connectorPackage.packageType,
-        (connectorPackage.categories || []).join(',')
-      ].filter(Boolean).join(' | ')) + '</small>' +
+        connectorPackage.packageName ? '包 ' + connectorPackage.packageName : undefined,
+        connectorPackage.packageType ? '类型 ' + connectorPackage.packageType : undefined,
+        (connectorPackage.categories || []).length ? '分类 ' + (connectorPackage.categories || []).join('、') : undefined
+      ].filter(Boolean).join(' · ')) + '</small>' +
       '</span><span class="button-group source-op-buttons">' +
       renderConnectorPackageUseButtons(connectorPackage) +
-      statusBadge('package', 'ok') +
+      statusBadge('来源包', 'ok') +
       '</span></div>';
   }).join('');
 }
@@ -4456,17 +4462,17 @@ function renderConnectorPackageManifestRows(packageManifests) {
   if (!packageManifests || packageManifests.length === 0) return '<div class="muted">暂无来源包清单。</div>';
   return packageManifests.map(function (item) {
     const details = [
-      item.packageName,
-      item.packageVersion ? 'version=' + item.packageVersion : undefined,
-      item.packageType ? 'type=' + item.packageType : undefined,
-      (item.categories || []).length ? 'categories=' + item.categories.join(',') : undefined,
-      (item.declaredSourceTypes || []).length ? 'sourceTypes=' + item.declaredSourceTypes.join(',') : undefined
-    ].filter(Boolean).join(' | ');
+      item.packageName ? '包 ' + item.packageName : undefined,
+      item.packageVersion ? '版本 ' + item.packageVersion : undefined,
+      item.packageType ? '类型 ' + item.packageType : undefined,
+      (item.categories || []).length ? '分类 ' + item.categories.join('、') : undefined,
+      (item.declaredSourceTypes || []).length ? '来源类型 ' + item.declaredSourceTypes.join('、') : undefined
+    ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row"><span>' +
       '<strong>' + escapeHtml(item.displayName || item.packageName || '来源包') + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
-      '<small>' + escapeHtml(item.rollout && item.rollout.recommendedManifest ? 'recommendedManifest=' + item.rollout.recommendedManifest : 'recommendedManifest=none') + '</small>' +
-      '</span>' + statusBadge(item.status || 'unknown', statusVariant(item.status)) + '</div>';
+      '<small>' + escapeHtml(item.rollout && item.rollout.recommendedManifest ? '推荐清单 ' + item.rollout.recommendedManifest : '暂无推荐清单') + '</small>' +
+      '</span>' + statusBadge(workspaceStatusLabel(item.status || 'unknown'), statusVariant(item.status)) + '</div>';
   }).join('');
 }
 
@@ -4794,17 +4800,25 @@ function renderRolloutReadinessChecks(result) {
         summaryTile('状态', status, statusVariant(status)),
         summaryTile('检查', String(checks.length)),
         summaryTile('动作', String(nextActionCount), nextActionCount > 0 ? 'warn' : 'ok'),
-        summaryTile('来源', source.sourceType || 'unknown', statusVariant(status))
+        summaryTile('来源', workspaceValue(source.sourceType, '未设置'), statusVariant(status))
       ].join('') + '</div>',
-      metric('清单', manifest.name || 'unnamed'),
-      metric('来源', (source.sourceKey || source.forum || 'unknown') + ' / ' + (source.sourceType || 'unknown')),
-      metric('模块', connector.modulePath || source.modulePath || 'not provided'),
+      metric('清单', workspaceValue(manifest.name, '未命名')),
+      metric('来源', [
+        '名称 ' + workspaceValue(source.sourceKey || source.forum, '未命名'),
+        '类型 ' + workspaceValue(source.sourceType, '未设置')
+      ].join(' · ')),
+      metric('模块', workspaceValue(connector.modulePath || source.modulePath, '未提供')),
       renderRolloutReadinessOpsButtons(source)
     ].join(''), 'wide'),
     panel('准备检查', evidenceList(checks.map(function (check) {
       const actionCount = check.result && check.result.nextActions ? check.result.nextActions.length : 0;
-      const detail = check.error ? check.error.message : ('actions=' + actionCount);
-      return check.status + ' | ' + check.key + ' | ' + check.title + ' | ' + detail;
+      const detail = check.error ? '原因 ' + check.error.message : '建议动作 ' + actionCount;
+      return [
+        workspaceStatusLabel(check.status),
+        check.key ? '检查 ' + check.key : undefined,
+        check.title,
+        detail
+      ].filter(Boolean).join(' · ');
     })), 'wide')
   ];
   const actionRows = renderRolloutReadinessActionRows(checks);
