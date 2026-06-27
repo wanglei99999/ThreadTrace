@@ -3614,7 +3614,7 @@ function renderAuthorIntelligenceRows(authors) {
     const focusEntities = (item.topFocusEntities || []).slice(0, 4).map(function (entity) {
       return entity.entity && entity.entity.displayName ? entity.entity.displayName + ' / ' + entity.latestAttitude : entity.key;
     }).filter(Boolean);
-    const focus = focusEntities.join(' | ');
+    const focus = focusEntities.join(' · ');
     const confidence = item.averageOpinionConfidence === undefined ? undefined : item.averageOpinionConfidence;
     return '<div class="author-signal-row">' +
       '<section class="author-signal-identity">' +
@@ -6466,7 +6466,7 @@ function renderAutomationReadinessChecks(checks) {
   return checks.map(function (check) {
     return '<div class="action-row"><span>' +
       '<strong>' + escapeHtml(check.key || 'check') + '</strong>' +
-      '<small>' + escapeHtml([check.area, check.value].filter(Boolean).join(' | ')) + '</small>' +
+      '<small>' + escapeHtml([check.area, check.value].filter(Boolean).join(' · ')) + '</small>' +
       '<small>' + escapeHtml(check.summary || '') + '</small>' +
       '</span>' + statusBadge(check.status || 'unknown', statusVariant(check.status)) + '</div>';
   }).join('');
