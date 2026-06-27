@@ -5401,7 +5401,7 @@ function renderLegacyTaskList(result) {
     panel('最近洞察流水线', evidenceList(pipelineRuns.map(renderPipelineRunSummary)), 'wide'),
     panel('最近任务', evidenceList(tasks.map(function (task) {
       const output = task.output || {};
-      return task.status + ' · ' + task.type + ' · ' + (output.title || task.id);
+      return [taskWorkspaceTitle(task), output.title || task.id].filter(Boolean).join(' · ');
     })), 'wide')
   ].join('');
 }
@@ -5429,13 +5429,33 @@ function renderTaskRows(tasks) {
       trace.idempotencyKey ? '去重 ' + trace.idempotencyKey : undefined
     ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row source-operation-result-row"><span>' +
-      '<strong>' + escapeHtml((task.status || 'unknown') + ' | ' + (task.type || 'task')) + '</strong>' +
+      '<strong>' + escapeHtml(taskWorkspaceTitle(task)) + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
       '</span><span class="button-group source-op-buttons">' +
       renderTaskDetailButtonControl(task) +
       renderTaskTraceButtonControl(task) +
       '</span></div>';
   }).join('') + '</div>';
+}
+
+function taskWorkspaceTitle(task) {
+  const safeTask = task || {};
+  return [
+    workspaceStatusLabel(workspaceValue(safeTask.status, 'unknown')),
+    '类型 ' + taskTypeLabel(safeTask.type)
+  ].join(' · ');
+}
+
+function taskTypeLabel(type) {
+  const labels = {
+    task: '任务',
+    ingest: '采集',
+    analyze: '分析',
+    semantic: '语义分析',
+    notification: '提醒',
+    review: '复核'
+  };
+  return labels[type] || workspaceValue(type, '任务');
 }
 
 function renderTaskDetail(result) {
@@ -5445,8 +5465,8 @@ function renderTaskDetail(result) {
   return [
     panel('任务详情', [
       '<div class="summary-strip">' + [
-        summaryTile('状态', task.status || 'unknown', statusVariant(task.status)),
-        summaryTile('类型', task.type || 'unknown'),
+        summaryTile('状态', workspaceStatusLabel(workspaceValue(task.status, 'unknown')), statusVariant(task.status)),
+        summaryTile('类型', taskTypeLabel(task.type)),
         summaryTile('关联任务', String(traceContext.taskCount || 0)),
         summaryTile('来源', sourceScope.sourceId || sourceScope.sourceKey || '暂无', sourceScope.sourceId || sourceScope.sourceKey ? 'ok' : 'muted')
       ].join('') + '</div>',
@@ -5553,9 +5573,9 @@ function renderTraceContextTaskRows(tasks) {
       trace.idempotencyKey ? '去重 ' + trace.idempotencyKey : undefined
     ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row source-operation-result-row"><span>' +
-      '<strong>' + escapeHtml((task.status || 'unknown') + ' · ' + (task.type || 'task')) + '</strong>' +
+      '<strong>' + escapeHtml(taskWorkspaceTitle(task)) + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
-      '</span>' + statusBadge(task.status || 'unknown', statusVariant(task.status)) + '</div>';
+      '</span>' + statusBadge(workspaceStatusLabel(workspaceValue(task.status, 'unknown')), statusVariant(task.status)) + '</div>';
   }).join('') + '</div>';
 }
 
