@@ -9,7 +9,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
-const DEFAULT_APP_URL = 'http://127.0.0.1:3019/#system';
+const DEFAULT_APP_URL = 'http://127.0.0.1:3017/#operations';
 const DEFAULT_CDP_PORT = 9223;
 
 async function main() {

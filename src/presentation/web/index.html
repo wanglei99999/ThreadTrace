@@ -10,17 +10,31 @@
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand">
-        <div class="brand-mark">T</div>
+        <div class="brand-mark">语</div>
         <div>
           <h1>语脉</h1>
           <p>ThreadTrace</p>
         </div>
       </div>
-      <nav class="nav-list" aria-label="主导航">
-        <button class="nav-item active" data-view="history">历史分析</button>
-        <button class="nav-item" data-view="context">新发言解读</button>
-        <button class="nav-item" data-view="search">历史检索</button>
-        <button class="nav-item" data-view="system">工作台</button>
+      <nav class="nav-groups" aria-label="主导航">
+        <div class="nav-group">
+          <div class="nav-group-title">工作区</div>
+          <div class="nav-list">
+            <button class="nav-item active" data-view="overview">概览</button>
+            <button class="nav-item" data-view="history">历史分析</button>
+            <button class="nav-item" data-view="context">新发言解读</button>
+            <button class="nav-item" data-view="search">历史检索</button>
+          </div>
+        </div>
+        <div class="nav-group">
+          <div class="nav-group-title">运营</div>
+          <div class="nav-list">
+            <button class="nav-item" data-view="sources">来源</button>
+            <button class="nav-item" data-view="operations">运行</button>
+            <button class="nav-item" data-view="alerts">提醒</button>
+            <button class="nav-item" data-view="publish">发布</button>
+          </div>
+        </div>
       </nav>
       <div class="sidebar-status" aria-label="工作台状态">
         <span>私人工作区</span>
@@ -33,11 +47,11 @@
       <section class="toolbar">
         <div class="toolbar-copy">
           <div class="toolbar-meta" aria-label="当前工作模式">
-            <span id="viewMode">资料入口</span>
-            <span id="viewFocus">本地资料</span>
+            <span id="viewMode">概览</span>
+            <span id="viewFocus">今日要处理</span>
           </div>
-          <h2 id="viewTitle">历史分析</h2>
-          <p id="viewSubtitle">解析保存页目录，生成作者、实体、观点和证据概览。</p>
+          <h2 id="viewTitle">概览</h2>
+          <p id="viewSubtitle">今天需要处理的来源、提醒和复核都收在这里。</p>
         </div>
         <div class="toolbar-actions">
           <span class="toolbar-runtime">本地运行</span>
@@ -45,7 +59,11 @@
         </div>
       </section>
 
-      <section class="view-panel" id="historyView">
+      <section class="view-panel" id="overviewView">
+        <div id="overviewResult" class="result-grid"></div>
+      </section>
+
+      <section class="view-panel hidden" id="historyView">
         <div id="historyCockpit" class="cockpit-grid"></div>
         <form id="analyzeForm" class="control-strip entry-card history-entry-card" data-title="资料入口">
           <div class="history-source-strip">
@@ -122,11 +140,6 @@
               <span>raw → searchable</span>
             </div>
           </form>
-          <div class="search-flow-rail" aria-hidden="true">
-            <span>01</span>
-            <i></i>
-            <span>02</span>
-          </div>
           <form id="searchForm" class="control-strip entry-card search-query-card" data-title="证据检索">
             <div class="search-card-kicker">
               <span>召回</span>
@@ -153,27 +166,7 @@
         <div id="searchResult" class="result-grid"></div>
       </section>
 
-      <section class="view-panel hidden" id="systemView">
-        <div class="system-overview">
-          <div class="system-overview-copy">
-            <span>工作台</span>
-            <h3>来源、提醒、复核和发布都在这里收口。</h3>
-            <p>先看今天有没有需要处理的路径，再进入来源采集、提醒整理、人工复核和发布检查。</p>
-          </div>
-          <nav class="system-rail" aria-label="工作台分区">
-            <a href="#system-collection">来源采集</a>
-            <a href="#system-operations">运行概览</a>
-            <a href="#system-events">提醒处理</a>
-            <a href="#system-rollout">发布检查</a>
-          </nav>
-        </div>
-        <div class="result-grid task-grid automation-cockpit-grid" id="automationReadinessResult"></div>
-        <div class="result-grid task-grid automation-action-grid" id="automationActionResult"></div>
-        <div class="status-list system-status-grid" id="systemStatus"></div>
-        <div class="system-zone-title" id="system-collection">
-          <span>来源</span>
-          <strong>来源采集与接入</strong>
-        </div>
+      <section class="view-panel hidden" id="sourcesView">
         <div class="collection-workflow">
         <form id="taskForm" class="control-strip collection-card collection-card-archive" data-title="资料导入">
           <label class="grow">
@@ -206,21 +199,6 @@
               <button id="refreshSourcesButton" class="secondary-button" type="button">刷新来源</button>
               <button id="refreshSourceOperationsButton" class="secondary-button" type="button">来源概览</button>
               <button id="runDemoCycleButton" class="secondary-button" type="button">试跑闭环</button>
-            </div>
-            <div class="source-command-group" data-label="自动运行">
-              <button id="refreshAutomationReadinessButton" class="secondary-button" type="button">运行准备</button>
-              <button id="runSourcesButton" class="secondary-button" type="button">运行全部</button>
-              <button id="runDueSourcesButton" class="secondary-button" type="button">运行到期</button>
-              <button id="runDuePipelinesButton" class="secondary-button" type="button">洞察到期</button>
-            </div>
-            <div class="source-command-group" data-label="智能助手">
-              <button id="runLlmReadinessButton" class="secondary-button" type="button">助手状态</button>
-              <button id="runLlmPreflightButton" class="secondary-button" type="button">助手预检</button>
-              <button id="runLlmEvaluationButton" class="secondary-button" type="button">质量评估</button>
-            </div>
-            <div class="source-command-group" data-label="提醒">
-              <button id="refreshEventsButton" class="secondary-button" type="button">刷新事件</button>
-              <button id="dispatchEventsButton" class="secondary-button" type="button">投递事件</button>
             </div>
           </div>
         </form>
@@ -287,17 +265,37 @@
         </form>
         </div>
         <div class="result-grid task-grid" id="sourceOnboardingRecipe"></div>
-        <div class="system-zone-title" id="system-operations">
-          <span>运行</span>
-          <strong>运行队列、worker 和 runbook</strong>
+        <div class="result-grid task-grid" id="onboardingResult"></div>
+        <div class="result-grid task-grid" id="sourceResult"></div>
+        <div class="result-grid task-grid" id="rawPageResult"></div>
+        <div class="result-grid task-grid" id="taskResult"></div>
+      </section>
+
+      <section class="view-panel hidden" id="operationsView">
+        <div class="control-strip ops-command-strip" aria-label="运行操作">
+          <div class="source-command-shelf">
+            <div class="source-command-group" data-label="自动运行">
+              <button id="refreshAutomationReadinessButton" class="secondary-button" type="button">运行准备</button>
+              <button id="runSourcesButton" class="secondary-button" type="button">运行全部</button>
+              <button id="runDueSourcesButton" class="secondary-button" type="button">运行到期</button>
+              <button id="runDuePipelinesButton" class="secondary-button" type="button">洞察到期</button>
+            </div>
+            <div class="source-command-group" data-label="智能助手">
+              <button id="runLlmReadinessButton" class="secondary-button" type="button">助手状态</button>
+              <button id="runLlmPreflightButton" class="secondary-button" type="button">助手预检</button>
+              <button id="runLlmEvaluationButton" class="secondary-button" type="button">质量评估</button>
+            </div>
+          </div>
         </div>
+        <div class="result-grid task-grid automation-cockpit-grid" id="automationReadinessResult"></div>
+        <div class="result-grid task-grid automation-action-grid" id="automationActionResult"></div>
+        <div class="status-list system-status-grid" id="systemStatus"></div>
         <div class="result-grid task-grid system-runbook-grid" id="runbookResult"></div>
         <div class="result-grid task-grid" id="sourceOperationsResult"></div>
         <div class="result-grid task-grid" id="sourceOperationActionResult"></div>
-        <div class="system-zone-title" id="system-events">
-          <span>提醒</span>
-          <strong>通知事件与人工审查</strong>
-        </div>
+      </section>
+
+      <section class="view-panel hidden" id="alertsView">
         <div class="event-review-workflow">
         <form id="eventFilterForm" class="control-strip event-card event-card-filter" data-title="提醒筛选">
           <label class="compact">
@@ -345,6 +343,10 @@
           <div class="event-triage-command-shelf" aria-label="提醒筛选操作">
             <div class="event-triage-command-group event-triage-query" data-label="筛选">
               <button type="submit">筛选事件</button>
+            </div>
+            <div class="event-triage-command-group" data-label="事件">
+              <button type="button" class="secondary-button" id="refreshEventsButton">刷新事件</button>
+              <button type="button" class="secondary-button" id="dispatchEventsButton">投递事件</button>
             </div>
             <div class="event-triage-command-group" data-label="确认">
               <button type="button" class="secondary-button" id="previewAckEventsButton">预览确认</button>
@@ -412,14 +414,15 @@
           </div>
         </form>
         </div>
-        <div class="system-zone-title" id="system-rollout">
-          <span>发布</span>
-          <strong>连接器、资源和部署门禁</strong>
-        </div>
+        <div class="result-grid task-grid" id="eventResult"></div>
+        <div class="result-grid task-grid" id="contextReviewResultOverview"></div>
+        <div class="result-grid task-grid" id="contextReviewResultResult"></div>
+      </section>
+
+      <section class="view-panel hidden" id="publishView">
         <div class="rollout-workbench">
-          <section class="rollout-stage rollout-stage-intake" data-stage="01">
+          <section class="rollout-stage rollout-stage-intake">
             <div class="rollout-stage-head">
-              <span>校验</span>
               <strong>接入入口</strong>
             </div>
             <form id="connectorModuleValidationForm" class="control-strip rollout-card rollout-card-module" data-title="模块扫描">
@@ -505,9 +508,8 @@
               </div>
             </form>
           </section>
-          <section class="rollout-stage rollout-stage-runtime" data-stage="02">
+          <section class="rollout-stage rollout-stage-runtime">
             <div class="rollout-stage-head">
-              <span>运行</span>
               <strong>执行路径</strong>
             </div>
             <form id="workerTopologyForm" class="control-strip rollout-card rollout-card-worker" data-title="执行拓扑">
@@ -538,9 +540,8 @@
               </div>
             </form>
           </section>
-          <section class="rollout-stage rollout-stage-manifest" data-stage="03">
+          <section class="rollout-stage rollout-stage-manifest">
             <div class="rollout-stage-head">
-              <span>门禁</span>
               <strong>清单检查</strong>
             </div>
             <form id="rolloutManifestForm" class="control-strip rollout-card rollout-card-manifest" data-title="发布清单">
@@ -637,9 +638,8 @@
               </div>
             </form>
           </section>
-          <section class="rollout-stage rollout-stage-apply" data-stage="04">
+          <section class="rollout-stage rollout-stage-apply">
             <div class="rollout-stage-head">
-              <span>应用</span>
               <strong>审计执行</strong>
             </div>
             <form id="rolloutApplyForm" class="control-strip rollout-card rollout-card-apply" data-title="应用审计">
@@ -678,7 +678,6 @@
             </form>
           </section>
         </div>
-        <div class="result-grid task-grid" id="onboardingResult"></div>
         <div class="result-grid task-grid" id="connectorModuleResult"></div>
         <div class="result-grid task-grid" id="sourceDryRunResult"></div>
         <div class="result-grid task-grid" id="connectorRolloutResult"></div>
@@ -688,17 +687,11 @@
         <div class="result-grid task-grid" id="deploymentGateResult"></div>
         <div class="result-grid task-grid" id="rolloutReadinessResult"></div>
         <div class="result-grid task-grid" id="rolloutApplyResult"></div>
-        <div class="result-grid task-grid" id="sourceResult"></div>
-        <div class="result-grid task-grid" id="rawPageResult"></div>
-        <div class="result-grid task-grid" id="eventResult"></div>
-        <div class="result-grid task-grid" id="contextReviewResultOverview"></div>
-        <div class="result-grid task-grid" id="contextReviewResultResult"></div>
-        <div class="result-grid task-grid" id="taskResult"></div>
       </section>
     </main>
   </div>
   <datalist id="forumSuggestions"></datalist>
   <datalist id="sourceTypeSuggestions"></datalist>
-  <script src="/app.js?v=source-cockpit-action-plan-1"></script>
+  <script src="/app.js?v=notion-apple-redesign-1"></script>
 </body>
 </html>

@@ -1,89 +1,136 @@
 ---
 name: ThreadTrace
-description: A trustworthy, technical, beautiful research cockpit for forum context intelligence.
+description: A trustworthy, technical, beautiful research cockpit for forum context intelligence — Notion workspace structure carried with Apple-grade restraint.
 colors:
-  workspace-bg: "#e9eef1"
-  workspace-surface: "#f7f9fa"
-  panel: "#ffffff"
-  panel-subtle: "#f6f8f8"
-  sidebar: "#f7fafc"
-  sidebar-raised: "#ffffff"
-  text: "#17211f"
-  text-strong: "#07100e"
-  muted: "#60716d"
-  line: "#d4ddda"
-  line-strong: "#b8c9c3"
-  accent: "#14725f"
-  accent-strong: "#0a5848"
-  accent-soft: "#e2f3ee"
-  gold: "#f1bd52"
-  info: "#245f9f"
-  ok: "#13745f"
-  warn: "#8a5712"
-  fail: "#a23c3c"
+  canvas: "#ffffff"
+  surface: "#f6f5f4"
+  surface-soft: "#fafaf9"
+  surface-sunken: "#f0eeec"
+  sidebar: "#f7f6f4"
+  text-strong: "#1a1a1a"
+  text: "#37352f"
+  text-secondary: "#5d5b54"
+  text-tertiary: "#787671"
+  hairline: "#e5e3df"
+  hairline-strong: "#c8c4be"
+  accent: "#5645d4"
+  accent-strong: "#4534b3"
+  accent-deep: "#3a2a99"
+  accent-soft: "#ece8fb"
+  link: "#0075de"
+  ok: "#1a9c38"
+  warn: "#cf5400"
+  fail: "#d92d2d"
+  info: "#0075de"
+  tint-lavender: "#e6e0f5"
+  tint-mint: "#d9f3e1"
+  tint-peach: "#ffe8d4"
+  tint-sky: "#dcecfa"
+  tint-rose: "#fde0ec"
+  tint-yellow: "#fef7d6"
+  gold: "#f5d75e"
+  gold-soft: "#fef7d6"
+  # extended neutrals
+  workspace: "#faf9f8"
+  sidebar-soft: "#ebe9e5"
+  text-muted: "#8c8983"
+  muted: "#6b6862"
+  line-soft: "#ede9e4"
+  neutral: "#c5c4be"
+  ink: "#0f0f0f"
+  # accent / link ramp
+  accent-wash: "#f6f4fd"
+  link-strong: "#005bab"
+  violet: "#7b3ff2"
+  # soft semantic backgrounds
+  ok-soft: "#d9f3e1"
+  warn-soft: "#ffe8d4"
+  fail-soft: "#fbe1e1"
+  info-soft: "#dcecfa"
+  # semantic inks (deep text on pastel grounds)
+  info-ink: "#154d88"
+  amber-ink: "#73501b"
+  slate-ink: "#405a64"
+  # tint base colors (used as rgba alpha overlays via *-rgb tokens)
+  mint-base: "#e2f3ee"
+  peach-base: "#fff6e4"
+  rose-base: "#fff0f0"
+  amber-base: "#8a5712"
+  rust-base: "#a23c3c"
 typography:
   headline:
-    fontFamily: "Microsoft YaHei, Segoe UI, Arial, sans-serif"
+    fontFamily: "PingFang SC, Microsoft YaHei, Inter, system-ui, sans-serif"
     fontSize: "24px"
-    fontWeight: 800
-    lineHeight: 1.22
-    letterSpacing: "0"
+    fontWeight: 700
+    lineHeight: 1.2
+    letterSpacing: "-0.01em"
   title:
-    fontFamily: "Microsoft YaHei, Segoe UI, Arial, sans-serif"
-    fontSize: "15px"
-    fontWeight: 800
+    fontFamily: "PingFang SC, Microsoft YaHei, Inter, system-ui, sans-serif"
+    fontSize: "16px"
+    fontWeight: 600
     lineHeight: 1.35
     letterSpacing: "0"
   body:
-    fontFamily: "Microsoft YaHei, Segoe UI, Arial, sans-serif"
-    fontSize: "16px"
+    fontFamily: "PingFang SC, Microsoft YaHei, Inter, system-ui, sans-serif"
+    fontSize: "15px"
     fontWeight: 400
-    lineHeight: 1.55
+    lineHeight: 1.6
     letterSpacing: "0"
   label:
-    fontFamily: "Microsoft YaHei, Segoe UI, Arial, sans-serif"
+    fontFamily: "PingFang SC, Microsoft YaHei, Inter, system-ui, sans-serif"
     fontSize: "12px"
-    fontWeight: 800
+    fontWeight: 600
     lineHeight: 1.2
     letterSpacing: "0"
   mono:
-    fontFamily: "Cascadia Mono, Consolas, monospace"
-    fontSize: "12px"
+    fontFamily: "SF Mono, Cascadia Mono, Consolas, monospace"
+    fontSize: "12.5px"
     lineHeight: 1.5
 rounded:
-  sm: "6px"
-  md: "8px"
-  pill: "999px"
+  chip: "6px"
+  button: "8px"
+  card: "12px"
+  lg: "16px"
+  pill: "9999px"
 spacing:
   xs: "4px"
   sm: "8px"
-  md: "14px"
-  lg: "24px"
-  xl: "34px"
+  md: "12px"
+  lg: "16px"
+  xl: "24px"
+  xxl: "32px"
 components:
   button-primary:
     backgroundColor: "{colors.accent}"
-    textColor: "{colors.panel}"
-    rounded: "{rounded.sm}"
+    textColor: "{colors.canvas}"
+    rounded: "{rounded.button}"
     padding: "0 16px"
-    height: "42px"
+    height: "40px"
   button-secondary:
-    backgroundColor: "{colors.panel}"
-    textColor: "{colors.accent-strong}"
-    rounded: "{rounded.sm}"
-    padding: "0 16px"
-    height: "42px"
-  card-panel:
-    backgroundColor: "{colors.panel}"
+    backgroundColor: "{colors.canvas}"
     textColor: "{colors.text}"
-    rounded: "{rounded.md}"
+    border: "1px solid {colors.hairline-strong}"
+    rounded: "{rounded.button}"
+    padding: "0 16px"
+    height: "40px"
+  card-panel:
+    backgroundColor: "{colors.canvas}"
+    textColor: "{colors.text}"
+    border: "1px solid {colors.hairline}"
+    rounded: "{rounded.card}"
     padding: "16px"
   input-field:
-    backgroundColor: "{colors.panel}"
+    backgroundColor: "{colors.canvas}"
     textColor: "{colors.text}"
-    rounded: "{rounded.sm}"
-    padding: "10px 11px"
-    height: "42px"
+    border: "1px solid {colors.hairline-strong}"
+    rounded: "{rounded.button}"
+    padding: "9px 12px"
+    height: "40px"
+  chip:
+    backgroundColor: "{colors.accent-soft}"
+    textColor: "{colors.accent-deep}"
+    rounded: "{rounded.chip}"
+    padding: "3px 8px"
 ---
 
 # Design System: ThreadTrace
@@ -94,7 +141,7 @@ components:
 
 ThreadTrace should feel like a private cockpit for a young technical operator: sharp, credible, and satisfying to use without falling into hacker theatrics. The interface serves analysis, source operations, and evidence review, so it should be dense enough for real work while keeping the visual field calm and navigable.
 
-The system rejects generic admin templates, old enterprise dashboards, dark hacker terminals, and single-color monotony. It uses a restrained technical foundation with a daylight command dock, cool work surfaces, teal operational accents, gold brand recognition, and semantic colors for status.
+The system is built on a **Notion + Apple** blend, with a clear priority: **Notion provides the bones** (workspace structure, warm‑neutral surfaces, a purple primary, sober rectangular geometry, database‑property color for status); **Apple provides the polish** (typographic restraint, generous breathing room around headings, committed micro‑interactions, shadows reserved for floating layers only). Notion is the basecoat because ThreadTrace is a productivity tool, not a consumer showcase; Apple is the finish that makes it feel premium.
 
 **Key Characteristics:**
 - Dense but not cramped.
@@ -103,109 +150,109 @@ The system rejects generic admin templates, old enterprise dashboards, dark hack
 - Multi-source ready.
 - Built for one expert operator moving quickly.
 
+## Visual References
+
+Primary reference blend: **Notion (lead) + Apple (polish)**.
+
+- `docs/design-references/notion.DESIGN.md` — workspace structure, warm‑neutral surfaces, purple CTA, 8px rectangular buttons / 12px cards, pastel property tints.
+- `docs/design-references/apple.DESIGN.md` — typographic discipline, negative letter‑spacing on display, whitespace as pedestal, single restrained accent, `scale()` press.
+
+These references inform visual decisions, but ThreadTrace's own tokens and component rules in this document remain the source of truth.
+
 ## 2. Colors
 
-The palette is a cool technical neutral system with a light command shell, teal operational accent, gold brand marker, and clear semantic colors.
+A warm‑neutral Notion workspace system with a single purple operational accent, a distinct link blue, clear semantic colors, and pastel property tints for low‑risk classification.
 
 ### Primary
-- **Signal Teal** (`accent`): Used for primary actions, current navigation, focus energy, and compact status anchors.
-- **Deep Signal Teal** (`accent-strong`): Used for hover states, active states, and stronger control surfaces.
-- **Soft Signal Wash** (`accent-soft`): Used for selected chips, gentle hover fills, and low-risk emphasis.
+- **Notion Purple** (`accent`): primary actions, current navigation, focus energy. Hover/active deepen to `accent-strong` / `accent-deep`.
+- **Soft Purple Wash** (`accent-soft`): selected chips, gentle hover fills, low‑risk emphasis.
 
-### Secondary
-- **Brand Gold** (`gold`): Used sparingly for the ThreadTrace mark and brand recognition. It must not become the main UI accent.
-
-### Tertiary
-- **Operational Blue** (`info`): Reserved for informational state and secondary diagnostics.
-- **Success Green** (`ok`), **Attention Amber** (`warn`), and **Failure Red** (`fail`): Used only for semantic status, not decoration.
+### Link
+- **Link Blue** (`link`): inline text links and secondary informational references only. **Distinct role from the purple accent — never interchange them.**
 
 ### Neutral
-- **Daylight Command Dock** (`sidebar`, `sidebar-raised`): Used for the persistent navigation shell. It should feel light, modern, and AI-native rather than like an old dark admin sidebar. The dock uses subtle structure, compact capsules, and active-state accents instead of per-item color blocks or heavy cards.
-- **Cool Work Surface** (`workspace-bg`, `workspace-surface`): Used for the main analysis canvas.
-- **Raised Panel White** (`panel`, `panel-subtle`): Used for forms, result panels, and readable evidence areas.
-- **Ink Text** (`text`, `text-strong`) and **Muted Text** (`muted`): Used for hierarchy and scanning.
-- **Cool Dividers** (`line`, `line-strong`): Used for borders and row separation.
+- **Daylight Dock** (`sidebar`): the persistent light command dock — modern and AI‑native, never a dark admin sidebar. Grouped nav, compact items, purple active state.
+- **Warm Surfaces** (`canvas`, `surface`, `surface-soft`, `surface-sunken`): white panels over a warm‑grey workspace canvas (Notion's signature).
+- **Ink** (`text-strong`, `text`) and **secondary/tertiary** (`text-secondary`, `text-tertiary`): warm‑charcoal hierarchy. All pass WCAG AA on canvas.
+- **Hairlines** (`hairline`, `hairline-strong`): 1px borders and row separation.
+
+### Semantic & Tints
+- **Success / Warning / Failure / Info** (`ok` / `warn` / `fail` / `info`): status only, never decoration; always paired with shape or label, never color alone.
+- **Pastel Tints** (`tint-lavender|mint|peach|sky|rose`): soft backgrounds echoing Notion database properties — used for status chips, source/category coding, and overview signal cards.
 
 ### Named Rules
-
-**The No Single-Color Rule.** Never let the product become only green, only blue, or only grayscale. Teal is the operational accent, not the whole personality.
-
-**The Gold Is A Mark Rule.** Gold belongs to identity moments. It is prohibited as a general CTA color.
+**The Purple Is The Action Rule.** Purple belongs to operations, selection, and focus. Don't use it for body text or large surfaces.
+**The Gold Is A Mark Rule.** `gold` is reserved for brand/logo moments only — prohibited as a UI or CTA color.
+**The No Single‑Color Rule.** Purple is the operational accent, not the whole personality; warmth and life come from neutrals, link blue, and pastel tints.
 
 ## 3. Typography
 
-**Display Font:** Microsoft YaHei / Segoe UI with system fallbacks
-**Body Font:** Microsoft YaHei / Segoe UI with system fallbacks
-**Label/Mono Font:** Cascadia Mono / Consolas for command and code evidence
+**Font Stack:** `PingFang SC` / `Microsoft YaHei` for Chinese + `Inter` / `system-ui` for Latin & numerals. Mono: `SF Mono` / `Cascadia Mono` / `Consolas` for commands and code evidence.
 
-**Character:** A single sans stack keeps the product efficient and familiar. Weight, spacing, and density create hierarchy instead of decorative font pairing.
+**Character:** A single well‑tuned sans carries headings, labels, body, and data. Hierarchy comes from weight, size, and spacing — not decorative font pairing.
 
-### Hierarchy
-- **Headline** (800, 24px, 1.22): Page titles and major view headings.
-- **Title** (800, 15px, 1.35): Panel titles, cockpit section labels, and compact information headers.
-- **Body** (400, 16px, 1.55): Evidence, descriptions, and form values.
-- **Label** (800, 12px, 1.2): Field labels and compact UI metadata.
-- **Mono** (12px, 1.5): Commands, JSON, and audit snippets.
+### Hierarchy (fixed rem scale, not fluid)
+- **Headline** (700, 24px, -0.01em): page titles and major view headings.
+- **Title** (600, 16px): panel titles and compact section headers.
+- **Body** (400, 15px, 1.6): evidence, descriptions, form values.
+- **Label** (600, 12px): field labels and compact UI metadata.
+- **Mono** (12.5px): commands, JSON, audit snippets.
 
 ### Named Rules
-
-**The Product Type Rule.** No display typography theatrics. This is a working cockpit; type must help scanning and confidence.
+**The Weight Ladder Rule.** Ladder is **400 / 500 / 600 / 700**. Weight 800+ is banned — it reads as shouting, not hierarchy.
+**The Apple‑Tight Rule.** Display/large headings carry slight negative letter‑spacing; product type stays at fixed rem, never fluid clamp.
+**The Product Type Rule.** No display typography theatrics; type must help scanning and confidence.
 
 ## 4. Elevation
 
-ThreadTrace uses hybrid depth: tonal layers establish the main hierarchy, while soft shadows and inner highlights give controls and panels a tactile premium feel. Elevation should be structural, not decorative.
+Notion‑flat by default: structure comes from tonal surfaces and 1px hairlines, not shadow. Apple‑restraint on depth: a real shadow appears only when something genuinely floats.
 
 ### Shadow Vocabulary
-- **Low Surface Lift** (`0 8px 20px rgba(10, 27, 24, 0.07)`): Forms, icon buttons, and panels at rest.
-- **Interactive Lift** (`0 20px 46px rgba(10, 27, 24, 0.11)`): Hovered panels and elevated control states.
-- **Inner Highlight** (`inset 0 1px 0 rgba(255, 255, 255, 0.74)`): Used on glossy but restrained product surfaces.
+- **Flat at rest** (`none` + hairline): cards, panels, rows, list items.
+- **Soft lift** (`0 4px 12px rgba(15,15,15,0.08)`): hovered tiles and elevated controls.
+- **Floating layer** (`0 16px 48px -8px rgba(15,15,15,0.16)`): dropdowns, popovers, modals.
 
 ### Named Rules
-
-**The Structural Depth Rule.** Shadows must clarify layer and interaction. If a shadow only makes the UI look expensive, remove it.
+**The Structural Depth Rule.** Shadows must clarify a floating layer or interaction. If a shadow only makes the UI look expensive, remove it. No inner‑highlight glass on static surfaces.
 
 ## 5. Components
 
 ### Buttons
-- **Shape:** Compact, gently rounded rectangles (6px radius).
-- **Primary:** Teal gradient surface, white text, strong weight, and a soft teal shadow.
-- **Hover / Focus:** Primary buttons deepen in teal; focus uses a visible blue-teal ring.
-- **Secondary:** White surface, teal text, cool border, and subtle wash on hover.
-
-### Chips
-- **Style:** Soft teal wash, teal ink, 6px radius, and a light border.
-- **State:** Chips identify entities, evidence tags, and compact status fragments. They should not become decorative badges.
-
-### Cards / Containers
-- **Corner Style:** Gentle product radius (8px).
-- **Background:** White to cool-white surfaces over a cool work canvas.
-- **Shadow Strategy:** Low surface lift at rest, interactive lift only on hover or important elevation.
-- **Border:** Cool neutral border; no thick side stripes.
-- **Internal Padding:** 14px to 16px for dense working panels.
+- **Shape:** 8px rounded rectangles (Notion geometry — not pills).
+- **Primary:** solid purple surface, white text, 600 weight; hover deepens to `accent-strong`.
+- **Secondary:** white surface, ink text, hairline border, subtle surface fill on hover.
+- **Press:** `transform: scale(0.97)` system‑wide; focus uses a 2px purple ring.
 
 ### Inputs / Fields
-- **Style:** White or near-white surface, 6px radius, cool border, 42px minimum height.
-- **Focus:** Teal border with a visible soft focus ring.
-- **Error / Disabled:** Error states use semantic amber/red; disabled states lower contrast and remove interactive shadow.
+- White surface, 8px radius, `hairline-strong` border, 40px height.
+- **Focus:** purple border + soft purple ring (`0 0 0 3px accent-soft`).
+- Placeholder text meets contrast (tertiary, not light grey).
+
+### Cards / Panels
+- White panels on the warm canvas, 12px radius, 1px hairline, flat at rest.
+- Internal padding 14–16px for dense working panels; no nested cards.
+
+### Chips & Status
+- **Chips:** soft‑purple wash, 6px radius — entity/evidence tags, not decorative badges.
+- **Status badges:** pastel‑tinted pill + deep semantic text; carry shape/label, not color alone.
 
 ### Navigation
-- **Style:** Persistent daylight command dock with strong active item treatment. Navigation uses clear labels, compact spacing, soft elevation, and color only where it clarifies the current selection.
-- **Mobile:** The dock collapses into a compact top command shell with two-column or four-column nav depending on width.
+- Persistent light **grouped** dock (Workspace / Operations) with strong purple active state. Clear labels, compact spacing, color only where it clarifies the current selection.
+- **Mobile:** the dock collapses into a compact top command shell.
 
 ## 6. Do's and Don'ts
 
-### Do:
-- **Do** keep the UI young, sharp, and personally useful.
-- **Do** use multiple deliberate color roles: daylight command dock, cool canvas, teal action, gold identity, semantic status.
-- **Do** preserve evidence density while keeping row separation, labels, and panel titles easy to scan.
-- **Do** make source operations, review flows, and analysis results feel like one coherent cockpit.
-- **Do** keep focus states visible and keyboard-friendly.
+### Do
+- Keep the UI young, sharp, and personally useful.
+- Use deliberate color roles: light dock, warm canvas, purple action, link blue, pastel status, gold identity.
+- Preserve evidence density with easy‑to‑scan rows, labels, and panel titles.
+- Make source operations, review flows, and analysis feel like one coherent cockpit.
+- Keep focus states visible and keyboard‑friendly; every animation has a `prefers-reduced-motion` fallback.
 
-### Don't:
-- **Don't** make it look like a generic admin template.
-- **Don't** make it look like an ordinary enterprise system with default white cards and default form controls.
-- **Don't** use dark hacker terminal styling, neon cyberpunk colors, or fake command-center drama.
-- **Don't** collapse the product into a single-color theme.
-- **Don't** make it feel like software for old-fashioned enterprise users.
-- **Don't** use loud AI SaaS landing-page tropes, decorative gradient text, gradient blobs, or marketing-first hero layouts.
-- **Don't** use border-left or border-right accents greater than 1px on cards or alerts.
+### Don't
+- Don't look like a generic admin template or an ordinary enterprise system with default white cards.
+- Don't use dark hacker‑terminal styling, neon, or fake command‑center drama.
+- Don't collapse the product into a single‑color theme.
+- Don't use loud AI‑SaaS tropes: gradient text, gradient blobs, decorative multi‑color bars, marketing‑first hero layouts.
+- Don't use `01/02/03` numbered scaffolding, per‑section eyebrow kickers, or `border-left/right` color stripes greater than 1px.
+- Don't use weight 800+, fluid clamp headings, or inner‑highlight glass on static surfaces.

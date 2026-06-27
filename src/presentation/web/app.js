@@ -5,7 +5,7 @@ const state = {
   sourceTypes: [],
   connectorPackages: [],
   connectorModuleErrors: [],
-  currentView: 'history',
+  currentView: 'overview',
   rolloutManifestDraft: undefined,
   onboardingRecipeManifestDraft: undefined,
   loadedConnectorPackageManifestDraft: undefined,
@@ -24,6 +24,12 @@ const AUTOMATION_AUTO_REFRESH_INTERVAL_MS = 60000;
 const AUTOMATION_ACTION_HISTORY_LIMIT = 8;
 
 const views = {
+  overview: {
+    title: '概览',
+    subtitle: '今天需要处理的来源、提醒和复核都收在这里。',
+    mode: '概览',
+    focus: '今日要处理'
+  },
   history: {
     title: '历史分析',
     subtitle: '解析保存页目录，生成作者、实体、观点和证据概览。',
@@ -42,11 +48,29 @@ const views = {
     mode: '证据检索',
     focus: '历史楼层'
   },
-  system: {
-    title: '工作台状态',
-    subtitle: '查看来源、任务、提醒和本地服务的当前状态。',
+  sources: {
+    title: '来源',
+    subtitle: '导入本地资料、跟踪来源、接入在线主题与新连接器。',
+    mode: '来源采集',
+    focus: '采集与接入'
+  },
+  operations: {
+    title: '运行',
+    subtitle: '运行队列、worker、runbook 与自动化就绪状态。',
     mode: '运行概览',
-    focus: '来源与提醒'
+    focus: '运行与自动化'
+  },
+  alerts: {
+    title: '提醒',
+    subtitle: '筛选通知事件、确认归档，并处理人工复核结果。',
+    mode: '提醒处理',
+    focus: '事件与复核'
+  },
+  publish: {
+    title: '发布',
+    subtitle: '连接器校验、来源试跑、清单门禁与应用审计。',
+    mode: '发布检查',
+    focus: '连接器与门禁'
   }
 };
 
@@ -60,6 +84,13 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('refreshAuthorIntelligenceButton').addEventListener('click', loadAuthorIntelligence);
   document.getElementById('authorIntelligenceResult').addEventListener('click', handleAuthorIntelligenceAction);
   document.getElementById('historyCockpit').addEventListener('click', handleHistoryCockpitAction);
+  const overviewResultEl = document.getElementById('overviewResult');
+  if (overviewResultEl) {
+    overviewResultEl.addEventListener('click', function (event) {
+      const target = event.target.closest('[data-view]');
+      if (target) setView(target.dataset.view);
+    });
+  }
   document.getElementById('refreshTasksButton').addEventListener('click', loadTasks);
   document.getElementById('refreshSourcesButton').addEventListener('click', loadSources);
   document.getElementById('refreshSourceOperationsButton').addEventListener('click', loadSourceOperations);
@@ -216,7 +247,7 @@ function scheduleAutomationAutoRefresh(delayMs) {
     state.automationNextRefreshAt = undefined;
     updateAutomationAutoRefreshControl();
     if (!state.automationAutoRefresh) return;
-    if (state.currentView === 'system') {
+    if (state.currentView === 'operations') {
       await loadAutomationReadiness({ source: 'auto' });
     }
     if (state.automationAutoRefresh) scheduleAutomationAutoRefresh(AUTOMATION_AUTO_REFRESH_INTERVAL_MS);
@@ -1468,8 +1499,8 @@ function parseContextReviewResultJson(value) {
 }
 
 function initializeCurrentViewFromLocation() {
-  const viewName = normalizeViewName(window.location.hash ? window.location.hash.slice(1) : '');
-  if (viewName && viewName !== state.currentView) setView(viewName, { syncHash: false });
+  const viewName = normalizeViewName(window.location.hash ? window.location.hash.slice(1) : '') || state.currentView;
+  setView(viewName, { syncHash: false });
 }
 
 function normalizeViewName(viewName) {
@@ -1500,12 +1531,90 @@ function setView(viewName, options) {
   document.getElementById('viewMode').textContent = view.mode;
   document.getElementById('viewFocus').textContent = view.focus;
   if (safeViewName === 'history') renderHistoryCockpitStandby();
-  if (safeViewName === 'system') {
+  if (safeViewName === 'overview') loadOverview();
+  if (safeViewName === 'operations') {
     renderAutomationActionHistoryStandby();
     loadSystemStatus();
     loadAutomationReadiness();
   }
   syncAutomationAutoRefresh();
+}
+
+async function loadOverview() {
+  const target = document.getElementById('overviewResult');
+  if (!target) return;
+  target.innerHTML = renderOverview(null);
+  const [health, events, sources] = await Promise.all([
+    fetchJson('/health').catch(function () { return null; }),
+    fetchJson('/api/events?acknowledged=false&limit=50').catch(function () { return null; }),
+    fetchJson('/api/sources?limit=100').catch(function () { return null; })
+  ]);
+  target.innerHTML = renderOverview({
+    health: health,
+    pendingAlerts: events && Array.isArray(events.events) ? events.events.length : null,
+    sourceCount: sources && Array.isArray(sources.sources) ? sources.sources.length : null
+  });
+}
+
+function renderOverview(data) {
+  const modules = [
+    { view: 'history', title: '历史分析', desc: '解析保存页目录，生成作者、实体与证据概览。' },
+    { view: 'context', title: '新发言解读', desc: '输入新发言，召回相关历史楼层与匹配理由。' },
+    { view: 'search', title: '历史检索', desc: '把保存页写入索引，按关键词检索可引用证据。' },
+    { view: 'sources', title: '来源', desc: '导入本地资料、跟踪来源、接入在线主题。' },
+    { view: 'operations', title: '运行', desc: '运行队列、worker、runbook 与自动化就绪。' },
+    { view: 'alerts', title: '提醒', desc: '筛选通知事件、确认归档与人工复核。' },
+    { view: 'publish', title: '发布', desc: '连接器校验、来源试跑、清单门禁与审计。' }
+  ];
+  const moduleTiles = modules.map(function (item) {
+    return '<button type="button" class="overview-tile" data-view="' + item.view + '">'
+      + '<strong>' + escapeHtml(item.title) + '</strong>'
+      + '<span>' + escapeHtml(item.desc) + '</span>'
+      + '</button>';
+  }).join('');
+  return '<section class="overview-board">'
+    + '<div class="overview-signals">' + renderOverviewSignals(data) + '</div>'
+    + '<div class="overview-modules-head">快速进入</div>'
+    + '<div class="overview-modules">' + moduleTiles + '</div>'
+    + '</section>';
+}
+
+function renderOverviewSignals(data) {
+  if (!data) {
+    return [0, 1, 2].map(function () {
+      return '<div class="overview-card is-loading"><div class="feedback-skeleton"><span></span><span></span></div></div>';
+    }).join('');
+  }
+  const alerts = data.pendingAlerts;
+  const sources = data.sourceCount;
+  const healthStatus = data.health && data.health.status ? String(data.health.status) : null;
+  const healthLabel = healthStatus === 'ok'
+    ? '正常'
+    : healthStatus === 'warn'
+      ? '注意'
+      : healthStatus
+        ? '异常'
+        : '未知';
+  const healthTint = healthStatus === 'ok'
+    ? 'overview-card-tint-mint'
+    : healthStatus === 'warn'
+      ? 'overview-card-tint-peach'
+      : healthStatus
+        ? 'overview-card-tint-rose'
+        : '';
+  return [
+    overviewCard('alerts', 'overview-card-tint-peach', '待确认提醒', alerts == null ? '—' : String(alerts), '前往提醒处理'),
+    overviewCard('sources', 'overview-card-tint-sky', '跟踪来源', sources == null ? '—' : String(sources), '前往来源管理'),
+    overviewCard('operations', healthTint, '系统健康', healthLabel, '前往运行概览')
+  ].join('');
+}
+
+function overviewCard(view, tintClass, label, value, hint) {
+  return '<button type="button" class="overview-card' + (tintClass ? ' ' + tintClass : '') + '" data-view="' + view + '">'
+    + '<span class="overview-card-label">' + escapeHtml(label) + '</span>'
+    + '<strong class="overview-card-value">' + escapeHtml(value) + '</strong>'
+    + '<span class="overview-card-hint">' + escapeHtml(hint) + '</span>'
+    + '</button>';
 }
 
 async function loadAdapters() {

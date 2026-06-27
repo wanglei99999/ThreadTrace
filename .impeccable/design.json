@@ -1,70 +1,97 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-06-26T00:00:00.000+08:00",
+  "generatedAt": "2026-06-27T22:30:00.000+08:00",
   "title": "Design System: ThreadTrace",
   "extensions": {
     "colorMeta": {
       "accent": {
         "role": "primary",
-        "displayName": "Signal Teal",
-        "canonical": "#14725f",
-        "tonalRamp": ["#05251f", "#073e35", "#0a5848", "#14725f", "#35a18a", "#8bd1c2", "#c6e9e1", "#f1faf7"]
+        "displayName": "Notion Purple",
+        "canonical": "#5645d4",
+        "tonalRamp": ["#1f1850", "#2a2073", "#3a2a99", "#4534b3", "#5645d4", "#8b7ee8", "#ece8fb", "#f6f4fd"]
+      },
+      "link": {
+        "role": "info",
+        "displayName": "Link Blue",
+        "canonical": "#0075de",
+        "tonalRamp": ["#003a6e", "#005bab", "#0075de", "#3a97ea", "#7bbcf3", "#b6dbf9", "#dcecfa", "#eef6fd"]
       },
       "sidebar": {
         "role": "neutral",
-        "displayName": "Cockpit Black-Green",
-        "canonical": "#0c1715",
-        "tonalRamp": ["#050908", "#0c1715", "#10211e", "#17312c", "#31514a", "#6f8981", "#b9ccc6", "#eef5f2"]
+        "displayName": "Daylight Dock",
+        "canonical": "#f7f6f4",
+        "tonalRamp": ["#1a1a1a", "#37352f", "#5d5b54", "#8c8983", "#c8c4be", "#e5e3df", "#f0eeec", "#f7f6f4"]
+      },
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Canvas White",
+        "canonical": "#ffffff",
+        "tonalRamp": ["#37352f", "#787671", "#c8c4be", "#e5e3df", "#ede9e4", "#f0eeec", "#fafaf9", "#ffffff"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Warm Workspace",
+        "canonical": "#f6f5f4",
+        "tonalRamp": ["#37352f", "#6b6862", "#8c8983", "#c8c4be", "#e5e3df", "#f0eeec", "#faf9f8", "#f6f5f4"]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Warm Charcoal Ink",
+        "canonical": "#37352f",
+        "tonalRamp": ["#1a1a1a", "#37352f", "#5d5b54", "#6b6862", "#787671", "#8c8983", "#c8c4be", "#e5e3df"]
+      },
+      "ok": {
+        "role": "success",
+        "displayName": "Success Green",
+        "canonical": "#1a9c38",
+        "tonalRamp": ["#0c5a1f", "#1a9c38", "#3cc35c", "#7bd897", "#aee6bf", "#d9f3e1", "#e2f3ee", "#eefaf2"]
+      },
+      "warn": {
+        "role": "warning",
+        "displayName": "Signal Amber",
+        "canonical": "#cf5400",
+        "tonalRamp": ["#73501b", "#8a5712", "#9a3f00", "#cf5400", "#ff8a3c", "#ffb98a", "#ffe8d4", "#fff6e4"]
+      },
+      "fail": {
+        "role": "danger",
+        "displayName": "Failure Red",
+        "canonical": "#d92d2d",
+        "tonalRamp": ["#7a1414", "#a23c3c", "#d92d2d", "#e96a6a", "#f2a0a0", "#fbe1e1", "#fff0f0", "#fff5f5"]
       },
       "gold": {
         "role": "secondary",
         "displayName": "Brand Gold",
-        "canonical": "#f1bd52",
-        "tonalRamp": ["#3b2606", "#704811", "#a66e20", "#d99d3a", "#f1bd52", "#ffd871", "#fff0bd", "#fff8e8"]
-      }
+        "canonical": "#f5d75e",
+        "tonalRamp": ["#73501b", "#a66e20", "#d99d3a", "#f5d75e", "#ffe071", "#fef7d6", "#fff6e4", "#fff8e8"]
+      },
+      "tint-lavender": { "role": "tint", "displayName": "Lavender Tint", "canonical": "#e6e0f5" },
+      "tint-mint": { "role": "tint", "displayName": "Mint Tint", "canonical": "#d9f3e1" },
+      "tint-peach": { "role": "tint", "displayName": "Peach Tint", "canonical": "#ffe8d4" },
+      "tint-sky": { "role": "tint", "displayName": "Sky Tint", "canonical": "#dcecfa" },
+      "tint-rose": { "role": "tint", "displayName": "Rose Tint", "canonical": "#fde0ec" },
+      "info-ink": { "role": "ink", "displayName": "Info Ink", "canonical": "#154d88" },
+      "amber-ink": { "role": "ink", "displayName": "Amber Ink", "canonical": "#73501b" },
+      "slate-ink": { "role": "ink", "displayName": "Slate Ink", "canonical": "#405a64" }
     },
     "typographyMeta": {
-      "headline": {
-        "displayName": "Headline",
-        "purpose": "Page-level product view titles."
-      },
-      "title": {
-        "displayName": "Panel Title",
-        "purpose": "Compact information panel headings."
-      },
-      "body": {
-        "displayName": "Body",
-        "purpose": "Evidence, labels, descriptions, and form values."
-      }
+      "headline": { "displayName": "Headline", "purpose": "Page-level view titles; 700 weight, slight negative tracking." },
+      "title": { "displayName": "Panel Title", "purpose": "Compact panel and section headings; 600 weight." },
+      "body": { "displayName": "Body", "purpose": "Evidence, descriptions, and form values; 400/15px/1.6." },
+      "label": { "displayName": "Label", "purpose": "Field labels and compact UI metadata; 600/12px." },
+      "mono": { "displayName": "Mono", "purpose": "Commands, JSON, and audit snippets." }
     },
     "shadows": [
-      {
-        "name": "low-surface-lift",
-        "value": "0 8px 20px rgba(10, 27, 24, 0.07)",
-        "purpose": "Forms, icon buttons, and panels at rest."
-      },
-      {
-        "name": "interactive-lift",
-        "value": "0 20px 46px rgba(10, 27, 24, 0.11)",
-        "purpose": "Hovered panels and elevated interactive states."
-      }
+      { "name": "flat-at-rest", "value": "none", "purpose": "Cards, panels, rows — structure from tonal surfaces + 1px hairlines." },
+      { "name": "soft-lift", "value": "0 4px 12px rgba(15, 15, 15, 0.08)", "purpose": "Hovered tiles and elevated controls." },
+      { "name": "floating-layer", "value": "0 16px 48px -8px rgba(15, 15, 15, 0.16)", "purpose": "Dropdowns, popovers, and modals only." }
     ],
     "motion": [
-      {
-        "name": "state-transition",
-        "value": "160ms ease",
-        "purpose": "Default state transitions for controls."
-      }
+      { "name": "state-transition", "value": "180ms cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "Apple ease-out for control state changes." },
+      { "name": "press", "value": "transform: scale(0.97)", "purpose": "System-wide committed press feedback." }
     ],
     "breakpoints": [
-      {
-        "name": "tablet",
-        "value": "860px"
-      },
-      {
-        "name": "phone",
-        "value": "520px"
-      }
+      { "name": "tablet", "value": "860px" },
+      { "name": "phone", "value": "520px" }
     ]
   },
   "components": [
@@ -72,70 +99,80 @@
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "Main command button for analysis and source operations.",
-      "html": "<button class=\"ds-btn-primary\">Analyze directory</button>",
-      "css": ".ds-btn-primary { min-height: 42px; padding: 0 16px; border: 1px solid rgba(5, 74, 62, 0.18); border-radius: 6px; background: linear-gradient(180deg, #19816c, #0a5848); color: #ffffff; font: 850 16px \"Segoe UI\", Arial, sans-serif; box-shadow: 0 12px 24px rgba(20, 114, 95, 0.24), inset 0 1px 0 rgba(255,255,255,0.2); transition: background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease; } .ds-btn-primary:hover { background: linear-gradient(180deg, #177762, #084b3e); box-shadow: 0 16px 30px rgba(20, 114, 95, 0.28), inset 0 1px 0 rgba(255,255,255,0.18); } .ds-btn-primary:focus-visible { outline: 3px solid rgba(36, 95, 159, 0.22); outline-offset: 2px; }"
+      "description": "Purple command button for the single primary action in a surface.",
+      "html": "<button class=\"ds-btn-primary\">分析目录</button>",
+      "css": ".ds-btn-primary { min-height: 40px; padding: 0 16px; border: 1px solid #4534b3; border-radius: 8px; background: linear-gradient(180deg, #5645d4, #4534b3); color: #ffffff; font: 600 15px var(--font-sans, \"PingFang SC\", Inter, system-ui, sans-serif); transition: background-color 180ms cubic-bezier(.22,1,.36,1), transform 180ms cubic-bezier(.22,1,.36,1); } .ds-btn-primary:hover { background: linear-gradient(180deg, #4534b3, #3a2a99); } .ds-btn-primary:active { transform: scale(0.97); } .ds-btn-primary:focus-visible { outline: 2px solid #5645d4; outline-offset: 2px; }"
     },
     {
       "name": "Secondary Button",
       "kind": "button",
       "refersTo": "button-secondary",
-      "description": "Supporting command button for refresh, diagnostics, and secondary actions.",
-      "html": "<button class=\"ds-btn-secondary\">Refresh</button>",
-      "css": ".ds-btn-secondary { min-height: 42px; padding: 0 16px; border: 1px solid #d4ddda; border-radius: 6px; background: linear-gradient(180deg, #ffffff, #f6f9f8); color: #073e35; font: 850 16px \"Segoe UI\", Arial, sans-serif; box-shadow: inset 0 1px 0 rgba(255,255,255,0.74); transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease; } .ds-btn-secondary:hover { border-color: #9fc0b7; background: #f1faf7; color: #0a5848; } .ds-btn-secondary:focus-visible { outline: 3px solid rgba(36, 95, 159, 0.22); outline-offset: 2px; }"
+      "description": "Neutral supporting button — refresh, preview, diagnostics, and all non-primary actions.",
+      "html": "<button class=\"ds-btn-secondary\">刷新</button>",
+      "css": ".ds-btn-secondary { min-height: 40px; padding: 0 16px; border: 1px solid #c8c4be; border-radius: 8px; background: #ffffff; color: #37352f; font: 600 15px var(--font-sans, \"PingFang SC\", Inter, system-ui, sans-serif); transition: background-color 180ms cubic-bezier(.22,1,.36,1), border-color 180ms; } .ds-btn-secondary:hover { background: #fafaf9; border-color: #c8c4be; } .ds-btn-secondary:active { transform: scale(0.97); } .ds-btn-secondary:focus-visible { outline: 2px solid #5645d4; outline-offset: 2px; }"
     },
     {
-      "name": "Evidence Panel",
+      "name": "Card Panel",
       "kind": "card",
       "refersTo": "card-panel",
-      "description": "Raised information panel for metrics, evidence, and operational records.",
-      "html": "<article class=\"ds-panel\"><h3>Evidence reliability</h3><div class=\"ds-row\"><span>Status</span><strong>well-supported</strong></div></article>",
-      "css": ".ds-panel { position: relative; max-width: 520px; padding: 16px; border: 1px solid rgba(205,218,214,0.92); border-radius: 8px; background: linear-gradient(180deg, rgba(255,255,255,0.99), rgba(250,252,252,0.96)); color: #17211f; box-shadow: 0 8px 20px rgba(10,27,24,0.07), inset 0 1px 0 rgba(255,255,255,0.74); } .ds-panel h3 { margin: 0 0 12px; color: #07100e; font: 800 15px/1.35 \"Segoe UI\", Arial, sans-serif; } .ds-row { display: flex; justify-content: space-between; gap: 14px; padding: 10px 0; border-top: 1px solid #e8eeec; } .ds-row span { color: #60716d; } .ds-row strong { color: #07100e; }"
+      "description": "Flat white working panel on the warm canvas; structure via hairline, not shadow.",
+      "html": "<article class=\"ds-panel\"><h3>证据可靠度</h3><div class=\"ds-row\"><span>状态</span><strong>well-supported</strong></div></article>",
+      "css": ".ds-panel { max-width: 520px; padding: 16px; border: 1px solid #e5e3df; border-radius: 12px; background: #ffffff; color: #37352f; box-shadow: none; } .ds-panel h3 { margin: 0 0 12px; color: #1a1a1a; font: 600 16px/1.35 var(--font-sans, \"PingFang SC\", Inter, system-ui, sans-serif); } .ds-row { display: flex; justify-content: space-between; gap: 14px; padding: 10px 0; border-top: 1px solid #e5e3df; } .ds-row span { color: #5d5b54; } .ds-row strong { color: #1a1a1a; }"
     },
     {
       "name": "Input Field",
       "kind": "input",
       "refersTo": "input-field",
-      "description": "Compact working field for source paths, filters, and operator input.",
-      "html": "<label class=\"ds-field\"><span>Input dir</span><input value=\"example\" /></label>",
-      "css": ".ds-field { display: grid; gap: 7px; color: #40534e; font: 800 12px/1.2 \"Segoe UI\", Arial, sans-serif; } .ds-field input { min-height: 42px; border: 1px solid #d4ddda; border-radius: 6px; padding: 10px 11px; background: linear-gradient(180deg, #ffffff, #fbfcfc); color: #17211f; font: 400 16px/1.55 \"Segoe UI\", Arial, sans-serif; box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 1px 0 rgba(10,27,24,0.03); } .ds-field input:focus { border-color: rgba(20,114,95,0.74); box-shadow: 0 0 0 3px rgba(20,114,95,0.14), inset 0 1px 0 rgba(255,255,255,0.9); outline: 0; }"
+      "description": "Compact working field with purple focus ring.",
+      "html": "<label class=\"ds-field\"><span>保存页目录</span><input value=\"example\" /></label>",
+      "css": ".ds-field { display: grid; gap: 7px; color: #5d5b54; font: 600 12px/1.2 var(--font-sans, \"PingFang SC\", Inter, system-ui, sans-serif); } .ds-field input { min-height: 40px; border: 1px solid #c8c4be; border-radius: 8px; padding: 9px 12px; background: #ffffff; color: #37352f; font: 400 15px/1.55 var(--font-sans, \"PingFang SC\", Inter, system-ui, sans-serif); } .ds-field input:focus { border-color: #5645d4; box-shadow: 0 0 0 3px #ece8fb; outline: 0; }"
     },
     {
-      "name": "Sidebar Nav",
+      "name": "Grouped Light Dock",
       "kind": "nav",
       "refersTo": "navigation",
-      "description": "Deep cockpit navigation shell with clear active state.",
-      "html": "<nav class=\"ds-nav\"><button class=\"ds-nav-item ds-active\">History analysis</button><button class=\"ds-nav-item\">System status</button></nav>",
-      "css": ".ds-nav { display: grid; gap: 8px; width: 240px; padding: 16px; background: linear-gradient(180deg, #10211e, #0c1715); border-radius: 8px; } .ds-nav-item { min-height: 44px; padding: 11px 12px; border: 0; border-radius: 8px; text-align: left; color: #dbe9e5; background: transparent; font: 750 16px \"Segoe UI\", Arial, sans-serif; } .ds-nav-item:hover { color: #ffffff; background: rgba(255,255,255,0.075); } .ds-nav-item.ds-active { color: #ffffff; background: linear-gradient(180deg, rgba(28,68,60,0.96), rgba(18,49,43,0.96)); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.09), 0 10px 24px rgba(0,0,0,0.18); }"
+      "description": "Persistent light grouped navigation dock (Workspace / Operations) with purple active state.",
+      "html": "<nav class=\"ds-nav\"><div class=\"ds-nav-group\">工作区</div><button class=\"ds-nav-item ds-active\">历史分析</button><button class=\"ds-nav-item\">新发言解读</button></nav>",
+      "css": ".ds-nav { display: grid; gap: 2px; width: 240px; padding: 16px; background: #f7f6f4; } .ds-nav-group { padding: 12px 10px 6px; color: #8c8983; font: 600 12px var(--font-sans, \"PingFang SC\", Inter, system-ui, sans-serif); } .ds-nav-item { min-height: 34px; padding: 7px 10px; border: 0; border-radius: 6px; text-align: left; color: #37352f; background: transparent; font: 500 15px var(--font-sans, \"PingFang SC\", Inter, system-ui, sans-serif); } .ds-nav-item:hover { background: #ebe9e5; } .ds-nav-item.ds-active { color: #3a2a99; background: #ece8fb; }"
     }
   ],
   "narrative": {
     "northStar": "The Personal Intelligence Cockpit",
-    "overview": "ThreadTrace should feel like a private cockpit for a young technical operator: sharp, credible, and satisfying to use without falling into hacker theatrics. The interface serves analysis, source operations, and evidence review, so it should be dense enough for real work while keeping the visual field calm and navigable.",
+    "overview": "ThreadTrace should feel like a private cockpit for a young technical operator: sharp, credible, and satisfying to use without falling into hacker theatrics. Built on a Notion + Apple blend — Notion provides the bones (workspace structure, warm-neutral surfaces, a purple primary, sober rectangular geometry, database-property color for status); Apple provides the polish (typographic restraint, generous breathing room, committed micro-interactions, shadows reserved for floating layers only).",
     "keyCharacteristics": ["Dense but not cramped.", "Technical but not hostile.", "Polished but not decorative.", "Multi-source ready.", "Built for one expert operator moving quickly."],
     "rules": [
       {
-        "name": "The No Single-Color Rule",
-        "body": "Never let the product become only green, only blue, or only grayscale. Teal is the operational accent, not the whole personality.",
+        "name": "The Purple Is The Action Rule",
+        "body": "Purple belongs to operations, selection, and focus. Don't use it for body text or large surfaces. Secondary actions stay neutral.",
         "section": "colors"
       },
       {
         "name": "The Gold Is A Mark Rule",
-        "body": "Gold belongs to identity moments. It is prohibited as a general CTA color.",
+        "body": "Gold is reserved for brand/logo moments only — prohibited as a UI or CTA color.",
         "section": "colors"
       },
       {
-        "name": "The Product Type Rule",
-        "body": "No display typography theatrics. This is a working cockpit; type must help scanning and confidence.",
+        "name": "The No Single-Color Rule",
+        "body": "Purple is the operational accent, not the whole personality; warmth and life come from neutrals, link blue, and pastel tints.",
+        "section": "colors"
+      },
+      {
+        "name": "The Weight Ladder Rule",
+        "body": "Ladder is 400 / 500 / 600 / 700. Weight 800+ is banned — it reads as shouting, not hierarchy.",
+        "section": "typography"
+      },
+      {
+        "name": "The Apple-Tight Rule",
+        "body": "Display/large headings carry slight negative letter-spacing; product type stays at fixed rem, never fluid clamp.",
         "section": "typography"
       },
       {
         "name": "The Structural Depth Rule",
-        "body": "Shadows must clarify layer and interaction. If a shadow only makes the UI look expensive, remove it.",
+        "body": "Shadows must clarify a floating layer or interaction. If a shadow only makes the UI look expensive, remove it. No inner-highlight glass on static surfaces.",
         "section": "elevation"
       }
     ],
-    "dos": ["Do keep the UI young, sharp, and personally useful.", "Do use multiple deliberate color roles: deep shell, cool canvas, teal action, gold identity, semantic status.", "Do preserve evidence density while keeping row separation, labels, and panel titles easy to scan.", "Do make source operations, review flows, and analysis results feel like one coherent cockpit.", "Do keep focus states visible and keyboard-friendly."],
-    "donts": ["Don't make it look like a generic admin template.", "Don't make it look like an ordinary enterprise system with default white cards and default form controls.", "Don't use dark hacker terminal styling, neon cyberpunk colors, or fake command-center drama.", "Don't collapse the product into a single-color theme.", "Don't make it feel like software for old-fashioned enterprise users.", "Don't use loud AI SaaS landing-page tropes, decorative gradient text, gradient blobs, or marketing-first hero layouts.", "Don't use border-left or border-right accents greater than 1px on cards or alerts."]
+    "dos": ["Keep the UI young, sharp, and personally useful.", "Use deliberate color roles: light dock, warm canvas, purple action, link blue, pastel status, gold identity.", "Preserve evidence density with easy-to-scan rows, labels, and panel titles.", "Make source operations, review flows, and analysis feel like one coherent cockpit.", "Keep focus states visible and keyboard-friendly; every animation has a prefers-reduced-motion fallback."],
+    "donts": ["Don't look like a generic admin template or an ordinary enterprise system with default white cards.", "Don't use dark hacker-terminal styling, neon, or fake command-center drama.", "Don't collapse the product into a single-color theme.", "Don't use loud AI-SaaS tropes: gradient text, gradient blobs, decorative multi-color bars, marketing-first hero layouts.", "Don't use 01/02/03 numbered scaffolding, per-section eyebrow kickers, or border-left/right color stripes greater than 1px.", "Don't use weight 800+, fluid clamp headings, or inner-highlight glass on static surfaces."]
   }
 }
