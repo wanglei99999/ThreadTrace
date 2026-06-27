@@ -100,12 +100,12 @@
   .context-source-strip,
   .context-author-strip,
   .context-command-shelf {
-    padding-inline: 10px;
+    padding-inline: 0;
   }
 
   .stacked-form .control-strip.context-source-strip,
   .stacked-form .control-strip.context-author-strip {
-    padding-inline: 10px;
+    padding-inline: 0;
   }
 
   .context-entry-card textarea {

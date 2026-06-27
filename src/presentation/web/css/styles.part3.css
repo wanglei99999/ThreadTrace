@@ -35,15 +35,13 @@
 
 .stacked-form .control-strip.context-source-strip,
 .stacked-form .control-strip.context-author-strip {
-  padding: 14px;
-  border: 1px solid rgba(var(--line-rgb), 0.94);
-  background: rgba(var(--canvas-rgb), 0.78);
-  box-shadow: var(--inner-light);
-}
-
-.stacked-form .control-strip.context-author-strip {
-  border-color: rgba(var(--line-rgb), 0.94);
-  background: rgba(var(--canvas-rgb), 0.78);
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 label {

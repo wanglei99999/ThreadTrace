@@ -806,33 +806,22 @@ textarea:focus-visible {
 }
 
 .context-entry-card {
-  gap: 13px;
-}
-
-.stacked-form.context-entry-card {
-  grid-template-columns: minmax(260px, 0.44fr) minmax(0, 1fr);
-  align-items: stretch;
   gap: 14px;
 }
 
-.context-entry-card::before {
-  border-color: rgba(var(--line-rgb), 0.96);
-  background: rgba(var(--canvas-rgb), 0.76);
-  color: var(--muted-strong);
+.stacked-form.context-entry-card {
+  grid-template-columns: minmax(248px, 0.42fr) minmax(0, 1fr);
+  align-items: stretch;
+  gap: 28px;
 }
 
+/* 子区拍平为普通字段组:无卡片描边/底色,组名降为安静纯文字 */
 .context-source-strip,
 .context-author-strip {
-  position: relative;
   display: grid;
   align-content: start;
-  gap: 11px;
+  gap: 12px;
   min-width: 0;
-  padding: 14px;
-  border: 1px solid rgba(var(--line-rgb), 0.94);
-  border-radius: var(--radius);
-  background: rgba(var(--canvas-rgb), 0.78);
-  box-shadow: var(--inner-light);
 }
 
 .context-source-strip {
@@ -843,33 +832,23 @@ textarea:focus-visible {
 .context-author-strip {
   grid-column: 1;
   grid-row: 2;
-  border-color: rgba(var(--line-rgb), 0.94);
-  background: rgba(var(--canvas-rgb), 0.78);
 }
 
 .context-source-strip::before,
 .context-author-strip::before {
-  width: max-content;
-  max-width: 100%;
-  padding: 4px 7px;
-  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
   font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.06em;
   line-height: 1.1;
 }
 
 .context-source-strip::before {
   content: "来源";
-  border: 1px solid rgba(var(--line-rgb), 0.94);
-  background: rgba(var(--surface-soft-rgb), 0.86);
-  color: var(--muted-strong);
 }
 
 .context-author-strip::before {
   content: "作者";
-  border: 1px solid rgba(var(--line-rgb), 0.94);
-  background: rgba(var(--surface-soft-rgb), 0.86);
-  color: var(--muted-strong);
 }
 
 .context-source-strip label,
@@ -889,58 +868,31 @@ textarea:focus-visible {
 }
 
 .context-text-field > span {
-  width: max-content;
-  max-width: 100%;
   margin-bottom: 2px;
-  padding: 5px 8px;
-  border: 1px solid rgba(var(--line-rgb), 0.94);
-  border-radius: var(--radius-sm);
-  background: rgba(var(--surface-soft-rgb), 0.86);
-  color: var(--muted-strong);
-  font-size: 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
   font-weight: 600;
   line-height: 1.2;
   align-self: start;
 }
 
 .context-entry-card textarea {
-  min-height: 278px;
-  border-color: rgba(var(--line-rgb), 0.94);
+  min-height: 220px;
+  border-color: var(--hairline-strong);
   background: var(--canvas);
-  font-size: 17px;
-  line-height: 1.65;
+  font-size: 15px;
+  line-height: 1.6;
   align-self: stretch;
 }
 
+/* 命令区拍平:仅承载按钮,去卡片与「还原」角标 */
 .context-command-shelf {
-  position: relative;
   grid-column: 1;
   grid-row: 3;
   display: grid;
   gap: 8px;
   min-width: 0;
-  padding: 25px 12px 12px;
-  border: 1px solid rgba(var(--line-rgb), 0.78);
-  border-radius: var(--radius);
-  background: rgba(var(--surface-soft-rgb), 0.78);
-  box-shadow: var(--inner-light);
-}
-
-.context-command-shelf::before {
-  content: attr(data-label);
-  position: absolute;
-  top: 8px;
-  left: 10px;
-  width: max-content;
-  max-width: calc(100% - 20px);
-  padding: 4px 7px;
-  border: 1px solid rgba(var(--line-rgb), 0.94);
-  border-radius: var(--radius-sm);
-  background: var(--canvas);
-  color: var(--muted-strong);
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.1;
+  align-content: end;
 }
 
 .context-command-shelf button[type="submit"] {
@@ -959,7 +911,7 @@ textarea:focus-visible {
 #contextView:has(#contextResult .context-verdict-hero) .context-author-strip,
 #contextView:has(#contextResult .context-verdict-hero) .context-command-shelf {
   grid-row: 1;
-  padding: 12px;
+  padding: 0;
 }
 
 #contextView:has(#contextResult .context-verdict-hero) .context-source-strip {
@@ -984,7 +936,6 @@ textarea:focus-visible {
 #contextView:has(#contextResult .context-verdict-hero) .context-command-shelf {
   grid-column: 4;
   align-content: end;
-  padding-top: 30px;
 }
 
 .search-workbench {
