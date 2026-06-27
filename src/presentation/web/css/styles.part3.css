@@ -235,19 +235,20 @@ form button[type="submit"]:hover {
 .overview-board {
   grid-column: span 12;
   display: grid;
-  gap: 28px;
+  gap: 32px;
 }
 
+/* ── Signals: restrained white cards, status carried by a meaningful dot ── */
 .overview-signals {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
+  gap: 14px;
 }
 
 .overview-card {
   display: grid;
-  gap: 6px;
-  padding: 20px;
+  gap: 12px;
+  padding: 18px 20px 16px;
   text-align: left;
   border: 1px solid var(--hairline);
   border-radius: var(--radius-card);
@@ -265,104 +266,190 @@ form button[type="submit"]:hover {
   transform: translateY(-2px);
 }
 
+.overview-card:active {
+  transform: scale(0.99);
+  box-shadow: var(--shadow-1);
+}
+
+.overview-card:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.overview-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .overview-card-label {
   color: var(--text-secondary);
   font-size: 13px;
   font-weight: 600;
 }
 
+.overview-card-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--neutral);
+}
+
+.overview-card-ok .overview-card-dot {
+  background: var(--ok);
+}
+
+.overview-card-warn .overview-card-dot {
+  background: var(--warn);
+}
+
+.overview-card-fail .overview-card-dot {
+  background: var(--fail);
+}
+
+.overview-card-info .overview-card-dot {
+  background: var(--link);
+}
+
 .overview-card-value {
   color: var(--text-strong);
-  font-size: 32px;
+  font-size: 30px;
   font-weight: 700;
   line-height: 1.1;
   letter-spacing: -0.01em;
 }
 
 .overview-card-hint {
-  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-tertiary);
   font-size: 13px;
   font-weight: 500;
+  transition: color var(--dur) var(--ease);
 }
 
-.overview-card-tint-peach {
-  background: var(--tint-peach);
-  border-color: transparent;
+.overview-card-hint-go {
+  transition: transform var(--dur) var(--ease);
 }
 
-.overview-card-tint-sky {
-  background: var(--tint-sky);
-  border-color: transparent;
+.overview-card:hover .overview-card-hint {
+  color: var(--accent);
 }
 
-.overview-card-tint-mint {
-  background: var(--tint-mint);
-  border-color: transparent;
-}
-
-.overview-card-tint-rose {
-  background: var(--tint-rose);
-  border-color: transparent;
-}
-
-.overview-card-tint-peach .overview-card-label,
-.overview-card-tint-sky .overview-card-label,
-.overview-card-tint-mint .overview-card-label,
-.overview-card-tint-rose .overview-card-label,
-.overview-card-tint-peach .overview-card-hint,
-.overview-card-tint-sky .overview-card-hint,
-.overview-card-tint-mint .overview-card-hint,
-.overview-card-tint-rose .overview-card-hint {
-  color: var(--text);
+.overview-card:hover .overview-card-hint-go {
+  transform: translateX(3px);
 }
 
 .overview-card.is-loading {
   cursor: default;
 }
 
-.overview-modules-head {
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
+/* ── Modules: Notion-style grouped lists mirroring the sidebar IA ── */
 .overview-modules {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+  align-items: start;
 }
 
-.overview-tile {
+.overview-group {
   display: grid;
-  gap: 4px;
-  padding: 16px;
-  text-align: left;
+  gap: 10px;
+}
+
+.overview-group-head {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  padding-left: 2px;
+}
+
+.overview-rows {
+  display: grid;
   border: 1px solid var(--hairline);
   border-radius: var(--radius-card);
   background: var(--canvas);
-  cursor: pointer;
-  transition:
-    border-color var(--dur) var(--ease),
-    background-color var(--dur) var(--ease);
+  overflow: hidden;
 }
 
-.overview-tile:hover {
-  border-color: var(--hairline-strong);
+.overview-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 16px;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--hairline-soft);
+  cursor: pointer;
+  transition: background-color var(--dur) var(--ease);
+}
+
+.overview-row:last-child {
+  border-bottom: 0;
+}
+
+.overview-row:hover {
   background: var(--surface-soft);
 }
 
-.overview-tile strong {
+.overview-row:active {
+  background: var(--surface-sunken);
+}
+
+.overview-row:focus-visible {
+  outline: none;
+  background: var(--accent-wash);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+.overview-row-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.overview-row-text strong {
   color: var(--text-strong);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
 }
 
-.overview-tile span {
+.overview-row-text span {
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 12.5px;
   line-height: 1.5;
+}
+
+.overview-row-go {
+  flex: none;
+  color: var(--text-tertiary);
+  font-size: 15px;
+  transition:
+    transform var(--dur) var(--ease),
+    color var(--dur) var(--ease);
+}
+
+.overview-row:hover .overview-row-go {
+  color: var(--accent);
+  transform: translateX(3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overview-card,
+  .overview-card:active,
+  .overview-card:hover,
+  .overview-card-hint-go,
+  .overview-row-go {
+    transition: none;
+    transform: none;
+  }
 }
 
 #historyResult {

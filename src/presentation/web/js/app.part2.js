@@ -275,25 +275,43 @@ async function loadOverview() {
 }
 
 function renderOverview(data) {
-  const modules = [
-    { view: 'history', title: '历史分析', desc: '解析保存页目录，生成作者、实体与证据概览。' },
-    { view: 'context', title: '新发言解读', desc: '输入新发言，召回相关历史楼层与匹配理由。' },
-    { view: 'search', title: '历史检索', desc: '把保存页写入索引，按关键词检索可引用证据。' },
-    { view: 'sources', title: '来源', desc: '导入本地资料、跟踪来源、接入在线主题。' },
-    { view: 'operations', title: '运行', desc: '运行队列、worker、runbook 与自动化就绪。' },
-    { view: 'alerts', title: '提醒', desc: '筛选通知事件、确认归档与人工复核。' },
-    { view: 'publish', title: '发布', desc: '连接器校验、来源试跑、清单门禁与审计。' }
+  const groups = [
+    {
+      label: '工作区',
+      items: [
+        { view: 'history', title: '历史分析', desc: '解析保存页目录，生成作者、实体与证据概览。' },
+        { view: 'context', title: '新发言解读', desc: '输入新发言，召回相关历史楼层与匹配理由。' },
+        { view: 'search', title: '历史检索', desc: '把保存页写入索引，按关键词检索可引用证据。' }
+      ]
+    },
+    {
+      label: '运营',
+      items: [
+        { view: 'sources', title: '来源', desc: '导入本地资料、跟踪来源、接入在线主题。' },
+        { view: 'operations', title: '运行', desc: '运行队列、worker、runbook 与自动化就绪。' },
+        { view: 'alerts', title: '提醒', desc: '筛选通知事件、确认归档与人工复核。' },
+        { view: 'publish', title: '发布', desc: '连接器校验、来源试跑、清单门禁与审计。' }
+      ]
+    }
   ];
-  const moduleTiles = modules.map(function (item) {
-    return '<button type="button" class="overview-tile" data-view="' + item.view + '">'
-      + '<strong>' + escapeHtml(item.title) + '</strong>'
-      + '<span>' + escapeHtml(item.desc) + '</span>'
-      + '</button>';
+  const moduleGroups = groups.map(function (group) {
+    const rows = group.items.map(function (item) {
+      return '<button type="button" class="overview-row" data-view="' + item.view + '">'
+        + '<span class="overview-row-text">'
+        + '<strong>' + escapeHtml(item.title) + '</strong>'
+        + '<span>' + escapeHtml(item.desc) + '</span>'
+        + '</span>'
+        + '<span class="overview-row-go" aria-hidden="true">→</span>'
+        + '</button>';
+    }).join('');
+    return '<div class="overview-group">'
+      + '<div class="overview-group-head">' + escapeHtml(group.label) + '</div>'
+      + '<div class="overview-rows">' + rows + '</div>'
+      + '</div>';
   }).join('');
   return '<section class="overview-board">'
     + '<div class="overview-signals">' + renderOverviewSignals(data) + '</div>'
-    + '<div class="overview-modules-head">快速进入</div>'
-    + '<div class="overview-modules">' + moduleTiles + '</div>'
+    + '<div class="overview-modules">' + moduleGroups + '</div>'
     + '</section>';
 }
 
@@ -313,25 +331,31 @@ function renderOverviewSignals(data) {
       : healthStatus
         ? '异常'
         : '未知';
-  const healthTint = healthStatus === 'ok'
-    ? 'overview-card-tint-mint'
+  const healthState = healthStatus === 'ok'
+    ? 'ok'
     : healthStatus === 'warn'
-      ? 'overview-card-tint-peach'
+      ? 'warn'
       : healthStatus
-        ? 'overview-card-tint-rose'
-        : '';
+        ? 'fail'
+        : 'idle';
+  const alertState = alerts == null ? 'idle' : (Number(alerts) > 0 ? 'warn' : 'ok');
+  const sourceState = sources == null ? 'idle' : 'info';
   return [
-    overviewCard('alerts', 'overview-card-tint-peach', '待确认提醒', alerts == null ? '—' : String(alerts), '前往提醒处理'),
-    overviewCard('sources', 'overview-card-tint-sky', '跟踪来源', sources == null ? '—' : String(sources), '前往来源管理'),
-    overviewCard('operations', healthTint, '系统健康', healthLabel, '前往运行概览')
+    overviewCard('alerts', alertState, '待确认提醒', alerts == null ? '—' : String(alerts), '前往提醒处理'),
+    overviewCard('sources', sourceState, '跟踪来源', sources == null ? '—' : String(sources), '前往来源管理'),
+    overviewCard('operations', healthState, '系统健康', healthLabel, '前往运行概览')
   ].join('');
 }
 
-function overviewCard(view, tintClass, label, value, hint) {
-  return '<button type="button" class="overview-card' + (tintClass ? ' ' + tintClass : '') + '" data-view="' + view + '">'
+function overviewCard(view, signalState, label, value, hint) {
+  return '<button type="button" class="overview-card overview-card-' + signalState + '" data-view="' + view + '">'
+    + '<span class="overview-card-top">'
     + '<span class="overview-card-label">' + escapeHtml(label) + '</span>'
+    + '<span class="overview-card-dot" aria-hidden="true"></span>'
+    + '</span>'
     + '<strong class="overview-card-value">' + escapeHtml(value) + '</strong>'
-    + '<span class="overview-card-hint">' + escapeHtml(hint) + '</span>'
+    + '<span class="overview-card-hint">' + escapeHtml(hint)
+    + '<span class="overview-card-hint-go" aria-hidden="true">→</span></span>'
     + '</button>';
 }
 
