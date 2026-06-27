@@ -9566,11 +9566,12 @@ function renderSemanticInsights(insights) {
 }
 
 function renderRawPageFetchResult(result) {
-  return panel('原始页已抓取', [
-    metric('SHA1', result.rawPage.contentSha1),
-    metric('论坛', result.rawPage.sourceKey),
-    metric('URL', result.rawPage.sourceUrl),
-    metric('重复', result.duplicate ? '是' : '否')
+  const rawPage = result.rawPage || {};
+  return panel('原始页面已收入证据库', [
+    metric('内容指纹', formatEvidenceFingerprint(rawPage.contentSha1)),
+    metric('来源', workspaceValue(rawPage.sourceKey, '未知来源')),
+    metric('页面地址', workspaceValue(rawPage.sourceUrl, '未记录')),
+    metric('收录状态', result.duplicate ? '已存在' : '新收录')
   ].join(''), 'wide');
 }
 
@@ -9582,16 +9583,16 @@ function renderRawPageFetchWindowResult(windowResult) {
   const rows = windowResult.results.map(function (item) {
     const rawPage = item.result && item.result.rawPage || {};
     const details = [
-      '页=' + item.page,
-      rawPage.contentSha1 ? 'sha1=' + rawPage.contentSha1 : undefined,
-      rawPage.sourceUrl || undefined,
-      item.result && item.result.duplicate ? '重复' : '新增'
+      '页码 ' + workspaceValue(item.page, '未知'),
+      '内容指纹 ' + formatEvidenceFingerprint(rawPage.contentSha1),
+      rawPage.sourceUrl ? '页面地址 ' + rawPage.sourceUrl : undefined,
+      item.result && item.result.duplicate ? '已存在' : '新收录'
     ].filter(Boolean).join(' · ');
     return '<div class="action-row"><span>' +
       escapeHtml(rawPage.sourceUrl || ('第 ' + item.page + ' 页')) +
       '<small>' + escapeHtml(details) + '</small></span></div>';
   }).join('');
-  return panel('原始页已抓取', [
+  return panel('原始页面已收入证据库', [
     metric('起始页', windowResult.startPage),
     metric('页数', windowResult.pageCount),
     rows
@@ -9599,9 +9600,9 @@ function renderRawPageFetchWindowResult(windowResult) {
 }
 
 function renderRawPageReplayResult(result) {
-  return panel('原始页回放完成', [
-    metric('任务 ID', result.task.id),
-    metric('状态', result.task.status),
+  return panel('原始页面回放完成', [
+    metric('任务', result.task.id),
+    metric('状态', workspaceStatusLabel(result.task.status)),
     metric('主题', result.report.thread.title),
     metric('楼层', result.report.thread.parsedPostCount)
   ].join(''), 'wide');
@@ -9609,18 +9610,27 @@ function renderRawPageReplayResult(result) {
 
 function renderRawPageList(result) {
   const pages = result.pages || [];
-  if (pages.length === 0) return panel('原始页证据', '<div class="muted">暂无</div>', 'wide');
-  return panel('原始页证据', pages.map(function (page) {
+  if (pages.length === 0) return panel('原始页面证据', '<div class="muted">暂无原始页面证据。</div>', 'wide');
+  return panel('原始页面证据', pages.map(function (page) {
     const meta = page.metadata || {};
     const details = [
-      page.sourceKey,
-      page.sourceThreadId || 'unknown-thread',
-      page.contentSha1,
-      meta.status ? 'HTTP ' + meta.status : '',
-      page.fetchedAt
+      '来源 ' + workspaceValue(page.sourceKey, '未知来源'),
+      '主题 ' + workspaceValue(page.sourceThreadId, '未归档'),
+      '内容指纹 ' + formatEvidenceFingerprint(page.contentSha1),
+      meta.status ? '抓取状态 ' + meta.status : undefined,
+      page.fetchedAt ? '抓取时间 ' + page.fetchedAt : undefined
     ].filter(Boolean).join(' · ');
-    return '<div class="action-row"><span>' + escapeHtml(page.sourceUrl || page.contentSha1) + '<small>' + escapeHtml(details) + '</small></span><button class="inline-button" type="button" data-action="replay-raw-page" data-source-key="' + escapeHtml(page.sourceKey) + '" data-content-sha1="' + escapeHtml(page.contentSha1) + '">回放</button></div>';
+    return '<div class="action-row"><span>' +
+      '<strong>' + escapeHtml(page.sourceUrl || '未命名页面') + '</strong>' +
+      '<small>' + escapeHtml(details) + '</small></span>' +
+      '<button class="inline-button" type="button" data-action="replay-raw-page" data-source-key="' + escapeHtml(page.sourceKey) + '" data-content-sha1="' + escapeHtml(page.contentSha1) + '">回放</button></div>';
   }).join(''), 'wide');
+}
+
+function formatEvidenceFingerprint(value) {
+  if (!value) return '未记录';
+  const text = String(value);
+  return text.length > 16 ? text.slice(0, 12) + '...' : text;
 }
 
 function renderSourceList(result) {

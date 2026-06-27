@@ -735,6 +735,23 @@ test('notification batch results avoid archive-console copy', function () {
   ]);
 });
 
+test('raw page evidence avoids storage-console copy', function () {
+  const app = readProjectFile('src/presentation/web/app.js');
+
+  assertAbsent(app, [
+    "metric('SHA1', result.rawPage.contentSha1)",
+    "metric('URL', result.rawPage.sourceUrl)",
+    "'页=' + item.page",
+    "rawPage.contentSha1 ? 'sha1=' + rawPage.contentSha1 : undefined",
+    "page.sourceThreadId || 'unknown-thread'",
+    "page.contentSha1,",
+    "meta.status ? 'HTTP ' + meta.status : ''",
+    "panel('原始页证据'",
+    "panel('原始页已抓取'",
+    "panel('原始页回放完成'"
+  ]);
+});
+
 test('source diagnostics avoid status-pipe copy', function () {
   const app = readProjectFile('src/presentation/web/app.js');
 
