@@ -2389,7 +2389,7 @@ async function loadTaskDetailFromButton(button) {
 async function loadEventDetailFromButton(button) {
   const eventId = button.dataset.eventId;
   if (!eventId) {
-    renderError('eventResult', new Error('No event id is available.'));
+    renderError('eventResult', new Error('找不到这条提醒的编号。'));
     return;
   }
   await renderAsync('eventResult', function () {
@@ -2403,7 +2403,7 @@ async function prepareEventActionIntentFromButton(button) {
   const eventId = button.dataset.eventId;
   const actionKey = button.dataset.actionKey;
   if (!eventId || !actionKey) {
-    renderError('eventResult', new Error('需要提醒 ID 和动作键，才能预演动作。'));
+    renderError('eventResult', new Error('需要提醒编号和动作名称，才能预演动作。'));
     return;
   }
   await renderAsync('eventResult', function () {
@@ -2421,7 +2421,7 @@ async function executeEventActionFromButton(button) {
   const eventId = button.dataset.eventId;
   const actionKey = button.dataset.actionKey;
   if (!eventId || !actionKey) {
-    renderError('eventResult', new Error('需要提醒 ID 和动作键，才能执行动作。'));
+    renderError('eventResult', new Error('需要提醒编号和动作名称，才能执行动作。'));
     return;
   }
   if (!window.confirm('要对这条提醒执行 ' + actionKey + ' 吗？')) return;
@@ -8845,7 +8845,7 @@ function renderNotificationEventDetail(result) {
         summaryTile('类型', notificationEventTypeLabel(event.type)),
         summaryTile('来源', sourceScope.sourceId || sourceScope.sourceKey || '未绑定', sourceScope.sourceId || sourceScope.sourceKey ? 'ok' : 'muted')
       ].join('') + '</div>',
-      metric('提醒 ID', event.id || '暂无'),
+      metric('提醒编号', event.id || '暂无'),
       metric('创建时间', event.createdAt || '暂无'),
       metric('下次投递', event.nextDeliveryAt || '暂无'),
       metric('尝试次数', event.deliveryAttempts || 0),
@@ -9013,8 +9013,8 @@ function renderNotificationEventActionIntent(result) {
         summaryTile('已执行', executed ? '是' : '否', executed ? 'warn' : 'ok'),
         summaryTile('动作', notificationEventActionLabel(result.action))
       ].join('') + '</div>',
-      metric('意图 ID', intent.id || '暂无'),
-      metric('提醒 ID', result.event && result.event.id || intent.eventId || '暂无'),
+      metric('动作编号', intent.id || '暂无'),
+      metric('提醒编号', result.event && result.event.id || intent.eventId || '暂无'),
       metric('执行者', intent.actor || '工作区'),
       metric('原因', intent.reason || '暂无'),
       metric('审计记录', ledger.recorded ? ledger.recordId || '已记录' : ledger.reason || '未记录'),
