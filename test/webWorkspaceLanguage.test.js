@@ -151,7 +151,15 @@ test('author intelligence surfaces avoid review-console copy', function () {
     'Author queue alert synthesis',
     'Event preview',
     '>Back to queue</button>',
-    '>Run check again</button>'
+    '>Run check again</button>',
+    "sourceKey ? 'source=' + sourceKey : undefined",
+    "ref.sourceThreadId ? 'thread=' + ref.sourceThreadId : undefined",
+    "item.sourceThreadId || ref.sourceThreadId ? 'thread=' + (item.sourceThreadId || ref.sourceThreadId) : undefined",
+    "thread.sourceThreadId ? 'thread=' + thread.sourceThreadId : undefined",
+    "'opinions=' + (item.opinionCount || 0)",
+    "topPressure.sourceKey ? '主要来源=' + topPressure.sourceKey : undefined",
+    "'类型=' + formatAuthorCountSummary(summary.byType)",
+    "'来源=' + formatAuthorCountSummary(sourceCounts)"
   ]);
 });
 

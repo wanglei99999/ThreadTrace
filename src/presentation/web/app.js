@@ -3170,7 +3170,7 @@ function renderAuthorIntelligenceHero(dashboard) {
     '<section class="author-intel-main">',
     '<div class="author-intel-header">',
     '<span class="author-intel-label">作者雷达</span>',
-    statusBadge(status, statusVariant(status)),
+    statusBadge(workspaceStatusLabel(status), statusVariant(status)),
     '</div>',
     '<h3>' + escapeHtml(nextAction) + '</h3>',
     '<p>' + escapeHtml([authorIntelligenceScope(dashboard), formatAuthorRevisionMode(dashboard.revisionMode), '报告 ' + (dashboard.reportCount || 0), '修订 ' + (dashboard.reportRevisionCount || 0)].filter(Boolean).join(' · ')) + '</p>',
@@ -3198,7 +3198,7 @@ function renderAuthorIntelligenceHero(dashboard) {
     '<small>' + escapeHtml([
       formatAuthorCountSummary(summary.reviewQueuePriorityCounts),
       formatAuthorCountSummary(summary.reviewQueueTypeCounts),
-      topPressure.sourceKey ? '主要来源=' + topPressure.sourceKey : undefined,
+      topPressure.sourceKey ? '主要来源 ' + topPressure.sourceKey : undefined,
       authorWorkspaceCopy(topPressure.recommendedNextAction)
     ].filter(Boolean).join(' · ')) + '</small>',
     '</section>',
@@ -3323,11 +3323,11 @@ function renderAuthorReviewQueueRowsLegacy(items) {
     const ref = (item.refs || [])[0] || {};
     const sourceKey = item.sourceKey || ref.sourceKey || item.thread && item.thread.sourceKey;
     const details = [
-      sourceKey ? 'source=' + sourceKey : undefined,
-      item.type,
-      item.reason,
-      item.score === undefined ? undefined : 'score=' + item.score,
-      ref.sourceThreadId ? 'thread=' + ref.sourceThreadId : undefined,
+      sourceKey ? '来源 ' + sourceKey : undefined,
+      item.type ? '类型 ' + item.type : undefined,
+      item.reason ? '原因 ' + item.reason : undefined,
+      item.score === undefined ? undefined : '评分 ' + item.score,
+      ref.sourceThreadId ? '主题 ' + ref.sourceThreadId : undefined,
       ref.floor === undefined ? undefined : '#' + ref.floor
     ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row"><span>' +
@@ -3336,7 +3336,7 @@ function renderAuthorReviewQueueRowsLegacy(items) {
       '<small>' + escapeHtml(item.summary || '') + '</small>' +
       '<small>' + escapeHtml(authorWorkspaceCopy(item.nextAction)) + '</small>' +
       '</span><span class="button-group source-op-buttons">' +
-      statusBadge(item.priority || 'unknown', item.priority === 'high' ? 'warn' : 'muted') +
+      statusBadge(authorWorkspaceCopy(item.priority || 'unknown'), item.priority === 'high' ? 'warn' : 'muted') +
       renderSourceDrilldownButtonForScope({ sourceKey }) +
       '</span></div>';
   }).join('');
@@ -3367,13 +3367,13 @@ function renderAuthorReviewQueueHero(result) {
     '<section class="review-queue-main">',
     '<div class="review-queue-header">',
     '<span class="review-queue-label">复核队列</span>',
-    statusBadge(status, openCount > 0 ? 'warn' : statusVariant(status)),
+    statusBadge(workspaceStatusLabel(status), openCount > 0 ? 'warn' : statusVariant(status)),
     '</div>',
     '<h3>' + escapeHtml(authorWorkspaceCopy(result.recommendedNextAction, '当前没有待处理的作者复核。')) + '</h3>',
     '<p>' + escapeHtml([
-      '状态=' + (result.status || 'ok'),
+      '状态 ' + workspaceStatusLabel(result.status || 'ok'),
       '优先级=' + formatAuthorCountSummary(summary.byPriority),
-      '类型=' + formatAuthorCountSummary(summary.byType),
+      '类型 ' + formatAuthorCountSummary(summary.byType),
       sync
     ].filter(Boolean).join(' · ')) + '</p>',
     '<div class="review-queue-actions button-group">' +
@@ -3395,7 +3395,7 @@ function renderAuthorReviewQueueHero(result) {
     '<section class="review-queue-foot">',
     '<span>队列构成</span>',
     '<strong>' + escapeHtml(formatAuthorCountSummary(summary.byStatus)) + '</strong>',
-    '<small>' + escapeHtml('来源=' + formatAuthorCountSummary(sourceCounts)) + '</small>',
+    '<small>' + escapeHtml('来源 ' + formatAuthorCountSummary(sourceCounts)) + '</small>',
     '</section>',
     '</article>'
   ].join('');
@@ -3485,18 +3485,18 @@ function renderDurableAuthorReviewQueueRowsLegacy(items) {
     const sourceKey = item.sourceKey || ref.sourceKey;
     const details = [
       item.id,
-      sourceKey ? 'source=' + sourceKey : undefined,
-      item.type,
-      item.reason,
-      item.sourceThreadId || ref.sourceThreadId ? 'thread=' + (item.sourceThreadId || ref.sourceThreadId) : undefined,
+      sourceKey ? '来源 ' + sourceKey : undefined,
+      item.type ? '类型 ' + item.type : undefined,
+      item.reason ? '原因 ' + item.reason : undefined,
+      item.sourceThreadId || ref.sourceThreadId ? '主题 ' + (item.sourceThreadId || ref.sourceThreadId) : undefined,
       item.floor === undefined && ref.floor === undefined ? undefined : '#' + (item.floor === undefined ? ref.floor : item.floor),
-      'seen=' + (item.seenCount || 0)
+      '出现 ' + (item.seenCount || 0)
     ].filter(Boolean).join(' · ');
     const controls = '<span class="button-group source-op-buttons">' +
       renderSourceDrilldownButtonForScope({ sourceKey }) +
       (item.status === 'open'
         ? '<button class="inline-button secondary-inline-button" type="button" data-action="set-author-review-status" data-item-id="' + escapeHtml(item.id) + '" data-status="confirmed">确认</button><button class="inline-button warning-inline-button" type="button" data-action="set-author-review-status" data-item-id="' + escapeHtml(item.id) + '" data-status="ignored">忽略</button>'
-        : statusBadge(item.status || 'unknown', item.status === 'confirmed' ? 'ok' : 'muted')) +
+        : statusBadge(authorWorkspaceCopy(item.status || 'unknown'), item.status === 'confirmed' ? 'ok' : 'muted')) +
       '</span>';
     return '<div class="action-row ops-row"><span>' +
       '<strong>' + escapeHtml(item.title || item.id) + '</strong>' +
@@ -3519,14 +3519,14 @@ function renderAuthorIntelligenceRowsLegacy(authors) {
       return entity.entity && entity.entity.displayName ? entity.entity.displayName + '/' + entity.latestAttitude : entity.key;
     }).join(' · ');
     const details = [
-      sourceKey ? 'source=' + sourceKey : undefined,
-      'posts=' + (item.postCount || 0),
-      'opinions=' + (item.opinionCount || 0),
-      'threads=' + (item.threadCount || 0),
-      item.dominantStance ? 'stance=' + item.dominantStance : undefined,
-      item.averageOpinionConfidence === undefined ? undefined : 'confidence=' + item.averageOpinionConfidence,
-      'primary=' + (item.primaryThreadCount || 0),
-      'gaps=' + (item.evidenceGapCount || 0)
+      sourceKey ? '来源 ' + sourceKey : undefined,
+      '发言 ' + (item.postCount || 0),
+      '观点 ' + (item.opinionCount || 0),
+      '主题 ' + (item.threadCount || 0),
+      item.dominantStance ? '立场 ' + item.dominantStance : undefined,
+      item.averageOpinionConfidence === undefined ? undefined : '可信度 ' + item.averageOpinionConfidence,
+      '主线 ' + (item.primaryThreadCount || 0),
+      '缺口 ' + (item.evidenceGapCount || 0)
     ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row"><span>' +
       '<strong>' + escapeHtml(author.displayName || author.sourceAuthorId || item.key) + '</strong>' +
@@ -3534,7 +3534,7 @@ function renderAuthorIntelligenceRowsLegacy(authors) {
       '<small>' + escapeHtml(intelligence.summary || focus || formatStanceSummary(item.stanceSummary)) + '</small>' +
       (focus ? '<small>' + escapeHtml(focus) + '</small>' : '') +
       '</span><span class="button-group source-op-buttons">' +
-      statusBadge(intelligence.evidenceStatus || (item.evidenceGapCount > 0 ? 'needs-review' : 'ready'), intelligence.evidenceStatus === 'needs-review' ? 'warn' : 'ok') +
+      statusBadge(workspaceStatusLabel(intelligence.evidenceStatus || (item.evidenceGapCount > 0 ? 'needs-review' : 'ready')), intelligence.evidenceStatus === 'needs-review' ? 'warn' : 'ok') +
       renderSourceDrilldownButtonForScope({ sourceKey }) +
       '</span></div>';
   }).join('');
@@ -3676,18 +3676,18 @@ function renderOpinionTimelineRowsLegacy(items) {
     const thread = item.thread || {};
     const author = item.author || {};
     const details = [
-      thread.sourceThreadId ? 'thread=' + thread.sourceThreadId : undefined,
+      thread.sourceThreadId ? '主题 ' + thread.sourceThreadId : undefined,
       item.publishedAt,
       item.scope,
       item.horizon,
-      item.confidence === undefined ? undefined : 'confidence=' + item.confidence
+      item.confidence === undefined ? undefined : '可信度 ' + item.confidence
     ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml('#' + item.floor + ' · ' + (author.displayName || author.sourceAuthorId || 'unknown')) + '</strong>' +
+      '<strong>' + escapeHtml('#' + item.floor + ' · ' + (author.displayName || author.sourceAuthorId || '未知作者')) + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
       '<small>' + escapeHtml(item.evidenceText || '') + '</small>' +
       '</span>' +
-      statusBadge(item.attitude || 'unknown', statusVariant(item.attitude)) +
+      statusBadge(authorWorkspaceCopy(item.attitude || 'unknown'), statusVariant(item.attitude)) +
       '</div>';
   }).join('');
 }
@@ -3698,16 +3698,16 @@ function renderAuthorEvidenceGapRowsLegacy(gaps) {
     const entity = gap.entity || {};
     const thread = gap.thread || {};
     const details = [
-      thread.sourceThreadId ? 'thread=' + thread.sourceThreadId : undefined,
+      thread.sourceThreadId ? '主题 ' + thread.sourceThreadId : undefined,
       '#' + gap.firstFloor + '-#' + gap.lastFloor,
       gap.reason
     ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml(entity.displayName || gap.key || 'unknown-entity') + '</strong>' +
+      '<strong>' + escapeHtml(entity.displayName || gap.key || '未知对象') + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
       '<small>' + escapeHtml(gap.summary || '') + '</small>' +
       '</span>' +
-      statusBadge('gap', 'warn') +
+      statusBadge('证据缺口', 'warn') +
       '</div>';
   }).join('');
 }
@@ -3718,16 +3718,16 @@ function renderAuthorEvidenceRowsLegacy(items) {
     const thread = item.thread || {};
     const author = item.author || {};
     const details = [
-      thread.sourceThreadId ? 'thread=' + thread.sourceThreadId : undefined,
+      thread.sourceThreadId ? '主题 ' + thread.sourceThreadId : undefined,
       item.publishedAt,
-      item.score === undefined ? undefined : 'score=' + item.score
+      item.score === undefined ? undefined : '评分 ' + item.score
     ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml('#' + item.floor + ' · ' + (author.displayName || author.sourceAuthorId || 'unknown')) + '</strong>' +
+      '<strong>' + escapeHtml('#' + item.floor + ' · ' + (author.displayName || author.sourceAuthorId || '未知作者')) + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
       '<small>' + escapeHtml(item.excerpt || '') + '</small>' +
       '</span>' +
-      statusBadge('evidence', 'ok') +
+      statusBadge('证据', 'ok') +
       '</div>';
   }).join('');
 }
