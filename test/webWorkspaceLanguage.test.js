@@ -658,6 +658,9 @@ test('notification inbox rows avoid event-backend copy', function () {
   const app = readProjectFile('src/presentation/web/app.js');
 
   assertAbsent(app, [
+    "overview.status || 'unknown'",
+    "return (event.deliveryStatus || 'failed') + ' | ' + event.type + ' | ' + event.id + ' | attempts='",
+    "return (event.deliveryStatus || 'delivered') + ' | ' + event.type + ' | ' + event.id + ' | reviewable'",
     "event.type || 'notification'",
     "authorMetaChip('级别', event.severity || 'unknown'",
     "authorMetaChip('投递', event.deliveryStatus || 'pending'",

@@ -9016,7 +9016,7 @@ function renderNotificationEventOverviewLegacy(overview) {
   const sourceSummary = compactCountMap(overview.bySourceKey);
   return panel('提醒箱概览', [
     '<div class="summary-strip event-summary-strip">' + [
-      summaryTile('状态', overview.status || 'unknown', statusVariant(overview.status)),
+      summaryTile('状态', workspaceStatusLabel(workspaceValue(overview.status, 'unknown')), statusVariant(overview.status)),
       summaryTile('窗口', String(overview.eventCount || 0)),
       summaryTile('未确认', String(overview.unacknowledgedCount || 0), overview.unacknowledgedCount > 0 ? 'warn' : 'ok'),
       summaryTile('到期', String(overview.dueForDeliveryCount || 0), overview.dueForDeliveryCount > 0 ? 'warn' : 'ok'),
@@ -9033,11 +9033,23 @@ function renderNotificationEventOverviewLegacy(overview) {
     metric('下一步', overview.recommendedNextAction || '暂无'),
     renderNotificationSourceHotspots(overview.sourceHotspots || []),
     evidenceList((attention.failedEvents || []).slice(0, 5).map(function (event) {
-      return (event.deliveryStatus || 'failed') + ' | ' + event.type + ' | ' + event.id + ' | attempts=' + (event.deliveryAttempts || 0);
+      return notificationLegacyAttentionLine(event, 'failed');
     }).concat((attention.reviewableEvents || []).slice(0, 5).map(function (event) {
-      return (event.deliveryStatus || 'delivered') + ' | ' + event.type + ' | ' + event.id + ' | reviewable';
+      return notificationLegacyAttentionLine(event, 'reviewable');
     })))
   ].join(''), 'wide');
+}
+
+function notificationLegacyAttentionLine(event, kind) {
+  const safeEvent = event || {};
+  const details = [
+    workspaceStatusLabel(workspaceValue(safeEvent.deliveryStatus, kind === 'failed' ? 'failed' : 'delivered')),
+    notificationEventTypeLabel(safeEvent.type),
+    safeEvent.id ? '提醒 ' + safeEvent.id : undefined,
+    kind === 'failed' ? '尝试 ' + String(safeEvent.deliveryAttempts || 0) : undefined,
+    kind === 'reviewable' ? '待复核' : undefined
+  ];
+  return details.filter(Boolean).join(' · ');
 }
 
 function renderNotificationSynthesisPolicyLegacy(policy) {
@@ -9178,13 +9190,13 @@ function renderNotificationEventOverview(overview) {
       '<section class="notification-outbox-main">',
         '<div class="notification-outbox-header">',
           '<span class="notification-outbox-label">提醒箱</span>',
-          statusBadge(workspaceStatusLabel(overview.status || 'unknown'), statusVariant(overview.status)),
+          statusBadge(workspaceStatusLabel(workspaceValue(overview.status, 'unknown')), statusVariant(overview.status)),
         '</div>',
         '<h3>' + escapeHtml(overview.recommendedNextAction || '当前窗口内没有需要处理的提醒。') + '</h3>',
         '<p>' + escapeHtml([
           '投递=' + formatStanceSummary(overview.byDeliveryStatus),
-          '级别=' + formatStanceSummary(overview.bySeverity),
-          '来源=' + compactCountMap(overview.bySourceKey)
+          '级别 ' + formatStanceSummary(overview.bySeverity),
+          '来源 ' + compactCountMap(overview.bySourceKey)
         ].filter(Boolean).join(' · ')) + '</p>',
       '</section>',
       '<aside class="notification-outbox-signals">',
