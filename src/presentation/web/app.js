@@ -9750,10 +9750,21 @@ function renderSourceDiagnostics(diagnostics) {
     return sourceDiagnosticSummaryLine(source);
   });
   const actions = (diagnostics.nextActions || []).slice(0, 8).map(function (action) {
-    const commands = action.commands || (action.command ? [action.command] : []);
-    return workspaceStatusLabel(action.severity) + ' · 来源 ID ' + action.sourceId + ' · ' + action.key + ' · ' + commands.join(' · ') + (action.evidenceSummary ? ' · 证据 ' + action.evidenceSummary : '');
+    return sourceDiagnosticActionSummary(action);
   });
   return panel('来源接入诊断', evidenceList(rows.concat(actions)), 'wide');
+}
+
+function sourceDiagnosticActionSummary(action) {
+  const safeAction = action || {};
+  const commands = safeAction.commands || (safeAction.command ? [safeAction.command] : []);
+  return [
+    workspaceStatusLabel(safeAction.severity),
+    '来源 ' + workspaceValue(safeAction.sourceName || safeAction.sourceKey || safeAction.sourceId, '未指明'),
+    '建议 ' + workspaceValue(safeAction.summary || safeAction.title || safeAction.label, '查看接入建议'),
+    commands.length ? '建议命令 ' + commands.length + ' 条' : undefined,
+    safeAction.evidenceSummary ? '证据 ' + safeAction.evidenceSummary : undefined
+  ].filter(Boolean).join(' · ');
 }
 
 function sourceDiagnosticSummaryLine(source) {

@@ -769,7 +769,9 @@ test('source diagnostics avoid status-pipe copy', function () {
   assertAbsent(app, [
     "return check.key + '=' + check.status;",
     "return source.status + ' | ' + source.displayName",
-    "failed ? ' | ' + failed : ''"
+    "failed ? ' | ' + failed : ''",
+    "workspaceStatusLabel(action.severity) + ' · 来源 ID ' + action.sourceId",
+    "return workspaceStatusLabel(action.severity) + ' · 来源 ID ' + action.sourceId + ' · ' + action.key + ' · ' + commands.join(' · ')"
   ]);
 });
 
