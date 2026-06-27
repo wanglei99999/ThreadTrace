@@ -731,6 +731,7 @@ test('notification inbox rows avoid event-backend copy', function () {
     "hotspot.oldestUnacknowledgedAt ? '最早='",
     "[event.sourceKey, event.sourceId].filter(Boolean).join(' / ')",
     "'来源 ' + [event.sourceKey, event.sourceId].filter(Boolean).join('/')",
+    "eventMetadata(event).join(' | ')",
     "sourceId || '全部来源 ID'",
     "filters.sourceId ? '来源 ID=' + filters.sourceId : undefined",
     "metric('事件 ID', result.event.id)"

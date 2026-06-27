@@ -9149,7 +9149,7 @@ function renderNotificationEventRowLegacy2(event) {
   const disabled = event.acknowledgedAt ? ' disabled' : '';
   const title = event.title || event.summary || event.id || '未命名提醒';
   const summary = event.summary && event.summary !== title ? '<small>' + escapeHtml(event.summary) + '</small>' : '';
-  const meta = eventMetadata(event).join(' | ');
+  const meta = eventMetadata(event).join(' · ');
   const controls = '<span class="button-group source-op-buttons">' +
     renderEventDetailButtonControl(event) +
     renderEventSourceDrilldownButton(event) +
