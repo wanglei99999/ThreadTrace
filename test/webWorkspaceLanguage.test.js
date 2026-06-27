@@ -157,6 +157,7 @@ test('author intelligence surfaces avoid review-console copy', function () {
     "item.sourceThreadId || ref.sourceThreadId ? 'thread=' + (item.sourceThreadId || ref.sourceThreadId) : undefined",
     "thread.sourceThreadId ? 'thread=' + thread.sourceThreadId : undefined",
     "'opinions=' + (item.opinionCount || 0)",
+    "'优先级=' + formatAuthorCountSummary(summary.byPriority)",
     "topPressure.sourceKey ? '主要来源=' + topPressure.sourceKey : undefined",
     "'类型=' + formatAuthorCountSummary(summary.byType)",
     "'来源=' + formatAuthorCountSummary(sourceCounts)"
@@ -368,6 +369,13 @@ test('runtime and action summaries avoid backend shorthand', function () {
     "'作者复核=' + authorReviewQueueStatusSummary",
     "'复核动作=' + reviewActionStatusSummary",
     "'提醒动作=' + eventActionStatusSummary",
+    "' · 模式=' +",
+    "' · mock=' +",
+    "'状态=' + (demo.closureStatus",
+    "'未读=' + pressure.openEvents",
+    "'审计=' + pressure.auditCount",
+    "'状态=' + (actionExecutions.status",
+    "'数量=' + pressure.executionCount",
     "'score ' + (attention.priorityScore || 0)",
     "'signals ' + (attention.signalCount || 0)",
     "sourceHealth.schedule ? ((sourceHealth.schedule.due ? 'due' : 'skip')",
@@ -677,7 +685,12 @@ test('notification inbox rows avoid event-backend copy', function () {
     "item.staleResolution ? 'stale-resolution' : 'no-stale-resolution'",
     "item.reopensAutoResolved ? 'reopen-auto-resolved' : 'no-reopen'",
     "rules ? 'rules=' + rules : undefined",
-    "rule.key + ' | ' + rule.summary"
+    "rule.key + ' | ' + rule.summary",
+    "'未读=' + (hotspot.openCount || 0)",
+    "'失败=' + (hotspot.failedCount || 0)",
+    "'到期=' + (hotspot.dueForDeliveryCount || 0)",
+    "'耗尽=' + (hotspot.retryExhaustedCount || 0)",
+    "hotspot.oldestUnacknowledgedAt ? '最早='"
   ]);
 });
 

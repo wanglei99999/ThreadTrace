@@ -3372,7 +3372,7 @@ function renderAuthorReviewQueueHero(result) {
     '<h3>' + escapeHtml(authorWorkspaceCopy(result.recommendedNextAction, '当前没有待处理的作者复核。')) + '</h3>',
     '<p>' + escapeHtml([
       '状态 ' + workspaceStatusLabel(result.status || 'ok'),
-      '优先级=' + formatAuthorCountSummary(summary.byPriority),
+      '优先级 ' + formatAuthorCountSummary(summary.byPriority),
       '类型 ' + formatAuthorCountSummary(summary.byType),
       sync
     ].filter(Boolean).join(' · ')) + '</p>',
@@ -5907,37 +5907,37 @@ function renderAutomationRunPath(summary, plan, cockpit) {
   const rows = [
     {
       title: '来源排期',
-      detail: '已登记=' + (sources.total || 0) + ' · 到期=' + (sources.due || 0) + ' · 跳过=' + (sources.skipped || 0),
+      detail: '已登记 ' + (sources.total || 0) + ' · 到期 ' + (sources.due || 0) + ' · 暂缓 ' + (sources.skipped || 0),
       status: (sources.total || 0) > 0 ? ((sources.due || 0) > 0 ? 'warn' : 'ok') : 'fail'
     },
     {
       title: '执行拓扑',
-      detail: (workers.topology || 'unknown') + ' · 模式=' + (workers.sourceTaskMode || automation.sourceTaskMode || 'unknown') + ' · 执行器=' + (workers.workerCount || workerCommands.length || 0),
+      detail: workspaceValue(workers.topology, '未知拓扑') + ' · 来源模式 ' + workspaceValue(workers.sourceTaskMode || automation.sourceTaskMode, '未设置') + ' · 执行器 ' + (workers.workerCount || workerCommands.length || 0),
       status: statusVariant(workers.status)
     },
     {
       title: '助手提供方',
-      detail: (llm.provider || 'unknown') + ' · 模式=' + (llm.mode || 'unknown') + ' · mock=' + String(Boolean(llm.mockMode)),
+      detail: workspaceValue(llm.provider, '未知提供方') + ' · 运行模式 ' + workspaceValue(llm.mode, '未设置') + ' · 模拟 ' + (llm.mockMode ? '已开启' : '未开启'),
       status: llm.mockMode ? 'warn' : statusVariant(llm.status)
     },
     {
       title: '试跑收口',
-      detail: '状态=' + (demo.closureStatus || demo.status || 'not-run') + ' · 日常可用=' + String(Boolean(demo.readyForDailyUse)),
+      detail: '状态 ' + workspaceStatusLabel(demo.closureStatus || demo.status || 'not-run') + ' · 日常可用 ' + (demo.readyForDailyUse ? '是' : '否'),
       status: demo.readyForDailyUse ? 'ok' : 'warn'
     },
     {
       title: '操作压力',
-      detail: '队列=' + (operations.queueTotal || 0) + ' · 可运行=' + (operations.runnable || 0) + ' · 优先级=' + (operations.highestPriorityScore || 0),
+      detail: '队列 ' + (operations.queueTotal || 0) + ' · 可运行 ' + (operations.runnable || 0) + ' · 优先级 ' + (operations.highestPriorityScore || 0),
       status: statusVariant(operations.cockpitStatus)
     },
     {
       title: '提醒箱',
-      detail: '未读=' + pressure.openEvents + ' · 到期=' + pressure.dueEvents + ' · 失败=' + pressure.failedEvents,
+      detail: '未读 ' + pressure.openEvents + ' · 到期 ' + pressure.dueEvents + ' · 失败 ' + pressure.failedEvents,
       status: pressure.outboxVariant
     },
     {
       title: '复核审计',
-      detail: '审计=' + pressure.auditCount + ' · 执行=' + pressure.executionCount + ' · 停滞=' + pressure.staleExecutions,
+      detail: '审计 ' + pressure.auditCount + ' · 执行 ' + pressure.executionCount + ' · 停滞 ' + pressure.staleExecutions,
       status: pressure.auditVariant
     }
   ];
@@ -6012,25 +6012,25 @@ function automationAttentionSummary(item) {
   const summary = item && item.summary ? String(item.summary) : '查看这个工作区信号。';
   return summary
     .replace(/\s+\|\s+/g, ' · ')
-    .replace(/\bretryExhausted=/g, '重试耗尽=')
-    .replace(/\bfailedChecks=/g, '失败检查=')
-    .replace(/\bwarnChecks=/g, '提醒检查=')
-    .replace(/\bplannedClosure=/g, '计划关闭=')
-    .replace(/\bplannedMerge=/g, '计划合并=')
-    .replace(/\bactionable=/g, '可处理=')
-    .replace(/\bdryRun=/g, '预览=')
-    .replace(/\bexecute=/g, '执行=')
-    .replace(/\baudits=/g, '审计=')
-    .replace(/\btasks=/g, '任务=')
-    .replace(/\bpresent=/g, '已就绪=')
-    .replace(/\bmissing=/g, '缺失=')
-    .replace(/\bspanMs=/g, '跨度=')
-    .replace(/\bchannel=/g, '渠道=')
-    .replace(/\bcount=/g, '总数=')
-    .replace(/\bstale=/g, '停滞=')
-    .replace(/\bopen=/g, '未读=')
-    .replace(/\bdue=/g, '到期=')
-    .replace(/\bfailed=/g, '失败=');
+    .replace(/\bretryExhausted=/g, '重试耗尽 ')
+    .replace(/\bfailedChecks=/g, '失败检查 ')
+    .replace(/\bwarnChecks=/g, '提醒检查 ')
+    .replace(/\bplannedClosure=/g, '计划关闭 ')
+    .replace(/\bplannedMerge=/g, '计划合并 ')
+    .replace(/\bactionable=/g, '可处理 ')
+    .replace(/\bdryRun=/g, '预览 ')
+    .replace(/\bexecute=/g, '执行 ')
+    .replace(/\baudits=/g, '审计 ')
+    .replace(/\btasks=/g, '任务 ')
+    .replace(/\bpresent=/g, '已就绪 ')
+    .replace(/\bmissing=/g, '缺失 ')
+    .replace(/\bspanMs=/g, '跨度 ')
+    .replace(/\bchannel=/g, '渠道 ')
+    .replace(/\bcount=/g, '总数 ')
+    .replace(/\bstale=/g, '停滞 ')
+    .replace(/\bopen=/g, '未读 ')
+    .replace(/\bdue=/g, '到期 ')
+    .replace(/\bfailed=/g, '失败 ');
 }
 
 function automationAttentionNextAction(item) {
@@ -6297,7 +6297,7 @@ function renderAutomationOperatingPressure(cockpit) {
     '<div class="action-row ops-row"><span>' +
       '<strong>提醒箱</strong>' +
       '<small>' + escapeHtml(notificationOverview.recommendedNextAction || '暂无提醒箱建议。') + '</small>' +
-      '<small>' + escapeHtml('重试耗尽=' + pressure.retryExhaustedEvents + ' · 提醒=' + pressure.eventCount) + '</small>' +
+      '<small>' + escapeHtml('重试耗尽 ' + pressure.retryExhaustedEvents + ' · 提醒 ' + pressure.eventCount) + '</small>' +
       '</span><span class="button-group automation-pressure-actions">' +
         '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="outbox-overview">打开提醒箱</button>' +
         '<button class="inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="ack-preview">确认预览</button>' +
@@ -6306,19 +6306,19 @@ function renderAutomationOperatingPressure(cockpit) {
     '<div class="action-row ops-row"><span>' +
       '<strong>复核审计</strong>' +
       '<small>' + escapeHtml(auditOverview.recommendedNextAction || '暂无复核审计建议。') + '</small>' +
-      '<small>' + escapeHtml('任务=' + (auditOverview.taskCount || 0) + ' · 计划关闭=' + (auditOverview.plannedClosureCount || 0) + ' · 计划合并=' + (auditOverview.plannedMergeCandidateCount || 0)) + '</small>' +
+      '<small>' + escapeHtml('任务 ' + (auditOverview.taskCount || 0) + ' · 计划关闭 ' + (auditOverview.plannedClosureCount || 0) + ' · 计划合并 ' + (auditOverview.plannedMergeCandidateCount || 0)) + '</small>' +
       '</span><span class="button-group automation-pressure-actions">' +
         '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="audit-overview">打开审计</button>' +
         '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="gate-preview">门禁预览</button>' +
-      '</span>' + statusBadge(auditOverview.status || 'unknown', pressure.auditVariant) + '</div>',
+      '</span>' + statusBadge(workspaceStatusLabel(auditOverview.status || 'unknown'), pressure.auditVariant) + '</div>',
     '<div class="action-row ops-row"><span>' +
       '<strong>动作执行</strong>' +
-      '<small>' + escapeHtml('状态=' + (actionExecutions.status || 'unknown') + ' · 数量=' + pressure.executionCount + ' · 停滞=' + pressure.staleExecutions + ' · 失败=' + pressure.failedExecutions) + '</small>' +
+      '<small>' + escapeHtml('状态 ' + workspaceStatusLabel(actionExecutions.status || 'unknown') + ' · 数量 ' + pressure.executionCount + ' · 停滞 ' + pressure.staleExecutions + ' · 失败 ' + pressure.failedExecutions) + '</small>' +
       '<small>' + escapeHtml('真实执行器启用前，提醒投递和复核动作仍保持可观察。') + '</small>' +
       '</span><span class="button-group automation-pressure-actions">' +
         '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="execution-overview">打开执行</button>' +
         '<button class="inline-button secondary-inline-button compact-inline-button" type="button" data-action="run-automation-pressure-action" data-pressure-action="executor-diagnostics">执行诊断</button>' +
-      '</span>' + statusBadge(actionExecutions.status || 'unknown', pressure.executionVariant) + '</div>',
+      '</span>' + statusBadge(workspaceStatusLabel(actionExecutions.status || 'unknown'), pressure.executionVariant) + '</div>',
     checks.length > 0
       ? '<div class="action-row ops-row"><span>' +
         '<strong>提醒渠道</strong>' +
@@ -9387,11 +9387,11 @@ function renderNotificationSourceHotspots(hotspots) {
   if (!hotspots.length) return '';
   return '<section class="notification-hotspots"><span>来源关注</span>' + hotspots.slice(0, 5).map(function (hotspot) {
     const details = [
-      '未读=' + (hotspot.openCount || 0),
-      '失败=' + (hotspot.failedCount || 0),
-      '到期=' + (hotspot.dueForDeliveryCount || 0),
-      '耗尽=' + (hotspot.retryExhaustedCount || 0),
-      hotspot.oldestUnacknowledgedAt ? '最早=' + hotspot.oldestUnacknowledgedAt : undefined
+      '未读 ' + (hotspot.openCount || 0),
+      '失败 ' + (hotspot.failedCount || 0),
+      '到期 ' + (hotspot.dueForDeliveryCount || 0),
+      '耗尽 ' + (hotspot.retryExhaustedCount || 0),
+      hotspot.oldestUnacknowledgedAt ? '最早 ' + hotspot.oldestUnacknowledgedAt : undefined
     ].filter(Boolean).join(' · ');
     return '<div class="notification-hotspot-row"><section>' +
       '<strong>' + escapeHtml(hotspot.sourceKey || hotspot.sourceId || '未知来源') + '</strong>' +
