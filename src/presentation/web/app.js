@@ -9372,7 +9372,7 @@ function renderNotificationEventRow(event) {
   const disabled = event.acknowledgedAt ? ' disabled' : '';
   const title = event.title || event.summary || event.id || '未命名提醒';
   const summary = event.summary && event.summary !== title ? event.summary : '这条提醒正在当前窗口等待处理。';
-  const source = [event.sourceKey, event.sourceId].filter(Boolean).join(' / ') || '全部来源';
+  const source = formatNotificationSourceLabel(event);
   const controls = '<section class="notification-event-actions button-group source-op-buttons">' +
     renderEventDetailButtonControl(event) +
     renderEventSourceDrilldownButton(event) +
@@ -9432,8 +9432,17 @@ function renderEventSourceDrilldownButton(source) {
     '<button class="inline-button secondary-inline-button" type="button" data-action="load-source-collection-health" data-source-id="' + escapeHtml(source.sourceId || '') + '" data-source-key="' + escapeHtml(source.sourceKey || '') + '" data-limit="50">健康简报</button>';
 }
 
+function formatNotificationSourceLabel(source, fallback) {
+  const safeSource = source || {};
+  const parts = [
+    safeSource.sourceKey ? '代号 ' + safeSource.sourceKey : undefined,
+    safeSource.sourceId ? '编号 ' + safeSource.sourceId : undefined
+  ].filter(Boolean);
+  return parts.length ? '来源 ' + parts.join(' · ') : (fallback === undefined ? '全部来源' : fallback);
+}
+
 function eventMetadata(event) {
-  const source = event.sourceKey || event.sourceId ? '来源 ' + [event.sourceKey, event.sourceId].filter(Boolean).join('/') : '';
+  const source = formatNotificationSourceLabel(event, '');
   const ack = event.acknowledgedAt ? '确认 ' + [event.acknowledgedBy, event.acknowledgedAt].filter(Boolean).join(' ') : '未确认';
   return [
     event.createdAt,
@@ -9460,7 +9469,7 @@ function currentEventFilterSummary() {
     deliveryStatus || '全部状态',
     type || '全部类型',
     sourceKey || '全部来源',
-    sourceId || '全部来源 ID'
+    sourceId || '全部来源编号'
   ].join(' · ');
 }
 
@@ -9478,15 +9487,15 @@ function renderEventDispatchResult(result) {
 
 function formatEventSourceScope(filters) {
   const parts = [
-    filters.sourceKey ? '来源代号=' + filters.sourceKey : undefined,
-    filters.sourceId ? '来源 ID=' + filters.sourceId : undefined
+    filters.sourceKey ? '来源代号 ' + filters.sourceKey : undefined,
+    filters.sourceId ? '来源编号 ' + filters.sourceId : undefined
   ].filter(Boolean);
   return parts.length > 0 ? parts.join(' · ') : '全部来源';
 }
 
 function renderEventAckResult(result) {
   return panel('事件已确认', [
-    metric('事件 ID', result.event.id),
+    metric('提醒', result.event.id),
     metric('确认时间', result.event.acknowledgedAt),
     metric('确认人', result.event.acknowledgedBy)
   ].join(''), 'wide');

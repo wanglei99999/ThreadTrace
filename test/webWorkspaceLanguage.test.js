@@ -728,7 +728,12 @@ test('notification inbox rows avoid event-backend copy', function () {
     "'失败=' + (hotspot.failedCount || 0)",
     "'到期=' + (hotspot.dueForDeliveryCount || 0)",
     "'耗尽=' + (hotspot.retryExhaustedCount || 0)",
-    "hotspot.oldestUnacknowledgedAt ? '最早='"
+    "hotspot.oldestUnacknowledgedAt ? '最早='",
+    "[event.sourceKey, event.sourceId].filter(Boolean).join(' / ')",
+    "'来源 ' + [event.sourceKey, event.sourceId].filter(Boolean).join('/')",
+    "sourceId || '全部来源 ID'",
+    "filters.sourceId ? '来源 ID=' + filters.sourceId : undefined",
+    "metric('事件 ID', result.event.id)"
   ]);
 });
 
