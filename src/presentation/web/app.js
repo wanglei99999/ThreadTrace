@@ -8611,7 +8611,11 @@ function renderContextReviewActionExecutorDiagnostics(result) {
     renderDiagnosticCheckRows(result.checks || []),
     '<h4>下一步</h4>',
     evidenceList((result.nextActions || []).map(function (action) {
-      return action.severity + ' | ' + action.key + ' | ' + action.summary;
+      return [
+        '级别 ' + workspaceStatusLabel(action.severity || 'info'),
+        action.key ? '建议 ' + action.key : undefined,
+        action.summary
+      ].filter(Boolean).join(' · ');
     }))
   ].join(''), 'wide');
 }
@@ -8627,8 +8631,13 @@ function renderContextReviewResultEventSynthesis(result) {
     metric('跳过', result.skippedCount || 0),
     evidenceList(rows.map(function (item) {
       const event = item.event || {};
-      const reason = item.reason ? ' · ' + item.reason : '';
-      return item.status + ' · ' + (item.recordId || '未知记录') + ' · ' + (event.id || '暂无提醒') + ' · ' + (event.severity || 'unknown') + reason;
+      return [
+        workspaceStatusLabel(item.status || 'unknown'),
+        item.recordId ? '记录 ' + item.recordId : '未知记录',
+        event.id ? '提醒 ' + event.id : '暂无提醒',
+        '级别 ' + workspaceStatusLabel(event.severity || 'unknown'),
+        item.reason ? '原因 ' + item.reason : undefined
+      ].filter(Boolean).join(' · ');
     }))
   ].join(''), 'wide');
 }
@@ -8637,11 +8646,11 @@ function renderContextReviewAttentionRows(records) {
   if (records.length === 0) return '<div class="muted">暂无需要关注的复核结果。</div>';
   return records.map(function (record) {
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml(record.status || 'unknown') + ' · ' + escapeHtml(record.handoffId || record.id || '未知记录') + '</strong>' +
-      '<small>' + escapeHtml(record.reason || 'attention') + '</small>' +
+      '<strong>' + escapeHtml(workspaceStatusLabel(record.status || 'unknown') + ' · ' + (record.handoffId || record.id || '未知记录')) + '</strong>' +
+      '<small>' + escapeHtml(record.reason || '需要关注') + '</small>' +
       '<small>' + escapeHtml(record.recommendedNextAction || '') + '</small>' +
       '</span>' +
-      statusBadge(record.severity || 'info', statusVariant(record.severity)) +
+      statusBadge(workspaceStatusLabel(record.severity || 'info'), statusVariant(record.severity)) +
       '</div>';
   }).join('');
 }
@@ -8660,11 +8669,11 @@ function renderContextReviewResultRows(records) {
       '合并候选 ' + (Array.isArray(summary.mergeCandidates) ? summary.mergeCandidates.length : 0)
     ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml((record.status || 'unknown') + ' · ' + (record.handoffId || '无交接')) + '</strong>' +
+      '<strong>' + escapeHtml(workspaceStatusLabel(record.status || 'unknown') + ' · ' + (record.handoffId || '无交接')) + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
       '<small>' + escapeHtml(summary.recommendedNextAction || '') + '</small>' +
       '</span>' +
-      statusBadge(notification.severity || 'info', statusVariant(notification.severity)) +
+      statusBadge(workspaceStatusLabel(notification.severity || 'info'), statusVariant(notification.severity)) +
       '</div>';
   }).join('');
 }
@@ -8673,17 +8682,17 @@ function renderReviewMergeCandidateRows(candidates) {
   if (candidates.length === 0) return '<div class="muted">暂无合并候选。</div>';
   return candidates.slice(0, 10).map(function (candidate) {
     const details = [
-      candidate.recordId,
-      candidate.taskType,
-      candidate.decision,
-      candidate.confidence === undefined ? undefined : 'confidence=' + candidate.confidence
-    ].filter(Boolean).join(' | ');
+      candidate.recordId ? '记录 ' + candidate.recordId : undefined,
+      candidate.taskType ? '任务 ' + candidate.taskType : undefined,
+      candidate.decision ? '决定 ' + candidate.decision : undefined,
+      candidate.confidence === undefined ? undefined : '可信度 ' + candidate.confidence
+    ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml(candidate.taskId || 'unknown-task') + '</strong>' +
+      '<strong>' + escapeHtml(candidate.taskId || '未知任务') + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
       '<small>' + escapeHtml(candidate.rationale || '') + '</small>' +
       '</span>' +
-      statusBadge(candidate.severity || 'info', statusVariant(candidate.severity)) +
+      statusBadge(workspaceStatusLabel(candidate.severity || 'info'), statusVariant(candidate.severity)) +
       '</div>';
   }).join('');
 }
@@ -8692,17 +8701,17 @@ function renderReviewBlockedTaskRows(tasks) {
   if (tasks.length === 0) return '<div class="muted">暂无受阻事项。</div>';
   return tasks.slice(0, 10).map(function (task) {
     const details = [
-      task.recordId,
-      task.taskType,
-      task.decision,
-      task.confidence === undefined ? undefined : 'confidence=' + task.confidence
-    ].filter(Boolean).join(' | ');
+      task.recordId ? '记录 ' + task.recordId : undefined,
+      task.taskType ? '任务 ' + task.taskType : undefined,
+      task.decision ? '决定 ' + task.decision : undefined,
+      task.confidence === undefined ? undefined : '可信度 ' + task.confidence
+    ].filter(Boolean).join(' · ');
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml(task.taskId || 'unknown-task') + '</strong>' +
+      '<strong>' + escapeHtml(task.taskId || '未知任务') + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
       '<small>' + escapeHtml(task.reason || '') + '</small>' +
       '</span>' +
-      statusBadge(task.severity || 'warning', statusVariant(task.severity || 'warning')) +
+      statusBadge(workspaceStatusLabel(task.severity || 'warning'), statusVariant(task.severity || 'warning')) +
       '</div>';
   }).join('');
 }
@@ -8713,14 +8722,14 @@ function renderReviewActionGateRows(gates) {
     const evidence = gate.evidence || {};
     const details = Object.keys(evidence).slice(0, 4).map(function (key) {
       const value = Array.isArray(evidence[key]) ? evidence[key].length : evidence[key];
-      return key + '=' + value;
-    }).join(' | ');
+      return key + ' ' + value;
+    }).join(' · ');
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml(gate.key || 'unknown-gate') + '</strong>' +
+      '<strong>' + escapeHtml(gate.key || '未知门禁') + '</strong>' +
       '<small>' + escapeHtml(gate.summary || '') + '</small>' +
       '<small>' + escapeHtml(details) + '</small>' +
       '</span>' +
-      statusBadge(gate.status || 'warn', statusVariant(gate.status)) +
+      statusBadge(workspaceStatusLabel(gate.status || 'warn'), statusVariant(gate.status)) +
       '</div>';
   }).join('');
 }
@@ -8729,10 +8738,10 @@ function renderReviewActionApplyStepRows(steps) {
   if (steps.length === 0) return '<div class="muted">暂无应用步骤。</div>';
   return steps.map(function (step) {
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml(step.key || 'unknown-step') + '</strong>' +
+      '<strong>' + escapeHtml(step.key || '未知步骤') + '</strong>' +
       '<small>' + escapeHtml(step.summary || '') + '</small>' +
       '</span>' +
-      statusBadge(step.status || 'warn', statusVariant(step.status)) +
+      statusBadge(workspaceStatusLabel(step.status || 'warn'), statusVariant(step.status)) +
       '</div>';
   }).join('');
 }
@@ -8741,11 +8750,11 @@ function renderDiagnosticCheckRows(checks) {
   if (checks.length === 0) return '<div class="muted">暂无诊断检查。</div>';
   return checks.map(function (check) {
     return '<div class="action-row ops-row"><span>' +
-      '<strong>' + escapeHtml(check.key || 'unknown-check') + '</strong>' +
+      '<strong>' + escapeHtml(check.key || '未知检查') + '</strong>' +
       '<small>' + escapeHtml(check.summary || '') + '</small>' +
       '<small>' + escapeHtml(check.value === undefined ? '' : String(check.value)) + '</small>' +
       '</span>' +
-      statusBadge(check.status || 'warn', statusVariant(check.status)) +
+      statusBadge(workspaceStatusLabel(check.status || 'warn'), statusVariant(check.status)) +
       '</div>';
   }).join('');
 }
