@@ -5142,17 +5142,18 @@ function formatLlmEvaluationSampleRow(result) {
   }).map(function (check) {
     return sourceDiagnosticCheckSummary(check);
   }).join(', ');
+  const validation = result.validation ? workspaceStatusLabel(result.validation.status || 'unknown') : workspaceStatusLabel('not-run');
   return [
-    result.status || 'unknown',
-    result.id || 'sample',
-    result.title || '',
-    result.validation ? 'validation=' + result.validation.status : 'validation=not-run',
-    'refs=' + (preview.evidenceRefCount || 0),
-    'entities=' + (preview.entityInsightCount || 0),
-    'opinions=' + (preview.opinionInsightCount || 0),
+    workspaceStatusLabel(workspaceValue(result.status, 'unknown')),
+    workspaceValue(result.title || result.id, '评估样本'),
+    '校验 ' + validation,
+    '证据 ' + (preview.evidenceRefCount || 0),
+    '实体 ' + (preview.entityInsightCount || 0),
+    '观点 ' + (preview.opinionInsightCount || 0),
     formatLlmUsage(result.usage || {}),
-    warnings || result.error && result.error.message || ''
-  ].filter(Boolean).join(' | ');
+    warnings ? '需要关注 ' + warnings : undefined,
+    result.error && result.error.message ? '错误 ' + result.error.message : undefined
+  ].filter(Boolean).join(' · ');
 }
 
 function renderSourceDemoCycleReport(report) {
@@ -5275,13 +5276,13 @@ function renderDemoCycleEvents(events) {
 function renderDemoCycleAcknowledgement(result) {
   return [
     '<div class="summary-strip">',
-    summaryTile('状态', result.status || 'unknown', statusVariant(result.status)),
+    summaryTile('状态', workspaceStatusLabel(workspaceValue(result.status, 'unknown')), statusVariant(result.status)),
     summaryTile('候选', result.candidateCount || 0, result.candidateCount > 0 ? 'warn' : 'muted'),
     summaryTile('已确认', result.acknowledgedCount || 0, result.acknowledgedCount > 0 ? 'ok' : 'muted'),
     summaryTile('跳过', result.skippedCount || 0, result.skippedCount > 0 ? 'warn' : 'muted'),
     '</div>',
     evidenceList((result.results || []).map(function (item) {
-      return (item.status || 'unknown') + ' · ' + (item.eventId || '') + (item.reason ? ' · 原因 ' + item.reason : '');
+      return workspaceStatusLabel(workspaceValue(item.status, 'unknown')) + ' · ' + (item.eventId || '') + (item.reason ? ' · 原因 ' + item.reason : '');
     }))
   ].join('');
 }
@@ -5293,12 +5294,12 @@ function formatSourceScope(scope) {
 
 function formatLlmUsage(usage) {
   const parts = [];
-  if (usage.inputTokens !== undefined) parts.push('input=' + usage.inputTokens);
-  if (usage.outputTokens !== undefined) parts.push('output=' + usage.outputTokens);
-  if (usage.prompt_tokens !== undefined) parts.push('prompt=' + usage.prompt_tokens);
-  if (usage.completion_tokens !== undefined) parts.push('completion=' + usage.completion_tokens);
-  if (usage.total_tokens !== undefined) parts.push('total=' + usage.total_tokens);
-  return parts.length ? parts.join(' | ') : 'none';
+  if (usage.inputTokens !== undefined) parts.push('输入 ' + usage.inputTokens);
+  if (usage.outputTokens !== undefined) parts.push('输出 ' + usage.outputTokens);
+  if (usage.prompt_tokens !== undefined) parts.push('提示词 ' + usage.prompt_tokens);
+  if (usage.completion_tokens !== undefined) parts.push('生成 ' + usage.completion_tokens);
+  if (usage.total_tokens !== undefined) parts.push('总量 ' + usage.total_tokens);
+  return parts.length ? parts.join(' · ') : '暂无用量';
 }
 
 function renderBatchTaskControls(task) {
@@ -8245,7 +8246,7 @@ function formatSourceAttentionNotificationEventRow(item) {
 function renderSourceTypeOperationsNotificationEventResult(result) {
   const items = result.results || [];
   return panel('来源类型运行提醒', [
-    metric('状态', workspaceStatusLabel(result.status || 'unknown')),
+    metric('状态', workspaceStatusLabel(workspaceValue(result.status, 'unknown'))),
     metric('模式', result.dryRun ? '预演' : '执行'),
     metric('来源类型', result.sourceTypeCount || 0),
     metric('阈值', result.priorityScoreThreshold || 0),
@@ -8943,7 +8944,7 @@ function renderNotificationEventActionIntent(result) {
   return [
     panel(executed ? '提醒动作已执行' : '提醒动作预演', [
       '<div class="summary-strip event-summary-strip">' + [
-        summaryTile('状态', workspaceStatusLabel(result.status || 'unknown'), statusVariant(result.status)),
+        summaryTile('状态', workspaceStatusLabel(workspaceValue(result.status, 'unknown')), statusVariant(result.status)),
         summaryTile('模式', notificationEventModeLabel(result.mode || 'dry-run'), 'ok'),
         summaryTile('已执行', executed ? '是' : '否', executed ? 'warn' : 'ok'),
         summaryTile('动作', notificationEventActionLabel(result.action))
@@ -9419,7 +9420,7 @@ function renderEventBatchAckResult(result) {
   const title = result.dryRun ? '提醒确认预览' : '提醒已确认';
   return panel(title, [
     '<div class="summary-strip event-summary-strip">' + [
-      summaryTile('状态', workspaceStatusLabel(result.status || 'unknown'), statusVariant(result.status)),
+      summaryTile('状态', workspaceStatusLabel(workspaceValue(result.status, 'unknown')), statusVariant(result.status)),
       summaryTile('预演', result.dryRun ? '是' : '否', result.dryRun ? 'warn' : 'ok'),
       summaryTile('候选', String(result.candidateCount || 0), result.candidateCount > 0 ? 'warn' : 'muted'),
       summaryTile('已确认', String(result.acknowledgedCount || 0), result.acknowledgedCount > 0 ? 'ok' : 'muted'),
@@ -9437,7 +9438,7 @@ function renderEventArchiveResult(result) {
   const rows = result.results && result.results.length ? result.results : result.candidates || [];
   return panel('提醒归档', [
     '<div class="summary-strip event-summary-strip">' + [
-      summaryTile('状态', workspaceStatusLabel(result.status || 'unknown'), statusVariant(result.status)),
+      summaryTile('状态', workspaceStatusLabel(workspaceValue(result.status, 'unknown')), statusVariant(result.status)),
       summaryTile('预演', result.dryRun ? '是' : '否', result.dryRun ? 'warn' : 'ok'),
       summaryTile('候选', String(result.candidateCount || 0), result.candidateCount > 0 ? 'warn' : 'ok'),
       summaryTile('已归档', String(result.archivedCount || 0), result.archivedCount > 0 ? 'ok' : 'muted')

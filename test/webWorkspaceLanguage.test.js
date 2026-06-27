@@ -687,3 +687,22 @@ test('source diagnostics avoid status-pipe copy', function () {
     "failed ? ' | ' + failed : ''"
   ]);
 });
+
+test('llm evaluation samples avoid metric-console copy', function () {
+  const app = readProjectFile('src/presentation/web/app.js');
+
+  assertAbsent(app, [
+    "result.status || 'unknown'",
+    "result.id || 'sample'",
+    "result.validation ? 'validation=' + result.validation.status : 'validation=not-run'",
+    "'refs=' + (preview.evidenceRefCount || 0)",
+    "'entities=' + (preview.entityInsightCount || 0)",
+    "'opinions=' + (preview.opinionInsightCount || 0)",
+    "parts.push('input=' + usage.inputTokens)",
+    "parts.push('output=' + usage.outputTokens)",
+    "parts.push('prompt=' + usage.prompt_tokens)",
+    "parts.push('completion=' + usage.completion_tokens)",
+    "parts.push('total=' + usage.total_tokens)",
+    "return parts.length ? parts.join(' | ') : 'none'"
+  ]);
+});
