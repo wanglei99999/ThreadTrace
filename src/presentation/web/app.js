@@ -5535,7 +5535,7 @@ function formatTaskSourceScope(sourceScope) {
   const scope = sourceScope || {};
   return [
     scope.sourceKey ? '来源 ' + scope.sourceKey : undefined,
-    scope.sourceId ? '来源 ID ' + scope.sourceId : undefined,
+    scope.sourceId ? '来源编号 ' + scope.sourceId : undefined,
     scope.sourceType ? '类型 ' + scope.sourceType : undefined,
     scope.sourceThreadId ? '主题 ' + scope.sourceThreadId : undefined
   ].filter(Boolean).join(' · ') || '全部来源';
@@ -5623,7 +5623,7 @@ function renderReadinessCheckRow(check) {
   const details = [
     check.summary,
     value.sourceKey ? '来源代号 ' + value.sourceKey : undefined,
-    value.sourceId ? '来源 ID ' + value.sourceId : undefined,
+    value.sourceId ? '来源编号 ' + value.sourceId : undefined,
     value.count === undefined ? undefined : '数量 ' + value.count,
     value.failed === undefined ? undefined : '失败 ' + value.failed,
     value.staleRunning === undefined ? undefined : '停滞 ' + value.staleRunning,
@@ -5648,8 +5648,8 @@ function renderWorkerLeaseOverview(leases) {
     summaryTile('全局', String(safeLeases.unscoped || 0), (safeLeases.unscoped || 0) > 0 ? 'muted' : 'ok'),
     '</div>',
     metric('执行类型', compactCountMap(safeLeases.byWorkerType)),
-    metric('活跃来源 ID', compactCountMap(safeLeases.activeBySourceId)),
-    metric('过期来源 ID', compactCountMap(safeLeases.expiredBySourceId)),
+    metric('活跃来源编号', compactCountMap(safeLeases.activeBySourceId)),
+    metric('过期来源编号', compactCountMap(safeLeases.expiredBySourceId)),
     metric('活跃来源代号', compactCountMap(safeLeases.activeBySourceKey)),
     metric('过期来源代号', compactCountMap(safeLeases.expiredBySourceKey)),
     evidenceList(sampleLeases.slice(0, 8).map(formatWorkerLeaseRow))
@@ -5667,10 +5667,10 @@ function renderWorkerRunOverview(workers) {
     summaryTile('全局', String(safeWorkers.unscoped || 0), (safeWorkers.unscoped || 0) > 0 ? 'muted' : 'ok'),
     '</div>',
     metric('执行类型', compactCountMap(safeWorkers.byWorkerType)),
-    metric('来源 ID', compactCountMap(safeWorkers.bySourceId)),
+    metric('来源编号', compactCountMap(safeWorkers.bySourceId)),
     metric('来源代号', compactCountMap(safeWorkers.bySourceKey)),
-    metric('运行中来源 ID', compactCountMap(safeWorkers.runningBySourceId)),
-    metric('停滞来源 ID', compactCountMap(safeWorkers.staleBySourceId)),
+    metric('运行中来源编号', compactCountMap(safeWorkers.runningBySourceId)),
+    metric('停滞来源编号', compactCountMap(safeWorkers.staleBySourceId)),
     metric('停滞来源代号', compactCountMap(safeWorkers.staleBySourceKey)),
     evidenceList(sampleRuns.slice(0, 8).map(formatWorkerRunRow))
   ].join(''), 'wide');
@@ -5719,7 +5719,7 @@ function uniqueWorkerRuns(runs) {
 function formatWorkerRunRow(run) {
   const scope = run.scope || {};
   const scopeLabel = scope.sourceId
-    ? '来源 ID ' + scope.sourceId
+    ? '来源编号 ' + scope.sourceId
     : (scope.sourceKey ? '来源代号 ' + scope.sourceKey : '全局');
   return [
     workspaceStatusLabel(run.status),
@@ -5734,7 +5734,7 @@ function formatWorkerRunRow(run) {
 function formatWorkerLeaseRow(lease) {
   const scope = lease.scope || {};
   const scopeLabel = scope.sourceId
-    ? '来源 ID ' + scope.sourceId
+    ? '来源编号 ' + scope.sourceId
     : (scope.sourceKey ? '来源代号 ' + scope.sourceKey : '全局');
   return [
     lease.expired ? '已过期' : '活跃',
@@ -8781,7 +8781,7 @@ function renderContextReviewActionAuditRows(audits) {
     const details = [
       audit.generatedAt,
       audit.sourceKey ? '来源 ' + audit.sourceKey : undefined,
-      audit.sourceId ? '来源 ID ' + audit.sourceId : undefined,
+      audit.sourceId ? '来源编号 ' + audit.sourceId : undefined,
       request.taskId ? '任务 ' + request.taskId : undefined,
       request.closeTaskIds ? '关闭 ' + request.closeTaskIds.length : undefined,
       request.mergeCandidates ? '合并候选 ' + request.mergeCandidates.length : undefined
@@ -8802,7 +8802,7 @@ function renderContextReviewActionExecutionRows(executions) {
     const details = [
       execution.updatedAt || execution.createdAt,
       execution.sourceKey ? '来源 ' + execution.sourceKey : undefined,
-      execution.sourceId ? '来源 ID ' + execution.sourceId : undefined,
+      execution.sourceId ? '来源编号 ' + execution.sourceId : undefined,
       execution.taskId ? '任务 ' + execution.taskId : undefined,
       execution.requestHash ? '请求 ' + String(execution.requestHash).slice(0, 12) : undefined,
       execution.attemptCount ? '尝试 ' + execution.attemptCount : undefined,
