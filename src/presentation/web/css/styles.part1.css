@@ -660,30 +660,19 @@ textarea:focus-visible {
   min-width: 126px;
 }
 
+/* 历史 entry 子区拍平为普通字段组:去卡片描边/底色,组名降为安静纯文字 */
 .history-source-strip {
-  position: relative;
   display: grid;
   align-content: start;
   gap: 12px;
   min-width: 0;
-  padding: 14px;
-  border: 1px solid rgba(var(--line-rgb), 0.94);
-  border-radius: var(--radius);
-  background: rgba(var(--canvas-rgb), 0.76);
-  color: var(--text);
-  box-shadow: var(--inner-light);
 }
 
 .history-source-strip > span {
-  width: max-content;
-  max-width: 100%;
-  padding: 5px 8px;
-  border: 1px solid rgba(var(--line-rgb), 0.94);
-  border-radius: var(--radius-sm);
-  background: rgba(var(--surface-soft-rgb), 0.86);
-  color: var(--muted-strong);
-  font-size: 12px;
+  color: var(--text-tertiary);
+  font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.06em;
   line-height: 1.1;
 }
 
@@ -693,77 +682,46 @@ textarea:focus-visible {
 }
 
 .history-source-strip label span {
-  color: var(--muted-strong);
+  color: var(--text-secondary);
 }
 
 .history-source-strip select {
-  border-color: rgba(var(--line-rgb), 0.94);
+  border-color: var(--hairline-strong);
   background: var(--canvas);
   color: var(--text-strong);
-  box-shadow: inset 0 1px 0 rgba(var(--canvas-rgb), 0.9);
 }
 
 .history-directory-field {
   display: grid;
-  align-content: center;
+  align-content: start;
+  gap: 7px;
   min-width: 0;
   max-width: none;
-  padding: 14px;
-  border: 1px solid rgba(var(--line-rgb), 0.94);
-  border-radius: var(--radius);
-  background: rgba(var(--canvas-rgb), 0.84);
-  box-shadow: var(--inner-light);
 }
 
 .history-directory-field > span {
-  width: max-content;
-  max-width: 100%;
   margin-bottom: 2px;
-  padding: 5px 8px;
-  border: 1px solid rgba(var(--line-rgb), 0.94);
-  border-radius: var(--radius-sm);
-  background: rgba(var(--surface-soft-rgb), 0.86);
-  color: var(--muted-strong);
-  font-size: 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
   font-weight: 600;
   line-height: 1.2;
 }
 
 .history-directory-field input {
-  min-height: 62px;
-  padding: 15px 14px;
-  font-size: 20px;
-  font-weight: 600;
-  line-height: 1.25;
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 .history-command-shelf {
-  position: relative;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-content: stretch;
+  align-content: end;
   gap: 8px;
   min-width: 0;
-  padding: 28px 12px 12px;
-  border: 1px solid rgba(var(--line-rgb), 0.78);
-  border-radius: var(--radius);
-  background: rgba(var(--surface-soft-rgb), 0.78);
-  box-shadow: var(--inner-light);
 }
 
 .history-command-shelf::before {
-  content: attr(data-label);
-  position: absolute;
-  top: 8px;
-  left: 10px;
-  padding: 4px 7px;
-  border: 1px solid rgba(var(--line-rgb), 0.94);
-  border-radius: var(--radius-sm);
-  background: var(--canvas);
-  color: var(--muted-strong);
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.1;
+  content: none;
 }
 
 .history-command-shelf button {
@@ -787,18 +745,15 @@ textarea:focus-visible {
 #historyView:has(#historyResult .history-report-hero) .history-source-strip,
 #historyView:has(#historyResult .history-report-hero) .history-directory-field,
 #historyView:has(#historyResult .history-report-hero) .history-command-shelf {
-  padding-block: 12px;
+  padding-block: 0;
 }
 
 #historyView:has(#historyResult .history-report-hero) .history-directory-field input {
-  min-height: 48px;
-  padding-block: 10px;
-  font-size: 18px;
+  font-size: 15px;
 }
 
 #historyView:has(#historyResult .history-report-hero) .history-command-shelf {
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  padding-top: 30px;
 }
 
 #historyView:has(#historyResult .history-report-hero) .history-command-shelf button[type="submit"] {
@@ -970,9 +925,7 @@ textarea:focus-visible {
 }
 
 .search-query-card::before {
-  border-color: rgba(var(--neutral-rgb), 0.35);
-  background: rgba(var(--peach-rgb), 0.88);
-  color: var(--amber-ink);
+  color: var(--text-tertiary);
 }
 
 .search-card-kicker {

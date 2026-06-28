@@ -116,7 +116,7 @@
   .history-source-strip,
   .history-directory-field,
   .history-command-shelf {
-    padding-inline: 10px;
+    padding-inline: 0;
   }
 
   .history-command-shelf {

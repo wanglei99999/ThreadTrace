@@ -289,32 +289,35 @@
   box-shadow: var(--shadow-xs), var(--inner-light);
 }
 
-.cockpit-card::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto;
-  height: 2px;
-  border-radius: var(--radius) var(--radius) 0 0;
-  background: var(--line-strong);
-}
-
-.cockpit-card.cockpit-ok::before {
-  background: var(--ok);
-}
-
-.cockpit-card.cockpit-warn::before {
-  background: var(--gold);
-}
-
-.cockpit-card.cockpit-fail::before {
-  background: var(--fail);
-}
-
+/* 状态改由标题前小圆点承载,去掉装饰性 2px 顶部色条(banned:装饰色条) */
 .cockpit-card > span,
 .cockpit-card-head > span {
   color: var(--muted-strong);
   font-size: 12px;
   font-weight: 700;
+}
+
+.cockpit-card > span::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 7px;
+  border-radius: var(--radius-pill);
+  background: var(--neutral);
+  vertical-align: middle;
+}
+
+.cockpit-card.cockpit-ok > span::before {
+  background: var(--ok);
+}
+
+.cockpit-card.cockpit-warn > span::before {
+  background: var(--warn);
+}
+
+.cockpit-card.cockpit-fail > span::before {
+  background: var(--fail);
 }
 
 .cockpit-card > strong {

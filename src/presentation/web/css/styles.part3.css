@@ -147,46 +147,38 @@ textarea::placeholder {
   box-shadow: var(--shadow-xs), var(--inner-light);
 }
 
+/* 证据检索卡去蓝/桃配色,回归中性 + 主紫(与索引卡一致,蓝色仅留给行内链接) */
 .control-strip.search-query-card .search-card-kicker span {
-  border-color: rgba(var(--neutral-rgb), 0.35);
-  background: rgba(var(--peach-rgb), 0.9);
-  color: var(--amber-ink);
+  color: var(--text-tertiary);
 }
 
 .control-strip.search-query-card .search-card-kicker strong {
-  color: var(--info-ink);
+  color: var(--text-strong);
 }
 
 .control-strip.search-query-card label span {
-  color: var(--info-ink);
+  color: var(--text-secondary);
 }
 
 .control-strip.search-query-card input {
-  border-color: rgba(var(--accent-rgb), 0.2);
-  background: rgba(var(--canvas-rgb), 0.86);
+  border-color: var(--hairline-strong);
+  background: var(--canvas);
   color: var(--text-strong);
-  box-shadow: inset 0 1px 0 rgba(var(--canvas-rgb), 0.92);
 }
 
 .control-strip.search-query-card input::placeholder {
-  color: var(--slate-ink);
+  color: var(--text-tertiary);
 }
 
 .control-strip.search-query-card input:focus {
-  border-color: rgba(var(--accent-rgb), 0.58);
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12);
 }
 
-.control-strip.search-query-card button[type="submit"] {
-  border-color: rgba(var(--accent-rgb), 0.18);
-  background: var(--accent);
-  box-shadow: var(--shadow-xs), inset 0 1px 0 rgba(var(--canvas-rgb), 0.18);
-}
-
 .control-strip.search-query-card .search-hit-schema span {
-  border-color: rgba(var(--accent-rgb), 0.17);
-  background: rgba(var(--surface-soft-rgb), 0.76);
-  color: var(--info-ink);
+  border-color: var(--hairline);
+  background: var(--surface-soft);
+  color: var(--text-secondary);
 }
 
 form button[type="submit"],
