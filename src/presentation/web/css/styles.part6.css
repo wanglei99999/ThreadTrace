@@ -498,7 +498,7 @@ pre {
   border: 1px solid var(--hairline);
   border-radius: var(--radius-card);
   background: var(--canvas);
-  box-shadow: none;
+  box-shadow: var(--shadow-1);
 }
 
 .rollout-stage::before {

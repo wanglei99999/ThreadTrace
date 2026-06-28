@@ -245,6 +245,8 @@ function setView(viewName, options) {
   document.getElementById(safeViewName + 'View').classList.remove('hidden');
   const view = views[safeViewName];
   document.getElementById('viewTitle').textContent = view.title;
+  const headIcon = document.getElementById('viewHeadIcon');
+  if (headIcon) headIcon.innerHTML = viewIcon(safeViewName);
   document.getElementById('viewSubtitle').textContent = view.subtitle;
   document.getElementById('viewMode').textContent = view.mode;
   document.getElementById('viewFocus').textContent = view.focus;

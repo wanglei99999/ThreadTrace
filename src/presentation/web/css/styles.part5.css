@@ -434,7 +434,7 @@
   border: 1px solid var(--hairline);
   border-radius: var(--radius-card);
   padding: 0;
-  box-shadow: none;
+  box-shadow: var(--shadow-1);
 }
 
 .panel::before,
