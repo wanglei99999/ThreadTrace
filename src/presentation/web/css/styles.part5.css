@@ -762,43 +762,52 @@
   display: none;
 }
 
+/* Notion callout 块:软底 + 前导图标 chip + 标题/正文两行 */
 .empty-signal {
   position: relative;
   min-height: 0;
   display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-content: center;
-  gap: 7px;
-  overflow: hidden;
-  padding: 18px;
-  border: 1px dashed var(--hairline-strong);
+  align-items: center;
+  gap: 2px 13px;
+  padding: 14px 16px;
+  border: 1px solid var(--hairline);
   border-radius: var(--radius-card);
   background: var(--surface-soft);
   box-shadow: none;
 }
 
 .empty-signal::before {
-  display: none;
+  content: "✓";
+  grid-row: 1 / span 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .empty-signal span {
-  width: max-content;
-  max-width: 100%;
-  padding: 2px 8px;
-  border: 0;
-  border-radius: var(--radius-chip);
-  background: var(--accent-soft);
-  color: var(--accent-deep);
-  font-family: var(--font-mono);
+  grid-column: 2;
+  color: var(--text-tertiary);
   font-size: 12px;
   font-weight: 600;
+  letter-spacing: 0.02em;
   line-height: 1.3;
 }
 
 .empty-signal strong {
-  color: var(--text-strong);
+  grid-column: 2;
+  color: var(--text-secondary);
   font-size: 14px;
-  font-weight: 600;
-  line-height: 1.4;
+  font-weight: 500;
+  line-height: 1.45;
   overflow-wrap: anywhere;
 }
 
@@ -812,14 +821,35 @@
   gap: 8px;
 }
 
+/* Notion 多色 pastel 标签:轮转柔和底 + 暖炭灰文字(均过 AA) */
 .tag {
-  padding: 3px 8px;
+  padding: 3px 9px;
   border-radius: var(--radius-chip);
-  background: var(--accent-soft);
-  color: var(--accent-deep);
   border: 0;
+  background: var(--tint-lavender);
+  color: var(--text);
   font-size: 12px;
   font-weight: 500;
+}
+
+.tag:nth-child(6n + 2) {
+  background: var(--tint-mint);
+}
+
+.tag:nth-child(6n + 3) {
+  background: var(--tint-peach);
+}
+
+.tag:nth-child(6n + 4) {
+  background: var(--tint-sky);
+}
+
+.tag:nth-child(6n + 5) {
+  background: var(--tint-rose);
+}
+
+.tag:nth-child(6n) {
+  background: var(--tint-yellow);
 }
 
 .summary-strip {
