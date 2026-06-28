@@ -274,6 +274,20 @@ async function loadOverview() {
   });
 }
 
+function viewIcon(name) {
+  const paths = {
+    overview: '<rect width="7" height="7" x="3" y="3" rx="1.5"/><rect width="7" height="7" x="14" y="3" rx="1.5"/><rect width="7" height="7" x="14" y="14" rx="1.5"/><rect width="7" height="7" x="3" y="14" rx="1.5"/>',
+    history: '<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/>',
+    context: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+    sources: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14a8 3 0 0 0 16 0V5"/><path d="M4 12a8 3 0 0 0 16 0"/>',
+    operations: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
+    alerts: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+    publish: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>'
+  };
+  return '<svg class="tt-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (paths[name] || '') + '</svg>';
+}
+
 function renderOverview(data) {
   const groups = [
     {
@@ -297,6 +311,7 @@ function renderOverview(data) {
   const moduleGroups = groups.map(function (group) {
     const rows = group.items.map(function (item) {
       return '<button type="button" class="overview-row" data-view="' + item.view + '">'
+        + '<span class="overview-row-icon">' + viewIcon(item.view) + '</span>'
         + '<span class="overview-row-text">'
         + '<strong>' + escapeHtml(item.title) + '</strong>'
         + '<span>' + escapeHtml(item.desc) + '</span>'
@@ -349,10 +364,8 @@ function renderOverviewSignals(data) {
 
 function overviewCard(view, signalState, label, value, hint) {
   return '<button type="button" class="overview-card overview-card-' + signalState + '" data-view="' + view + '">'
-    + '<span class="overview-card-top">'
+    + '<span class="overview-card-chip" aria-hidden="true">' + viewIcon(view) + '</span>'
     + '<span class="overview-card-label">' + escapeHtml(label) + '</span>'
-    + '<span class="overview-card-dot" aria-hidden="true"></span>'
-    + '</span>'
     + '<strong class="overview-card-value">' + escapeHtml(value) + '</strong>'
     + '<span class="overview-card-hint">' + escapeHtml(hint)
     + '<span class="overview-card-hint-go" aria-hidden="true">→</span></span>'

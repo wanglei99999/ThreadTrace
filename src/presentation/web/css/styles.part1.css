@@ -362,6 +362,29 @@ textarea:focus-visible {
   display: none;
 }
 
+.tt-icon {
+  width: 17px;
+  height: 17px;
+  flex: none;
+}
+
+.nav-item .tt-icon {
+  color: var(--text-tertiary);
+  transition: color var(--dur) var(--ease);
+}
+
+.nav-item span {
+  min-width: 0;
+}
+
+.nav-item:hover .tt-icon {
+  color: var(--text-secondary);
+}
+
+.nav-item.active .tt-icon {
+  color: var(--accent);
+}
+
 .sidebar-status {
   display: grid;
   gap: 4px;
