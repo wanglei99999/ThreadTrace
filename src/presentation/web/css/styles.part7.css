@@ -459,11 +459,11 @@
   }
 
   .event-triage-command-shelf {
-    padding: 10px;
+    padding: 0;
   }
 
   .review-command-shelf {
-    padding: 10px;
+    padding: 0;
   }
 
   .review-command-group {
@@ -617,7 +617,7 @@
   }
 
   .rollout-command-shelf {
-    padding-inline: 9px;
+    padding-inline: 0;
   }
 
   .rollout-stage .rollout-card textarea,

@@ -545,10 +545,8 @@ pre {
 }
 
 .rollout-stage-apply {
-  border-color: rgba(var(--amber-rgb), 0.22);
-  background:
-    linear-gradient(135deg, rgba(var(--canvas-rgb), 0.99), rgba(var(--peach-rgb), 0.88) 52%, rgba(var(--surface-soft-rgb), 0.66)),
-    var(--panel);
+  border-color: var(--hairline);
+  background: var(--canvas);
 }
 
 .rollout-stage-apply .rollout-stage-head span {
@@ -562,8 +560,13 @@ pre {
   align-content: start;
   gap: 10px;
   min-height: 0;
-  padding: 46px 12px 12px;
-  box-shadow: var(--shadow-xs), var(--inner-light);
+  padding: 26px 0 0;
+  box-shadow: none;
+}
+
+.rollout-stage .rollout-card::before {
+  top: 0;
+  left: 0;
 }
 
 .rollout-stage .rollout-card-module {
@@ -627,24 +630,10 @@ pre {
 }
 
 .rollout-stage .rollout-json-field > span {
-  width: max-content;
-  max-width: 100%;
-  padding: 5px 8px;
-  border: 1px solid rgba(var(--accent-rgb), 0.18);
-  border-radius: var(--radius-sm);
-  background: rgba(var(--surface-soft-rgb), 0.78);
-  color: var(--info-ink);
-  font-family: "Cascadia Mono", Consolas, monospace;
-  font-size: 12px;
-  font-weight: 700;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
   line-height: 1.2;
-}
-
-.rollout-stage .rollout-card-gate .rollout-json-field > span,
-.rollout-stage .rollout-card-apply .rollout-json-field > span {
-  border-color: rgba(var(--neutral-rgb), 0.3);
-  background: rgba(var(--peach-rgb), 0.8);
-  color: var(--amber-ink);
 }
 
 .rollout-stage .rollout-card textarea {
@@ -681,12 +670,8 @@ pre {
   display: grid;
   gap: 8px;
   min-width: 0;
-  padding: 26px 10px 10px;
-  border: 1px solid rgba(var(--line-rgb), 0.76);
-  border-radius: var(--radius);
-  background:
-    linear-gradient(180deg, rgba(var(--canvas-rgb), 0.86), rgba(var(--surface-soft-rgb), 0.72));
-  box-shadow: var(--inner-light);
+  align-content: end;
+  padding: 20px 0 0;
 }
 
 .rollout-card-dryrun .rollout-command-shelf,
@@ -697,8 +682,8 @@ pre {
 .rollout-command-shelf::before {
   content: attr(data-label);
   position: absolute;
-  top: 8px;
-  left: 10px;
+  top: 0;
+  left: 0;
   padding: 0;
   border: 0;
   background: transparent;
@@ -716,9 +701,8 @@ pre {
 }
 
 .rollout-card-module .rollout-command-shelf {
-  border-color: rgba(var(--accent-rgb), 0.18);
-  background:
-    linear-gradient(180deg, rgba(var(--canvas-rgb), 0.86), rgba(var(--surface-soft-rgb), 0.62));
+  border: 0;
+  background: transparent;
 }
 
 .rollout-card-module .rollout-command-shelf::before {

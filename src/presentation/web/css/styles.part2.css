@@ -659,13 +659,6 @@
   display: grid;
   gap: 10px;
   margin-top: 2px;
-  padding: 12px;
-  border: 1px solid rgba(var(--neutral-rgb), 0.72);
-  border-radius: var(--radius);
-  background:
-    linear-gradient(180deg, rgba(var(--canvas-rgb), 0.82), rgba(var(--surface-soft-rgb), 0.52)),
-    var(--panel-subtle);
-  box-shadow: var(--inner-light);
 }
 
 .event-triage-command-group {
@@ -720,10 +713,8 @@
 }
 
 .event-card-review {
-  border-color: rgba(var(--ink-rgb), 0.18);
-  background:
-    linear-gradient(135deg, rgba(var(--canvas-rgb), 0.99), rgba(var(--surface-soft-rgb), 0.98) 46%, rgba(var(--peach-rgb), 0.58)),
-    var(--panel);
+  border-color: var(--hairline);
+  background: var(--canvas);
 }
 
 #contextReviewResultForm.event-card-review {
@@ -734,9 +725,9 @@
 }
 
 .event-card-review::before {
-  border-color: rgba(var(--neutral-rgb), 0.38);
-  background: var(--gold-soft);
-  color: var(--amber-ink);
+  border: 0;
+  background: transparent;
+  color: var(--text-tertiary);
 }
 
 .event-card label.compact {
@@ -771,29 +762,18 @@
 }
 
 #contextReviewResultForm.event-card-review > label.full span {
-  width: max-content;
-  max-width: 100%;
   margin-bottom: 2px;
-  padding: 5px 8px;
-  border: 1px solid rgba(var(--neutral-rgb), 0.3);
-  border-radius: var(--radius-sm);
-  background: rgba(var(--peach-rgb), 0.78);
-  color: var(--amber-ink);
-  font-family: "Cascadia Mono", Consolas, monospace;
-  font-size: 12px;
-  font-weight: 700;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
   line-height: 1.2;
 }
 
 .event-card-review textarea {
   min-height: 360px;
-  border-color: rgba(var(--ink-rgb), 0.16);
-  background:
-    linear-gradient(180deg, rgba(var(--peach-rgb), 0.32), rgba(var(--peach-rgb), 0) 88px),
-    linear-gradient(90deg, rgba(var(--accent-rgb), 0.05) 1px, transparent 1px),
-    linear-gradient(180deg, var(--canvas), var(--surface-soft));
-  background-size: 100% 100%, 32px 100%, 100% 100%;
-  color: var(--accent);
+  border-color: var(--hairline-strong);
+  background: var(--canvas);
+  color: var(--text-strong);
   font-family: "Cascadia Mono", Consolas, monospace;
   font-size: 13px;
   line-height: 1.56;
@@ -812,13 +792,6 @@
   align-content: start;
   gap: 10px;
   min-width: 0;
-  padding: 12px;
-  border: 1px solid rgba(var(--line-rgb), 0.74);
-  border-radius: var(--radius);
-  background:
-    linear-gradient(180deg, rgba(var(--canvas-rgb), 0.82), rgba(var(--mint-rgb), 0.7)),
-    var(--panel-subtle);
-  box-shadow: var(--inner-light);
 }
 
 .review-command-group {
@@ -981,13 +954,7 @@
 }
 
 .rollout-card-module label span {
-  color: var(--info-ink);
-}
-
-.rollout-card-module input {
-  border-color: rgba(var(--accent-rgb), 0.2);
-  background: rgba(var(--canvas-rgb), 0.88);
-  color: var(--text-strong);
+  color: var(--text-secondary);
 }
 
 .rollout-card-dryrun,
@@ -997,10 +964,6 @@
 
 .rollout-card-worker {
   grid-column: span 5;
-  border-color: rgba(var(--accent-rgb), 0.22);
-  background:
-    linear-gradient(135deg, rgba(var(--canvas-rgb), 0.99), rgba(var(--surface-soft-rgb), 0.95) 58%, rgba(var(--surface-soft-rgb), 0.9)),
-    var(--panel);
 }
 
 .rollout-card-manifest {
@@ -1014,10 +977,6 @@
 
 .rollout-card-apply {
   grid-column: 1 / -1;
-  border-color: rgba(var(--amber-rgb), 0.24);
-  background:
-    linear-gradient(135deg, rgba(var(--canvas-rgb), 0.99), rgba(var(--peach-rgb), 0.9) 54%, rgba(var(--surface-soft-rgb), 0.7)),
-    var(--panel);
 }
 
 .rollout-card-apply::before,
