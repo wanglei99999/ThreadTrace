@@ -208,12 +208,13 @@ A warm‑neutral Notion workspace system with a single purple operational accent
 Notion‑flat by default: structure comes from tonal surfaces and 1px hairlines, not shadow. Apple‑restraint on depth: a real shadow appears only when something genuinely floats.
 
 ### Shadow Vocabulary
-- **Flat at rest** (`none` + hairline): cards, panels, rows, list items.
+- **Resting lift** (`0 1px 2px rgba(15,15,15,0.04)`): cards, panels, and form surfaces float gently off the warm canvas — a whisper of depth, not a drop shadow.
+- **Flat at rest** (`none` + hairline): rows, list items, and field groups inside a card.
 - **Soft lift** (`0 4px 12px rgba(15,15,15,0.08)`): hovered tiles and elevated controls.
 - **Floating layer** (`0 16px 48px -8px rgba(15,15,15,0.16)`): dropdowns, popovers, modals.
 
 ### Named Rules
-**The Structural Depth Rule.** Shadows must clarify a floating layer or interaction. If a shadow only makes the UI look expensive, remove it. No inner‑highlight glass on static surfaces.
+**The Structural Depth Rule.** Shadows must clarify a floating layer or interaction. Cards carry one barely‑there resting lift; anything stronger is reserved for hover or true overlays. If a shadow only makes the UI look expensive, remove it. No inner‑highlight glass on static surfaces.
 
 ## 5. Components
 
@@ -229,15 +230,23 @@ Notion‑flat by default: structure comes from tonal surfaces and 1px hairlines,
 - Placeholder text meets contrast (tertiary, not light grey).
 
 ### Cards / Panels
-- White panels on the warm canvas, 12px radius, 1px hairline, flat at rest.
-- Internal padding 14–16px for dense working panels; no nested cards.
+- White panels on the warm canvas, 12px radius, 1px hairline, one resting lift.
+- Internal padding 14–16px for dense working panels; no nested cards (inner regions are flat field groups, not sub‑cards).
+
+### Icons
+- **Line‑SVG set** (Lucide‑style, `currentColor`, 1.9 stroke): 17px in the nav, 22px in the page‑head chip, ~20px in signal chips. Structural and consistent — never emoji, never decorative.
+- **Icon chips:** per‑view page‑head chip (`accent-soft` ground + purple icon, 8px radius); overview signal chips tint by state (peach / sky / mint / rose ground + matching semantic icon).
 
 ### Chips & Status
-- **Chips:** soft‑purple wash, 6px radius — entity/evidence tags, not decorative badges.
-- **Status badges:** pastel‑tinted pill + deep semantic text; carry shape/label, not color alone.
+- **Tags:** Notion multi‑color pastel pills — lavender / mint / peach / sky / rose / yellow rotate by position, warm‑ink text (`--text`) kept at AA; 6px radius, for entity/evidence labels.
+- **Status badges:** pastel‑tinted pill + a leading same‑color status dot + deep semantic text; carry dot + label, never color alone.
+
+### Callout (empty & teaching states)
+- Soft‑tint block (`surface-soft` + hairline, 12px radius) with a leading icon chip and caption + message — the Notion callout. Replaces dashed placeholder boxes; teaches the empty state instead of saying "nothing here".
 
 ### Navigation
-- Persistent light **grouped** dock (Workspace / Operations) with strong purple active state. Clear labels, compact spacing, color only where it clarifies the current selection.
+- Persistent light **grouped** dock (Workspace / Operations); each item leads with a line icon and the active item turns purple (icon + ground). Clear labels, compact spacing, color only where it clarifies selection.
+- **Breadcrumb:** a muted, slash‑separated trail at the page top (`语脉 / mode / focus`) with the last segment emphasized — quiet wayfinding, not colored pills.
 - **Mobile:** the dock collapses into a compact top command shell.
 
 ## 6. Do's and Don'ts

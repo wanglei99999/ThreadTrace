@@ -382,10 +382,15 @@
   margin-top: 12px;
 }
 
-.automation-attention-row {
+/* 待处理行降饱和:去整块彩底,严重度交给带状态点的徽章承载(行间分隔线已足够) */
+.automation-attention-row,
+.automation-attention-row.status-ok,
+.automation-attention-row.status-info,
+.automation-attention-row.status-warn,
+.automation-attention-row.status-fail,
+.automation-attention-row.status-muted {
   align-items: start;
-  background:
-    linear-gradient(135deg, rgba(var(--canvas-rgb), 0.98), rgba(var(--canvas-rgb), 0.76) 58%, rgba(var(--peach-rgb), 0.56));
+  background: transparent;
 }
 
 .automation-attention-row span,
