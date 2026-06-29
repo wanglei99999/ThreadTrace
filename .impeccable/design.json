@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-06-27T22:30:00.000+08:00",
+  "generatedAt": "2026-06-29T11:08:13.355Z",
   "title": "Design System: ThreadTrace",
   "extensions": {
     "colorMeta": {
@@ -8,90 +8,258 @@
         "role": "primary",
         "displayName": "Notion Purple",
         "canonical": "#5645d4",
-        "tonalRamp": ["#1f1850", "#2a2073", "#3a2a99", "#4534b3", "#5645d4", "#8b7ee8", "#ece8fb", "#f6f4fd"]
+        "tonalRamp": [
+          "#1f1850",
+          "#2a2073",
+          "#3a2a99",
+          "#4534b3",
+          "#5645d4",
+          "#8b7ee8",
+          "#ece8fb",
+          "#f6f4fd"
+        ]
       },
       "link": {
         "role": "info",
         "displayName": "Link Blue",
         "canonical": "#0075de",
-        "tonalRamp": ["#003a6e", "#005bab", "#0075de", "#3a97ea", "#7bbcf3", "#b6dbf9", "#dcecfa", "#eef6fd"]
+        "tonalRamp": [
+          "#003a6e",
+          "#005bab",
+          "#0075de",
+          "#3a97ea",
+          "#7bbcf3",
+          "#b6dbf9",
+          "#dcecfa",
+          "#eef6fd"
+        ]
       },
       "sidebar": {
         "role": "neutral",
         "displayName": "Daylight Dock",
         "canonical": "#f7f6f4",
-        "tonalRamp": ["#1a1a1a", "#37352f", "#5d5b54", "#8c8983", "#c8c4be", "#e5e3df", "#f0eeec", "#f7f6f4"]
+        "tonalRamp": [
+          "#1a1a1a",
+          "#37352f",
+          "#5d5b54",
+          "#8c8983",
+          "#c8c4be",
+          "#e5e3df",
+          "#f0eeec",
+          "#f7f6f4"
+        ]
       },
       "canvas": {
         "role": "neutral",
         "displayName": "Canvas White",
         "canonical": "#ffffff",
-        "tonalRamp": ["#37352f", "#787671", "#c8c4be", "#e5e3df", "#ede9e4", "#f0eeec", "#fafaf9", "#ffffff"]
+        "tonalRamp": [
+          "#37352f",
+          "#787671",
+          "#c8c4be",
+          "#e5e3df",
+          "#ede9e4",
+          "#f0eeec",
+          "#fafaf9",
+          "#ffffff"
+        ]
       },
       "surface": {
         "role": "neutral",
         "displayName": "Warm Workspace",
         "canonical": "#f6f5f4",
-        "tonalRamp": ["#37352f", "#6b6862", "#8c8983", "#c8c4be", "#e5e3df", "#f0eeec", "#faf9f8", "#f6f5f4"]
+        "tonalRamp": [
+          "#37352f",
+          "#6b6862",
+          "#8c8983",
+          "#c8c4be",
+          "#e5e3df",
+          "#f0eeec",
+          "#faf9f8",
+          "#f6f5f4"
+        ]
       },
       "text": {
         "role": "neutral",
         "displayName": "Warm Charcoal Ink",
         "canonical": "#37352f",
-        "tonalRamp": ["#1a1a1a", "#37352f", "#5d5b54", "#6b6862", "#787671", "#8c8983", "#c8c4be", "#e5e3df"]
+        "tonalRamp": [
+          "#1a1a1a",
+          "#37352f",
+          "#5d5b54",
+          "#6b6862",
+          "#787671",
+          "#8c8983",
+          "#c8c4be",
+          "#e5e3df"
+        ]
       },
       "ok": {
         "role": "success",
         "displayName": "Success Green",
         "canonical": "#1a9c38",
-        "tonalRamp": ["#0c5a1f", "#1a9c38", "#3cc35c", "#7bd897", "#aee6bf", "#d9f3e1", "#e2f3ee", "#eefaf2"]
+        "tonalRamp": [
+          "#0c5a1f",
+          "#1a9c38",
+          "#3cc35c",
+          "#7bd897",
+          "#aee6bf",
+          "#d9f3e1",
+          "#e2f3ee",
+          "#eefaf2"
+        ]
       },
       "warn": {
         "role": "warning",
         "displayName": "Signal Amber",
         "canonical": "#cf5400",
-        "tonalRamp": ["#73501b", "#8a5712", "#9a3f00", "#cf5400", "#ff8a3c", "#ffb98a", "#ffe8d4", "#fff6e4"]
+        "tonalRamp": [
+          "#73501b",
+          "#8a5712",
+          "#9a3f00",
+          "#cf5400",
+          "#ff8a3c",
+          "#ffb98a",
+          "#ffe8d4",
+          "#fff6e4"
+        ]
       },
       "fail": {
         "role": "danger",
         "displayName": "Failure Red",
         "canonical": "#d92d2d",
-        "tonalRamp": ["#7a1414", "#a23c3c", "#d92d2d", "#e96a6a", "#f2a0a0", "#fbe1e1", "#fff0f0", "#fff5f5"]
+        "tonalRamp": [
+          "#7a1414",
+          "#a23c3c",
+          "#d92d2d",
+          "#e96a6a",
+          "#f2a0a0",
+          "#fbe1e1",
+          "#fff0f0",
+          "#fff5f5"
+        ]
       },
       "gold": {
         "role": "secondary",
         "displayName": "Brand Gold",
         "canonical": "#f5d75e",
-        "tonalRamp": ["#73501b", "#a66e20", "#d99d3a", "#f5d75e", "#ffe071", "#fef7d6", "#fff6e4", "#fff8e8"]
+        "tonalRamp": [
+          "#73501b",
+          "#a66e20",
+          "#d99d3a",
+          "#f5d75e",
+          "#ffe071",
+          "#fef7d6",
+          "#fff6e4",
+          "#fff8e8"
+        ]
       },
-      "tint-lavender": { "role": "tint", "displayName": "Lavender Tint", "canonical": "#e6e0f5" },
-      "tint-mint": { "role": "tint", "displayName": "Mint Tint", "canonical": "#d9f3e1" },
-      "tint-peach": { "role": "tint", "displayName": "Peach Tint", "canonical": "#ffe8d4" },
-      "tint-sky": { "role": "tint", "displayName": "Sky Tint", "canonical": "#dcecfa" },
-      "tint-rose": { "role": "tint", "displayName": "Rose Tint", "canonical": "#fde0ec" },
-      "info-ink": { "role": "ink", "displayName": "Info Ink", "canonical": "#154d88" },
-      "amber-ink": { "role": "ink", "displayName": "Amber Ink", "canonical": "#73501b" },
-      "slate-ink": { "role": "ink", "displayName": "Slate Ink", "canonical": "#405a64" }
+      "tint-lavender": {
+        "role": "tint",
+        "displayName": "Lavender Tint",
+        "canonical": "#e6e0f5"
+      },
+      "tint-mint": {
+        "role": "tint",
+        "displayName": "Mint Tint",
+        "canonical": "#d9f3e1"
+      },
+      "tint-peach": {
+        "role": "tint",
+        "displayName": "Peach Tint",
+        "canonical": "#ffe8d4"
+      },
+      "tint-sky": {
+        "role": "tint",
+        "displayName": "Sky Tint",
+        "canonical": "#dcecfa"
+      },
+      "tint-rose": {
+        "role": "tint",
+        "displayName": "Rose Tint",
+        "canonical": "#fde0ec"
+      },
+      "info-ink": {
+        "role": "ink",
+        "displayName": "Info Ink",
+        "canonical": "#154d88"
+      },
+      "amber-ink": {
+        "role": "ink",
+        "displayName": "Amber Ink",
+        "canonical": "#73501b"
+      },
+      "slate-ink": {
+        "role": "ink",
+        "displayName": "Slate Ink",
+        "canonical": "#405a64"
+      }
     },
     "typographyMeta": {
-      "headline": { "displayName": "Headline", "purpose": "Page-level view titles; 700 weight, slight negative tracking." },
-      "title": { "displayName": "Panel Title", "purpose": "Compact panel and section headings; 600 weight." },
-      "body": { "displayName": "Body", "purpose": "Evidence, descriptions, and form values; 400/15px/1.6." },
-      "label": { "displayName": "Label", "purpose": "Field labels and compact UI metadata; 600/12px." },
-      "mono": { "displayName": "Mono", "purpose": "Commands, JSON, and audit snippets." }
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Page-level view titles; 700 weight, slight negative tracking."
+      },
+      "title": {
+        "displayName": "Panel Title",
+        "purpose": "Compact panel and section headings; 600 weight."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Evidence, descriptions, and form values; 400/15px/1.6."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Field labels and compact UI metadata; 600/12px."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Commands, JSON, and audit snippets."
+      }
     },
     "shadows": [
-      { "name": "flat-at-rest", "value": "none", "purpose": "Cards, panels, rows — structure from tonal surfaces + 1px hairlines." },
-      { "name": "soft-lift", "value": "0 4px 12px rgba(15, 15, 15, 0.08)", "purpose": "Hovered tiles and elevated controls." },
-      { "name": "floating-layer", "value": "0 16px 48px -8px rgba(15, 15, 15, 0.16)", "purpose": "Dropdowns, popovers, and modals only." }
+      {
+        "name": "resting-lift",
+        "value": "0 1px 2px rgba(15, 15, 15, 0.04)",
+        "purpose": "Cards, panels, form surfaces — a whisper of depth off the warm canvas."
+      },
+      {
+        "name": "flat-at-rest",
+        "value": "none",
+        "purpose": "Rows, list items, and field groups inside a card."
+      },
+      {
+        "name": "soft-lift",
+        "value": "0 4px 12px rgba(15, 15, 15, 0.08)",
+        "purpose": "Hovered tiles and elevated controls."
+      },
+      {
+        "name": "floating-layer",
+        "value": "0 16px 48px -8px rgba(15, 15, 15, 0.16)",
+        "purpose": "Dropdowns, popovers, and modals only."
+      }
     ],
     "motion": [
-      { "name": "state-transition", "value": "180ms cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "Apple ease-out for control state changes." },
-      { "name": "press", "value": "transform: scale(0.97)", "purpose": "System-wide committed press feedback." }
+      {
+        "name": "state-transition",
+        "value": "180ms cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "Apple ease-out for control state changes."
+      },
+      {
+        "name": "press",
+        "value": "transform: scale(0.97)",
+        "purpose": "System-wide committed press feedback."
+      }
     ],
     "breakpoints": [
-      { "name": "tablet", "value": "860px" },
-      { "name": "phone", "value": "520px" }
+      {
+        "name": "tablet",
+        "value": "860px"
+      },
+      {
+        "name": "phone",
+        "value": "520px"
+      }
     ]
   },
   "components": [
@@ -134,12 +302,53 @@
       "description": "Persistent light grouped navigation dock (Workspace / Operations) with purple active state.",
       "html": "<nav class=\"ds-nav\"><div class=\"ds-nav-group\">工作区</div><button class=\"ds-nav-item ds-active\">历史分析</button><button class=\"ds-nav-item\">新发言解读</button></nav>",
       "css": ".ds-nav { display: grid; gap: 2px; width: 240px; padding: 16px; background: #f7f6f4; } .ds-nav-group { padding: 12px 10px 6px; color: #8c8983; font: 600 12px var(--font-sans, \"PingFang SC\", Inter, system-ui, sans-serif); } .ds-nav-item { min-height: 34px; padding: 7px 10px; border: 0; border-radius: 6px; text-align: left; color: #37352f; background: transparent; font: 500 15px var(--font-sans, \"PingFang SC\", Inter, system-ui, sans-serif); } .ds-nav-item:hover { background: #ebe9e5; } .ds-nav-item.ds-active { color: #3a2a99; background: #ece8fb; }"
+    },
+    {
+      "name": "Notion Callout (empty state)",
+      "kind": "callout",
+      "description": "Soft-tint block with a leading icon chip and caption + message; teaches the empty state. Replaces dashed placeholders.",
+      "html": "<div class=\"empty-signal\"><span>清爽</span><strong>暂时没有需要处理的信号。</strong></div>",
+      "css": ".empty-signal{display:grid;grid-template-columns:auto 1fr;gap:2px 13px;padding:14px 16px;border:1px solid #e5e3df;border-radius:12px;background:#fafaf9}.empty-signal::before{content:\"✓\";grid-row:1/span 2;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:#ece8fb;color:#5645d4;font-weight:700}"
+    },
+    {
+      "name": "Multi-color Tag",
+      "kind": "tag",
+      "description": "Notion pastel select pills; backgrounds rotate lavender/mint/peach/sky/rose/yellow by position, warm-ink text at AA.",
+      "html": "<span class=\"tag\">科技</span>",
+      "css": ".tag{padding:3px 9px;border-radius:6px;background:#e6e0f5;color:#37352f;font:500 12px/1.2 inherit}.tag:nth-child(6n+2){background:#d9f3e1}.tag:nth-child(6n+3){background:#ffe8d4}"
+    },
+    {
+      "name": "Status Badge (with dot)",
+      "kind": "badge",
+      "description": "Pastel pill + leading same-color status dot + deep semantic text; status carried by dot+label, never color alone.",
+      "html": "<span class=\"status-badge status-ok\">正常</span>",
+      "css": ".status-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:9999px;font:600 12px/1.2 inherit}.status-badge::before{content:\"\";width:6px;height:6px;border-radius:9999px;background:currentColor}.status-ok{color:#1a9c38;background:#d9f3e1}"
+    },
+    {
+      "name": "Nav / Page Icon Chip",
+      "kind": "icon",
+      "description": "Lucide-style line SVG (currentColor, 1.9 stroke): 17px in nav, 22px in the accent-soft page-head chip; signal chips tint by state.",
+      "html": "<span class=\"toolbar-icon\"><svg class=\"tt-icon\" viewBox=\"0 0 24 24\"></svg></span>",
+      "css": ".toolbar-icon{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:8px;background:#ece8fb;color:#5645d4}.tt-icon{width:22px;height:22px}"
+    },
+    {
+      "name": "Breadcrumb",
+      "kind": "navigation",
+      "description": "Muted slash-separated wayfinding trail at the page top; last segment emphasized. Quiet, not colored pills.",
+      "html": "<nav class=\"toolbar-meta\"><span>语脉</span><span>概览</span><span>今日要处理</span></nav>",
+      "css": ".toolbar-meta{display:flex;align-items:center;gap:7px}.toolbar-meta span{color:#787671;font:500 12.5px/1.2 inherit}.toolbar-meta span:not(:last-child)::after{content:\"/\";color:#c8c4be}.toolbar-meta span:last-child{color:#5d5b54;font-weight:600}"
     }
   ],
   "narrative": {
     "northStar": "The Personal Intelligence Cockpit",
     "overview": "ThreadTrace should feel like a private cockpit for a young technical operator: sharp, credible, and satisfying to use without falling into hacker theatrics. Built on a Notion + Apple blend — Notion provides the bones (workspace structure, warm-neutral surfaces, a purple primary, sober rectangular geometry, database-property color for status); Apple provides the polish (typographic restraint, generous breathing room, committed micro-interactions, shadows reserved for floating layers only).",
-    "keyCharacteristics": ["Dense but not cramped.", "Technical but not hostile.", "Polished but not decorative.", "Multi-source ready.", "Built for one expert operator moving quickly."],
+    "keyCharacteristics": [
+      "Dense but not cramped.",
+      "Technical but not hostile.",
+      "Polished but not decorative.",
+      "Multi-source ready.",
+      "Built for one expert operator moving quickly."
+    ],
     "rules": [
       {
         "name": "The Purple Is The Action Rule",
@@ -172,7 +381,20 @@
         "section": "elevation"
       }
     ],
-    "dos": ["Keep the UI young, sharp, and personally useful.", "Use deliberate color roles: light dock, warm canvas, purple action, link blue, pastel status, gold identity.", "Preserve evidence density with easy-to-scan rows, labels, and panel titles.", "Make source operations, review flows, and analysis feel like one coherent cockpit.", "Keep focus states visible and keyboard-friendly; every animation has a prefers-reduced-motion fallback."],
-    "donts": ["Don't look like a generic admin template or an ordinary enterprise system with default white cards.", "Don't use dark hacker-terminal styling, neon, or fake command-center drama.", "Don't collapse the product into a single-color theme.", "Don't use loud AI-SaaS tropes: gradient text, gradient blobs, decorative multi-color bars, marketing-first hero layouts.", "Don't use 01/02/03 numbered scaffolding, per-section eyebrow kickers, or border-left/right color stripes greater than 1px.", "Don't use weight 800+, fluid clamp headings, or inner-highlight glass on static surfaces."]
+    "dos": [
+      "Keep the UI young, sharp, and personally useful.",
+      "Use deliberate color roles: light dock, warm canvas, purple action, link blue, pastel status, gold identity.",
+      "Preserve evidence density with easy-to-scan rows, labels, and panel titles.",
+      "Make source operations, review flows, and analysis feel like one coherent cockpit.",
+      "Keep focus states visible and keyboard-friendly; every animation has a prefers-reduced-motion fallback."
+    ],
+    "donts": [
+      "Don't look like a generic admin template or an ordinary enterprise system with default white cards.",
+      "Don't use dark hacker-terminal styling, neon, or fake command-center drama.",
+      "Don't collapse the product into a single-color theme.",
+      "Don't use loud AI-SaaS tropes: gradient text, gradient blobs, decorative multi-color bars, marketing-first hero layouts.",
+      "Don't use 01/02/03 numbered scaffolding, per-section eyebrow kickers, or border-left/right color stripes greater than 1px.",
+      "Don't use weight 800+, fluid clamp headings, or inner-highlight glass on static surfaces."
+    ]
   }
 }
