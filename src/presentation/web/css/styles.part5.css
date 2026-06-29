@@ -750,7 +750,7 @@
   align-content: center;
   gap: 5px;
   padding: 14px;
-  border: 1px dashed var(--hairline-strong);
+  border: 1px solid var(--hairline);
   border-radius: var(--radius-sm);
   background: var(--surface-soft);
   color: var(--text-secondary);
