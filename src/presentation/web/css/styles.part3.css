@@ -1218,3 +1218,38 @@ form button[type="submit"]:hover {
   overflow-wrap: anywhere;
 }
 
+/* ──────────────────────────────────────────────────────────────────────────
+   Verdict 英雄区收敛:去技术感网格叠层与重辉光,mono 彩色角标改安静 sans 标签。
+   保留焦点暖色底与 pastel 指标格(这是有意的「答案」强调),只褪掉过时的科技层。
+   末段定义,等特异性后置胜。
+   ────────────────────────────────────────────────────────────────────────── */
+.history-report-hero::before,
+.context-verdict-hero::before,
+.author-intel-hero::before,
+.review-queue-hero::before {
+  display: none;
+}
+
+.history-report-hero,
+.context-verdict-hero,
+.author-intel-hero,
+.review-queue-hero {
+  box-shadow: var(--shadow-2);
+}
+
+.history-report-kicker,
+.context-verdict-label,
+.author-intel-label,
+.review-queue-label {
+  width: max-content;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
