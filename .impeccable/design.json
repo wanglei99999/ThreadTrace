@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-06-29T11:08:13.355Z",
+  "generatedAt": "2026-06-30T13:58:27.920Z",
   "title": "Design System: ThreadTrace",
   "extensions": {
     "colorMeta": {
@@ -293,7 +293,7 @@
       "refersTo": "input-field",
       "description": "Compact working field with purple focus ring.",
       "html": "<label class=\"ds-field\"><span>保存页目录</span><input value=\"example\" /></label>",
-      "css": ".ds-field { display: grid; gap: 7px; color: #5d5b54; font: 600 12px/1.2 var(--font-sans, \"PingFang SC\", Inter, system-ui, sans-serif); } .ds-field input { min-height: 40px; border: 1px solid #c8c4be; border-radius: 8px; padding: 9px 12px; background: #ffffff; color: #37352f; font: 400 15px/1.55 var(--font-sans, \"PingFang SC\", Inter, system-ui, sans-serif); } .ds-field input:focus { border-color: #5645d4; box-shadow: 0 0 0 3px #ece8fb; outline: 0; }"
+      "css": ".ds-field { display: grid; gap: 7px; color: #5d5b54; font: 600 12px/1.2 var(--font-sans, \"PingFang SC\", Inter, system-ui, sans-serif); } .ds-field input { min-height: 44px; border: 1px solid #c8c4be; border-radius: 8px; padding: 9px 12px; background: #ffffff; color: #37352f; font: 400 15px/1.55 var(--font-sans, \"PingFang SC\", Inter, system-ui, sans-serif); } .ds-field input:focus { border-color: #5645d4; box-shadow: 0 0 0 3px #ece8fb; outline: 0; }"
     },
     {
       "name": "Grouped Light Dock",

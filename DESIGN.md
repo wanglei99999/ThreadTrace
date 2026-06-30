@@ -58,12 +58,24 @@ colors:
   amber-base: "#8a5712"
   rust-base: "#a23c3c"
 typography:
+  page-title:
+    fontFamily: "PingFang SC, Microsoft YaHei, Inter, system-ui, sans-serif"
+    fontSize: "28px"
+    fontWeight: 700
+    lineHeight: 1.18
+    letterSpacing: "-0.02em"
   headline:
     fontFamily: "PingFang SC, Microsoft YaHei, Inter, system-ui, sans-serif"
     fontSize: "24px"
     fontWeight: 700
     lineHeight: 1.2
     letterSpacing: "-0.01em"
+  panel-title:
+    fontFamily: "PingFang SC, Microsoft YaHei, Inter, system-ui, sans-serif"
+    fontSize: "17px"
+    fontWeight: 600
+    lineHeight: 1.35
+    letterSpacing: "0"
   title:
     fontFamily: "PingFang SC, Microsoft YaHei, Inter, system-ui, sans-serif"
     fontSize: "16px"
@@ -72,9 +84,15 @@ typography:
     letterSpacing: "0"
   body:
     fontFamily: "PingFang SC, Microsoft YaHei, Inter, system-ui, sans-serif"
-    fontSize: "15px"
+    fontSize: "16px"
     fontWeight: 400
     lineHeight: 1.6
+    letterSpacing: "0"
+  caption:
+    fontFamily: "PingFang SC, Microsoft YaHei, Inter, system-ui, sans-serif"
+    fontSize: "13px"
+    fontWeight: 500
+    lineHeight: 1.4
     letterSpacing: "0"
   label:
     fontFamily: "PingFang SC, Microsoft YaHei, Inter, system-ui, sans-serif"
@@ -104,15 +122,15 @@ components:
     backgroundColor: "{colors.accent}"
     textColor: "{colors.canvas}"
     rounded: "{rounded.button}"
-    padding: "0 16px"
-    height: "40px"
+    padding: "0 18px"
+    height: "44px"
   button-secondary:
     backgroundColor: "{colors.canvas}"
     textColor: "{colors.text}"
     border: "1px solid {colors.hairline-strong}"
     rounded: "{rounded.button}"
-    padding: "0 16px"
-    height: "40px"
+    padding: "0 18px"
+    height: "44px"
   card-panel:
     backgroundColor: "{colors.canvas}"
     textColor: "{colors.text}"
@@ -124,13 +142,18 @@ components:
     textColor: "{colors.text}"
     border: "1px solid {colors.hairline-strong}"
     rounded: "{rounded.button}"
-    padding: "9px 12px"
-    height: "40px"
+    padding: "10px 12px"
+    height: "44px"
+    focus: "1px solid {colors.accent} + 1px accent inner-ring + accent-soft outer-ring"
   chip:
     backgroundColor: "{colors.accent-soft}"
     textColor: "{colors.accent-deep}"
     rounded: "{rounded.chip}"
     padding: "3px 8px"
+  tag:
+    note: "pastel 底轮转 + 深同色字(Notion 数据库属性):lavender→#391c57 / mint→#14532d / peach→#793400 / sky→#154d88 / rose→#831843 / yellow→#713f12,均过 AA"
+    rounded: "{rounded.chip}"
+    padding: "3px 9px"
 ---
 
 # Design System: ThreadTrace
@@ -192,11 +215,15 @@ A warm‑neutral Notion workspace system with a single purple operational accent
 **Character:** A single well‑tuned sans carries headings, labels, body, and data. Hierarchy comes from weight, size, and spacing — not decorative font pairing.
 
 ### Hierarchy (fixed rem scale, not fluid)
-- **Headline** (700, 24px, -0.01em): page titles and major view headings.
-- **Title** (600, 16px): panel titles and compact section headers.
-- **Body** (400, 15px, 1.6): evidence, descriptions, form values.
-- **Label** (600, 12px): field labels and compact UI metadata.
+- **Page title** (700, 28px, -0.02em): the toolbar view title (Notion heading-3 tier).
+- **Headline** (700, 24px, -0.01em): result verdict headlines and major view headings.
+- **Panel title** (600, 17px): result panel section titles (Notion heading-5 tier, density-trimmed).
+- **Title** (600, 16px): compact inline section headers.
+- **Body** (400, 16px, 1.6): evidence, descriptions, long-text result panels, form values — Notion documentation-level readability.
+- **Caption** (500, 13px) / **Label** (600, 12px): UI chrome — tags, metric rows, field labels — kept compact so density is never traded for the larger body.
 - **Mono** (12.5px): commands, JSON, audit snippets.
+
+> **The Two-Track Rule.** Content reads at 16px/1.6 (Notion docs); chrome (labels, tags, metric rows) stays 12–14px. Bumping body never bloats the dense data views.
 
 ### Named Rules
 **The Weight Ladder Rule.** Ladder is **400 / 500 / 600 / 700**. Weight 800+ is banned — it reads as shouting, not hierarchy.
@@ -225,8 +252,8 @@ Notion‑flat by default: structure comes from tonal surfaces and 1px hairlines,
 - **Press:** `transform: scale(0.97)` system‑wide; focus uses a 2px purple ring.
 
 ### Inputs / Fields
-- White surface, 8px radius, `hairline-strong` border, 40px height.
-- **Focus:** purple border + soft purple ring (`0 0 0 3px accent-soft`).
+- White surface, 8px radius, `hairline-strong` border, **44px height** (Notion text-input spec), 14px field text.
+- **Focus:** Notion 2px purple border (1px `accent` border + 1px inner `accent` ring) plus a soft `accent-soft` outer ring for a11y — no layout shift.
 - Placeholder text meets contrast (tertiary, not light grey).
 
 ### Cards / Panels
@@ -238,7 +265,7 @@ Notion‑flat by default: structure comes from tonal surfaces and 1px hairlines,
 - **Icon chips:** per‑view page‑head chip (`accent-soft` ground + purple icon, 8px radius); overview signal chips tint by state (peach / sky / mint / rose ground + matching semantic icon).
 
 ### Chips & Status
-- **Tags:** Notion multi‑color pastel pills — lavender / mint / peach / sky / rose / yellow rotate by position, warm‑ink text (`--text`) kept at AA; 6px radius, for entity/evidence labels.
+- **Tags:** Notion database-property pills — lavender / mint / peach / sky / rose / yellow rotate by position, each with **deep same-hue text** (lavender→`#391c57`, mint→`#14532d`, peach→`#793400`, sky→`#154d88`, rose→`#831843`, yellow→`#713f12`), 600 weight, all ≥AA; 6px radius, for entity/evidence labels.
 - **Status badges:** pastel‑tinted pill + a leading same‑color status dot + deep semantic text; carry dot + label, never color alone.
 
 ### Callout (empty & teaching states)

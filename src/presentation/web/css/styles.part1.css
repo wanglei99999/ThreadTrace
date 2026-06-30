@@ -93,6 +93,14 @@
   --coral: #cf5400;
   --coral-soft: #ffe8d4;
 
+  /* ===== Notion「深同色字」:pastel 底上的深同色标签文字（均过 AA on 各自 tint） ===== */
+  --tag-ink-lavender: #391c57;
+  --tag-ink-mint: #14532d;
+  --tag-ink-peach: #793400;
+  --tag-ink-sky: #154d88;
+  --tag-ink-rose: #831843;
+  --tag-ink-yellow: #713f12;
+
   /* ===== 阴影（扁平为主，重阴影只给浮层） ===== */
   --shadow-xs: 0 1px 2px rgba(var(--ink-rgb), 0.04);
   --shadow-sm: 0 4px 12px rgba(var(--ink-rgb), 0.08);
@@ -155,7 +163,7 @@ body {
   background: var(--surface);
   color: var(--text);
   font-family: var(--font-sans);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.6;
   letter-spacing: 0;
   -webkit-font-smoothing: antialiased;
@@ -528,7 +536,7 @@ textarea:focus-visible {
 .toolbar h2 {
   margin: 0;
   color: var(--text-strong);
-  font-size: 27px;
+  font-size: 28px;
   font-weight: 700;
   line-height: 1.18;
   letter-spacing: -0.02em;

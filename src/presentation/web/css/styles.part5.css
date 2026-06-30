@@ -474,7 +474,7 @@
   min-height: 24px;
   margin: 0;
   color: var(--text-strong);
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
   line-height: 1.35;
   text-wrap: balance;
@@ -821,35 +821,40 @@
   gap: 8px;
 }
 
-/* Notion 多色 pastel 标签:轮转柔和底 + 暖炭灰文字(均过 AA) */
+/* Notion 数据库属性标签:pastel 底 + 深同色字(轮转 6 色,均过 AA),600 字重 */
 .tag {
   padding: 3px 9px;
   border-radius: var(--radius-chip);
   border: 0;
   background: var(--tint-lavender);
-  color: var(--text);
+  color: var(--tag-ink-lavender);
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .tag:nth-child(6n + 2) {
   background: var(--tint-mint);
+  color: var(--tag-ink-mint);
 }
 
 .tag:nth-child(6n + 3) {
   background: var(--tint-peach);
+  color: var(--tag-ink-peach);
 }
 
 .tag:nth-child(6n + 4) {
   background: var(--tint-sky);
+  color: var(--tag-ink-sky);
 }
 
 .tag:nth-child(6n + 5) {
   background: var(--tint-rose);
+  color: var(--tag-ink-rose);
 }
 
 .tag:nth-child(6n) {
   background: var(--tint-yellow);
+  color: var(--tag-ink-yellow);
 }
 
 .summary-strip {
