@@ -53,6 +53,8 @@ test('runtime fetches and stores raw thread pages through a crawler port', async
 
 test('http forum crawler turns fetch responses into raw html results', async function () {
   const crawler = createHttpForumCrawler({
+    env: {},
+    userAgent: 'ThreadTrace/0.1',
     fetch: async function (url, options) {
       assert.equal(url, 'https://example.test/thread/1');
       assert.equal(options.headers['user-agent'], 'ThreadTrace/0.1');
@@ -67,8 +69,8 @@ test('http forum crawler turns fetch responses into raw html results', async fun
             return undefined;
           }
         },
-        async text() {
-          return '<html>ok</html>';
+        async arrayBuffer() {
+          return Buffer.from('<html>ok</html>', 'utf-8');
         }
       };
     }

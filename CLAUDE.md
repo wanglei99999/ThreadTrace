@@ -19,6 +19,15 @@ DDD 分层（`src/`）：
 - 单元测试：`npm run test:unit`
 - Web CDP 验证示例：`npm run verify:web:automation-cockpit`（`scripts/verifyAutomationCockpitCdp.js`）
 
+### 在线抓取（真实数据获取）
+
+`infrastructure/crawlers/httpForumCrawler.js` 负责在线抓取，已支持：**自动 GBK/gb18030 解码**（NGA 是 GBK，按 content-type/meta 探测）、真实浏览器 UA、referer、cookie 注入。会话密钥**只经环境变量**注入，绝不落源码：
+- `THREADTRACE_NGA_COOKIE`（或通用 `THREADTRACE_CRAWLER_COOKIE`）— 登录会话 cookie，NGA 绝大多数内容需要（`ngaPassportUid`/`ngaPassportCid`）。放 `.env`（已在 `.gitignore`）。
+- `THREADTRACE_CRAWLER_USER_AGENT` / `THREADTRACE_CRAWLER_REFERER`（可选覆盖，默认给了 Chrome UA）。
+- config 层 `config.crawler.cookieConfigured` 仅报告"是否已配"，不存值（镜像 `llm.apiKeyConfigured`）。
+
+抓到的原始 HTML 与「保存页」格式兼容——同一套 `readHtmlText`(gb18030) + `ngaSavedHtmlAdapter` 解析链零改动直接吃（已端到端验证）。**离线保存页目录仍是 ToS 最安全的主路径**；在线抓取用你自己的登录会话，注意账号风控与抓取频率。
+
 ## 前端（`src/presentation/web/`）
 
 纯 vanilla 三件套，**无构建步骤**：

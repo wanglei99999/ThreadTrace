@@ -60,6 +60,11 @@ function createThreadTraceConfig(options) {
       apiKeyConfigured: Boolean(firstValue(safeOptions.llmApiKey, env.THREADTRACE_LLM_API_KEY, env.OPENAI_API_KEY, undefined)),
       timeoutMs: numberOrUndefined(firstValue(safeOptions.llmTimeoutMs, env.THREADTRACE_LLM_TIMEOUT_MS, undefined))
     },
+    crawler: {
+      // 会话密钥只经 env 注入（THREADTRACE_NGA_COOKIE / 通用 THREADTRACE_CRAWLER_COOKIE），配置层只报告"是否已配"，不落值。
+      cookieConfigured: Boolean(firstValue(safeOptions.crawlerCookie, env.THREADTRACE_NGA_COOKIE, env.THREADTRACE_CRAWLER_COOKIE, undefined)),
+      userAgentConfigured: Boolean(firstValue(safeOptions.crawlerUserAgent, env.THREADTRACE_CRAWLER_USER_AGENT, undefined))
+    },
     workers: {
       sourceTaskMode,
       sourceRunStaleAfterMs: numberWithDefault(firstValue(safeOptions.sourceRunStaleAfterMs, env.THREADTRACE_SOURCE_RUN_STALE_AFTER_MS), 10 * 60 * 1000),
