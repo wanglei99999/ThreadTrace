@@ -435,7 +435,9 @@ textarea:focus-visible {
 
 .workspace {
   min-width: 0;
-  width: min(100%, 1180px);
+  /* 内容列有意设上限（表单不在超宽屏拉到边，保可读）——但居中，让两侧留白对称，读作刻意排版而非靠左空一块 */
+  width: min(100%, 1360px);
+  margin-inline: auto;
   padding: 28px 40px 64px;
 }
 
