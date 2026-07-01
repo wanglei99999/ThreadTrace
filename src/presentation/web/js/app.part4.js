@@ -40,7 +40,7 @@ function renderAuthorEntityRows(entities) {
         '</div>' +
       '</section>' +
       '<section class="author-evidence-status">' +
-        statusBadge(item.latestAttitude || 'unknown', statusVariant(item.latestAttitude)) +
+        statusBadge(localizeEnum(item.latestAttitude || 'unknown'), statusVariant(item.latestAttitude)) +
       '</section>' +
       '</div>';
   }).join('');
@@ -67,7 +67,7 @@ function renderOpinionTimelineRows(items) {
         '</div>' +
       '</section>' +
       '<section class="author-evidence-status">' +
-        statusBadge(item.attitude || 'unknown', statusVariant(item.attitude)) +
+        statusBadge(localizeEnum(item.attitude || 'unknown'), statusVariant(item.attitude)) +
       '</section>' +
       '</div>';
   }).join('');
@@ -130,7 +130,7 @@ function formatStanceSummary(summary) {
   const keys = Object.keys(summary || {});
   if (keys.length === 0) return '暂无';
   return keys.sort().map(function (key) {
-    return key + ' ' + summary[key];
+    return localizeEnum(key) + ' ' + summary[key];
   }).join(' / ');
 }
 
@@ -141,8 +141,8 @@ function formatOpinionChainSummary(chain) {
     entity.displayName || chain.key,
     '观点 ' + chain.opinionCount,
     '主作者 ' + chain.primaryAuthorOpinionCount,
-    '最新 ' + (chain.latestAttitude || 'unknown'),
-    '变化 ' + (chain.latestChange ? chain.latestChange.changeType : '暂无'),
+    '最新 ' + localizeEnum(chain.latestAttitude || 'unknown'),
+    '变化 ' + (chain.latestChange ? localizeEnum(chain.latestChange.changeType) : '暂无'),
     '明确 ' + (levels.explicit || 0),
     '推断 ' + (levels.inferred || 0),
     '置信度 ' + chain.confidence
@@ -169,7 +169,7 @@ function renderContextReport(report) {
     panel('新发言', [
       metric('内容', report.newPost.contentText),
       metric('实体', (report.newEntities || []).map(function (entity) { return entity.displayName; }).join(', ') || '暂无'),
-      metric('观点', (report.newOpinions || []).map(function (opinion) { return opinion.attitude + ' · ' + opinion.confidence; }).join(', ') || '暂无'),
+      metric('观点', (report.newOpinions || []).map(function (opinion) { return localizeEnum(opinion.attitude) + ' · ' + opinion.confidence; }).join(', ') || '暂无'),
       metric('隐晦表达', (report.newImplicitReferences || []).map(function (item) { return item.label + ' · ' + item.phrase; }).join(', ') || '暂无')
     ].join('')),
     renderContextMatchSummary(report.contextMatchSummary),
@@ -193,7 +193,7 @@ function renderContextVerdictHero(report) {
   const taskCount = handoff.taskCount || (report.contextReviewTasks || []).length || 0;
   const highPriorityCount = handoff.highPriorityTaskCount || 0;
   const tags = [
-    summary.evidenceLevel ? '证据 ' + summary.evidenceLevel : undefined,
+    summary.evidenceLevel ? '证据 ' + localizeEnum(summary.evidenceLevel) : undefined,
     summary.confidence !== undefined ? '可信度 ' + summary.confidence : undefined,
     match.topEntity ? '对象 ' + match.topEntity : undefined,
     match.topRelationType ? '关系 ' + match.topRelationType : undefined
@@ -204,7 +204,7 @@ function renderContextVerdictHero(report) {
     '<section class="context-verdict-main">',
     '<div class="context-verdict-header">',
     '<span class="context-verdict-label">上下文判断</span>',
-    statusBadge(summary.status || match.status || 'interpreted', reviewTone),
+    statusBadge(localizeEnum(summary.status || match.status || 'interpreted'), reviewTone),
     '</div>',
     '<h3>' + escapeHtml(summary.summary || '已完成语境召回，等待进一步核验。') + '</h3>',
     '<p>' + escapeHtml(post.contentText || '暂无新发言内容。') + '</p>',
@@ -236,7 +236,7 @@ function renderContextReviewHandoff(handoff) {
   const evidencePackage = handoff.evidencePackage || {};
   const floors = (evidencePackage.floors || []).length > 0 ? '#' + evidencePackage.floors.join(' / #') : '暂无';
   return panel('核验交接', [
-    metric('状态', handoff.status),
+    metric('状态', localizeEnum(handoff.status)),
     metric('任务/高优', handoff.taskCount + ' / ' + handoff.highPriorityTaskCount),
     metric('证据楼层', floors),
     metric('下一步', handoff.recommendedNextAction)
@@ -248,7 +248,7 @@ function renderContextMatchSummary(summary) {
     return panel('承接概览', '<div class="muted">暂无</div>');
   }
   return panel('承接概览', [
-    metric('状态', summary.status),
+    metric('状态', localizeEnum(summary.status)),
     metric('匹配/复核', summary.total + ' / ' + summary.reviewRequiredCount),
     metric('Top 对象', summary.topEntity || '暂无'),
     metric('Top 关系', summary.topRelationType || '暂无'),
@@ -263,8 +263,8 @@ function renderInterpretationSummary(summary) {
     return panel('解读摘要', '<div class="muted">暂无</div>', 'wide');
   }
   return panel('解读摘要', [
-    metric('状态', summary.status),
-    metric('证据级别', summary.evidenceLevel),
+    metric('状态', localizeEnum(summary.status)),
+    metric('证据级别', localizeEnum(summary.evidenceLevel)),
     metric('置信度', summary.confidence),
     metric('结论', summary.summary)
   ].join(''), 'wide');
@@ -276,10 +276,10 @@ function formatContextChainMatch(match) {
   return [
     entity.displayName || chain.key,
     match.relationType,
-    match.relationFamily || 'unknown',
-    '证据 ' + (match.relationEvidenceLevel || 'unknown'),
+    localizeEnum(match.relationFamily || 'unknown'),
+    '证据 ' + localizeEnum(match.relationEvidenceLevel || 'unknown'),
     '置信度 ' + match.confidence,
-    chain.latestAttitude || 'unknown',
+    localizeEnum(chain.latestAttitude || 'unknown'),
     match.relationSummary,
     match.reviewRequired ? '需复核 ' + (match.reviewReasons || []).join(',') : '无需复核'
   ].join(' · ');
@@ -288,7 +288,7 @@ function formatContextChainMatch(match) {
 function formatContextReviewTask(task) {
   const floors = (task.evidenceFloors || []).length > 0 ? '楼层 #' + task.evidenceFloors.join('/#') : '暂无楼层';
   return [
-    '[' + task.priority + ']',
+    '[' + localizeEnum(task.priority) + ']',
     task.title,
     task.targetEntity || '暂无对象',
     floors,

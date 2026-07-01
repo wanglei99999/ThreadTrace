@@ -728,6 +728,37 @@ function localizeStatus(text) {
   });
 }
 
+// 领域枚举值的显示映射（态度/证据级别/判定/优先级）。按【整段标识符】查表：
+// explicit→明确，但 explicit_entity_attitude_candidate 整段查不到→原样保留（可追溯 token 不被腐蚀）。
+// 只用于包裹枚举字段，不套用户正文/摘录，避免误伤。
+function localizeEnum(value) {
+  const map = {
+    // 判定 / 匹配 / 状态
+    matched: '已匹配', unmatched: '未匹配', interpreted: '已解读',
+    'review-required': '待复核', 'action-required': '需处理', 'no-action': '无需处理',
+    // 证据级别
+    explicit: '明确', implicit: '隐含', mixed: '混合', inferred: '推断', ambiguous: '存疑',
+    'well-supported': '充分支撑', 'under-supported': '支撑不足',
+    'weakly-supported': '支撑较弱', unsupported: '缺乏支撑', weak: '较弱', strong: '充分',
+    // 态度
+    disclaimer: '声明', assertion: '断言', question: '疑问', prediction: '预测',
+    endorsement: '认同', agreement: '认同', rebuttal: '反驳', disagreement: '反对',
+    neutral: '中立', watch: '观察', bullish: '看多', bearish: '看空',
+    positive: '正面', negative: '负面',
+    // 关系族 / 判定
+    candidate: '候选', confirmed: '已确认',
+    // 变化类型
+    reinforced: '强化', reversed: '反转', shifted: '转变', unchanged: '未变', stable: '稳定',
+    // 优先级 / 严重度
+    high: '高', medium: '中', low: '低', critical: '紧急', warning: '警告', info: '提示',
+    unknown: '未知'
+  };
+  return String(value == null ? '' : value).replace(/[A-Za-z][A-Za-z0-9_-]*/g, function (token) {
+    var key = token.toLowerCase();
+    return Object.prototype.hasOwnProperty.call(map, key) ? map[key] : token;
+  });
+}
+
 function systemStatusHeadline(variant, runbook, deploymentChecklist, readiness) {
   if (variant === 'fail') return '运行时需要在下一轮开始前处理。';
   if (variant === 'warn') {

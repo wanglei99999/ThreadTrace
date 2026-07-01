@@ -617,7 +617,7 @@ function renderHistoryReport(report) {
       return entity.displayName + ' · ' + entity.mentions.length;
     }))),
     panel('观点候选', evidenceList((report.opinionCandidates || []).slice(0, 8).map(function (opinion) {
-      return '#' + opinion.floor + ' ' + opinion.attitude + ' · ' + opinion.confidence;
+      return '#' + opinion.floor + ' ' + localizeEnum(opinion.attitude) + ' · ' + opinion.confidence;
     }))),
     panel('观点链', evidenceList((report.opinionChains || []).slice(0, 8).map(formatOpinionChainSummary)), 'wide'),
     panel('隐晦表达', evidenceList((report.implicitReferenceCandidates || []).slice(0, 8).map(formatImplicitReferenceSummary)), 'wide'),
@@ -657,7 +657,7 @@ function renderHistoryReportHero(report) {
     historyFact('发言', thread.parsedPostCount || 0),
     historyFact('作者', (report.authorStats || []).length),
     historyFact('页数', thread.totalPages || '未知'),
-    historyFact('可信度', reliability.status || '未知'),
+    historyFact('可信度', localizeEnum(reliability.status || '未知')),
     '</div>',
     '<div class="history-report-author">',
     '<span>主要作者</span>',
@@ -682,7 +682,7 @@ function renderPrimaryAuthorProfile(profile) {
     metric('观点', profile.opinionCount),
     metric('态度', formatStanceSummary(profile.stanceSummary)),
     '<div class="reason-tags tag-list">' + (profile.focusEntities || []).slice(0, 6).map(function (item) {
-      return '<span class="tag">' + escapeHtml(item.entity.displayName + ' · ' + item.mentionCount + ' · ' + item.latestAttitude) + '</span>';
+      return '<span class="tag">' + escapeHtml(item.entity.displayName + ' · ' + item.mentionCount + ' · ' + localizeEnum(item.latestAttitude)) + '</span>';
     }).join('') + '</div>',
     evidenceList((profile.evidenceGaps || []).slice(0, 4).map(function (gap) {
       return gap.entity.displayName + ' · ' + gap.reason + ' · #' + gap.firstFloor + '-' + gap.lastFloor;
@@ -695,7 +695,7 @@ function renderEvidenceReliability(reliability) {
     return panel('证据可靠性', '<div class="muted">暂无</div>');
   }
   return panel('证据可靠性', [
-    metric('状态', reliability.status),
+    metric('状态', localizeEnum(reliability.status)),
     metric('明确/推断', reliability.explicitCount + ' / ' + reliability.inferredCount),
     metric('隐晦表达', reliability.implicitReferenceCount),
     metric('明确占比', reliability.explicitRatio),
@@ -1075,7 +1075,7 @@ function renderAuthorIntelligenceRowsLegacy(authors) {
     const intelligence = item.intelligence || {};
     const sourceKey = item.sourceKey || author.sourceKey;
     const focus = (item.topFocusEntities || []).slice(0, 4).map(function (entity) {
-      return entity.entity && entity.entity.displayName ? entity.entity.displayName + '/' + entity.latestAttitude : entity.key;
+      return entity.entity && entity.entity.displayName ? entity.entity.displayName + '/' + localizeEnum(entity.latestAttitude) : entity.key;
     }).join(' · ');
     const details = [
       sourceKey ? '来源 ' + sourceKey : undefined,
@@ -1171,7 +1171,7 @@ function renderAuthorIntelligenceRows(authors) {
     const intelligence = item.intelligence || {};
     const sourceKey = item.sourceKey || author.sourceKey;
     const focusEntities = (item.topFocusEntities || []).slice(0, 4).map(function (entity) {
-      return entity.entity && entity.entity.displayName ? entity.entity.displayName + ' / ' + entity.latestAttitude : entity.key;
+      return entity.entity && entity.entity.displayName ? entity.entity.displayName + ' / ' + localizeEnum(entity.latestAttitude) : entity.key;
     }).filter(Boolean);
     const focus = focusEntities.join(' · ');
     const confidence = item.averageOpinionConfidence === undefined ? undefined : item.averageOpinionConfidence;
@@ -1224,7 +1224,7 @@ function renderAuthorEntityRowsLegacy(entities) {
       '<strong>' + escapeHtml(entity.displayName || item.key) + '</strong>' +
       '<small>' + escapeHtml(details) + '</small>' +
       '</span>' +
-      statusBadge(item.latestAttitude || 'unknown', statusVariant(item.latestAttitude)) +
+      statusBadge(localizeEnum(item.latestAttitude || 'unknown'), statusVariant(item.latestAttitude)) +
       '</div>';
   }).join('');
 }
