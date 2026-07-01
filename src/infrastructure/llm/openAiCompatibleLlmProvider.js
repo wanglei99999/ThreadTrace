@@ -71,7 +71,8 @@ function buildRequestBody(model, request) {
           'You are a ThreadTrace semantic extraction component.',
           'Return only valid JSON matching the requested schema.',
           'Every claim must cite evidenceRefs when possible.',
-          'Use limitations for uncertain or unsupported conclusions.'
+          'Use limitations for uncertain or unsupported conclusions.',
+          'Write every natural-language field (summary, rationale, question, limitations, and any prose) in Simplified Chinese; keep JSON keys, enum values, and identifiers unchanged.'
         ].join(' ')
       },
       {

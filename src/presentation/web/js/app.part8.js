@@ -766,10 +766,10 @@ function renderSemanticInsights(insights) {
     metric('摘要', insights.summary),
     evidenceList((insights.entityInsights || []).slice(0, 5).map(function (item) {
       const refs = (item.evidenceRefs || []).map(function (ref) { return '#' + ref.floor; }).join(', ');
-      return '实体 ' + item.name + ' · ' + item.confidence + ' · ' + refs;
+      return '实体 ' + item.name + ' · ' + localizeEnum(item.confidence) + ' · ' + refs;
     })),
     evidenceList((insights.opinionInsights || []).slice(0, 5).map(function (item) {
-      return '观点 #' + item.floor + ' · ' + item.attitude + ' · ' + item.confidence;
+      return '观点 #' + item.floor + ' · ' + localizeEnum(item.attitude) + ' · ' + localizeEnum(item.confidence);
     })),
     evidenceList((insights.limitations || []).map(function (item) {
       return '限制：' + item;
