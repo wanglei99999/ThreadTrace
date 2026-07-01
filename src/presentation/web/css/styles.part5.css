@@ -294,7 +294,7 @@
 .cockpit-card-head > span {
   color: var(--muted-strong);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .cockpit-card > span::before {
@@ -323,6 +323,7 @@
 .cockpit-card > strong {
   color: var(--text-strong);
   font-size: 22px;
+  font-weight: 600;
   line-height: 1.22;
   overflow-wrap: anywhere;
 }

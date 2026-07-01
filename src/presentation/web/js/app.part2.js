@@ -638,12 +638,12 @@ function renderSystemStatusDashboard(report) {
     statusBadge(systemStatusLabel(variant), variant),
     '</div>',
     '<h3>' + escapeHtml(systemStatusHeadline(variant, operationsRunbook, deploymentChecklist, operationsReadiness)) + '</h3>',
-    '<p>' + escapeHtml([
+    '<p>' + escapeHtml(localizeStatus([
       '服务 ' + (health.ok ? '运行中' : '需关注'),
       '存储 ' + workspaceValue(overview.storageMode || config.storageMode, '未知'),
       '来源模式 ' + workspaceValue(workersConfig.sourceTaskMode, '未知'),
       '更新 ' + workspaceValue(overview.generatedAt || diagnostics.generatedAt || deploymentChecklist.generatedAt, '等待更新')
-    ].join(' · ')) + '</p>',
+    ].join(' · '))) + '</p>',
     '</section>',
     '<aside class="system-runtime-pressure">',
     systemRuntimeSignal('来源', String(sources.enabled || 0) + '/' + String(sources.total || 0), '到期 ' + String(sources.due || 0) + ' · 失败 ' + String(sources.failed || 0), sourcePressureVariant(sources)),
@@ -666,16 +666,16 @@ function renderSystemStatusDashboard(report) {
     '</section>',
     '<section class="system-runtime-foot">',
     '<span>接口与资料</span>',
-    '<strong>' + escapeHtml([
-      'API ' + (openApi.openapi || 'unknown'),
+    '<strong>' + escapeHtml(localizeStatus([
+      'API ' + (openApi.openapi || '未知'),
       '路径 ' + String(Object.keys(openApi.paths || {}).length),
       '原始页 ' + String(rawPages.total || 0)
-    ].join(' · ')) + '</strong>',
-    '<small>' + escapeHtml([
+    ].join(' · '))) + '</strong>',
+    '<small>' + escapeHtml(localizeStatus([
       '作者复核 ' + authorReviewQueueStatusSummary(authorQueue),
       '复核动作 ' + reviewActionStatusSummary(overview.reviewActions),
       '提醒动作 ' + eventActionStatusSummary(overview.notificationEventActions)
-    ].join(' · ')) + '</small>',
+    ].join(' · '))) + '</small>',
     '</section>',
     '</article>'
   ].join('');
@@ -705,14 +705,31 @@ function systemStatusVariant(report) {
 }
 
 function systemStatusLabel(variant) {
-  if (variant === 'fail') return 'action';
-  if (variant === 'warn') return 'watch';
-  if (variant === 'ok') return 'steady';
-  return 'pending';
+  if (variant === 'fail') return '需处理';
+  if (variant === 'warn') return '待观察';
+  if (variant === 'ok') return '平稳';
+  return '待命';
+}
+
+// 把后端诊断里残留的英文状态词就地映射为中文（provider/来源名等非状态词不在表内，原样保留）
+function localizeStatus(text) {
+  const map = {
+    unknown: '未知', checking: '检测中', standby: '待命', deferred: '暂缓',
+    ready: '就绪', steady: '平稳', watch: '观察', warn: '注意', warning: '注意',
+    fail: '失败', failed: '失败', ok: '正常', pass: '通过', passed: '通过',
+    active: '活跃', stale: '停滞', pending: '待处理', healthy: '健康',
+    degraded: '降级', offline: '离线', online: '在线', running: '运行中',
+    idle: '空闲', blocked: '受阻', ingest: '采集', file: '文件',
+    split: '拆分', single: '单一', deferred: '暂缓'
+  };
+  return String(text == null ? '' : text).replace(/[a-zA-Z]+/g, function (word) {
+    var key = word.toLowerCase();
+    return Object.prototype.hasOwnProperty.call(map, key) ? map[key] : word;
+  });
 }
 
 function systemStatusHeadline(variant, runbook, deploymentChecklist, readiness) {
-  if (variant === 'fail') return 'Runtime needs operator attention before the next cycle.';
+  if (variant === 'fail') return '运行时需要在下一轮开始前处理。';
   if (variant === 'warn') {
     const action = (runbook.actions || []).find(function (item) {
       return item.severity === 'critical' || item.severity === 'warning';
@@ -726,10 +743,10 @@ function systemStatusHeadline(variant, runbook, deploymentChecklist, readiness) 
       return item.status === 'fail' || item.status === 'warn';
     });
     if (readinessCheck && readinessCheck.summary) return readinessCheck.summary;
-    return 'Runtime is usable, with a few signals worth watching.';
+    return '运行时可用，有几个信号值得留意。';
   }
-  if (variant === 'ok') return 'Runtime is steady and ready for daily source work.';
-  return 'Runtime telemetry is loading.';
+  if (variant === 'ok') return '运行时平稳，可以开始今天的来源工作。';
+  return '正在加载运行时遥测。';
 }
 
 function systemRuntimeSignal(label, value, detail, variant) {
@@ -743,7 +760,7 @@ function systemRuntimeSignal(label, value, detail, variant) {
 function systemRuntimeMini(label, value, variant) {
   return '<div class="system-runtime-mini ' + statusClassName(variant) + '">' +
     '<span>' + escapeHtml(label) + '</span>' +
-    '<strong>' + escapeHtml(value || 'unknown') + '</strong>' +
+    '<strong>' + escapeHtml(localizeStatus(value || '未知')) + '</strong>' +
     '</div>';
 }
 
@@ -867,8 +884,8 @@ function renderHistoryCockpit(report) {
 function cockpitCard(title, value, detail, variant) {
   return '<article class="cockpit-card ' + cockpitClassName(variant) + '">' +
     '<span>' + escapeHtml(title) + '</span>' +
-    '<strong>' + escapeHtml(value) + '</strong>' +
-    '<small>' + escapeHtml(detail || '') + '</small>' +
+    '<strong>' + escapeHtml(localizeStatus(value)) + '</strong>' +
+    '<small>' + escapeHtml(localizeStatus(detail || '')) + '</small>' +
     '</article>';
 }
 

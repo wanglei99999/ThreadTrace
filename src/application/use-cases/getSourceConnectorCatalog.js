@@ -167,15 +167,15 @@ function buildAdapterGuidance(requiresAdapter, compatibleSourceKeys) {
   if (!requiresAdapter) {
     return {
       required: false,
-      summary: 'This source type consumes canonical ThreadTrace data and does not need a forum adapter.'
+      summary: '该来源类型消费 ThreadTrace 规范数据，无需论坛适配器。'
     };
   }
   return {
     required: true,
     compatibleSourceKeys: compatibleSourceKeys.slice(),
     summary: compatibleSourceKeys.length > 0
-      ? 'Select one compatible sourceKey before preflight.'
-      : 'Register a compatible forum adapter before this source type can run.'
+      ? '预检前请先选择一个兼容的来源标识（sourceKey）。'
+      : '注册一个兼容的论坛适配器后，该来源类型才能运行。'
   };
 }
 

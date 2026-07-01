@@ -319,26 +319,14 @@ pre {
   background: var(--info-soft);
 }
 
+/* 运行概览 hero：状态只走标题徽章，整块保持 Notion 白卡 + hairline（不给彩底/彩边） */
 .system-runtime-hero.status-ok,
 .system-runtime-hero.status-warn,
 .system-runtime-hero.status-fail,
 .system-runtime-hero.status-muted {
   color: var(--text);
-  background:
-    linear-gradient(135deg, rgba(var(--canvas-rgb), 0.99), rgba(var(--surface-soft-rgb), 0.97) 48%, rgba(var(--surface-soft-rgb), 0.93)),
-    var(--panel);
-}
-
-.system-runtime-hero.status-ok {
-  border-color: rgba(var(--accent-rgb), 0.22);
-}
-
-.system-runtime-hero.status-warn {
-  border-color: rgba(var(--amber-rgb), 0.24);
-}
-
-.system-runtime-hero.status-fail {
-  border-color: rgba(var(--rust-rgb), 0.24);
+  background: var(--panel);
+  border-color: var(--line);
 }
 
 /* 座舱 hero：状态只走边框 + 徽章，不给整块彩底（Notion 克制） */
